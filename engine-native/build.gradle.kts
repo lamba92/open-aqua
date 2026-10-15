@@ -19,6 +19,8 @@ kotlin {
             implementation(projects.coreModel)
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.kotlinx.coroutines.core)
+            implementation(libs.kotlinx.io.core)
+            implementation(libs.clikt)
         }
     }
 }

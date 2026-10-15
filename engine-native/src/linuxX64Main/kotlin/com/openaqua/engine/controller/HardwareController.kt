@@ -172,14 +172,18 @@ object HardwareController {
                 )
 
         val base = fan.ctrlOffset
-        // Set curve mode
-        report[base + 0] = 0x02u
-        report[base + 1] = 0x02u
 
         // Optional temperature source sensor
         if (sensorIndex != null) {
             report[base + 3] = ((sensorIndex ushr 8) and 0xFF).toUByte()
             report[base + 4] = (sensorIndex and 0xFF).toUByte()
+            report[base + 0] = 0x02u // Safe to enable curve mode with explicit sensor
+        } else {
+            val existingSensor = ((report[base + 3].toInt() shl 8) or report[base + 4].toInt()) and 0xFFFF
+            if (existingSensor != 0xFFFF) {
+                // Channel has a valid sensor assigned, ensure curve mode is active
+                report[base + 0] = 0x02u
+            }
         }
 
         // Write 16 points
