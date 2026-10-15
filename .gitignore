@@ -1,0 +1,29 @@
+# Gradle
+.gradle/
+build/
+**/build/
+
+# IDE & Editor
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+.vscode/
+
+# OS Specific
+.DS_Store
+Thumbs.db
+
+# Kotlin Native & Binaries
+*.kexe
+*.klib
+*.so
+*.dylib
+*.dll
+hs_err_pid*
+replay_pid*
+
+# Local configs & logs
+local.properties
+*.log

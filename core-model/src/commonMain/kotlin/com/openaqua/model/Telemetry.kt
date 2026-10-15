@@ -1,0 +1,32 @@
+package com.openaqua.model
+
+import kotlinx.serialization.Serializable
+
+@Serializable
+data class SensorTelemetry(
+    val id: String,
+    val name: String,
+    val tempCelsius: Double?,
+    val isVirtual: Boolean = false,
+)
+
+@Serializable
+data class FanTelemetry(
+    val id: String,
+    val name: String,
+    val rpm: Int,
+    val powerWatts: Double,
+    val voltageVolts: Double,
+    val currentAmps: Double,
+    val pwmPercent: Double? = null,
+)
+
+@Serializable
+data class DeviceTelemetry(
+    val deviceId: String,
+    val deviceType: DeviceType,
+    val name: String,
+    val sensors: List<SensorTelemetry>,
+    val fans: List<FanTelemetry>,
+    val flowRateDlH: Int? = null,
+)
