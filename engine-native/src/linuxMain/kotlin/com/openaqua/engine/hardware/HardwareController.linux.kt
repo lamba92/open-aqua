@@ -87,13 +87,7 @@ actual fun scanDevices(): List<DetectedHardwareDevice> {
 actual fun readTelemetry(device: DetectedHardwareDevice): DeviceTelemetry {
     val descriptor =
         DeviceRegistry.ALL.firstOrNull { it.type == device.type }
-            ?: return DeviceTelemetry(
-                deviceId = device.id,
-                deviceType = device.type,
-                name = device.name,
-                sensors = emptyList(),
-                fans = emptyList(),
-            )
+            ?: error("Unsupported device type: ${device.type}")
 
     val hwmon = device.hwmonPath
 
@@ -151,12 +145,9 @@ actual fun readTelemetry(device: DetectedHardwareDevice): DeviceTelemetry {
 actual fun readCurves(device: DetectedHardwareDevice): DeviceCurves {
     val descriptor =
         DeviceRegistry.ALL.firstOrNull { it.type == device.type }
-            ?: return DeviceCurves(deviceId = device.id, curves = emptyMap())
+            ?: error("Unsupported device type: ${device.type}")
 
-    val report =
-        readFeatureReport(device.hidrawPath, 0x03u, descriptor.ctrlReportLength)
-            ?: return DeviceCurves(deviceId = device.id, curves = emptyMap())
-
+    val report = readFeatureReport(device.hidrawPath, 0x03u, descriptor.ctrlReportLength)
     val curvesMap = mutableMapOf<String, List<CurvePoint>>()
 
     for (fan in descriptor.fanChannels) {
@@ -190,48 +181,17 @@ actual fun flashCurve(
 ): FlashCurveResponse {
     val descriptor =
         DeviceRegistry.ALL.firstOrNull { it.type == device.type }
-            ?: return FlashCurveResponse(
-                status = "error",
-                deviceId = device.id,
-                fanId = fanId,
-                bytesWritten = 0,
-                verified = false,
-                error = "Unsupported device type: ${device.type}",
-            )
+            ?: error("Unsupported device type: ${device.type}")
 
     val fan =
         descriptor.fanChannels.firstOrNull { it.id == fanId }
-            ?: return FlashCurveResponse(
-                status = "error",
-                deviceId = device.id,
-                fanId = fanId,
-                bytesWritten = 0,
-                verified = false,
-                error = "Unknown fan ID: $fanId",
-            )
+            ?: error("Unknown fan ID: $fanId for device ${device.name}")
 
-    if (points.size != 16) {
-        return FlashCurveResponse(
-            status = "error",
-            deviceId = device.id,
-            fanId = fanId,
-            bytesWritten = 0,
-            verified = false,
-            error = "Expected exactly 16 curve points, got ${points.size}",
-        )
+    require(points.size == 16) {
+        "Expected exactly 16 curve points, got ${points.size}"
     }
 
-    val report =
-        readFeatureReport(device.hidrawPath, 0x03u, descriptor.ctrlReportLength)
-            ?: return FlashCurveResponse(
-                status = "error",
-                deviceId = device.id,
-                fanId = fanId,
-                bytesWritten = 0,
-                verified = false,
-                error = "Failed to read feature report 0x03 from ${device.hidrawPath}",
-            )
-
+    val report = readFeatureReport(device.hidrawPath, 0x03u, descriptor.ctrlReportLength)
     val base = fan.ctrlOffset
 
     // Optional temperature source sensor
@@ -271,56 +231,35 @@ actual fun flashCurve(
     report[crcPos] = ((crc.toInt() ushr 8) and 0xFF).toUByte()
     report[crcPos + 1] = (crc.toInt() and 0xFF).toUByte()
 
-    val written = writeFeatureReport(device.hidrawPath, report)
-    if (!written) {
-        return FlashCurveResponse(
-            status = "error",
-            deviceId = device.id,
-            fanId = fanId,
-            bytesWritten = 0,
-            verified = false,
-            error = "ioctl HIDIOCSFEATURE failed",
-        )
-    }
+    writeFeatureReport(device.hidrawPath, report)
 
     // Settle device firmware
     usleep(250_000u)
 
     // Readback verification
     val readback = readFeatureReport(device.hidrawPath, 0x03u, descriptor.ctrlReportLength)
-    var verified = true
-    var mismatchDetail: String? = null
+    for (i in 0 until 16) {
+        val pt = points[i]
+        val tOffset = base + 0x15 + (i * 2)
+        val pOffset = base + 0x35 + (i * 2)
 
-    if (readback != null) {
-        for (i in 0 until 16) {
-            val pt = points[i]
-            val tOffset = base + 0x15 + (i * 2)
-            val pOffset = base + 0x35 + (i * 2)
+        val tRaw = ((readback[tOffset].toInt() shl 8) or readback[tOffset + 1].toInt()).toShort()
+        val pRaw = ((readback[pOffset].toInt() shl 8) or readback[pOffset + 1].toInt()).toUShort()
 
-            val tRaw = ((readback[tOffset].toInt() shl 8) or readback[tOffset + 1].toInt()).toShort()
-            val pRaw = ((readback[pOffset].toInt() shl 8) or readback[pOffset + 1].toInt()).toUShort()
+        val readT = tRaw.toDouble() / 100.0
+        val readP = pRaw.toDouble() / 100.0
 
-            val readT = tRaw.toDouble() / 100.0
-            val readP = pRaw.toDouble() / 100.0
-
-            if (abs(readT - pt.temp) > 0.2 || abs(readP - pt.pwm) > 0.2) {
-                verified = false
-                mismatchDetail = "Point $i: expected (${pt.temp}°C, ${pt.pwm}%), read ($readT°C, $readP%)"
-                break
-            }
+        check(abs(readT - pt.temp) <= 0.2 && abs(readP - pt.pwm) <= 0.2) {
+            "Verification failed at point $i: expected (${pt.temp}°C, ${pt.pwm}%), read ($readT°C, $readP%)"
         }
-    } else {
-        verified = false
-        mismatchDetail = "Readback feature report returned null"
     }
 
     return FlashCurveResponse(
-        status = if (verified) "ok" else "warning",
+        status = "ok",
         deviceId = device.id,
         fanId = fanId,
         bytesWritten = report.size,
-        verified = verified,
-        error = mismatchDetail,
+        verified = true,
     )
 }
 
@@ -333,10 +272,10 @@ private fun readFeatureReport(
     hidrawPath: String,
     reportId: UByte,
     reportPayloadLength: Int,
-): UByteArray? {
+): UByteArray {
     val totalLen = reportPayloadLength + 1
     val fd = open(hidrawPath, O_RDWR)
-    if (fd < 0) return null
+    check(fd >= 0) { "Cannot open $hidrawPath for reading" }
 
     try {
         memScoped {
@@ -345,7 +284,7 @@ private fun readFeatureReport(
 
             val cmd = hidiocgfeature(totalLen)
             val ret = ioctl(fd, cmd, buf)
-            if (ret < 0) return null
+            check(ret >= 0) { "ioctl HIDIOCGFEATURE failed on $hidrawPath" }
 
             val result = UByteArray(totalLen)
             for (i in 0 until totalLen) {
@@ -353,8 +292,6 @@ private fun readFeatureReport(
             }
             return result
         }
-    } catch (_: Exception) {
-        return null
     } finally {
         close(fd)
     }
@@ -364,10 +301,10 @@ private fun readFeatureReport(
 private fun writeFeatureReport(
     hidrawPath: String,
     reportData: UByteArray,
-): Boolean {
+) {
     val totalLen = reportData.size
     val fd = open(hidrawPath, O_RDWR)
-    if (fd < 0) return false
+    check(fd >= 0) { "Cannot open $hidrawPath for writing" }
 
     try {
         memScoped {
@@ -380,10 +317,8 @@ private fun writeFeatureReport(
 
             val cmd = hidiocsfeature(totalLen)
             val ret = ioctl(fd, cmd, buf)
-            return ret >= 0
+            check(ret >= 0) { "ioctl HIDIOCSFEATURE failed on $hidrawPath" }
         }
-    } catch (_: Exception) {
-        return false
     } finally {
         close(fd)
     }

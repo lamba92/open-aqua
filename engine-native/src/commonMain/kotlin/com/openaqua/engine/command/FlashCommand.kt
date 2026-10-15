@@ -9,7 +9,6 @@ import com.openaqua.engine.hardware.flashCurve
 import com.openaqua.engine.hardware.scanDevices
 import com.openaqua.model.AutoCurveParams
 import com.openaqua.model.CurvePoint
-import com.openaqua.model.FlashCurveResponse
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -29,66 +28,25 @@ class FlashCommand(
     override fun run() {
         val devices = scanDevices()
         val target =
-            device?.let { devId -> devices.firstOrNull { it.id == devId } }
-                ?: devices.firstOrNull()
+            if (device != null) {
+                devices.firstOrNull { it.id == device }
+                    ?: error("Device '$device' not found")
+            } else {
+                devices.firstOrNull()
+                    ?: error("No Aquacomputer devices found")
+            }
 
-        if (target == null) {
-            val errorResp =
-                FlashCurveResponse(
-                    status = "error",
-                    deviceId = "unknown",
-                    fanId = fan,
-                    bytesWritten = 0,
-                    verified = false,
-                    error = "No Aquacomputer devices found",
-                )
-            println(json.encodeToString(errorResp))
-            return
-        }
-
-        if (generate == null && points == null) {
-            val errorResp =
-                FlashCurveResponse(
-                    status = "error",
-                    deviceId = target.id,
-                    fanId = fan,
-                    bytesWritten = 0,
-                    verified = false,
-                    error = "Either --generate '<json>' or --points '<json>' must be provided",
-                )
-            println(json.encodeToString(errorResp))
-            return
+        require(generate != null || points != null) {
+            "Either --generate '<json>' or --points '<json>' must be provided"
         }
 
         val response =
             if (generate != null) {
-                try {
-                    val params = json.decodeFromString<AutoCurveParams>(generate!!)
-                    flashCurve(target, fan, params, sensor)
-                } catch (e: Exception) {
-                    FlashCurveResponse(
-                        status = "error",
-                        deviceId = target.id,
-                        fanId = fan,
-                        bytesWritten = 0,
-                        verified = false,
-                        error = "Invalid JSON in --generate: ${e.message}",
-                    )
-                }
+                val params = json.decodeFromString<AutoCurveParams>(generate!!)
+                flashCurve(target, fan, params, sensor)
             } else {
-                try {
-                    val pts = json.decodeFromString<List<CurvePoint>>(points!!)
-                    flashCurve(target, fan, pts, sensor)
-                } catch (e: Exception) {
-                    FlashCurveResponse(
-                        status = "error",
-                        deviceId = target.id,
-                        fanId = fan,
-                        bytesWritten = 0,
-                        verified = false,
-                        error = "Invalid JSON in --points: ${e.message}",
-                    )
-                }
+                val pts = json.decodeFromString<List<CurvePoint>>(points!!)
+                flashCurve(target, fan, pts, sensor)
             }
 
         println(json.encodeToString(response))

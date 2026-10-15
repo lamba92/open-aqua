@@ -20,13 +20,13 @@ class CurvesCommand(
     override fun run() {
         val devices = scanDevices()
         val target =
-            device?.let { devId -> devices.firstOrNull { it.id == devId } }
-                ?: devices.firstOrNull()
-
-        if (target == null) {
-            println("""{"error": "No Aquacomputer devices found"}""")
-            return
-        }
+            if (device != null) {
+                devices.firstOrNull { it.id == device }
+                    ?: error("Device '$device' not found")
+            } else {
+                devices.firstOrNull()
+                    ?: error("No Aquacomputer devices found")
+            }
 
         val curves = readCurves(target)
         println(json.encodeToString(curves))

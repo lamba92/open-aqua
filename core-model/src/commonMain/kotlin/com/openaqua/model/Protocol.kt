@@ -37,3 +37,10 @@ data class FlashCurveResponse(
     val verified: Boolean,
     val error: String? = null,
 )
+
+@Serializable
+data class EngineErrorResponse(
+    val status: String = "error",
+    val error: String,
+    val type: String? = null,
+)
