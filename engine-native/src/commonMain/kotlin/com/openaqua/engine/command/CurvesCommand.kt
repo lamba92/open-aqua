@@ -3,7 +3,8 @@ package com.openaqua.engine.command
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.parameters.options.option
-import com.openaqua.engine.controller.HardwareController
+import com.openaqua.engine.hardware.readCurves
+import com.openaqua.engine.hardware.scanDevices
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -17,7 +18,7 @@ class CurvesCommand(
     private val device by option("--device", help = "Device ID")
 
     override fun run() {
-        val devices = HardwareController.getDetectedDevices()
+        val devices = scanDevices()
         val target =
             device?.let { devId -> devices.firstOrNull { it.id == devId } }
                 ?: devices.firstOrNull()
@@ -27,7 +28,7 @@ class CurvesCommand(
             return
         }
 
-        val curves = HardwareController.getCurves(target)
+        val curves = readCurves(target)
         println(json.encodeToString(curves))
     }
 }

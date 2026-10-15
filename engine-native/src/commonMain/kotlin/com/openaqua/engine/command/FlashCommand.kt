@@ -5,7 +5,8 @@ import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.int
-import com.openaqua.engine.controller.HardwareController
+import com.openaqua.engine.hardware.flashCurve
+import com.openaqua.engine.hardware.scanDevices
 import com.openaqua.model.AutoCurveParams
 import com.openaqua.model.CurvePoint
 import com.openaqua.model.FlashCurveResponse
@@ -26,7 +27,7 @@ class FlashCommand(
     private val sensor by option("--sensor", help = "Sensor index").int()
 
     override fun run() {
-        val devices = HardwareController.getDetectedDevices()
+        val devices = scanDevices()
         val target =
             device?.let { devId -> devices.firstOrNull { it.id == devId } }
                 ?: devices.firstOrNull()
@@ -63,7 +64,7 @@ class FlashCommand(
             if (generate != null) {
                 try {
                     val params = json.decodeFromString<AutoCurveParams>(generate!!)
-                    HardwareController.flashCurve(target, fan, params, sensor)
+                    flashCurve(target, fan, params, sensor)
                 } catch (e: Exception) {
                     FlashCurveResponse(
                         status = "error",
@@ -77,7 +78,7 @@ class FlashCommand(
             } else {
                 try {
                     val pts = json.decodeFromString<List<CurvePoint>>(points!!)
-                    HardwareController.flashCurve(target, fan, pts, sensor)
+                    flashCurve(target, fan, pts, sensor)
                 } catch (e: Exception) {
                     FlashCurveResponse(
                         status = "error",
