@@ -18,22 +18,21 @@ private fun CoreCliktCommand.safeParse(argv: Array<String>) {
     }
 }
 
-class OpenAquaEngine(
-    private val rootCommand: OpenAquaEngineCommand,
-    private val subcommands: List<CliktCommand>,
+fun openAquaEngine(
+    rootCommand: OpenAquaEngineCommand,
+    subcommands: List<CliktCommand>,
+    args: Array<String>,
 ) {
-    fun execute(args: Array<String>) {
-        val subcommands = rootCommand.subcommands(subcommands)
-        try {
-            subcommands.safeParse(args)
-        } catch (e: Throwable) {
-            val errorResponse =
-                ErrorResponse(
-                    message = e.message ?: "Unknown error",
-                )
-            val pretty = args.contains("--pretty")
-            printResponse(errorResponse, pretty)
-            subcommands.currentContext.exitProcess(1)
-        }
+    val configuredRoot = rootCommand.subcommands(subcommands)
+    try {
+        configuredRoot.safeParse(args)
+    } catch (e: Throwable) {
+        val errorResponse =
+            ErrorResponse(
+                message = e.message ?: "Unknown error",
+            )
+        val pretty = args.contains("--pretty")
+        printResponse(errorResponse, pretty)
+        configuredRoot.currentContext.exitProcess(1)
     }
 }
