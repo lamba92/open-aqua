@@ -1,5 +1,1 @@
-plugins {
-    alias(libs.plugins.kotlin.multiplatform) apply false
-    alias(libs.plugins.kotlin.serialization) apply false
-    alias(libs.plugins.ktlint) apply false
-}
+// Root build script - plugins and build logic are provided via buildSrc

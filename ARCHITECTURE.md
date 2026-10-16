@@ -12,14 +12,14 @@ Aquacomputer hardware (OCTO, QUADRO, D5 NEXT, High Flow Next, Aquaero) is the go
 
 ### Core Principles
 1. **Device-Agnostic Core**: While built initially for the OCTO, the architecture treats devices as data-driven descriptors (OCTO, QUADRO, D5 NEXT, etc.), allowing any supported Aquacomputer device to plug in effortlessly.
-2. **Stateless Native Engine (`open-aqua-engine`)**: A tiny (~600 KB), ultra-fast Kotlin/Native binary handles low-level Linux hardware interaction (`/dev/hidraw` ioctl, `/sys/class/hwmon`, USB CRC-16).
+2. **Stateless Native Engine (`open-aqua-engine`)**: A tiny, ultra-fast Kotlin/Native binary handles low-level Linux hardware interaction (`/dev/hidraw` ioctl, `/sys/class/hwmon`, USB CRC-16).
 3. **Embedded Execution Model**: The native engine is bundled directly inside the Compose Desktop app JAR resources. At runtime, the JVM extracts it to `~/.cache/open-aqua/bin/` and invokes it on demand via `ProcessBuilder` with JSON stdout/stdin. No daemons to babysit, no JNA/JNI crashes, zero IPC connection leaks.
 4. **Hardware Autonomy**: All fan curves and settings are flashed directly into device EEPROM/firmware. The hardware executes curves autonomously—the software does not need to stay open for cooling to function.
 5. **Modern Compose Desktop UI**: Built with JetBrains Compose Multiplatform Desktop, rendering at native refresh rates (60/144+ FPS) via Skiko (Vulkan/OpenGL on Wayland).
 
 ---
 
-## 2. System Architecture
+## 2. System Architecture & Engine Modules
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
@@ -28,45 +28,43 @@ Aquacomputer hardware (OCTO, QUADRO, D5 NEXT, High Flow Next, Aquaero) is the go
 │   ┌──────────────────────────┐      ┌──────────────────────────────┐   │
 │   │   Device & Channel Tabs  │      │     Interactive Curve Studio │   │
 │   │ (Octo, Quadro, D5 Next)  │      │     (Compose Canvas Engine)  │   │
-│   └─────────────┬────────────┘      └──────────────┬───────────────┘   │
-│                 │                                  │                   │
-│                 └─────────────┐      ┌─────────────┘                   │
-│                               ▼      ▼                                 │
-│                       ┌──────────────────────┐                         │
-│                       │   Compose ViewModel  │                         │
-│                       │   (StateFlow / MVI)  │                         │
-│                       └──────────┬───────────┘                         │
-│                                  │                                     │
-│                       ┌──────────▼───────────┐                         │
-│                       │     EngineBridge     │                         │
-│                       │ (ProcessBuilder IPC) │                         │
-└───────────────────────────────────┬────────────────────────────────────┘
-                                    │ Invokes on-demand via JSON
-                                    ▼
+│   └────────────┬─────────────┘      └──────────────┬───────────────┘   │
+│                │                                   │                   │
+│                └─────────────┬─────────────────────┘                   │
+│                              ▼      ▼                                  │
+│                      ┌──────────────────────┐                          │
+│                      │   Compose ViewModel  │                          │
+│                      │   (StateFlow / MVI)  │                          │
+│                      └──────────┬───────────┘                          │
+│                                 │                                      │
+│                      ┌──────────▼───────────┐                          │
+│                      │     EngineBridge     │                          │
+│                      │ (ProcessBuilder IPC) │                          │
+└─────────────────────────────────┬──────────────────────────────────────┘
+                                   │ Invokes on-demand via JSON
+                                   ▼
 ┌────────────────────────────────────────────────────────────────────────┐
-│                      engine-native (Kotlin/Native)                     │
-│               [Embedded in JAR -> extracted to cache]                  │
+│                   engine CLI (Kotlin/Native + Kodein DI)               │
 │                                                                        │
 │   ┌────────────────────────────────────────────────────────────────┐   │
-│   │                     Device Registry & CLI                      │   │
-│   │     (telemetry | get-curves | flash-curve | list-devices)      │   │
-│   └───────────────┬───────────────────────────────┬────────────────┘   │
-│                   │                               │                    │
-│   ┌───────────────▼──────────────┐ ┌──────────────▼────────────────┐   │
-│   │    Linux Hwmon Telemetry     │ │    Generic HIDRaw Driver      │   │
-│   │ (/sys/class/hwmon/hwmonX/..) │ │ (/dev/hidrawX ioctl + CRC16)  │   │
+│   │               :engine (Core Multiplatform Library)             │   │
+│   │      Clikt Commands + HardwareController Contract + DI Module  │   │
+│   └───────────────────────┬────────────────────────┬───────────────┘   │
+│                           │                        │                   │
+│                           ▼                        ▼                   │
+│   ┌──────────────────────────────┐ ┌───────────────────────────────┐   │
+│   │     :engine:engine-mock      │ │      :engine:engine-prod      │   │
+│   │   MockHardwareController     │ │    LinuxHardwareController    │   │
+│   │  (macosArm64, linuxX64 kexe) │ │    (linuxX64 ioctl + hwmon)   │   │
 │   └──────────────────────────────┘ └───────────────────────────────┘   │
-└───────────────────────────────────┬────────────────────────────────────┘
-                                    │ USB HID Feature Reports
-                                    ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│                        Physical Hardware Layer                         │
-│    ┌──────────────┐     ┌──────────────┐     ┌──────────────────┐      │
-│    │  Aqua OCTO   │     │ Aqua QUADRO  │     │   D5 NEXT Pump   │ ...  │
-│    │ (8 Fans/PWM) │     │ (4 Fans/PWM) │     │ (Pump + Fan+OLED)│      │
-│    └──────────────┘     └──────────────┘     └──────────────────┘      │
 └────────────────────────────────────────────────────────────────────────┘
 ```
+
+### Module Breakdown
+- **`:core-model`**: Domain data models, device descriptors (`DeviceRegistry`), and curve math (`CurveMath`).
+- **`:engine`**: Core library containing Clikt commands, the `HardwareController` interface, and `engineCoreModule` (Kodein DI).
+- **`:engine:engine-mock`**: Standalone executable producing `open-aqua-engine-mock` with fake telemetry, devices, and curve responses for development on macOS/Linux.
+- **`:engine:engine-prod`**: Production Linux executable producing `open-aqua-engine` with actual POSIX `/dev/hidraw` ioctls and `/sys/class/hwmon` reads.
 
 ---
 
@@ -221,12 +219,18 @@ $ open-aqua-engine curves --device octo_0
 ```
 
 ### 4. Flash Curve to Hardware EEPROM
+Via generated curve parameters:
 ```bash
-$ open-aqua-engine flash --device octo_0 --fan fan4 --json '[{"temp":25.0,"pwm":15.0}, ...]'
+$ open-aqua-engine flash curve-params --device octo_0 --fan fan4 --curve-params '{"tMin":25.0,"tMax":75.0,"pMin":15.0,"pMax":100.0}'
+```
+
+Via explicit 16-point curve coordinates:
+```bash
+$ open-aqua-engine flash points --device octo_0 --fan fan4 --points '[{"temp":25.0,"pwm":15.0}, ...]'
 ```
 ```json
 {
-  "status": "success",
+  "status": "ok",
   "device_id": "octo_0",
   "fan": "fan4",
   "bytes_written": 1631,
@@ -247,7 +251,7 @@ $ open-aqua-engine flash --device octo_0 --fan fan4 --json '[{"temp":25.0,"pwm":
     - Renders the full 0%–100% PWM vs 20°C–60°C graph grid.
     - Draggable control points or interactive curvature slider with real-time Bézier/polynomial rendering.
     - **Live Operating Point Indicator**: A glowing, animated dot moving along the curve corresponding to live water temperature, showing current calculated PWM and actual RPM.
-    - Dual Curve View: Dotted line for *Current Hardware Curve*, solid colored line for *Draft Curve*.
+    - Dual Curve View: Dotted line for *Current Hardware Curve*, solid colored line for *Draft Curve*..
     - "Flash to Device" button with instant tactile feedback.
   - **Profiles Tab**: Save/Export/Import fan configurations in human-readable JSON files (*Silent*, *Gaming*, *Stress Test*).
 
@@ -257,8 +261,8 @@ $ open-aqua-engine flash --device octo_0 --fan fan4 --json '[{"temp":25.0,"pwm":
 
 | Milestone | Deliverables |
 | :--- | :--- |
-| **Phase 1: Project Scaffolding** | Setup multi-module Gradle project (`core-model`, `engine-native`, `app-compose`), configure Kotlin 2.x and Compose Desktop plugin. |
-| **Phase 2: Generic Engine & Models** | Implement `core-model` (models & curve math) + `engine-native` with generic device discovery, telemetry, curves, and flashing. Wire UPX packaging into Gradle. |
+| **Phase 1: Project Scaffolding** | Setup multi-module Gradle project (`core-model`, `engine`, `app-compose`), configure Kotlin 2.x and Compose Desktop plugin. |
+| **Phase 2: Generic Engine & Models** | Implement `core-model` (models & curve math) + `engine` library with `engine-mock` and `engine-prod` using Kodein DI. *(Note: `optimizeEngineExecutable` strip + UPX compression task is temporarily dropped and will be re-added when finalizing release packaging).* |
 | **Phase 3: Engine Bridge & Lifecycle** | Create `EngineBridge` in `app-compose` to extract embedded binary to cache and run CLI commands via coroutines with `StateFlow`. |
 | **Phase 4: Curve Studio Canvas** | Build the interactive Compose Desktop Canvas curve editor with draggable handles, shape slider, and live coolant operating point. |
 | **Phase 5: Dashboard & Polish** | Add live hardware gauges, fan channel naming, theme styling (Dark Modern Glass), and desktop distribution packaging (`.deb`, `.rpm`, runnable bundle). |

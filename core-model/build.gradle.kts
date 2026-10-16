@@ -1,13 +1,15 @@
 plugins {
-    alias(libs.plugins.kotlin.multiplatform)
-    alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.ktlint)
+    id(libs.plugins.kotlin.multiplatform)
+    id(libs.plugins.kotlin.serialization)
+    id(libs.plugins.ktlint)
 }
 
 kotlin {
     jvmToolchain(21)
-    jvm()
     linuxX64()
+    linuxArm64()
+    mingwX64()
+    macosArm64()
 
     sourceSets {
         commonMain.dependencies {
