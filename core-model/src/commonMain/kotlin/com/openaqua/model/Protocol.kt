@@ -1,6 +1,16 @@
 package com.openaqua.model
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+
+@Serializable
+sealed interface EngineResponse
+
+@Serializable
+@SerialName("devices")
+data class DevicesResponse(
+    val devices: List<DetectedHardwareDevice>,
+) : EngineResponse
 
 @Serializable
 data class DetectedHardwareDevice(
@@ -14,10 +24,11 @@ data class DetectedHardwareDevice(
 )
 
 @Serializable
+@SerialName("curves")
 data class DeviceCurves(
     val deviceId: String,
     val curves: Map<String, List<CurvePoint>>,
-)
+) : EngineResponse
 
 @Serializable
 data class FlashCurveRequest(
@@ -29,6 +40,7 @@ data class FlashCurveRequest(
 )
 
 @Serializable
+@SerialName("flash")
 data class FlashCurveResponse(
     val status: String,
     val deviceId: String,
@@ -36,11 +48,10 @@ data class FlashCurveResponse(
     val bytesWritten: Int,
     val verified: Boolean,
     val error: String? = null,
-)
+) : EngineResponse
 
 @Serializable
-data class EngineErrorResponse(
-    val status: String = "error",
-    val error: String,
-    val type: String? = null,
-)
+@SerialName("error")
+data class ErrorResponse(
+    val message: String,
+) : EngineResponse

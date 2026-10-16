@@ -11,6 +11,7 @@ import com.openaqua.engine.hardware.flashCurve
 import com.openaqua.model.AutoCurveParams
 import com.openaqua.model.CurvePoint
 import com.openaqua.model.DetectedHardwareDevice
+import com.openaqua.model.EngineResponse
 import com.openaqua.model.FlashCurveResponse
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -31,7 +32,7 @@ abstract class BaseFlashCommand(
                 ?: error("Device '$device' not found")
 
         val response = executeFlash(target, fan, sensor)
-        println(json.encodeToString(response))
+        println(json.encodeToString<EngineResponse>(response))
     }
 
     protected abstract fun executeFlash(

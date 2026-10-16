@@ -1,50 +1,52 @@
 package com.openaqua.engine
 
+import com.github.ajalt.clikt.core.BaseCliktCommand
+import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.CliktError
-import com.github.ajalt.clikt.core.main
+import com.github.ajalt.clikt.core.CoreCliktCommand
+import com.github.ajalt.clikt.core.parse
 import com.github.ajalt.clikt.core.subcommands
-import com.openaqua.engine.command.CurvesCommand
-import com.openaqua.engine.command.DevicesCommand
-import com.openaqua.engine.command.FlashCommand
+import com.github.ajalt.clikt.parsers.CommandLineParser
 import com.openaqua.engine.command.OpenAquaEngineCommand
-import com.openaqua.engine.command.TelemetryCommand
-import com.openaqua.model.EngineErrorResponse
-import kotlinx.serialization.encodeToString
+import com.openaqua.model.EngineResponse
+import com.openaqua.model.ErrorResponse
 import kotlinx.serialization.json.Json
-import org.kodein.di.DI
-import org.kodein.di.DIAware
-import org.kodein.di.instance
+
+inline fun <T : BaseCliktCommand<T>> CommandLineParser.main(
+    command: T,
+    json: Json,
+    parseAndRun: T.() -> Unit,
+) {
+    try {
+        command.parseAndRun()
+    } catch (e: CliktError) {
+        command.echoFormattedHelp(e)
+        command.currentContext.exitProcess(e.statusCode)
+    } catch (e: Throwable) {
+        val errorResponse: EngineResponse =
+            ErrorResponse(
+                message = e.message ?: "Unknown error",
+            )
+        println(json.encodeToString<EngineResponse>(errorResponse))
+        command.currentContext.exitProcess(1)
+    }
+}
+
+fun CoreCliktCommand.main(
+    argv: Array<String>,
+    json: Json,
+) {
+    CommandLineParser.main(this, json) {
+        parse(argv)
+    }
+}
 
 class OpenAquaEngine(
-    override val di: DI,
-) : DIAware {
-    private val json: Json by instance()
-    private val rootCommand: OpenAquaEngineCommand by instance()
-    private val devicesCommand: DevicesCommand by instance()
-    private val telemetryCommand: TelemetryCommand by instance()
-    private val curvesCommand: CurvesCommand by instance()
-    private val flashCommand: FlashCommand by instance()
-
+    private val rootCommand: OpenAquaEngineCommand,
+    private val subcommands: List<CliktCommand>,
+    private val json: Json,
+) {
     fun execute(args: Array<String>) {
-        try {
-            rootCommand
-                .subcommands(
-                    devicesCommand,
-                    telemetryCommand,
-                    curvesCommand,
-                    flashCommand,
-                ).main(args)
-        } catch (e: Throwable) {
-            if (e is CliktError && e.statusCode == 0) {
-                return
-            }
-            val errorResponse =
-                EngineErrorResponse(
-                    status = "error",
-                    error = e.message ?: "Unknown error",
-                    type = e::class.simpleName,
-                )
-            println(json.encodeToString(errorResponse))
-        }
+        rootCommand.subcommands(subcommands).main(args, json)
     }
 }

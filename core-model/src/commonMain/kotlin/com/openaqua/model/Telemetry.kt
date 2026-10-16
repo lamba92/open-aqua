@@ -1,5 +1,6 @@
 package com.openaqua.model
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -22,6 +23,7 @@ data class FanTelemetry(
 )
 
 @Serializable
+@SerialName("telemetry")
 data class DeviceTelemetry(
     val deviceId: String,
     val deviceType: DeviceType,
@@ -29,4 +31,4 @@ data class DeviceTelemetry(
     val sensors: List<SensorTelemetry>,
     val fans: List<FanTelemetry>,
     val flowRateDlH: Int? = null,
-)
+) : EngineResponse

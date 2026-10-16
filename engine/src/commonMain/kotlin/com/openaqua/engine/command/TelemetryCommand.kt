@@ -5,6 +5,8 @@ import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.openaqua.engine.hardware.HardwareController
+import com.openaqua.model.EngineResponse
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 class TelemetryCommand(
@@ -24,6 +26,6 @@ class TelemetryCommand(
                 ?: error("Device '$device' not found")
 
         val telemetry = controller.readTelemetry(target)
-        println(json.encodeToString(telemetry))
+        println(json.encodeToString<EngineResponse>(telemetry))
     }
 }

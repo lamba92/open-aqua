@@ -5,6 +5,7 @@ import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.openaqua.engine.hardware.HardwareController
+import com.openaqua.model.EngineResponse
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -25,6 +26,6 @@ class CurvesCommand(
                 ?: error("Device '$device' not found")
 
         val curves = controller.readCurves(target)
-        println(json.encodeToString(curves))
+        println(json.encodeToString<EngineResponse>(curves))
     }
 }

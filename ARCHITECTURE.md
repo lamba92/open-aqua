@@ -61,9 +61,9 @@ Aquacomputer hardware (OCTO, QUADRO, D5 NEXT, High Flow Next, Aquaero) is the go
 ```
 
 ### Module Breakdown
-- **`:core-model`**: Domain data models, device descriptors (`DeviceRegistry`), and curve math (`CurveMath`).
+- **`:core-model`**: Domain data models, polymorphic protocol responses (`EngineResponse`), device descriptors (`DeviceRegistry`), and curve math (`CurveMath`).
 - **`:engine`**: Core library containing Clikt commands, the `HardwareController` interface, and `engineCoreModule` (Kodein DI).
-- **`:engine:engine-mock`**: Standalone executable producing `open-aqua-engine-mock` with fake telemetry, devices, and curve responses for development on macOS/Linux.
+- **`:engine:engine-mock`**: Standalone executable producing `open-aqua-engine-mock` with fake telemetry, devices, curve responses, and a `fail` simulation command for development on macOS/Linux.
 - **`:engine:engine-prod`**: Production Linux executable producing `open-aqua-engine` with actual POSIX `/dev/hidraw` ioctls and `/sys/class/hwmon` reads.
 
 ---
@@ -102,8 +102,7 @@ data class SensorDescriptor(
 ### Supported Hardware Matrix
 
 | Device | Product ID | Fan Channels | Temp Sensors | Flow Sensor | Control Report Size |
-| :--- | :---: | :---: | :---: | :---: | :---: |
-| **OCTO** | `0xF011` | 8 Channels | 4 Physical + 16 Virtual | Optional (via channel) | `0x65F` (1631 bytes) |
+| :--- | :---: | :---: | :---: | :---: | :---: |\n| **OCTO** | `0xF011` | 8 Channels | 4 Physical + 16 Virtual | Optional (via channel) | `0x65F` (1631 bytes) |
 | **QUADRO** | `0xF00D` | 4 Channels | 4 Physical + 16 Virtual | 1 Dedicated | `0x3C1` (961 bytes) |
 | **D5 NEXT** | `0xF00E` | 2 (Pump + Fan) | 1 Liquid + 8 Virtual | Calculated / Virtual | `0x329` (809 bytes) |
 | **FARBWERK 360**| `0xF010` | None | 4 Physical + 16 Virtual | None | `0xB6` |
@@ -158,26 +157,27 @@ $$P_i = P_{min} + f(t_i, s) \cdot (P_{max} - P_{min})$$
 
 ## 6. Stdin / Stdout JSON Command Protocol
 
-Communication between `app-compose` and `open-aqua-engine` is 100% JSON over process invocation:
+All stdout responses from `open-aqua-engine` implement the polymorphic `@Serializable sealed interface EngineResponse` with a `"type"` discriminator:
 
 ### 1. Discover Devices
 ```bash
 $ open-aqua-engine devices
 ```
 ```json
-[
-  {
-    "id": "octo_0",
-    "device_type": "octo",
-    "name": "Aquacomputer OCTO",
-    "serial": "13235-54067",
-    "firmware": 1020,
-    "hidraw_path": "/dev/hidraw9",
-    "hwmon_path": "/sys/class/hwmon/hwmon4",
-    "fan_count": 8,
-    "temp_sensor_count": 4
-  }
-]
+{
+  "type": "devices",
+  "devices": [
+    {
+      "id": "octo_0",
+      "type": "OCTO",
+      "name": "Aquacomputer OCTO",
+      "serial": "13235-54067",
+      "firmwareVersion": 1020,
+      "hidrawPath": "/dev/hidraw9",
+      "hwmonPath": "/sys/class/hwmon/hwmon4"
+    }
+  ]
+}
 ```
 
 ### 2. Read Telemetry
@@ -186,17 +186,19 @@ $ open-aqua-engine telemetry --device octo_0
 ```
 ```json
 {
-  "device_id": "octo_0",
+  "type": "telemetry",
+  "deviceId": "octo_0",
+  "deviceType": "OCTO",
+  "name": "Aquacomputer OCTO",
   "sensors": [
-    {"id": "temp1", "name": "Sensor 1", "temp_c": 35.4},
-    {"id": "temp2", "name": "Sensor 2", "temp_c": null}
+    {"id": "temp1", "name": "Sensor 1", "tempCelsius": 35.4, "isVirtual": false},
+    {"id": "temp2", "name": "Sensor 2", "tempCelsius": null, "isVirtual": false}
   ],
   "fans": [
-    {"id": "fan1", "name": "Pump", "rpm": 2184, "power_w": 0.0, "pwm_pct": 19.0},
-    {"id": "fan2", "name": "Upper Rad", "rpm": 1367, "power_w": 1.13, "pwm_pct": 53.0},
-    {"id": "fan3", "name": "Front Rad", "rpm": 805, "power_w": 0.49, "pwm_pct": 20.0},
-    {"id": "fan4", "name": "Rear Exhaust", "rpm": 1023, "power_w": 0.21, "pwm_pct": 26.0}
-  ]
+    {"id": "fan1", "name": "Pump", "rpm": 2184, "powerWatts": 8.4, "voltageVolts": 12.0, "currentAmps": 0.7, "pwmPercent": 45.0},
+    {"id": "fan2", "name": "Upper Rad", "rpm": 1367, "powerWatts": 1.13, "voltageVolts": 12.0, "currentAmps": 0.1, "pwmPercent": 30.0}
+  ],
+  "flowRateDlH": null
 }
 ```
 
@@ -206,7 +208,8 @@ $ open-aqua-engine curves --device octo_0
 ```
 ```json
 {
-  "device_id": "octo_0",
+  "type": "curves",
+  "deviceId": "octo_0",
   "curves": {
     "fan4": [
       {"temp": 25.0, "pwm": 15.0},
@@ -230,11 +233,22 @@ $ open-aqua-engine flash points --device octo_0 --fan fan4 --points '[{"temp":25
 ```
 ```json
 {
+  "type": "flash",
   "status": "ok",
-  "device_id": "octo_0",
-  "fan": "fan4",
-  "bytes_written": 1631,
-  "verified": true
+  "deviceId": "octo_0",
+  "fanId": "fan4",
+  "bytesWritten": 1631,
+  "verified": true,
+  "error": null
+}
+```
+
+### 5. Error Response
+```json
+{
+  "type": "error",
+  "error": "Device 'octo_0' not found",
+  "exceptionType": "IllegalStateException"
 }
 ```
 

@@ -1,5 +1,6 @@
 package com.openaqua.engine.di
 
+import com.github.ajalt.clikt.core.CliktCommand
 import com.openaqua.engine.OpenAquaEngine
 import com.openaqua.engine.command.CurvesCommand
 import com.openaqua.engine.command.DevicesCommand
@@ -25,5 +26,19 @@ val engineCoreModule =
         bindSingleton { TelemetryCommand(instance(), instance()) }
         bindSingleton { CurvesCommand(instance(), instance()) }
         bindSingleton { FlashCommand(instance(), instance()) }
-        bindSingleton { OpenAquaEngine(di) }
+        bindSingleton<List<CliktCommand>>(tag = "coreSubcommands") {
+            listOf(
+                instance<DevicesCommand>(),
+                instance<TelemetryCommand>(),
+                instance<CurvesCommand>(),
+                instance<FlashCommand>(),
+            )
+        }
+        bindSingleton {
+            OpenAquaEngine(
+                rootCommand = instance(),
+                subcommands = instance(),
+                json = instance(),
+            )
+        }
     }
