@@ -21,7 +21,7 @@ private fun CoreCliktCommand.safeParse(argv: Array<String>) {
     }
 }
 
-fun openAquaEngine(
+fun runOpenAquaEngine(
     args: Array<String>,
     init: DI.MainBuilder.() -> Unit = {},
 ) {
