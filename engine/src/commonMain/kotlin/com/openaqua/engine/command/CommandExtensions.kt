@@ -6,6 +6,13 @@ import com.openaqua.model.EngineResponse
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
+val defaultJson =
+    Json {
+        prettyPrint = false
+        ignoreUnknownKeys = true
+        encodeDefaults = true
+    }
+
 val prettyJson =
     Json {
         prettyPrint = true
@@ -18,10 +25,10 @@ fun CliktCommand.isPretty(localPretty: Boolean): Boolean {
     return localPretty || parentPretty
 }
 
-fun Json.printResponse(
+fun printResponse(
     response: EngineResponse,
     pretty: Boolean,
 ) {
-    val serializer = if (pretty) prettyJson else this
+    val serializer = if (pretty) prettyJson else defaultJson
     println(serializer.encodeToString<EngineResponse>(response))
 }

@@ -6,11 +6,9 @@ import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.openaqua.engine.hardware.HardwareController
-import kotlinx.serialization.json.Json
 
 class CurvesCommand(
     private val controller: HardwareController,
-    private val json: Json,
 ) : CliktCommand(
         name = "curves",
     ) {
@@ -26,6 +24,6 @@ class CurvesCommand(
                 ?: error("Device '$device' not found")
 
         val curves = controller.readCurves(target)
-        json.printResponse(curves, isPretty(pretty))
+        printResponse(curves, isPretty(pretty))
     }
 }

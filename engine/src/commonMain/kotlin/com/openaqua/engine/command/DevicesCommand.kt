@@ -6,11 +6,9 @@ import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import com.openaqua.engine.hardware.HardwareController
 import com.openaqua.model.DevicesResponse
-import kotlinx.serialization.json.Json
 
 class DevicesCommand(
     private val controller: HardwareController,
-    private val json: Json,
 ) : CliktCommand(
         name = "devices",
     ) {
@@ -20,6 +18,6 @@ class DevicesCommand(
 
     override fun run() {
         val devices = controller.scanDevices()
-        json.printResponse(DevicesResponse(devices), isPretty(pretty))
+        printResponse(DevicesResponse(devices), isPretty(pretty))
     }
 }

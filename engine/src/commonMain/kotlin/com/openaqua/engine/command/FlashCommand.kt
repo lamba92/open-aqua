@@ -13,12 +13,10 @@ import com.openaqua.model.AutoCurveParams
 import com.openaqua.model.CurvePoint
 import com.openaqua.model.DetectedHardwareDevice
 import com.openaqua.model.FlashCurveResponse
-import kotlinx.serialization.json.Json
 
 abstract class BaseFlashCommand(
     name: String,
     protected val controller: HardwareController,
-    protected val json: Json,
 ) : CliktCommand(name = name) {
     private val device by option("--device", help = "Device ID").required()
     private val fan by option("--fan", help = "Fan channel ID (e.g. fan1)").required()
@@ -32,7 +30,7 @@ abstract class BaseFlashCommand(
                 ?: error("Device '$device' not found")
 
         val response = executeFlash(target, fan, sensor)
-        json.printResponse(response, isPretty(pretty))
+        printResponse(response, isPretty(pretty))
     }
 
     protected abstract fun executeFlash(
@@ -44,11 +42,9 @@ abstract class BaseFlashCommand(
 
 class FlashCurveParamsCommand(
     controller: HardwareController,
-    json: Json,
 ) : BaseFlashCommand(
         name = "curve-params",
         controller = controller,
-        json = json,
     ) {
     override fun help(context: Context): String = "Flash curve generated from parameters"
 
@@ -59,18 +55,16 @@ class FlashCurveParamsCommand(
         fan: String,
         sensor: Int?,
     ): FlashCurveResponse {
-        val params = json.decodeFromString<AutoCurveParams>(curveParams)
+        val params = defaultJson.decodeFromString<AutoCurveParams>(curveParams)
         return controller.flashCurve(target, fan, params, sensor)
     }
 }
 
 class FlashPointsCommand(
     controller: HardwareController,
-    json: Json,
 ) : BaseFlashCommand(
         name = "points",
         controller = controller,
-        json = json,
     ) {
     override fun help(context: Context): String = "Flash explicit 16-point curve"
 
@@ -81,14 +75,13 @@ class FlashPointsCommand(
         fan: String,
         sensor: Int?,
     ): FlashCurveResponse {
-        val pts = json.decodeFromString<List<CurvePoint>>(points)
+        val pts = defaultJson.decodeFromString<List<CurvePoint>>(points)
         return controller.flashCurve(target, fan, pts, sensor)
     }
 }
 
 class FlashCommand(
     controller: HardwareController,
-    json: Json,
 ) : CliktCommand(
         name = "flash",
     ) {
@@ -98,8 +91,8 @@ class FlashCommand(
 
     init {
         subcommands(
-            FlashCurveParamsCommand(controller, json),
-            FlashPointsCommand(controller, json),
+            FlashCurveParamsCommand(controller),
+            FlashPointsCommand(controller),
         )
     }
 
