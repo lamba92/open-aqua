@@ -7,7 +7,10 @@ import com.github.ajalt.clikt.core.parse
 import com.github.ajalt.clikt.core.subcommands
 import com.openaqua.engine.command.OpenAquaEngineCommand
 import com.openaqua.engine.command.printResponse
+import com.openaqua.engine.di.engineCoreModule
 import com.openaqua.model.ErrorResponse
+import org.kodein.di.DI
+import org.kodein.di.instance
 
 private fun CoreCliktCommand.safeParse(argv: Array<String>) {
     try {
@@ -19,10 +22,16 @@ private fun CoreCliktCommand.safeParse(argv: Array<String>) {
 }
 
 fun openAquaEngine(
-    rootCommand: OpenAquaEngineCommand,
-    subcommands: List<CliktCommand>,
     args: Array<String>,
+    init: DI.MainBuilder.() -> Unit = {},
 ) {
+    val di =
+        DI {
+            import(engineCoreModule)
+            init()
+        }
+    val rootCommand by di.instance<OpenAquaEngineCommand>()
+    val subcommands by di.instance<List<CliktCommand>>()
     val configuredRoot = rootCommand.subcommands(subcommands)
     try {
         configuredRoot.safeParse(args)
