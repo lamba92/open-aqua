@@ -3,6 +3,7 @@ package com.openaqua.engine.command
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.core.subcommands
+import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.int
@@ -11,9 +12,7 @@ import com.openaqua.engine.hardware.flashCurve
 import com.openaqua.model.AutoCurveParams
 import com.openaqua.model.CurvePoint
 import com.openaqua.model.DetectedHardwareDevice
-import com.openaqua.model.EngineResponse
 import com.openaqua.model.FlashCurveResponse
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 abstract class BaseFlashCommand(
@@ -24,6 +23,7 @@ abstract class BaseFlashCommand(
     private val device by option("--device", help = "Device ID").required()
     private val fan by option("--fan", help = "Fan channel ID (e.g. fan1)").required()
     private val sensor by option("--sensor", help = "Sensor index").int()
+    private val pretty by option("--pretty", help = "Pretty-print JSON output").flag(default = false)
 
     override fun run() {
         val devices = controller.scanDevices()
@@ -32,7 +32,7 @@ abstract class BaseFlashCommand(
                 ?: error("Device '$device' not found")
 
         val response = executeFlash(target, fan, sensor)
-        println(json.encodeToString<EngineResponse>(response))
+        json.printResponse(response, isPretty(pretty))
     }
 
     protected abstract fun executeFlash(
@@ -94,6 +94,8 @@ class FlashCommand(
     ) {
     override fun help(context: Context): String = "Flash fan curve to hardware"
 
+    private val pretty by option("--pretty", help = "Pretty-print JSON output").flag(default = false)
+
     init {
         subcommands(
             FlashCurveParamsCommand(controller, json),
@@ -101,5 +103,9 @@ class FlashCommand(
         )
     }
 
-    override fun run() = Unit
+    override fun run() {
+        if (pretty) {
+            currentContext.findOrSetObject { true }
+        }
+    }
 }

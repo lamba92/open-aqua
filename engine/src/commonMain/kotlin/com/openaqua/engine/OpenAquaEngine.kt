@@ -8,13 +8,14 @@ import com.github.ajalt.clikt.core.parse
 import com.github.ajalt.clikt.core.subcommands
 import com.github.ajalt.clikt.parsers.CommandLineParser
 import com.openaqua.engine.command.OpenAquaEngineCommand
-import com.openaqua.model.EngineResponse
+import com.openaqua.engine.command.printResponse
 import com.openaqua.model.ErrorResponse
 import kotlinx.serialization.json.Json
 
 inline fun <T : BaseCliktCommand<T>> CommandLineParser.main(
     command: T,
     json: Json,
+    argv: Array<String>,
     parseAndRun: T.() -> Unit,
 ) {
     try {
@@ -23,11 +24,12 @@ inline fun <T : BaseCliktCommand<T>> CommandLineParser.main(
         command.echoFormattedHelp(e)
         command.currentContext.exitProcess(e.statusCode)
     } catch (e: Throwable) {
-        val errorResponse: EngineResponse =
+        val errorResponse =
             ErrorResponse(
                 message = e.message ?: "Unknown error",
             )
-        println(json.encodeToString<EngineResponse>(errorResponse))
+        val pretty = argv.contains("--pretty")
+        json.printResponse(errorResponse, pretty)
         command.currentContext.exitProcess(1)
     }
 }
@@ -36,7 +38,7 @@ fun CoreCliktCommand.main(
     argv: Array<String>,
     json: Json,
 ) {
-    CommandLineParser.main(this, json) {
+    CommandLineParser.main(this, json, argv) {
         parse(argv)
     }
 }

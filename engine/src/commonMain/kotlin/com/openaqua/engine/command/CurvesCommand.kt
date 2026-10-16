@@ -2,11 +2,10 @@ package com.openaqua.engine.command
 
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.Context
+import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.openaqua.engine.hardware.HardwareController
-import com.openaqua.model.EngineResponse
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 class CurvesCommand(
@@ -18,6 +17,7 @@ class CurvesCommand(
     override fun help(context: Context): String = "Read active 16-point hardware curves"
 
     private val device by option("--device", help = "Device ID").required()
+    private val pretty by option("--pretty", help = "Pretty-print JSON output").flag(default = false)
 
     override fun run() {
         val devices = controller.scanDevices()
@@ -26,6 +26,6 @@ class CurvesCommand(
                 ?: error("Device '$device' not found")
 
         val curves = controller.readCurves(target)
-        println(json.encodeToString<EngineResponse>(curves))
+        json.printResponse(curves, isPretty(pretty))
     }
 }
