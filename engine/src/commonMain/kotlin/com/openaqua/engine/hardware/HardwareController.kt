@@ -28,3 +28,30 @@ fun HardwareController.flashCurve(
     params: AutoCurveParams,
     sensorIndex: Int? = null,
 ): FlashCurveResponse = flashCurve(device, fanId, params.toPoints(), sensorIndex)
+
+fun List<DetectedHardwareDevice>.findTarget(query: String): DetectedHardwareDevice? {
+    val trimmed = query.trim()
+    firstOrNull { it.id.equals(trimmed, ignoreCase = true) || it.alias.equals(trimmed, ignoreCase = true) }?.let { return it }
+
+    val noHyphenQuery = trimmed.replace("-", "").replace("_", "")
+    firstOrNull {
+        it.alias
+            .replace("-", "")
+            .replace("_", "")
+            .equals(noHyphenQuery, ignoreCase = true)
+    }?.let { return it }
+
+    val matchesByType =
+        filter {
+            val typeSlug =
+                it.type.name
+                    .lowercase()
+                    .replace('_', '-')
+            typeSlug.equals(trimmed, ignoreCase = true) || it.type.name.equals(trimmed, ignoreCase = true)
+        }
+    if (matchesByType.size == 1) {
+        return matchesByType.first()
+    }
+
+    return null
+}

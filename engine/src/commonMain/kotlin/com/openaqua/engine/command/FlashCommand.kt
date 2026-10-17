@@ -8,6 +8,7 @@ import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.int
 import com.openaqua.engine.hardware.HardwareController
+import com.openaqua.engine.hardware.findTarget
 import com.openaqua.engine.hardware.flashCurve
 import com.openaqua.model.AutoCurveParams
 import com.openaqua.model.CurvePoint
@@ -18,7 +19,7 @@ abstract class BaseFlashCommand(
     name: String,
     protected val controller: HardwareController,
 ) : CliktCommand(name = name) {
-    private val device by option("--device", help = "Device ID").required()
+    private val device by option("--device", help = "Device ID or alias (e.g. octo-1)").required()
     private val fan by option("--fan", help = "Fan channel ID (e.g. fan1)").required()
     private val sensor by option("--sensor", help = "Sensor index").int()
     private val pretty by option("--pretty", help = "Pretty-print JSON output").flag(default = false)
@@ -26,7 +27,7 @@ abstract class BaseFlashCommand(
     override fun run() {
         val devices = controller.scanDevices()
         val target =
-            devices.firstOrNull { it.id == device }
+            devices.findTarget(device)
                 ?: error("Device '$device' not found")
 
         val response = executeFlash(target, fan, sensor)

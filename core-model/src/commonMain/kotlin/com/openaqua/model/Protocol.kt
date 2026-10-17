@@ -15,6 +15,7 @@ data class DevicesResponse(
 @Serializable
 data class DetectedHardwareDevice(
     val id: String,
+    val alias: String,
     val type: DeviceType,
     val name: String,
     val serial: String? = null,

@@ -16,6 +16,7 @@ class MockHardwareController : HardwareController {
         listOf(
             DetectedHardwareDevice(
                 id = "mock_octo_0",
+                alias = "octo-1",
                 type = DeviceType.OCTO,
                 name = DeviceRegistry.OCTO.name,
                 serial = "13235-54067-MOCK",

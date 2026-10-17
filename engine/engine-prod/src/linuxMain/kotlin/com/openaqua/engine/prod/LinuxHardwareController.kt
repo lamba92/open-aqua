@@ -3,12 +3,12 @@ package com.openaqua.engine.prod
 import com.openaqua.engine.hardware.HardwareController
 import com.openaqua.engine.util.crc16Usb
 import com.openaqua.engine.util.listDirectory
-import com.openaqua.engine.util.readDouble
-import com.openaqua.engine.util.readFile
-import com.openaqua.engine.util.readInt
+import com.openaqua.engine.util.readText
+import com.openaqua.engine.util.readTextOrNull
 import com.openaqua.model.CurvePoint
 import com.openaqua.model.DetectedHardwareDevice
 import com.openaqua.model.DeviceCurves
+import com.openaqua.model.DeviceDescriptor
 import com.openaqua.model.DeviceRegistry
 import com.openaqua.model.DeviceTelemetry
 import com.openaqua.model.FanTelemetry
@@ -19,6 +19,7 @@ import kotlinx.cinterop.allocArray
 import kotlinx.cinterop.get
 import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.set
+import kotlinx.io.files.Path
 import platform.posix.O_RDWR
 import platform.posix.close
 import platform.posix.ioctl
@@ -28,60 +29,89 @@ import kotlin.math.abs
 import kotlin.math.round
 import kotlin.math.roundToInt
 
+private data class ScannedHardwareNode(
+    val id: String,
+    val descriptor: DeviceDescriptor,
+    val serial: String?,
+    val hidrawPath: String,
+    val hwmonPath: String?,
+)
+
 class LinuxHardwareController : HardwareController {
-    override fun scanDevices(): List<DetectedHardwareDevice> =
-        buildList {
-            val hidrawDirs = listDirectory("/sys/class/hidraw")
+    override fun scanDevices(): List<DetectedHardwareDevice> {
+        val scanned = mutableListOf<ScannedHardwareNode>()
+        val hidrawDirs = Path(SYSFS_HIDRAW_DIR).listDirectory()
 
-            for (entry in hidrawDirs.sorted()) {
-                val ueventPath = "/sys/class/hidraw/$entry/device/uevent"
-                val content = readFile(ueventPath) ?: continue
+        for (entry in hidrawDirs.sortedBy { it.name }) {
+            val entryName = entry.name
+            val ueventPath = hidrawUeventPath(entryName)
+            val content = Path(ueventPath).readTextOrNull() ?: continue
 
-                var vendorId: Int? = null
-                var productId: Int? = null
-                var hidUniq: String? = null
+            var vendorId: Int? = null
+            var productId: Int? = null
+            var hidUniq: String? = null
 
-                for (line in content.lines()) {
-                    val trimmed = line.trim()
-                    when {
-                        trimmed.startsWith("HID_ID=") -> {
-                            val parts = trimmed.substringAfter("HID_ID=").split(":")
-                            if (parts.size >= 3) {
-                                vendorId = parts[1].toIntOrNull(16)
-                                productId = parts[2].toIntOrNull(16)
-                            }
-                        }
-                        trimmed.startsWith("HID_UNIQ=") -> {
-                            hidUniq = trimmed.substringAfter("HID_UNIQ=").trim().ifEmpty { null }
+            for (line in content.lines()) {
+                val trimmed = line.trim()
+                when {
+                    trimmed.startsWith(UEVENT_HID_ID_PREFIX) -> {
+                        val parts = trimmed.substringAfter(UEVENT_HID_ID_PREFIX).split(UEVENT_DELIMITER)
+                        if (parts.size >= 3) {
+                            vendorId = parts[1].toIntOrNull(16)
+                            productId = parts[2].toIntOrNull(16)
                         }
                     }
+                    trimmed.startsWith(UEVENT_HID_UNIQ_PREFIX) -> {
+                        hidUniq = trimmed.substringAfter(UEVENT_HID_UNIQ_PREFIX).trim().ifEmpty { null }
+                    }
                 }
-
-                if (vendorId != DeviceRegistry.AQUACOMPUTER_VENDOR_ID || productId == null) {
-                    continue
-                }
-
-                val descriptor = DeviceRegistry.findByProductId(productId) ?: continue
-                val id = hidUniq ?: entry
-
-                val hwmonSubdir = "/sys/class/hidraw/$entry/device/hwmon"
-                val hwmonEntries = listDirectory(hwmonSubdir)
-                val hwmonName = hwmonEntries.firstOrNull { it.startsWith("hwmon") }
-                val hwmonPath = hwmonName?.let { "$hwmonSubdir/$it" }
-
-                add(
-                    DetectedHardwareDevice(
-                        id = id,
-                        type = descriptor.type,
-                        name = descriptor.name,
-                        serial = hidUniq,
-                        firmwareVersion = null,
-                        hidrawPath = "/dev/$entry",
-                        hwmonPath = hwmonPath,
-                    ),
-                )
             }
+
+            if (vendorId != DeviceRegistry.AQUACOMPUTER_VENDOR_ID || productId == null) {
+                continue
+            }
+
+            val descriptor = DeviceRegistry.findByProductId(productId) ?: continue
+            val id = hidUniq ?: entryName
+
+            val hwmonSubdir = hidrawHwmonSubdir(entryName)
+
+            scanned.add(
+                ScannedHardwareNode(
+                    id = id,
+                    descriptor = descriptor,
+                    serial = hidUniq,
+                    hidrawPath = hidrawDevPath(entryName),
+                    hwmonPath =
+                        Path(hwmonSubdir)
+                            .listDirectory()
+                            .firstOrNull { it.name.startsWith(HWMON_PREFIX) }
+                            ?.toString(),
+                ),
+            )
         }
+
+        return scanned
+            .sortedWith(
+                compareBy<ScannedHardwareNode> { it.descriptor.type.name }
+                    .thenBy { it.serial ?: it.hidrawPath },
+            ).groupBy { it.descriptor.type }
+            .flatMap { (type, nodes) ->
+                val typePrefix = type.name.lowercase().replace('_', '-')
+                nodes.mapIndexed { index, node ->
+                    DetectedHardwareDevice(
+                        id = node.id,
+                        alias = "$typePrefix-${index + 1}",
+                        type = node.descriptor.type,
+                        name = node.descriptor.name,
+                        serial = node.serial,
+                        firmwareVersion = null,
+                        hidrawPath = node.hidrawPath,
+                        hwmonPath = node.hwmonPath,
+                    )
+                }
+            }
+    }
 
     override fun readTelemetry(device: DetectedHardwareDevice): DeviceTelemetry {
         val descriptor =
@@ -93,11 +123,48 @@ class LinuxHardwareController : HardwareController {
         val fans =
             descriptor.fanChannels.map { fan ->
                 val idx = fan.hwmonIndex
-                val rpm = if (hwmon != null) readInt("$hwmon/fan${idx}_input", 0) else 0
-                val powerWatts = if (hwmon != null) readDouble("$hwmon/power${idx}_input", 0.0) / 1_000_000.0 else 0.0
-                val voltageVolts = if (hwmon != null) readDouble("$hwmon/in${idx - 1}_input", 0.0) / 1000.0 else 0.0
-                val currentAmps = if (hwmon != null) readDouble("$hwmon/curr${idx}_input", 0.0) / 1000.0 else 0.0
-                val rawPwm = if (hwmon != null) readInt("$hwmon/pwm$idx", -1) else -1
+                val rpm =
+                    when {
+                        hwmon != null ->
+                            Path("$hwmon/$HWMON_FAN_PREFIX${idx}$HWMON_INPUT_SUFFIX")
+                                .readTextOrNull()
+                                ?.trim()
+                                ?.toIntOrNull() ?: 0
+                        else -> 0
+                    }
+                val powerWatts =
+                    when {
+                        hwmon != null ->
+                            (Path("$hwmon/$HWMON_POWER_PREFIX${idx}$HWMON_INPUT_SUFFIX")
+                                .readTextOrNull()
+                                ?.trim()
+                                ?.toDoubleOrNull() ?: 0.0) / 1_000_000.0
+                        else -> 0.0
+                    }
+                val voltageVolts =
+                    when {
+                        hwmon != null ->
+                            (Path("$hwmon/$HWMON_IN_PREFIX${idx - 1}$HWMON_INPUT_SUFFIX")
+                                .readTextOrNull()
+                                ?.trim()
+                                ?.toDoubleOrNull() ?: 0.0) / 1000.0
+                        else -> 0.0
+                    }
+                val currentAmps =
+                    when {
+                        hwmon != null ->
+                            (Path("$hwmon/$HWMON_CURR_PREFIX${idx}$HWMON_INPUT_SUFFIX")
+                                .readTextOrNull()
+                                ?.trim()
+                                ?.toDoubleOrNull() ?: 0.0) / 1000.0
+                        else -> 0.0
+                    }
+                val rawPwm =
+                    if (hwmon != null) {
+                        Path("$hwmon/$HWMON_PWM_PREFIX$idx").readTextOrNull()?.trim()?.toIntOrNull() ?: -1
+                    } else {
+                        -1
+                    }
                 val pwmPercent = if (rawPwm >= 0) round((rawPwm * 100.0 / 255.0) * 10.0) / 10.0 else null
 
                 FanTelemetry(
@@ -113,7 +180,15 @@ class LinuxHardwareController : HardwareController {
 
         val sensors =
             descriptor.tempSensors.map { sensor ->
-                val rawMilli = if (hwmon != null) readFile("$hwmon/temp${sensor.hwmonIndex}_input")?.trim()?.toIntOrNull() else null
+                val rawMilli =
+                    if (hwmon != null) {
+                        Path("$hwmon/$HWMON_TEMP_PREFIX${sensor.hwmonIndex}$HWMON_INPUT_SUFFIX")
+                            .readTextOrNull()
+                            ?.trim()
+                            ?.toIntOrNull()
+                    } else {
+                        null
+                    }
                 val tempCelsius = rawMilli?.let { round((it.toDouble() / 1000.0) * 10.0) / 10.0 }
 
                 SensorTelemetry(
@@ -126,7 +201,7 @@ class LinuxHardwareController : HardwareController {
 
         val flowRateDlH =
             if (descriptor.hasFlowSensor && hwmon != null) {
-                readInt("$hwmon/fan5_input", 0)
+                Path("$hwmon/$HWMON_FLOW_SENSOR_FILE").readTextOrNull()?.trim()?.toIntOrNull()
             } else {
                 null
             }
@@ -228,7 +303,7 @@ class LinuxHardwareController : HardwareController {
         }
 
         return FlashCurveResponse(
-            status = "ok",
+            status = STATUS_OK,
             deviceId = device.id,
             fanId = fanId,
             bytesWritten = report.size,
