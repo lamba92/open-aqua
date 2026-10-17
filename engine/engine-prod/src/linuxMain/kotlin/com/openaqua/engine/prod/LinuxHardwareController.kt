@@ -3,7 +3,6 @@ package com.openaqua.engine.prod
 import com.openaqua.engine.hardware.HardwareController
 import com.openaqua.engine.util.crc16Usb
 import com.openaqua.engine.util.listDirectory
-import com.openaqua.engine.util.readText
 import com.openaqua.engine.util.readTextOrNull
 import com.openaqua.model.CurvePoint
 import com.openaqua.model.DetectedHardwareDevice
@@ -135,28 +134,34 @@ class LinuxHardwareController : HardwareController {
                 val powerWatts =
                     when {
                         hwmon != null ->
-                            (Path("$hwmon/$HWMON_POWER_PREFIX${idx}$HWMON_INPUT_SUFFIX")
-                                .readTextOrNull()
-                                ?.trim()
-                                ?.toDoubleOrNull() ?: 0.0) / 1_000_000.0
+                            (
+                                Path("$hwmon/$HWMON_POWER_PREFIX${idx}$HWMON_INPUT_SUFFIX")
+                                    .readTextOrNull()
+                                    ?.trim()
+                                    ?.toDoubleOrNull() ?: 0.0
+                            ) / 1_000_000.0
                         else -> 0.0
                     }
                 val voltageVolts =
                     when {
                         hwmon != null ->
-                            (Path("$hwmon/$HWMON_IN_PREFIX${idx - 1}$HWMON_INPUT_SUFFIX")
-                                .readTextOrNull()
-                                ?.trim()
-                                ?.toDoubleOrNull() ?: 0.0) / 1000.0
+                            (
+                                Path("$hwmon/$HWMON_IN_PREFIX${idx - 1}$HWMON_INPUT_SUFFIX")
+                                    .readTextOrNull()
+                                    ?.trim()
+                                    ?.toDoubleOrNull() ?: 0.0
+                            ) / 1000.0
                         else -> 0.0
                     }
                 val currentAmps =
                     when {
                         hwmon != null ->
-                            (Path("$hwmon/$HWMON_CURR_PREFIX${idx}$HWMON_INPUT_SUFFIX")
-                                .readTextOrNull()
-                                ?.trim()
-                                ?.toDoubleOrNull() ?: 0.0) / 1000.0
+                            (
+                                Path("$hwmon/$HWMON_CURR_PREFIX${idx}$HWMON_INPUT_SUFFIX")
+                                    .readTextOrNull()
+                                    ?.trim()
+                                    ?.toDoubleOrNull() ?: 0.0
+                            ) / 1000.0
                         else -> 0.0
                     }
                 val rawPwm =

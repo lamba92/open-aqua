@@ -10,16 +10,22 @@ fun Path.readText(fileSystem: FileSystem = SystemFileSystem): String = fileSyste
 
 fun Path.readTextOrNull(fileSystem: FileSystem = SystemFileSystem): String? =
     try {
-        if (!fileSystem.exists(this)) null
-        else fileSystem.source(this).buffered().use { it.readString() }
+        if (!fileSystem.exists(this)) {
+            null
+        } else {
+            fileSystem.source(this).buffered().use { it.readString() }
+        }
     } catch (_: Exception) {
         null
     }
 
 fun Path.listDirectory(fileSystem: FileSystem = SystemFileSystem): List<Path> =
-    if (!fileSystem.exists(this)) emptyList()
-    else try {
-        fileSystem.list(this).toList()
-    } catch (_: Exception) {
+    if (!fileSystem.exists(this)) {
         emptyList()
+    } else {
+        try {
+            fileSystem.list(this).toList()
+        } catch (_: Exception) {
+            emptyList()
+        }
     }

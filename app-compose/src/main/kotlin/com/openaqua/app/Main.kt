@@ -9,22 +9,23 @@ import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import com.openaqua.app.model.AppState
 import com.openaqua.app.theme.OpenAquaTheme
-import com.openaqua.app.ui.MainScreen
 
-fun main() = application {
-    val windowState = rememberWindowState(
-        size = DpSize(1380.dp, 880.dp)
-    )
+fun main() =
+    application {
+        val windowState =
+            rememberWindowState(
+                size = DpSize(1380.dp, 880.dp),
+            )
 
-    Window(
-        onCloseRequest = ::exitApplication,
-        state = windowState,
-        title = "OpenAqua - Hydro-Telemetry Cockpit"
-    ) {
-        val appState = remember { AppState() }
+        Window(
+            onCloseRequest = ::exitApplication,
+            state = windowState,
+            title = "OpenAqua - Hydro-Telemetry Cockpit",
+        ) {
+            val appState = remember { AppState() }
 
-        OpenAquaTheme {
-            Text("Hello World!")
+            OpenAquaTheme {
+                Text("Hello World!")
+            }
         }
     }
-}
