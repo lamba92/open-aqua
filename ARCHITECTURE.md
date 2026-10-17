@@ -49,9 +49,9 @@ Aquacomputer hardware (OCTO, QUADRO, D5 NEXT, High Flow Next, Aquaero) is the go
 │   ┌────────────────────────────────────────────────────────────────┐   │
 │   │               :engine (Core Multiplatform Library)             │   │
 │   │      Clikt Commands + HardwareController Contract + DI Module  │   │
-│   └───────────────────────┬────────────────────────┬───────────────┘   │
-│                           │                        │                   │
-│                           ▼                        ▼                   │
+│   └─────────────────────────┬────────────────────────┬─────────────┘   │
+│                             │                        │                 │
+│                             ▼                        ▼                 │
 │   ┌──────────────────────────────┐ ┌───────────────────────────────┐   │
 │   │     :engine:engine-mock      │ │      :engine:engine-prod      │   │
 │   │   MockHardwareController     │ │    LinuxHardwareController    │   │
@@ -75,37 +75,40 @@ All Aquacomputer USB devices share vendor ID `0x0C70` and communicate via USB HI
 ### Device Descriptor Schema
 ```kotlin
 data class DeviceDescriptor(
-    val id: String,                // "octo", "quadro", "d5next"
-    val name: String,              // "Aquacomputer OCTO"
-    val usbProductId: Int,         // 0xF011 (OCTO), 0xF00D (QUADRO), 0xF00E (D5 NEXT)
-    val ctrlReportLength: Int,     // 0x65F (OCTO), 0x3C1 (QUADRO), 0x329 (D5 NEXT)
-    val fanChannels: List<FanChannelDescriptor>,
+    val type: DeviceType,
+    val name: String,
+    val vendorId: Int = 0x0C70,
+    val productId: Int,
+    val ctrlReportLength: Int,
+    val statusReportLength: Int,
+    val fanChannels: List<FanDescriptor>,
     val tempSensors: List<SensorDescriptor>,
+    val tempCtrlOffset: Int? = null,
     val hasFlowSensor: Boolean = false,
-    val hasRgbpx: Boolean = false
+    val hasRgbpx: Boolean = false,
 )
 
-data class FanChannelDescriptor(
+data class FanDescriptor(
     val id: String,                // "fan1", "fan2", etc.
-    val defaultName: String,       // "Pump", "Upper Radiator", etc.
     val ctrlOffset: Int,           // Base byte offset in Report 0x03 (e.g. 0x5A, 0xAF...)
     val hwmonIndex: Int            // sysfs fanX / pwmX index
 )
 
 data class SensorDescriptor(
     val id: String,                // "temp1", "temp2"
-    val defaultName: String,       // "Sensor 1", "Coolant Temp"
-    val hwmonIndex: Int
+    val hwmonIndex: Int,           // sysfs tempX index
+    val isVirtual: Boolean = false
 )
 ```
 
 ### Supported Hardware Matrix
 
-| Device | Product ID | Fan Channels | Temp Sensors | Flow Sensor | Control Report Size |
-| :--- | :---: | :---: | :---: | :---: | :---: |\n| **OCTO** | `0xF011` | 8 Channels | 4 Physical + 16 Virtual | Optional (via channel) | `0x65F` (1631 bytes) |
-| **QUADRO** | `0xF00D` | 4 Channels | 4 Physical + 16 Virtual | 1 Dedicated | `0x3C1` (961 bytes) |
-| **D5 NEXT** | `0xF00E` | 2 (Pump + Fan) | 1 Liquid + 8 Virtual | Calculated / Virtual | `0x329` (809 bytes) |
-| **FARBWERK 360**| `0xF010` | None | 4 Physical + 16 Virtual | None | `0xB6` |
+| Device | Product ID | Fan Channels | Temp Sensors | Flow Sensor | Control Report Size | Temp Ctrl Offset |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **OCTO** | `0xF011` | 8 Channels | 4 Physical + 16 Virtual | Optional (via channel) | `0x65F` (1631 bytes) | `0x0A` |
+| **QUADRO** | `0xF00D` | 4 Channels | 4 Physical + 16 Virtual | 1 Dedicated | `0x3C1` (961 bytes) | `0x0A` |
+| **D5 NEXT** | `0xF00E` | 2 (Pump + Fan) | 1 Liquid + 8 Virtual | Calculated / Virtual | `0x329` (809 bytes) | `0x2D` |
+| **FARBWERK 360**| `0xF010` | None | 4 Physical + 16 Virtual | None | `0xB6` | `0x0A` |
 
 ---
 
@@ -119,7 +122,7 @@ Inside each fan channel's block in Control Report `0x03`, Aquacomputer devices s
 ### 2. Checksum Algorithm (CRC-16-USB)
 Before sending the report back to the device, a 16-bit CRC must be appended to the last two bytes of the report:
 - **Polynomial**: `0x8005` (reversed: `0xA001`, `x^16 + x^15 + x^2 + 1`)
-- **Initial value**: `0xFFFF`
+- - **Initial value**: `0xFFFF`
 - **XOR Out**: `0xFFFF`
 - **Range**: Calculated over bytes `1` through `reportLength - 2`.
 
@@ -145,7 +148,7 @@ Rather than forcing users to manually enter 16 separate coordinate numbers, Open
    - **$s = 0.0$ (Linear)**: $f(t) = t$
    - **$s > 0.0$ (Progressive / Exponential)**: $f(t) = t^{\,1 + s}$  
      *(Keeps fans whisper-quiet at low-to-medium load, ramps up aggressively only near the temperature ceiling)*
-   - **$s < 0.0$ (Digressive / Logarithmic)**: $f(t) = 1 - (1 - t)^{\,1 + |s|}$  
+   - **$s < 0.0$ (Digressive / Logarithmic)**: $f(t) = 1 - (1 - t)^{\\,1 + |s|}$  
      *(Ramps up quickly at early temperatures to establish solid airflow baseline, then flattens out)*
 
 ### Formula for Point $i \in [0, 15]$:
@@ -191,12 +194,12 @@ $ open-aqua-engine telemetry --device octo_0
   "deviceType": "OCTO",
   "name": "Aquacomputer OCTO",
   "sensors": [
-    {"id": "temp1", "name": "Sensor 1", "tempCelsius": 35.4, "isVirtual": false},
-    {"id": "temp2", "name": "Sensor 2", "tempCelsius": null, "isVirtual": false}
+    {"id": "temp1", "tempCelsius": 35.4, "offsetCelsius": 0.0, "isVirtual": false},
+    {"id": "temp2", "tempCelsius": null, "offsetCelsius": null, "isVirtual": false}
   ],
   "fans": [
-    {"id": "fan1", "name": "Pump", "rpm": 2184, "powerWatts": 8.4, "voltageVolts": 12.0, "currentAmps": 0.7, "pwmPercent": 45.0},
-    {"id": "fan2", "name": "Upper Rad", "rpm": 1367, "powerWatts": 1.13, "voltageVolts": 12.0, "currentAmps": 0.1, "pwmPercent": 30.0}
+    {"id": "fan1", "rpm": 2184, "powerWatts": 8.4, "voltageVolts": 12.0, "currentAmps": 0.7, "pwmPercent": 45.0},
+    {"id": "fan2", "rpm": 1367, "powerWatts": 1.13, "voltageVolts": 12.0, "currentAmps": 0.1, "pwmPercent": 30.0}
   ],
   "flowRateDlH": null
 }
@@ -243,7 +246,23 @@ $ open-aqua-engine flash points --device octo_0 --fan fan4 --points '[{"temp":25
 }
 ```
 
-### 5. Error Response
+### 5. Set Sensor Calibration Offset
+```bash
+$ open-aqua-engine sensor-offset --device octo_0 --sensor temp1 --offset 0.5
+```
+```json
+{
+  "type": "set-sensor-offset",
+  "status": "ok",
+  "deviceId": "octo_0",
+  "sensorId": "temp1",
+  "offsetCelsius": 0.5,
+  "verified": true,
+  "error": null
+}
+```
+
+### 6. Error Response
 ```json
 {
   "type": "error",

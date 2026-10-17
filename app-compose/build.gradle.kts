@@ -10,6 +10,13 @@ kotlin {
     jvmToolchain(21)
 }
 
+ktlint {
+    filter {
+        exclude("**/build/**")
+        exclude("**/generated/**")
+    }
+}
+
 dependencies {
     implementation(projects.coreModel)
     when (SupportedTargets.getCurrent()) {

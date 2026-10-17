@@ -9,6 +9,7 @@ import androidx.compose.runtime.setValue
 import com.openaqua.model.AutoCurveParams
 import com.openaqua.model.CurveMath
 import com.openaqua.model.CurvePoint
+import com.openaqua.model.SensorTelemetry
 
 enum class NavDestination(
     val label: String,
@@ -55,7 +56,7 @@ data class NtcSensorState(
     val id: String,
     val pinLabel: String,
     val name: String,
-    val currentTemp: Double,
+    var currentTemp: Double,
     var calibrationOffset: Double = 0.0,
 )
 
@@ -138,4 +139,13 @@ class AppState {
 
     val pendingDirtyCount: Int
         get() = channels.count { it.isDirty }
+
+    fun updateSensorsFromTelemetry(sensorTelemetries: List<SensorTelemetry>) {
+        sensorTelemetries.forEach { telemetry ->
+            ntcSensors.firstOrNull { it.id == telemetry.id }?.let { sensor ->
+                telemetry.tempCelsius?.let { sensor.currentTemp = it }
+                telemetry.offsetCelsius?.let { sensor.calibrationOffset = it }
+            }
+        }
+    }
 }

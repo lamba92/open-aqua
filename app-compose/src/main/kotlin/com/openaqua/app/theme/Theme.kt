@@ -26,6 +26,7 @@ private val darkColorScheme =
     )
 
 @Composable
+@Suppress("ktlint:standard:function-naming")
 fun OpenAquaTheme(content: @Composable () -> Unit) {
     MaterialTheme(
         colorScheme = darkColorScheme,

@@ -52,6 +52,17 @@ data class FlashCurveResponse(
 ) : EngineResponse
 
 @Serializable
+@SerialName("set-sensor-offset")
+data class SetSensorOffsetResponse(
+    val status: String,
+    val deviceId: String,
+    val sensorId: String,
+    val offsetCelsius: Double,
+    val verified: Boolean = true,
+    val error: String? = null,
+) : EngineResponse
+
+@Serializable
 @SerialName("error")
 data class ErrorResponse(
     val message: String,

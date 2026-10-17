@@ -6,6 +6,7 @@ import com.openaqua.model.DetectedHardwareDevice
 import com.openaqua.model.DeviceCurves
 import com.openaqua.model.DeviceTelemetry
 import com.openaqua.model.FlashCurveResponse
+import com.openaqua.model.SetSensorOffsetResponse
 
 interface HardwareController {
     fun scanDevices(): List<DetectedHardwareDevice>
@@ -20,6 +21,12 @@ interface HardwareController {
         points: List<CurvePoint>,
         sensorIndex: Int? = null,
     ): FlashCurveResponse
+
+    fun setSensorOffset(
+        device: DetectedHardwareDevice,
+        sensorId: String,
+        offsetCelsius: Double,
+    ): SetSensorOffsetResponse
 }
 
 fun HardwareController.flashCurve(

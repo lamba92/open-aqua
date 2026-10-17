@@ -1,6 +1,6 @@
 package com.openaqua.engine.prod
 
-/**
+/*
  * Linux sysfs and hwmon subsystem constants and path builders.
  *
  * In Linux, the `/sys` filesystem (sysfs) is a pseudo-filesystem provided by the Linux kernel
@@ -105,6 +105,12 @@ internal const val HWMON_TEMP_PREFIX = "temp"
  * Standard Linux hwmon suffix for read-only sensor input values.
  */
 internal const val HWMON_INPUT_SUFFIX = "_input"
+
+/**
+ * Standard Linux hwmon suffix for temperature sensor offset/calibration values (`temp[1-*]_offset`).
+ * Units: Millidegrees Celsius (m°C) in the kernel; converted to °C by dividing by 1,000.
+ */
+internal const val HWMON_OFFSET_SUFFIX = "_offset"
 
 /**
  * For Aquacomputer devices equipped with a coolant flow sensor (e.g. High Flow NEXT, D5 NEXT),

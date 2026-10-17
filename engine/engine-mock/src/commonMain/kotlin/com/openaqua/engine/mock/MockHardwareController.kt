@@ -10,6 +10,7 @@ import com.openaqua.model.DeviceType
 import com.openaqua.model.FanTelemetry
 import com.openaqua.model.FlashCurveResponse
 import com.openaqua.model.SensorTelemetry
+import com.openaqua.model.SetSensorOffsetResponse
 
 class MockHardwareController : HardwareController {
     override fun scanDevices(): List<DetectedHardwareDevice> =
@@ -33,16 +34,15 @@ class MockHardwareController : HardwareController {
             name = device.name,
             sensors =
                 listOf(
-                    SensorTelemetry("temp1", "Coolant Temp", 32.5),
-                    SensorTelemetry("temp2", "Ambient Air", 22.8),
-                    SensorTelemetry("temp3", "Case Exhaust", 27.4),
-                    SensorTelemetry("temp4", "VRM Sensor", 43.1),
+                    SensorTelemetry("temp1", 32.5, 0.0),
+                    SensorTelemetry("temp2", 22.8, -0.2),
+                    SensorTelemetry("temp3", 27.4, 0.0),
+                    SensorTelemetry("temp4", 43.1, 0.5),
                 ),
             fans =
                 listOf(
                     FanTelemetry(
                         id = "fan1",
-                        name = "Fan 1 (Pump)",
                         rpm = 2450,
                         powerWatts = 8.4,
                         voltageVolts = 12.0,
@@ -51,7 +51,6 @@ class MockHardwareController : HardwareController {
                     ),
                     FanTelemetry(
                         id = "fan2",
-                        name = "Fan 2 (Upper)",
                         rpm = 850,
                         powerWatts = 1.2,
                         voltageVolts = 12.0,
@@ -60,7 +59,6 @@ class MockHardwareController : HardwareController {
                     ),
                     FanTelemetry(
                         id = "fan3",
-                        name = "Fan 3 (Front)",
                         rpm = 920,
                         powerWatts = 1.6,
                         voltageVolts = 12.0,
@@ -69,7 +67,6 @@ class MockHardwareController : HardwareController {
                     ),
                     FanTelemetry(
                         id = "fan4",
-                        name = "Fan 4 (Rear)",
                         rpm = 650,
                         powerWatts = 0.8,
                         voltageVolts = 12.0,
@@ -78,7 +75,6 @@ class MockHardwareController : HardwareController {
                     ),
                     FanTelemetry(
                         id = "fan5",
-                        name = "Fan 5",
                         rpm = 0,
                         powerWatts = 0.0,
                         voltageVolts = 0.0,
@@ -87,7 +83,6 @@ class MockHardwareController : HardwareController {
                     ),
                     FanTelemetry(
                         id = "fan6",
-                        name = "Fan 6",
                         rpm = 0,
                         powerWatts = 0.0,
                         voltageVolts = 0.0,
@@ -96,7 +91,6 @@ class MockHardwareController : HardwareController {
                     ),
                     FanTelemetry(
                         id = "fan7",
-                        name = "Fan 7",
                         rpm = 0,
                         powerWatts = 0.0,
                         voltageVolts = 0.0,
@@ -105,7 +99,6 @@ class MockHardwareController : HardwareController {
                     ),
                     FanTelemetry(
                         id = "fan8",
-                        name = "Fan 8",
                         rpm = 0,
                         powerWatts = 0.0,
                         voltageVolts = 0.0,
@@ -139,6 +132,19 @@ class MockHardwareController : HardwareController {
             deviceId = device.id,
             fanId = fanId,
             bytesWritten = DeviceRegistry.OCTO.ctrlReportLength,
+            verified = true,
+        )
+
+    override fun setSensorOffset(
+        device: DetectedHardwareDevice,
+        sensorId: String,
+        offsetCelsius: Double,
+    ): SetSensorOffsetResponse =
+        SetSensorOffsetResponse(
+            status = "ok",
+            deviceId = device.id,
+            sensorId = sensorId,
+            offsetCelsius = offsetCelsius,
             verified = true,
         )
 }

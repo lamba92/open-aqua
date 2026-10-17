@@ -17,7 +17,6 @@ enum class DeviceType(
 @Serializable
 data class FanDescriptor(
     val id: String,
-    val name: String,
     val ctrlOffset: Int,
     val hwmonIndex: Int,
 )
@@ -25,7 +24,6 @@ data class FanDescriptor(
 @Serializable
 data class SensorDescriptor(
     val id: String,
-    val name: String,
     val hwmonIndex: Int,
     val isVirtual: Boolean = false,
 )
@@ -40,6 +38,7 @@ data class DeviceDescriptor(
     val statusReportLength: Int,
     val fanChannels: List<FanDescriptor>,
     val tempSensors: List<SensorDescriptor>,
+    val tempCtrlOffset: Int? = null,
     val hasFlowSensor: Boolean = false,
     val hasRgbpx: Boolean = false,
 )
@@ -56,22 +55,23 @@ object DeviceRegistry {
             statusReportLength = 0x147,
             fanChannels =
                 listOf(
-                    FanDescriptor("fan1", "Fan 1 (Pump)", 0x5A, 1),
-                    FanDescriptor("fan2", "Fan 2 (Upper)", 0xAF, 2),
-                    FanDescriptor("fan3", "Fan 3 (Front)", 0x104, 3),
-                    FanDescriptor("fan4", "Fan 4 (Rear)", 0x159, 4),
-                    FanDescriptor("fan5", "Fan 5", 0x1AE, 5),
-                    FanDescriptor("fan6", "Fan 6", 0x203, 6),
-                    FanDescriptor("fan7", "Fan 7", 0x258, 7),
-                    FanDescriptor("fan8", "Fan 8", 0x2AD, 8),
+                    FanDescriptor("fan1", 0x5A, 1),
+                    FanDescriptor("fan2", 0xAF, 2),
+                    FanDescriptor("fan3", 0x104, 3),
+                    FanDescriptor("fan4", 0x159, 4),
+                    FanDescriptor("fan5", 0x1AE, 5),
+                    FanDescriptor("fan6", 0x203, 6),
+                    FanDescriptor("fan7", 0x258, 7),
+                    FanDescriptor("fan8", 0x2AD, 8),
                 ),
             tempSensors =
                 listOf(
-                    SensorDescriptor("temp1", "Sensor 1", 1),
-                    SensorDescriptor("temp2", "Sensor 2", 2),
-                    SensorDescriptor("temp3", "Sensor 3", 3),
-                    SensorDescriptor("temp4", "Sensor 4", 4),
+                    SensorDescriptor("temp1", 1),
+                    SensorDescriptor("temp2", 2),
+                    SensorDescriptor("temp3", 3),
+                    SensorDescriptor("temp4", 4),
                 ),
+            tempCtrlOffset = 0x0A,
             hasFlowSensor = false,
             hasRgbpx = true,
         )
@@ -85,18 +85,19 @@ object DeviceRegistry {
             statusReportLength = 0xDC,
             fanChannels =
                 listOf(
-                    FanDescriptor("fan1", "Fan 1", 0x36, 1),
-                    FanDescriptor("fan2", "Fan 2", 0x8B, 2),
-                    FanDescriptor("fan3", "Fan 3", 0xE0, 3),
-                    FanDescriptor("fan4", "Fan 4", 0x135, 4),
+                    FanDescriptor("fan1", 0x36, 1),
+                    FanDescriptor("fan2", 0x8B, 2),
+                    FanDescriptor("fan3", 0xE0, 3),
+                    FanDescriptor("fan4", 0x135, 4),
                 ),
             tempSensors =
                 listOf(
-                    SensorDescriptor("temp1", "Sensor 1", 1),
-                    SensorDescriptor("temp2", "Sensor 2", 2),
-                    SensorDescriptor("temp3", "Sensor 3", 3),
-                    SensorDescriptor("temp4", "Sensor 4", 4),
+                    SensorDescriptor("temp1", 1),
+                    SensorDescriptor("temp2", 2),
+                    SensorDescriptor("temp3", 3),
+                    SensorDescriptor("temp4", 4),
                 ),
+            tempCtrlOffset = 0x0A,
             hasFlowSensor = true,
             hasRgbpx = true,
         )
@@ -110,13 +111,14 @@ object DeviceRegistry {
             statusReportLength = 0x9E,
             fanChannels =
                 listOf(
-                    FanDescriptor("pump", "Pump", 0x96, 1),
-                    FanDescriptor("fan", "Fan", 0x41, 2),
+                    FanDescriptor("pump", 0x96, 1),
+                    FanDescriptor("fan", 0x41, 2),
                 ),
             tempSensors =
                 listOf(
-                    SensorDescriptor("temp1", "Liquid Temperature", 1),
+                    SensorDescriptor("temp1", 1),
                 ),
+            tempCtrlOffset = 0x2D,
             hasFlowSensor = true,
             hasRgbpx = true,
         )

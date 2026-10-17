@@ -5,6 +5,7 @@ import com.openaqua.engine.command.CurvesCommand
 import com.openaqua.engine.command.DevicesCommand
 import com.openaqua.engine.command.FlashCommand
 import com.openaqua.engine.command.OpenAquaEngineCommand
+import com.openaqua.engine.command.SensorOffsetCommand
 import com.openaqua.engine.command.TelemetryCommand
 import org.kodein.di.DI
 import org.kodein.di.bindSingleton
@@ -17,12 +18,14 @@ val engineCoreModule =
         bindSingleton { TelemetryCommand(instance()) }
         bindSingleton { CurvesCommand(instance()) }
         bindSingleton { FlashCommand(instance()) }
+        bindSingleton { SensorOffsetCommand(instance()) }
         bindSingleton<List<CliktCommand>>(tag = "coreSubcommands") {
             listOf(
                 instance<DevicesCommand>(),
                 instance<TelemetryCommand>(),
                 instance<CurvesCommand>(),
                 instance<FlashCommand>(),
+                instance<SensorOffsetCommand>(),
             )
         }
     }

@@ -5,6 +5,7 @@ plugins {
 }
 
 kotlin {
+    jvmToolchain(21)
     sourceSets {
         all {
             languageSettings.optIn("kotlinx.cinterop.ExperimentalForeignApi")

@@ -13,6 +13,8 @@ import com.openaqua.model.DeviceTelemetry
 import com.openaqua.model.FanTelemetry
 import com.openaqua.model.FlashCurveResponse
 import com.openaqua.model.SensorTelemetry
+import com.openaqua.model.SetSensorOffsetResponse
+import kotlinx.cinterop.ByteVar
 import kotlinx.cinterop.UByteVar
 import kotlinx.cinterop.allocArray
 import kotlinx.cinterop.get
@@ -20,10 +22,12 @@ import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.set
 import kotlinx.io.files.Path
 import platform.posix.O_RDWR
+import platform.posix.O_WRONLY
 import platform.posix.close
 import platform.posix.ioctl
 import platform.posix.open
 import platform.posix.usleep
+import platform.posix.write
 import kotlin.math.abs
 import kotlin.math.round
 import kotlin.math.roundToInt
@@ -174,7 +178,6 @@ class LinuxHardwareController : HardwareController {
 
                 FanTelemetry(
                     id = fan.id,
-                    name = fan.name,
                     rpm = rpm,
                     powerWatts = round(powerWatts * 100.0) / 100.0,
                     voltageVolts = round(voltageVolts * 100.0) / 100.0,
@@ -194,12 +197,22 @@ class LinuxHardwareController : HardwareController {
                     } else {
                         null
                     }
+                val rawOffsetMilli =
+                    if (hwmon != null) {
+                        Path("$hwmon/$HWMON_TEMP_PREFIX${sensor.hwmonIndex}$HWMON_OFFSET_SUFFIX")
+                            .readTextOrNull()
+                            ?.trim()
+                            ?.toIntOrNull()
+                    } else {
+                        null
+                    }
                 val tempCelsius = rawMilli?.let { round((it.toDouble() / 1000.0) * 10.0) / 10.0 }
+                val offsetCelsius = rawOffsetMilli?.let { round((it.toDouble() / 1000.0) * 10.0) / 10.0 }
 
                 SensorTelemetry(
                     id = sensor.id,
-                    name = sensor.name,
                     tempCelsius = tempCelsius,
+                    offsetCelsius = offsetCelsius,
                     isVirtual = sensor.isVirtual,
                 )
             }
@@ -315,6 +328,74 @@ class LinuxHardwareController : HardwareController {
             verified = true,
         )
     }
+
+    override fun setSensorOffset(
+        device: DetectedHardwareDevice,
+        sensorId: String,
+        offsetCelsius: Double,
+    ): SetSensorOffsetResponse {
+        val descriptor =
+            DeviceRegistry.ALL.firstOrNull { it.type == device.type }
+                ?: error("Unsupported device type: ${device.type}")
+
+        val sensorIndex = descriptor.tempSensors.indexOfFirst { it.id == sensorId }
+        val sensor =
+            descriptor.tempSensors.getOrNull(sensorIndex)
+                ?: error("Unknown sensor ID: $sensorId for device ${device.name}")
+
+        val hwmon = device.hwmonPath
+        val sysfsOffsetPath =
+            if (hwmon != null) {
+                "$hwmon/$HWMON_TEMP_PREFIX${sensor.hwmonIndex}$HWMON_OFFSET_SUFFIX"
+            } else {
+                null
+            }
+
+        val milliCelsius = (offsetCelsius * 1000.0).roundToInt().coerceIn(-15000, 15000)
+        var sysfsSuccess = false
+
+        if (sysfsOffsetPath != null) {
+            sysfsSuccess = writeSysfsText(sysfsOffsetPath, "$milliCelsius\n")
+        }
+
+        if (!sysfsSuccess) {
+            val baseOffset =
+                descriptor.tempCtrlOffset
+                    ?: error("Device ${device.name} does not support direct HID temperature offset configuration")
+
+            val report = readFeatureReport(device.hidrawPath, 0x03u, descriptor.ctrlReportLength)
+            val offsetPos = baseOffset + (sensorIndex * 2)
+            val centiCelsius = (offsetCelsius * 100.0).roundToInt().coerceIn(-1500, 1500).toShort()
+
+            report[offsetPos] = ((centiCelsius.toInt() ushr 8) and 0xFF).toUByte()
+            report[offsetPos + 1] = (centiCelsius.toInt() and 0xFF).toUByte()
+
+            val crcOffset = 1
+            val crcLen = descriptor.ctrlReportLength - 3
+            val crc = crc16Usb(report, crcOffset, crcLen)
+            val crcPos = descriptor.ctrlReportLength - 2
+            report[crcPos] = ((crc.toInt() ushr 8) and 0xFF).toUByte()
+            report[crcPos + 1] = (crc.toInt() and 0xFF).toUByte()
+
+            writeFeatureReport(device.hidrawPath, report)
+            usleep(250_000u)
+
+            val readback = readFeatureReport(device.hidrawPath, 0x03u, descriptor.ctrlReportLength)
+            val readbackRaw = ((readback[offsetPos].toInt() shl 8) or readback[offsetPos + 1].toInt()).toShort()
+            val readbackOffset = round((readbackRaw.toDouble() / 100.0) * 10.0) / 10.0
+            check(abs(readbackOffset - offsetCelsius) <= 0.1) {
+                "Verification failed: expected offset $offsetCelsius°C, read $readbackOffset°C"
+            }
+        }
+
+        return SetSensorOffsetResponse(
+            status = STATUS_OK,
+            deviceId = device.id,
+            sensorId = sensorId,
+            offsetCelsius = offsetCelsius,
+            verified = true,
+        )
+    }
 }
 
 private fun parseCurvePoints(
@@ -387,6 +468,27 @@ private fun writeFeatureReport(
             val cmd = hidiocsfeature(totalLen)
             val ret = ioctl(fd, cmd, buf)
             check(ret >= 0) { "ioctl HIDIOCSFEATURE failed on $hidrawPath" }
+        }
+    } finally {
+        close(fd)
+    }
+}
+
+private fun writeSysfsText(
+    path: String,
+    text: String,
+): Boolean {
+    val fd = open(path, O_WRONLY)
+    if (fd < 0) return false
+    try {
+        memScoped {
+            val bytes = text.encodeToByteArray()
+            val buf = allocArray<ByteVar>(bytes.size)
+            for (i in bytes.indices) {
+                buf[i] = bytes[i]
+            }
+            val written = write(fd, buf, bytes.size.toULong())
+            return written >= 0
         }
     } finally {
         close(fd)
