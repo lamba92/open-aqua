@@ -6,6 +6,7 @@ plugins {
 
 kotlin {
     jvmToolchain(21)
+    jvm()
     linuxX64()
     linuxArm64()
     mingwX64()

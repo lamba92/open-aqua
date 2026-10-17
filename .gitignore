@@ -27,3 +27,4 @@ replay_pid*
 # Local configs & logs
 local.properties
 *.log
+.kotlin/
