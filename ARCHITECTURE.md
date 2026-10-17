@@ -172,12 +172,11 @@ $ open-aqua-engine devices
   "devices": [
     {
       "id": "octo_0",
+      "alias": "octo-1",
       "type": "OCTO",
       "name": "Aquacomputer OCTO",
       "serial": "13235-54067",
-      "firmwareVersion": 1020,
-      "hidrawPath": "/dev/hidraw9",
-      "hwmonPath": "/sys/class/hwmon/hwmon4"
+      "firmwareVersion": 1020
     }
   ]
 }

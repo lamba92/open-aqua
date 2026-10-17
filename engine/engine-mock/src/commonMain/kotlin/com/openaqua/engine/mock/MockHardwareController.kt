@@ -22,8 +22,6 @@ class MockHardwareController : HardwareController {
                 name = DeviceRegistry.OCTO.name,
                 serial = "13235-54067-MOCK",
                 firmwareVersion = 1020,
-                hidrawPath = "/dev/hidraw_mock",
-                hwmonPath = "/sys/class/hwmon/mock",
             ),
         )
 
@@ -131,7 +129,7 @@ class MockHardwareController : HardwareController {
             status = "ok",
             deviceId = device.id,
             fanId = fanId,
-            bytesWritten = DeviceRegistry.OCTO.ctrlReportLength,
+            bytesWritten = 1632,
             verified = true,
         )
 

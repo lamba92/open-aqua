@@ -48,6 +48,15 @@ private data class ScannedHardwareNode(
 )
 
 class LinuxHardwareController : HardwareController {
+    private val scannedNodes = mutableMapOf<String, ScannedHardwareNode>()
+
+    private fun getScannedNode(device: DetectedHardwareDevice): ScannedHardwareNode =
+        scannedNodes[device.id] ?: run {
+            scanDevices()
+            scannedNodes[device.id]
+                ?: error("Hardware device '${device.id}' (${device.name}) not found")
+        }
+
     override fun scanDevices(): List<DetectedHardwareDevice> {
         val scanned = mutableListOf<ScannedHardwareNode>()
         val hidrawDirs = Path(SYSFS_HIDRAW_DIR).listDirectory()
@@ -101,6 +110,11 @@ class LinuxHardwareController : HardwareController {
             )
         }
 
+        scannedNodes.clear()
+        for (node in scanned) {
+            scannedNodes[node.id] = node
+        }
+
         return scanned
             .sortedWith(
                 compareBy<ScannedHardwareNode> { it.descriptor.type.name }
@@ -120,8 +134,6 @@ class LinuxHardwareController : HardwareController {
                         name = node.descriptor.name,
                         serial = node.serial,
                         firmwareVersion = fwVersion,
-                        hidrawPath = node.hidrawPath,
-                        hwmonPath = node.hwmonPath,
                     )
                 }
             }
@@ -132,7 +144,8 @@ class LinuxHardwareController : HardwareController {
             DeviceRegistry.ALL.firstOrNull { it.type == device.type }
                 ?: error("Unsupported device type: ${device.type}")
 
-        val hwmon = device.hwmonPath
+        val node = getScannedNode(device)
+        val hwmon = node.hwmonPath
 
         val fans =
             descriptor.fanChannels.map { fan ->
@@ -250,7 +263,8 @@ class LinuxHardwareController : HardwareController {
             DeviceRegistry.ALL.firstOrNull { it.type == device.type }
                 ?: error("Unsupported device type: ${device.type}")
 
-        val report = readFeatureReport(device.hidrawPath, 0x03u, descriptor.ctrlReportLength)
+        val node = getScannedNode(device)
+        val report = readFeatureReport(node.hidrawPath, 0x03u, descriptor.ctrlReportLength)
         val curvesMap = descriptor.fanChannels.associate { it.id to parseCurvePoints(report, it.ctrlOffset) }
 
         return DeviceCurves(deviceId = device.id, curves = curvesMap)
@@ -274,7 +288,8 @@ class LinuxHardwareController : HardwareController {
             "Expected exactly 16 curve points, got ${points.size}"
         }
 
-        val report = readFeatureReport(device.hidrawPath, 0x03u, descriptor.ctrlReportLength)
+        val node = getScannedNode(device)
+        val report = readFeatureReport(node.hidrawPath, 0x03u, descriptor.ctrlReportLength)
         val base = fan.ctrlOffset
 
         // Optional temperature source sensor
@@ -314,13 +329,13 @@ class LinuxHardwareController : HardwareController {
         report[crcPos] = ((crc.toInt() ushr 8) and 0xFF).toUByte()
         report[crcPos + 1] = (crc.toInt() and 0xFF).toUByte()
 
-        writeFeatureReport(device.hidrawPath, report)
+        writeFeatureReport(node.hidrawPath, report)
 
         // Settle device firmware
         usleep(250_000u)
 
         // Readback verification
-        val readback = readFeatureReport(device.hidrawPath, 0x03u, descriptor.ctrlReportLength)
+        val readback = readFeatureReport(node.hidrawPath, 0x03u, descriptor.ctrlReportLength)
         val readbackPoints = parseCurvePoints(readback, base)
         for (i in 0 until 16) {
             val expected = points[i]
@@ -354,7 +369,8 @@ class LinuxHardwareController : HardwareController {
             descriptor.tempSensors.getOrNull(sensorIndex)
                 ?: error("Unknown sensor ID: $sensorId for device ${device.name}")
 
-        val hwmon = device.hwmonPath
+        val node = getScannedNode(device)
+        val hwmon = node.hwmonPath
         val sysfsOffsetPath =
             if (hwmon != null) {
                 "$hwmon/$HWMON_TEMP_PREFIX${sensor.hwmonIndex}$HWMON_OFFSET_SUFFIX"
@@ -374,7 +390,7 @@ class LinuxHardwareController : HardwareController {
                 descriptor.tempCtrlOffset
                     ?: error("Device ${device.name} does not support direct HID temperature offset configuration")
 
-            val report = readFeatureReport(device.hidrawPath, 0x03u, descriptor.ctrlReportLength)
+            val report = readFeatureReport(node.hidrawPath, 0x03u, descriptor.ctrlReportLength)
             val offsetPos = baseOffset + (sensorIndex * 2)
             val centiCelsius = (offsetCelsius * 100.0).roundToInt().coerceIn(-1500, 1500).toShort()
 
@@ -388,10 +404,10 @@ class LinuxHardwareController : HardwareController {
             report[crcPos] = ((crc.toInt() ushr 8) and 0xFF).toUByte()
             report[crcPos + 1] = (crc.toInt() and 0xFF).toUByte()
 
-            writeFeatureReport(device.hidrawPath, report)
+            writeFeatureReport(node.hidrawPath, report)
             usleep(250_000u)
 
-            val readback = readFeatureReport(device.hidrawPath, 0x03u, descriptor.ctrlReportLength)
+            val readback = readFeatureReport(node.hidrawPath, 0x03u, descriptor.ctrlReportLength)
             val readbackRaw = ((readback[offsetPos].toInt() shl 8) or readback[offsetPos + 1].toInt()).toShort()
             val readbackOffset = round((readbackRaw.toDouble() / 100.0) * 10.0) / 10.0
             check(abs(readbackOffset - offsetCelsius) <= 0.1) {

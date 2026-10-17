@@ -20,8 +20,6 @@ data class DetectedHardwareDevice(
     val name: String,
     val serial: String? = null,
     val firmwareVersion: Int? = null,
-    val hidrawPath: String,
-    val hwmonPath: String? = null,
 )
 
 @Serializable
