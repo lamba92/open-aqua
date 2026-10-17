@@ -16,16 +16,23 @@ import com.openaqua.model.SensorTelemetry
 import com.openaqua.model.SetSensorOffsetResponse
 import kotlinx.cinterop.ByteVar
 import kotlinx.cinterop.UByteVar
+import kotlinx.cinterop.alloc
 import kotlinx.cinterop.allocArray
 import kotlinx.cinterop.get
 import kotlinx.cinterop.memScoped
+import kotlinx.cinterop.ptr
 import kotlinx.cinterop.set
 import kotlinx.io.files.Path
+import platform.posix.O_NONBLOCK
 import platform.posix.O_RDWR
 import platform.posix.O_WRONLY
+import platform.posix.POLLIN
 import platform.posix.close
 import platform.posix.ioctl
 import platform.posix.open
+import platform.posix.poll
+import platform.posix.pollfd
+import platform.posix.read
 import platform.posix.usleep
 import platform.posix.write
 import kotlin.math.abs
@@ -102,13 +109,17 @@ class LinuxHardwareController : HardwareController {
             .flatMap { (type, nodes) ->
                 val typePrefix = type.name.lowercase().replace('_', '-')
                 nodes.mapIndexed { index, node ->
+                    val fwVersion =
+                        node.descriptor.firmwareVersionOffset?.let { offset ->
+                            readFirmwareVersion(node.hidrawPath, offset)
+                        }
                     DetectedHardwareDevice(
                         id = node.id,
                         alias = "$typePrefix-${index + 1}",
                         type = node.descriptor.type,
                         name = node.descriptor.name,
                         serial = node.serial,
-                        firmwareVersion = null,
+                        firmwareVersion = fwVersion,
                         hidrawPath = node.hidrawPath,
                         hwmonPath = node.hwmonPath,
                     )
@@ -443,6 +454,42 @@ private fun readFeatureReport(
             }
             return result
         }
+    } finally {
+        close(fd)
+    }
+}
+
+private fun readFirmwareVersion(
+    hidrawPath: String,
+    firmwareOffset: Int,
+    timeoutMs: Int = DEFAULT_HID_REPORT_TIMEOUT_MS,
+): Int? {
+    val fd = open(hidrawPath, O_RDWR or O_NONBLOCK)
+    if (fd < 0) return null
+
+    try {
+        memScoped {
+            val pfd = alloc<pollfd>()
+            pfd.fd = fd
+            pfd.events = POLLIN.toShort()
+
+            val pollRet = poll(pfd.ptr, 1u, timeoutMs)
+            if (pollRet <= 0) return null
+
+            val bufSize = 512
+            val buf = allocArray<UByteVar>(bufSize)
+            val bytesRead = read(fd, buf, bufSize.toULong())
+            if (bytesRead < (firmwareOffset + 2).toLong()) return null
+            if (buf[0].toInt() != HID_STATUS_REPORT_ID) return null
+
+            val fwHigh = buf[firmwareOffset].toInt() and 0xFF
+            val fwLow = buf[firmwareOffset + 1].toInt() and 0xFF
+            val version = (fwHigh shl 8) or fwLow
+
+            return if (version in 1..65534) version else null
+        }
+    } catch (_: Throwable) {
+        return null
     } finally {
         close(fd)
     }

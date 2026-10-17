@@ -39,6 +39,7 @@ data class DeviceDescriptor(
     val fanChannels: List<FanDescriptor>,
     val tempSensors: List<SensorDescriptor>,
     val tempCtrlOffset: Int? = null,
+    val firmwareVersionOffset: Int? = 0x0D,
     val hasFlowSensor: Boolean = false,
     val hasRgbpx: Boolean = false,
 )
@@ -72,6 +73,7 @@ object DeviceRegistry {
                     SensorDescriptor("temp4", 4),
                 ),
             tempCtrlOffset = 0x0A,
+            firmwareVersionOffset = 0x0D,
             hasFlowSensor = false,
             hasRgbpx = true,
         )
@@ -98,6 +100,7 @@ object DeviceRegistry {
                     SensorDescriptor("temp4", 4),
                 ),
             tempCtrlOffset = 0x0A,
+            firmwareVersionOffset = 0x0D,
             hasFlowSensor = true,
             hasRgbpx = true,
         )
@@ -119,6 +122,7 @@ object DeviceRegistry {
                     SensorDescriptor("temp1", 1),
                 ),
             tempCtrlOffset = 0x2D,
+            firmwareVersionOffset = 0x0D,
             hasFlowSensor = true,
             hasRgbpx = true,
         )

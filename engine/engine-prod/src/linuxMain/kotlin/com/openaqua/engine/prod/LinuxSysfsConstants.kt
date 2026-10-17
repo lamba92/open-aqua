@@ -60,6 +60,21 @@ internal const val UEVENT_HID_UNIQ_PREFIX = "HID_UNIQ="
 internal const val UEVENT_DELIMITER = ":"
 
 // -----------------------------------------------------------------------------
+// HID Status Report & Protocol Constants
+// -----------------------------------------------------------------------------
+
+/**
+ * HID Input Report ID continuously emitted by Aquacomputer devices (~1 Hz) containing
+ * telemetry, device serial number, and firmware version.
+ */
+internal const val HID_STATUS_REPORT_ID = 0x01
+
+/**
+ * Default timeout in milliseconds when polling for an incoming status report.
+ */
+internal const val DEFAULT_HID_REPORT_TIMEOUT_MS = 1200
+
+// -----------------------------------------------------------------------------
 // Linux hwmon (Hardware Monitoring) Subsystem Standard Attribute Names
 //
 // Documented by the Linux kernel ABI: Documentation/hwmon/sysfs-interface.rst
