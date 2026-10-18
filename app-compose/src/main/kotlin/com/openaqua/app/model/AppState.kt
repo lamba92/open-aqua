@@ -142,9 +142,8 @@ class AppState {
 
     fun updateSensorsFromTelemetry(sensorTelemetries: List<SensorTelemetry>) {
         sensorTelemetries.forEach { telemetry ->
-            ntcSensors.firstOrNull { it.id == telemetry.id }?.let { sensor ->
+            ntcSensors.getOrNull(telemetry.channel)?.let { sensor ->
                 telemetry.tempCelsius?.let { sensor.currentTemp = it }
-                telemetry.offsetCelsius?.let { sensor.calibrationOffset = it }
             }
         }
     }

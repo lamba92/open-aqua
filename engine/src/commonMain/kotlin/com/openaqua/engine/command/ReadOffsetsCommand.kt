@@ -8,12 +8,12 @@ import com.github.ajalt.clikt.parameters.options.required
 import com.openaqua.engine.hardware.HardwareController
 import com.openaqua.engine.hardware.findTarget
 
-class CurvesCommand(
+class ReadOffsetsCommand(
     private val controller: HardwareController,
 ) : CliktCommand(
-        name = "curves",
+        name = "read-offsets",
     ) {
-    override fun help(context: Context): String = "Read active 16-point hardware curves"
+    override fun help(context: Context): String = "Read temperature sensor calibration offsets"
 
     private val device by option("--device", help = "Device ID or alias (e.g. octo-1)").required()
     private val pretty by option("--pretty", help = "Pretty-print JSON output").flag(default = false)
@@ -24,7 +24,7 @@ class CurvesCommand(
             devices.findTarget(device)
                 ?: error("Device '$device' not found")
 
-        val curves = controller.readCurves(target)
-        printResponse(curves, isPretty(pretty))
+        val response = controller.readSensorOffsets(target)
+        printResponse(response, isPretty(pretty))
     }
 }

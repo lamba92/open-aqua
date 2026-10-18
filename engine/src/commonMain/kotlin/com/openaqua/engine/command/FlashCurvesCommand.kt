@@ -15,12 +15,12 @@ import com.openaqua.model.CurvePoint
 import com.openaqua.model.DetectedHardwareDevice
 import com.openaqua.model.FlashCurveResponse
 
-abstract class BaseFlashCommand(
+abstract class BaseFlashCurvesCommand(
     name: String,
     protected val controller: HardwareController,
 ) : CliktCommand(name = name) {
     private val device by option("--device", help = "Device ID or alias (e.g. octo-1)").required()
-    private val fan by option("--fan", help = "Fan channel ID (e.g. fan1)").required()
+    private val channel by option("--channel", "--fan", help = "Fan channel index (0-indexed)").int().required()
     private val sensor by option("--sensor", help = "Sensor index").int()
     private val pretty by option("--pretty", help = "Pretty-print JSON output").flag(default = false)
 
@@ -30,20 +30,20 @@ abstract class BaseFlashCommand(
             devices.findTarget(device)
                 ?: error("Device '$device' not found")
 
-        val response = executeFlash(target, fan, sensor)
+        val response = executeFlash(target, channel, sensor)
         printResponse(response, isPretty(pretty))
     }
 
     protected abstract fun executeFlash(
         target: DetectedHardwareDevice,
-        fan: String,
+        channel: Int,
         sensor: Int?,
     ): FlashCurveResponse
 }
 
 class FlashCurveParamsCommand(
     controller: HardwareController,
-) : BaseFlashCommand(
+) : BaseFlashCurvesCommand(
         name = "curve-params",
         controller = controller,
     ) {
@@ -53,17 +53,17 @@ class FlashCurveParamsCommand(
 
     override fun executeFlash(
         target: DetectedHardwareDevice,
-        fan: String,
+        channel: Int,
         sensor: Int?,
     ): FlashCurveResponse {
         val params = defaultJson.decodeFromString<AutoCurveParams>(curveParams)
-        return controller.flashCurve(target, fan, params, sensor)
+        return controller.flashCurve(target, channel, params, sensor)
     }
 }
 
 class FlashPointsCommand(
     controller: HardwareController,
-) : BaseFlashCommand(
+) : BaseFlashCurvesCommand(
         name = "points",
         controller = controller,
     ) {
@@ -73,18 +73,18 @@ class FlashPointsCommand(
 
     override fun executeFlash(
         target: DetectedHardwareDevice,
-        fan: String,
+        channel: Int,
         sensor: Int?,
     ): FlashCurveResponse {
         val pts = defaultJson.decodeFromString<List<CurvePoint>>(points)
-        return controller.flashCurve(target, fan, pts, sensor)
+        return controller.flashCurve(target, channel, pts, sensor)
     }
 }
 
-class FlashCommand(
+class FlashCurvesCommand(
     controller: HardwareController,
 ) : CliktCommand(
-        name = "flash",
+        name = "flash-curves",
     ) {
     override fun help(context: Context): String = "Flash fan curve to hardware"
 

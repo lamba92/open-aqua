@@ -5,15 +5,14 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class SensorTelemetry(
-    val id: String,
+    val channel: Int,
     val tempCelsius: Double?,
-    val offsetCelsius: Double? = null,
     val isVirtual: Boolean = false,
 )
 
 @Serializable
 data class FanTelemetry(
-    val id: String,
+    val channel: Int,
     val rpm: Int,
     val powerWatts: Double,
     val voltageVolts: Double,

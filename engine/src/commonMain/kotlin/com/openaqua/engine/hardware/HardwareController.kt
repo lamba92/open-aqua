@@ -6,35 +6,39 @@ import com.openaqua.model.DetectedHardwareDevice
 import com.openaqua.model.DeviceCurves
 import com.openaqua.model.DeviceTelemetry
 import com.openaqua.model.FlashCurveResponse
+import com.openaqua.model.SensorOffsetsResponse
 import com.openaqua.model.SetSensorOffsetResponse
+import kotlinx.coroutines.flow.Flow
 
 interface HardwareController {
     fun scanDevices(): List<DetectedHardwareDevice>
 
-    fun readTelemetry(device: DetectedHardwareDevice): DeviceTelemetry
+    fun streamTelemetry(device: DetectedHardwareDevice): Flow<DeviceTelemetry>
 
     fun readCurves(device: DetectedHardwareDevice): DeviceCurves
 
     fun flashCurve(
         device: DetectedHardwareDevice,
-        fanId: String,
+        channel: Int,
         points: List<CurvePoint>,
         sensorIndex: Int? = null,
     ): FlashCurveResponse
 
+    fun readSensorOffsets(device: DetectedHardwareDevice): SensorOffsetsResponse
+
     fun setSensorOffset(
         device: DetectedHardwareDevice,
-        sensorId: String,
+        channel: Int,
         offsetCelsius: Double,
     ): SetSensorOffsetResponse
 }
 
 fun HardwareController.flashCurve(
     device: DetectedHardwareDevice,
-    fanId: String,
+    channel: Int,
     params: AutoCurveParams,
     sensorIndex: Int? = null,
-): FlashCurveResponse = flashCurve(device, fanId, params.toPoints(), sensorIndex)
+): FlashCurveResponse = flashCurve(device, channel, params.toPoints(), sensorIndex)
 
 fun List<DetectedHardwareDevice>.findTarget(query: String): DetectedHardwareDevice? {
     val trimmed = query.trim()

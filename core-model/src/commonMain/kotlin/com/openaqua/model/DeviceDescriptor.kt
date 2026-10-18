@@ -16,15 +16,15 @@ enum class DeviceType(
 
 @Serializable
 data class FanDescriptor(
-    val id: String,
+    val channel: Int,
     val ctrlOffset: Int,
-    val hwmonIndex: Int,
+    val hwmonIndex: Int = channel + 1,
 )
 
 @Serializable
 data class SensorDescriptor(
-    val id: String,
-    val hwmonIndex: Int,
+    val channel: Int,
+    val hwmonIndex: Int = channel + 1,
     val isVirtual: Boolean = false,
 )
 
@@ -56,21 +56,21 @@ object DeviceRegistry {
             statusReportLength = 0x147,
             fanChannels =
                 listOf(
-                    FanDescriptor("fan1", 0x5A, 1),
-                    FanDescriptor("fan2", 0xAF, 2),
-                    FanDescriptor("fan3", 0x104, 3),
-                    FanDescriptor("fan4", 0x159, 4),
-                    FanDescriptor("fan5", 0x1AE, 5),
-                    FanDescriptor("fan6", 0x203, 6),
-                    FanDescriptor("fan7", 0x258, 7),
-                    FanDescriptor("fan8", 0x2AD, 8),
+                    FanDescriptor(0, 0x5A, 1),
+                    FanDescriptor(1, 0xAF, 2),
+                    FanDescriptor(2, 0x104, 3),
+                    FanDescriptor(3, 0x159, 4),
+                    FanDescriptor(4, 0x1AE, 5),
+                    FanDescriptor(5, 0x203, 6),
+                    FanDescriptor(6, 0x258, 7),
+                    FanDescriptor(7, 0x2AD, 8),
                 ),
             tempSensors =
                 listOf(
-                    SensorDescriptor("temp1", 1),
-                    SensorDescriptor("temp2", 2),
-                    SensorDescriptor("temp3", 3),
-                    SensorDescriptor("temp4", 4),
+                    SensorDescriptor(0, 1),
+                    SensorDescriptor(1, 2),
+                    SensorDescriptor(2, 3),
+                    SensorDescriptor(3, 4),
                 ),
             tempCtrlOffset = 0x0A,
             firmwareVersionOffset = 0x0D,
@@ -87,17 +87,17 @@ object DeviceRegistry {
             statusReportLength = 0xDC,
             fanChannels =
                 listOf(
-                    FanDescriptor("fan1", 0x36, 1),
-                    FanDescriptor("fan2", 0x8B, 2),
-                    FanDescriptor("fan3", 0xE0, 3),
-                    FanDescriptor("fan4", 0x135, 4),
+                    FanDescriptor(0, 0x36, 1),
+                    FanDescriptor(1, 0x8B, 2),
+                    FanDescriptor(2, 0xE0, 3),
+                    FanDescriptor(3, 0x135, 4),
                 ),
             tempSensors =
                 listOf(
-                    SensorDescriptor("temp1", 1),
-                    SensorDescriptor("temp2", 2),
-                    SensorDescriptor("temp3", 3),
-                    SensorDescriptor("temp4", 4),
+                    SensorDescriptor(0, 1),
+                    SensorDescriptor(1, 2),
+                    SensorDescriptor(2, 3),
+                    SensorDescriptor(3, 4),
                 ),
             tempCtrlOffset = 0x0A,
             firmwareVersionOffset = 0x0D,
@@ -114,12 +114,12 @@ object DeviceRegistry {
             statusReportLength = 0x9E,
             fanChannels =
                 listOf(
-                    FanDescriptor("pump", 0x96, 1),
-                    FanDescriptor("fan", 0x41, 2),
+                    FanDescriptor(0, 0x96, 1),
+                    FanDescriptor(1, 0x41, 2),
                 ),
             tempSensors =
                 listOf(
-                    SensorDescriptor("temp1", 1),
+                    SensorDescriptor(0, 1),
                 ),
             tempCtrlOffset = 0x2D,
             firmwareVersionOffset = 0x0D,

@@ -7,10 +7,18 @@ import com.openaqua.model.DeviceCurves
 import com.openaqua.model.DeviceRegistry
 import com.openaqua.model.DeviceTelemetry
 import com.openaqua.model.DeviceType
+import com.openaqua.model.FanCurve
 import com.openaqua.model.FanTelemetry
 import com.openaqua.model.FlashCurveResponse
+import com.openaqua.model.SensorOffset
+import com.openaqua.model.SensorOffsetsResponse
 import com.openaqua.model.SensorTelemetry
 import com.openaqua.model.SetSensorOffsetResponse
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.isActive
 
 class MockHardwareController : HardwareController {
     override fun scanDevices(): List<DetectedHardwareDevice> =
@@ -25,123 +33,142 @@ class MockHardwareController : HardwareController {
             ),
         )
 
-    override fun readTelemetry(device: DetectedHardwareDevice): DeviceTelemetry =
-        DeviceTelemetry(
-            deviceId = device.id,
-            deviceType = device.type,
-            name = device.name,
-            sensors =
-                listOf(
-                    SensorTelemetry("temp1", 32.5, 0.0),
-                    SensorTelemetry("temp2", 22.8, -0.2),
-                    SensorTelemetry("temp3", 27.4, 0.0),
-                    SensorTelemetry("temp4", 43.1, 0.5),
-                ),
-            fans =
-                listOf(
-                    FanTelemetry(
-                        id = "fan1",
-                        rpm = 2450,
-                        powerWatts = 8.4,
-                        voltageVolts = 12.0,
-                        currentAmps = 0.7,
-                        pwmPercent = 45.0,
+    override fun streamTelemetry(device: DetectedHardwareDevice): Flow<DeviceTelemetry> =
+        flow {
+            while (currentCoroutineContext().isActive) {
+                emit(
+                    DeviceTelemetry(
+                        deviceId = device.id,
+                        deviceType = device.type,
+                        name = device.name,
+                        sensors =
+                            listOf(
+                                SensorTelemetry(0, 32.5),
+                                SensorTelemetry(1, 22.8),
+                                SensorTelemetry(2, 27.4),
+                                SensorTelemetry(3, 43.1),
+                            ),
+                        fans =
+                            listOf(
+                                FanTelemetry(
+                                    channel = 0,
+                                    rpm = 2450,
+                                    powerWatts = 8.4,
+                                    voltageVolts = 12.0,
+                                    currentAmps = 0.7,
+                                    pwmPercent = 45.0,
+                                ),
+                                FanTelemetry(
+                                    channel = 1,
+                                    rpm = 850,
+                                    powerWatts = 1.2,
+                                    voltageVolts = 12.0,
+                                    currentAmps = 0.1,
+                                    pwmPercent = 30.0,
+                                ),
+                                FanTelemetry(
+                                    channel = 2,
+                                    rpm = 920,
+                                    powerWatts = 1.6,
+                                    voltageVolts = 12.0,
+                                    currentAmps = 0.13,
+                                    pwmPercent = 35.0,
+                                ),
+                                FanTelemetry(
+                                    channel = 3,
+                                    rpm = 650,
+                                    powerWatts = 0.8,
+                                    voltageVolts = 12.0,
+                                    currentAmps = 0.07,
+                                    pwmPercent = 25.0,
+                                ),
+                                FanTelemetry(
+                                    channel = 4,
+                                    rpm = 0,
+                                    powerWatts = 0.0,
+                                    voltageVolts = 0.0,
+                                    currentAmps = 0.0,
+                                    pwmPercent = 0.0,
+                                ),
+                                FanTelemetry(
+                                    channel = 5,
+                                    rpm = 0,
+                                    powerWatts = 0.0,
+                                    voltageVolts = 0.0,
+                                    currentAmps = 0.0,
+                                    pwmPercent = 0.0,
+                                ),
+                                FanTelemetry(
+                                    channel = 6,
+                                    rpm = 0,
+                                    powerWatts = 0.0,
+                                    voltageVolts = 0.0,
+                                    currentAmps = 0.0,
+                                    pwmPercent = 0.0,
+                                ),
+                                FanTelemetry(
+                                    channel = 7,
+                                    rpm = 0,
+                                    powerWatts = 0.0,
+                                    voltageVolts = 0.0,
+                                    currentAmps = 0.0,
+                                    pwmPercent = 0.0,
+                                ),
+                            ),
+                        flowRateDlH = null,
                     ),
-                    FanTelemetry(
-                        id = "fan2",
-                        rpm = 850,
-                        powerWatts = 1.2,
-                        voltageVolts = 12.0,
-                        currentAmps = 0.1,
-                        pwmPercent = 30.0,
-                    ),
-                    FanTelemetry(
-                        id = "fan3",
-                        rpm = 920,
-                        powerWatts = 1.6,
-                        voltageVolts = 12.0,
-                        currentAmps = 0.13,
-                        pwmPercent = 35.0,
-                    ),
-                    FanTelemetry(
-                        id = "fan4",
-                        rpm = 650,
-                        powerWatts = 0.8,
-                        voltageVolts = 12.0,
-                        currentAmps = 0.07,
-                        pwmPercent = 25.0,
-                    ),
-                    FanTelemetry(
-                        id = "fan5",
-                        rpm = 0,
-                        powerWatts = 0.0,
-                        voltageVolts = 0.0,
-                        currentAmps = 0.0,
-                        pwmPercent = 0.0,
-                    ),
-                    FanTelemetry(
-                        id = "fan6",
-                        rpm = 0,
-                        powerWatts = 0.0,
-                        voltageVolts = 0.0,
-                        currentAmps = 0.0,
-                        pwmPercent = 0.0,
-                    ),
-                    FanTelemetry(
-                        id = "fan7",
-                        rpm = 0,
-                        powerWatts = 0.0,
-                        voltageVolts = 0.0,
-                        currentAmps = 0.0,
-                        pwmPercent = 0.0,
-                    ),
-                    FanTelemetry(
-                        id = "fan8",
-                        rpm = 0,
-                        powerWatts = 0.0,
-                        voltageVolts = 0.0,
-                        currentAmps = 0.0,
-                        pwmPercent = 0.0,
-                    ),
-                ),
-            flowRateDlH = null,
-        )
+                )
+                delay(1000)
+            }
+        }
 
     override fun readCurves(device: DetectedHardwareDevice): DeviceCurves =
         DeviceCurves(
             deviceId = device.id,
             curves =
-                mapOf(
-                    "fan1" to List(16) { i -> CurvePoint(temp = 20.0 + i * 2.5, pwm = 30.0 + i * 4.5) },
-                    "fan2" to List(16) { i -> CurvePoint(temp = 20.0 + i * 2.5, pwm = 20.0 + i * 5.0) },
-                    "fan3" to List(16) { i -> CurvePoint(temp = 20.0 + i * 2.5, pwm = 20.0 + i * 5.0) },
-                    "fan4" to List(16) { i -> CurvePoint(temp = 20.0 + i * 2.5, pwm = 15.0 + i * 5.5) },
+                listOf(
+                    FanCurve(channel = 0, points = List(16) { i -> CurvePoint(temp = 20.0 + i * 2.5, pwm = 30.0 + i * 4.5) }),
+                    FanCurve(channel = 1, points = List(16) { i -> CurvePoint(temp = 20.0 + i * 2.5, pwm = 20.0 + i * 5.0) }),
+                    FanCurve(channel = 2, points = List(16) { i -> CurvePoint(temp = 20.0 + i * 2.5, pwm = 20.0 + i * 5.0) }),
+                    FanCurve(channel = 3, points = List(16) { i -> CurvePoint(temp = 20.0 + i * 2.5, pwm = 15.0 + i * 5.5) }),
                 ),
         )
 
     override fun flashCurve(
         device: DetectedHardwareDevice,
-        fanId: String,
+        channel: Int,
         points: List<CurvePoint>,
         sensorIndex: Int?,
     ): FlashCurveResponse =
         FlashCurveResponse(
             status = "ok",
             deviceId = device.id,
-            fanId = fanId,
+            channel = channel,
             bytesWritten = 1632,
             verified = true,
         )
 
+    override fun readSensorOffsets(device: DetectedHardwareDevice): SensorOffsetsResponse =
+        SensorOffsetsResponse(
+            deviceId = device.id,
+            offsets =
+                listOf(
+                    SensorOffset(channel = 0, offsetCelsius = 0.0),
+                    SensorOffset(channel = 1, offsetCelsius = -0.2),
+                    SensorOffset(channel = 2, offsetCelsius = 0.0),
+                    SensorOffset(channel = 3, offsetCelsius = 0.5),
+                ),
+        )
+
     override fun setSensorOffset(
         device: DetectedHardwareDevice,
-        sensorId: String,
+        channel: Int,
         offsetCelsius: Double,
     ): SetSensorOffsetResponse =
         SetSensorOffsetResponse(
             status = "ok",
             deviceId = device.id,
-            sensorId = sensorId,
+            channel = channel,
             offsetCelsius = offsetCelsius,
             verified = true,
         )

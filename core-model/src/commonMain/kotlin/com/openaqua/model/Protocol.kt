@@ -23,38 +23,57 @@ data class DetectedHardwareDevice(
 )
 
 @Serializable
-@SerialName("curves")
+data class FanCurve(
+    val channel: Int,
+    val points: List<CurvePoint>,
+)
+
+@Serializable
+@SerialName("read-curves")
 data class DeviceCurves(
     val deviceId: String,
-    val curves: Map<String, List<CurvePoint>>,
+    val curves: List<FanCurve>,
 ) : EngineResponse
 
 @Serializable
 data class FlashCurveRequest(
     val deviceId: String,
-    val fanId: String,
+    val channel: Int,
     val points: List<CurvePoint>? = null,
     val autoCurve: AutoCurveParams? = null,
     val sensorIndex: Int? = null,
 )
 
 @Serializable
-@SerialName("flash")
+@SerialName("flash-curves")
 data class FlashCurveResponse(
     val status: String,
     val deviceId: String,
-    val fanId: String,
+    val channel: Int,
     val bytesWritten: Int,
     val verified: Boolean,
     val error: String? = null,
 ) : EngineResponse
 
 @Serializable
-@SerialName("set-sensor-offset")
+data class SensorOffset(
+    val channel: Int,
+    val offsetCelsius: Double,
+)
+
+@Serializable
+@SerialName("read-offsets")
+data class SensorOffsetsResponse(
+    val deviceId: String,
+    val offsets: List<SensorOffset>,
+) : EngineResponse
+
+@Serializable
+@SerialName("flash-offsets")
 data class SetSensorOffsetResponse(
     val status: String,
     val deviceId: String,
-    val sensorId: String,
+    val channel: Int,
     val offsetCelsius: Double,
     val verified: Boolean = true,
     val error: String? = null,

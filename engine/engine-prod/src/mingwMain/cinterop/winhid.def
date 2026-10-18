@@ -1,0 +1,20 @@
+headers = windows.h setupapi.h hidsdi.h
+headerFilter = setupapi.h hidsdi.h
+linkerOpts = -lsetupapi -lhid
+---
+
+#include <windows.h>
+#include <setupapi.h>
+#include <hidsdi.h>
+
+static inline void get_hid_guid(void* guid) {
+    HidD_GetHidGuid((LPGUID)guid);
+}
+
+static inline HDEVINFO get_hid_dev_info(void* guid) {
+    return SetupDiGetClassDevsW((LPGUID)guid, NULL, NULL, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
+}
+
+static inline BOOL enum_device_interface(HDEVINFO devInfo, void* guid, DWORD index, PSP_DEVICE_INTERFACE_DATA ifData) {
+    return SetupDiEnumDeviceInterfaces(devInfo, NULL, (LPGUID)guid, index, ifData);
+}

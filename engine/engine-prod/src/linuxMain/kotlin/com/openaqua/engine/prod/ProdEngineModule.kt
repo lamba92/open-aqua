@@ -6,7 +6,7 @@ import org.kodein.di.DI
 import org.kodein.di.bindSingleton
 import org.kodein.di.instance
 
-val prodEngineModule =
+actual val prodEngineModule: DI.Module =
     DI.Module("prodEngine") {
         bindSingleton<HardwareController> { LinuxHardwareController() }
         bindSingleton<List<CliktCommand>> { instance(tag = "coreSubcommands") }
