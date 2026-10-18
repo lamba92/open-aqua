@@ -18,6 +18,6 @@ class DevicesCommand(
 
     override fun run() {
         val devices = controller.scanDevices()
-        printResponse(DevicesResponse(devices), isPretty(pretty))
+        printResponse(DevicesResponse(devices), pretty)
     }
 }

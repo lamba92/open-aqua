@@ -28,6 +28,6 @@ class FlashFanCommand(
 
         val fanConfig = defaultJson.decodeFromString<FanChannelConfig>(config)
         val response = controller.flashFan(target, fanConfig)
-        printResponse(response, isPretty(pretty))
+        printResponse(response, pretty)
     }
 }

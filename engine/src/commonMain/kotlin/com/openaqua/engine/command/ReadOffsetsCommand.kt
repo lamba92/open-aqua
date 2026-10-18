@@ -25,6 +25,6 @@ class ReadOffsetsCommand(
                 ?: error("Device '$device' not found")
 
         val response = controller.readSensorOffsets(target)
-        printResponse(response, isPretty(pretty))
+        printResponse(response, pretty)
     }
 }

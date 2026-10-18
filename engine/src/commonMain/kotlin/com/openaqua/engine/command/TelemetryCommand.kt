@@ -27,6 +27,6 @@ class TelemetryCommand(
                 ?: error("Device '$device' not found")
 
         val telemetry = runBlocking { controller.streamTelemetry(target).first() }
-        printResponse(telemetry, isPretty(pretty))
+        printResponse(telemetry, pretty)
     }
 }

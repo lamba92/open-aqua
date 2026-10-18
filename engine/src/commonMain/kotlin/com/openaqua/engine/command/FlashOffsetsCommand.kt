@@ -29,6 +29,6 @@ class FlashOffsetsCommand(
                 ?: error("Device '$device' not found")
 
         val response = controller.setSensorOffset(target, channel, offset)
-        printResponse(response, isPretty(pretty))
+        printResponse(response, pretty)
     }
 }

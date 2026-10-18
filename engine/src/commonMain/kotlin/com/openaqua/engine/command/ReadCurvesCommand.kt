@@ -25,6 +25,6 @@ class ReadCurvesCommand(
                 ?: error("Device '$device' not found")
 
         val curves = controller.readCurves(target)
-        printResponse(curves, isPretty(pretty))
+        printResponse(curves, pretty)
     }
 }
