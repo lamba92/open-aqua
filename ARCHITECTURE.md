@@ -40,7 +40,7 @@ Aquacomputer hardware (OCTO, QUADRO, D5 NEXT, High Flow Next, Aquaero) is the go
 │                      ┌──────────▼───────────┐                          │
 │                      │     EngineBridge     │                          │
 │                      │ (ProcessBuilder IPC) │                          │
-└─────────────────────────────────┬──────────────────────────────────────┘
+└──────────────────────────────────┬─────────────────────────────────────┘
                                    │ Invokes on-demand via JSON
                                    ▼
 ┌────────────────────────────────────────────────────────────────────────┐
@@ -49,7 +49,7 @@ Aquacomputer hardware (OCTO, QUADRO, D5 NEXT, High Flow Next, Aquaero) is the go
 │   ┌────────────────────────────────────────────────────────────────┐   │
 │   │               :engine (Core Multiplatform Library)             │   │
 │   │      Clikt Commands + HardwareController Contract + DI Module  │   │
-│   └─────────────────────────┬────────────────────────┬─────────────┘   │
+│   └──────────────────────────┬──────────────────────────────┬──────┘   │
 │                             │                        │                 │
 │                             ▼                        ▼                 │
 │   ┌──────────────────────────────┐ ┌───────────────────────────────┐   │
@@ -61,7 +61,7 @@ Aquacomputer hardware (OCTO, QUADRO, D5 NEXT, High Flow Next, Aquaero) is the go
 ```
 
 ### Module Breakdown
-- **`:core-model`**: Domain data models, polymorphic protocol responses (`EngineResponse`), device descriptors (`DeviceRegistry`), and curve math (`CurveMath`).
+- **`:core-model`**: Domain data models, polymorphic protocol responses (`EngineResponse`, `DeviceConfig`, `DeviceTelemetry`), device descriptors (`DeviceRegistry`), and curve math (`CurveMath`).
 - **`:engine`**: Core library containing Clikt commands, the `HardwareController` interface, and `engineCoreModule` (Kodein DI).
 - **`:engine:engine-mock`**: Standalone executable producing `open-aqua-engine-mock` with fake telemetry, devices, curve responses, and a `fail` simulation command for development on macOS/Linux.
 - **`:engine:engine-prod`**: Production Linux executable producing `open-aqua-engine` with actual POSIX `/dev/hidraw` ioctls and `/sys/class/hwmon` reads.
@@ -121,8 +121,7 @@ Inside each fan channel's block in Control Report `0x03`, Aquacomputer devices s
 
 ### 2. Checksum Algorithm (CRC-16-USB)
 Before sending the report back to the device, a 16-bit CRC must be appended to the last two bytes of the report:
-- **Polynomial**: `0x8005` (reversed: `0xA001`, `x^16 + x^15 + x^2 + 1`)
-- **Initial value**: `0xFFFF`
+- **Polynomial**: `0x8005` (reversed: `0xA001`, `x^16 + x^15 + x^2 + 1`)\n- **Initial value**: `0xFFFF`
 - **XOR Out**: `0xFFFF`
 - **Range**: Calculated over bytes `1` through `reportLength - 2`.
 
@@ -160,7 +159,7 @@ $$P_i = P_{min} + f(t_i, s) \cdot (P_{max} - P_{min})$$
 
 ## 6. Stdin / Stdout JSON Command Protocol
 
-All stdout responses from `open-aqua-engine` implement the polymorphic `@Serializable sealed interface EngineResponse` with a `"type"` discriminator:
+All stdout responses from `open-aqua-engine` implement strongly typed data models with polymorphic `"type"` discriminators:
 
 ### 1. Discover Devices
 ```bash
@@ -188,19 +187,15 @@ $ open-aqua-engine telemetry --device octo-1
 ```
 ```json
 {
-  "type": "telemetry",
-  "deviceId": "octo_0",
-  "deviceType": "OCTO",
-  "name": "Aquacomputer OCTO",
+  "type": "octo",
   "sensors": [
-    {"id": "temp1", "tempCelsius": 35.4, "offsetCelsius": 0.0, "isVirtual": false},
-    {"id": "temp2", "tempCelsius": null, "offsetCelsius": null, "isVirtual": false}
+    {"channel": 0, "tempCelsius": 35.4, "isVirtual": false},
+    {"channel": 1, "tempCelsius": null, "isVirtual": false}
   ],
   "fans": [
-    {"id": "fan1", "rpm": 2184, "powerWatts": 8.4, "voltageVolts": 12.0, "currentAmps": 0.7, "pwmPercent": 45.0},
-    {"id": "fan2", "rpm": 1367, "powerWatts": 1.13, "voltageVolts": 12.0, "currentAmps": 0.1, "pwmPercent": 30.0}
-  ],
-  "flowRateDlH": null
+    {"channel": 0, "rpm": 2184, "powerWatts": 8.4, "voltageVolts": 12.0, "currentAmps": 0.7, "pwmPercent": 45.0},
+    {"channel": 1, "rpm": 1367, "powerWatts": 1.13, "voltageVolts": 12.0, "currentAmps": 0.1, "pwmPercent": 30.0}
+  ]
 }
 ```
 
@@ -210,85 +205,66 @@ Continuously emits single-line JSON samples at the specified interval (ideal for
 $ open-aqua-engine stream-telemetry --device octo-1 --interval 1000
 ```
 ```ndjson
-{"type":"telemetry","deviceId":"octo_0","deviceType":"OCTO",...}
-{"type":"telemetry","deviceId":"octo_0","deviceType":"OCTO",...}
+{"type":"octo","fans":[...],"sensors":[...]}
+{"type":"octo","fans":[...],"sensors":[...]}
 ```
 
-### 4. Read Hardware Fan Configurations & Curves
+### 4. Read Hardware Configuration
+Reads the complete persistent hardware configuration (fan channels, sensor calibration offsets, etc.) strongly typed per device:
 ```bash
-$ open-aqua-engine read-curves --device octo-1
+$ open-aqua-engine config read --device octo-1
 ```
 ```json
 {
-  "type": "curves",
-  "deviceId": "octo_0",
-  "configs": {
-    "fan1": {
-      "mode": "curve",
+  "type": "octo",
+  "fans": [
+    {
+      "type": "curve",
       "channel": 0,
       "sensorIndex": 0,
       "points": [
-        {"temp": 25.0, "pwm": 20.0},
-        {"temp": 45.0, "pwm": 100.0}
+        {"temp": 20.0, "pwm": 30.0},
+        {"temp": 57.5, "pwm": 97.5}
       ]
+    },
+    {
+      "type": "fixed",
+      "channel": 2,
+      "powerPercent": 50.0
     }
-  }
+  ],
+  "sensorOffsets": [
+    {"channel": 0, "offsetCelsius": 0.0},
+    {"channel": 1, "offsetCelsius": -0.2},
+    {"channel": 2, "offsetCelsius": 0.0},
+    {"channel": 3, "offsetCelsius": 0.5}
+  ]
 }
 ```
 
-### 5. Flash Fan Configuration to Hardware EEPROM
-Supports flashing any polymorphic fan channel mode (`curve`, `fixed`, `target_temp`, `two_point`):
+### 5. Flash Hardware Configuration (Patch or Full Configuration)
+Flashes changes to hardware EEPROM in a single atomic read-modify-write cycle. Any omitted field or channel is left unchanged:
 ```bash
-$ open-aqua-engine flash-fan --device octo-1 --config '{"channel":0,"mode":"curve","sensorIndex":0,"points":[{"temp":25.0,"pwm":20.0},{"temp":45.0,"pwm":100.0}]}'
+$ open-aqua-engine config flash --device octo-1 --request '{"fans":{"0":{"type":"fixed","channel":0,"powerPercent":60.0}}}'
 ```
+Or from a JSON file:
+```bash
+$ open-aqua-engine config flash --device octo-1 --file profile.json
+```
+Returns the verified, readback `DeviceConfig`:
 ```json
 {
-  "type": "flash-fan",
-  "status": "ok",
-  "deviceId": "octo_0",
-  "channel": 0,
-  "bytesWritten": 1631,
-  "verified": true,
-  "error": null
+  "type": "octo",
+  "fans": [...],
+  "sensorOffsets": [...]
 }
 ```
 
-### 6. Read Sensor Calibration Offsets
-```bash
-$ open-aqua-engine read-offsets --device octo-1
-```
-```json
-{
-  "type": "sensor-offsets",
-  "deviceId": "octo_0",
-  "offsets": {
-    "0": 0.0,
-    "1": 0.5
-  }
-}
-```
-
-### 7. Flash Sensor Calibration Offsets
-```bash
-$ open-aqua-engine flash-offsets --device octo-1 --offsets '{"0": 0.0, "1": 0.5}'
-```
-```json
-{
-  "type": "sensor-offsets",
-  "deviceId": "octo_0",
-  "offsets": {
-    "0": 0.0,
-    "1": 0.5
-  }
-}
-```
-
-### 8. Error Response
+### 6. Error Response
 ```json
 {
   "type": "error",
-  "error": "Device 'octo-1' not found",
-  "exceptionType": "IllegalStateException"
+  "message": "Device 'octo-1' not found"
 }
 ```
 

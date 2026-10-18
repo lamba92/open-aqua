@@ -21,12 +21,27 @@ data class FanTelemetry(
 )
 
 @Serializable
-@SerialName("telemetry")
-data class DeviceTelemetry(
-    val deviceId: String,
-    val deviceType: DeviceType,
-    val name: String,
-    val sensors: List<SensorTelemetry>,
+sealed interface DeviceTelemetry
+
+@Serializable
+@SerialName("octo")
+data class OctoTelemetry(
     val fans: List<FanTelemetry>,
+    val sensors: List<SensorTelemetry>,
+) : DeviceTelemetry
+
+@Serializable
+@SerialName("quadro")
+data class QuadroTelemetry(
+    val fans: List<FanTelemetry>,
+    val sensors: List<SensorTelemetry>,
     val flowRateDlH: Int? = null,
-) : EngineResponse
+) : DeviceTelemetry
+
+@Serializable
+@SerialName("d5next")
+data class D5NextTelemetry(
+    val pump: FanTelemetry,
+    val fan: FanTelemetry,
+    val coolantTempCelsius: Double? = null,
+) : DeviceTelemetry

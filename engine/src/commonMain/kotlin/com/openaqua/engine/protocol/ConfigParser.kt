@@ -2,15 +2,23 @@ package com.openaqua.engine.protocol
 
 import com.openaqua.model.CurveFanConfig
 import com.openaqua.model.CurvePoint
+import com.openaqua.model.D5NextConfig
+import com.openaqua.model.DetectedHardwareDevice
+import com.openaqua.model.DeviceConfig
+import com.openaqua.model.DeviceDescriptor
+import com.openaqua.model.DeviceType
 import com.openaqua.model.FanChannelConfig
 import com.openaqua.model.FixedFanConfig
+import com.openaqua.model.OctoConfig
+import com.openaqua.model.QuadroConfig
+import com.openaqua.model.SensorOffset
 import com.openaqua.model.TargetTempFanConfig
 import com.openaqua.model.TwoPointFanConfig
 import com.openaqua.model.UnconfiguredFanConfig
 import com.openaqua.model.UnknownFanConfig
 import kotlin.math.round
 
-object ControlReportParser {
+object ConfigParser {
     const val MODE_FIXED = 0x00
     const val MODE_TARGET_TEMP = 0x01
     const val MODE_CURVE = 0x02
@@ -113,4 +121,56 @@ object ControlReportParser {
         val raw = ((report[offsetPos].toInt() shl 8) or (report[offsetPos + 1].toInt() and 0xFF)).toShort()
         return round((raw.toDouble() / 100.0) * 10.0) / 10.0
     }
+
+    private fun parseFans(
+        report: UByteArray,
+        descriptor: DeviceDescriptor,
+    ): List<FanChannelConfig> =
+        descriptor.fanChannels.map { fan ->
+            parseFanChannelConfig(report, fan.ctrlOffset, fan.channel)
+        }
+
+    private fun parseOffsets(
+        report: UByteArray,
+        descriptor: DeviceDescriptor,
+    ): List<SensorOffset> {
+        val baseOffset = descriptor.tempCtrlOffset ?: error("No tempCtrlOffset for ${descriptor.name}")
+        return descriptor.tempSensors.map { sensor ->
+            SensorOffset(sensor.channel, parseSensorOffset(report, baseOffset, sensor.channel))
+        }
+    }
+
+    fun parseConfig(
+        device: DetectedHardwareDevice,
+        descriptor: DeviceDescriptor,
+        report: UByteArray,
+    ): DeviceConfig =
+        when (device.type) {
+            DeviceType.OCTO -> {
+                OctoConfig(
+                    fans = parseFans(report, descriptor),
+                    sensorOffsets = parseOffsets(report, descriptor),
+                )
+            }
+            DeviceType.QUADRO -> {
+                QuadroConfig(
+                    fans = parseFans(report, descriptor),
+                    sensorOffsets = parseOffsets(report, descriptor),
+                    flowPulsesPerLiter = null,
+                )
+            }
+            DeviceType.D5_NEXT -> {
+                val pump = parseFanChannelConfig(report, descriptor.fanChannels[0].ctrlOffset, 0)
+                val fan = parseFanChannelConfig(report, descriptor.fanChannels[1].ctrlOffset, 1)
+                val baseOffset = descriptor.tempCtrlOffset ?: error("No tempCtrlOffset for ${device.name}")
+                val offset = SensorOffset(0, parseSensorOffset(report, baseOffset, 0))
+                D5NextConfig(
+                    pump = pump,
+                    fan = fan,
+                    coolantOffset = offset,
+                    display = null,
+                )
+            }
+            else -> error("Unsupported device type for config parsing: ${device.type}")
+        }
 }

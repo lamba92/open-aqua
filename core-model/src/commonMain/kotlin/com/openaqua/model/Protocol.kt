@@ -71,27 +71,6 @@ data class UnknownFanConfig(
     val rawMode: Int,
 ) : FanChannelConfig
 
-typealias FanCurve = FanChannelConfig
-
-@Serializable
-@SerialName("read-curves")
-data class DeviceCurves(
-    val deviceId: String,
-    val curves: List<FanChannelConfig>,
-) : EngineResponse
-
-@Serializable
-@SerialName("flash-fan")
-data class FlashFanResponse(
-    val status: String,
-    val deviceId: String,
-    val channel: Int,
-    val config: FanChannelConfig,
-    val bytesWritten: Int,
-    val verified: Boolean,
-    val error: String? = null,
-) : EngineResponse
-
 @Serializable
 data class SensorOffset(
     val channel: Int,
@@ -99,22 +78,74 @@ data class SensorOffset(
 )
 
 @Serializable
-@SerialName("read-offsets")
-data class SensorOffsetsResponse(
-    val deviceId: String,
-    val offsets: List<SensorOffset>,
-) : EngineResponse
+data class DisplayConfig(
+    val brightnessPercent: Int,
+    val orientationDegrees: Int = 0,
+)
 
 @Serializable
-@SerialName("flash-offsets")
-data class SetSensorOffsetResponse(
-    val status: String,
-    val deviceId: String,
-    val channel: Int,
-    val offsetCelsius: Double,
-    val verified: Boolean = true,
-    val error: String? = null,
-) : EngineResponse
+sealed interface DeviceConfig
+
+@Serializable
+@SerialName("octo")
+data class OctoConfig(
+    val fans: List<FanChannelConfig>,
+    val sensorOffsets: List<SensorOffset>,
+) : DeviceConfig
+
+@Serializable
+@SerialName("quadro")
+data class QuadroConfig(
+    val fans: List<FanChannelConfig>,
+    val sensorOffsets: List<SensorOffset>,
+    val flowPulsesPerLiter: Int? = null,
+) : DeviceConfig
+
+@Serializable
+@SerialName("d5next")
+data class D5NextConfig(
+    val pump: FanChannelConfig,
+    val fan: FanChannelConfig,
+    val coolantOffset: SensorOffset,
+    val display: DisplayConfig? = null,
+) : DeviceConfig
+
+@Serializable
+sealed interface FlashConfigRequest
+
+@Serializable
+@SerialName("octo")
+data class FlashOctoConfig(
+    val fans: Map<Int, FanChannelConfig>? = null,
+    val sensorOffsets: Map<Int, Double>? = null,
+) : FlashConfigRequest {
+    init {
+        fans?.keys?.forEach { require(it in 0..7) { "Invalid fan channel $it for OCTO (must be 0..7)" } }
+        sensorOffsets?.keys?.forEach { require(it in 0..3) { "Invalid sensor channel $it for OCTO (must be 0..3)" } }
+    }
+}
+
+@Serializable
+@SerialName("quadro")
+data class FlashQuadroConfig(
+    val fans: Map<Int, FanChannelConfig>? = null,
+    val sensorOffsets: Map<Int, Double>? = null,
+    val flowPulsesPerLiter: Int? = null,
+) : FlashConfigRequest {
+    init {
+        fans?.keys?.forEach { require(it in 0..3) { "Invalid fan channel $it for QUADRO (must be 0..3)" } }
+        sensorOffsets?.keys?.forEach { require(it in 0..3) { "Invalid sensor channel $it for QUADRO (must be 0..3)" } }
+    }
+}
+
+@Serializable
+@SerialName("d5next")
+data class FlashD5NextConfig(
+    val pump: FanChannelConfig? = null,
+    val fan: FanChannelConfig? = null,
+    val coolantOffset: Double? = null,
+    val display: DisplayConfig? = null,
+) : FlashConfigRequest
 
 @Serializable
 @SerialName("error")

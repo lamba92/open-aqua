@@ -1,25 +1,19 @@
 package com.openaqua.engine.prod
 
 import com.openaqua.engine.hardware.HardwareController
-import com.openaqua.engine.protocol.ControlReportParser
-import com.openaqua.engine.protocol.ControlReportWriter
+import com.openaqua.engine.protocol.ConfigParser
+import com.openaqua.engine.protocol.ConfigWriter
 import com.openaqua.engine.protocol.StatusReportParser
-import com.openaqua.model.CurveFanConfig
 import com.openaqua.model.DetectedHardwareDevice
-import com.openaqua.model.DeviceCurves
+import com.openaqua.model.DeviceConfig
 import com.openaqua.model.DeviceDescriptor
 import com.openaqua.model.DeviceRegistry
 import com.openaqua.model.DeviceTelemetry
-import com.openaqua.model.FanChannelConfig
-import com.openaqua.model.FixedFanConfig
-import com.openaqua.model.FlashFanResponse
-import com.openaqua.model.SensorOffset
-import com.openaqua.model.SensorOffsetsResponse
-import com.openaqua.model.SetSensorOffsetResponse
-import com.openaqua.model.TargetTempFanConfig
-import com.openaqua.model.TwoPointFanConfig
-import com.openaqua.model.UnconfiguredFanConfig
-import com.openaqua.model.UnknownFanConfig
+import com.openaqua.model.DeviceType
+import com.openaqua.model.FlashConfigRequest
+import com.openaqua.model.FlashD5NextConfig
+import com.openaqua.model.FlashOctoConfig
+import com.openaqua.model.FlashQuadroConfig
 import kotlinx.cinterop.CPointerVar
 import kotlinx.cinterop.UByteVar
 import kotlinx.cinterop.UIntVar
@@ -61,10 +55,8 @@ import winhid.SetupDiGetDeviceInterfaceDetailW
 import winhid.enum_device_interface
 import winhid.get_hid_dev_info
 import winhid.get_hid_guid
-import kotlin.math.abs
 
 private const val HID_STATUS_REPORT_ID = 0x01
-private const val STATUS_OK = "ok"
 
 private data class ScannedWindowsNode(
     val id: String,
@@ -239,169 +231,64 @@ class WindowsHardwareController : HardwareController {
             }
         }
 
-    override fun readCurves(device: DetectedHardwareDevice): DeviceCurves {
+    override fun readConfig(device: DetectedHardwareDevice): DeviceConfig {
         val descriptor =
             DeviceRegistry.ALL.firstOrNull { it.type == device.type }
                 ?: error("Unsupported device type: ${device.type}")
 
         val node = getScannedNode(device)
         val report = readFeatureReport(node.devicePath, 0x03u, descriptor.ctrlReportLength)
-        val curvesList =
-            descriptor.fanChannels.map { fan ->
-                ControlReportParser.parseFanChannelConfig(report, fan.ctrlOffset, fan.channel)
-            }
 
-        return DeviceCurves(deviceId = device.id, curves = curvesList)
+        return ConfigParser.parseConfig(device, descriptor, report)
     }
 
-    override fun flashFan(
+    override fun flashConfig(
         device: DetectedHardwareDevice,
-        config: FanChannelConfig,
-    ): FlashFanResponse {
+        request: FlashConfigRequest,
+    ): DeviceConfig {
         val descriptor =
             DeviceRegistry.ALL.firstOrNull { it.type == device.type }
                 ?: error("Unsupported device type: ${device.type}")
 
-        val fan =
-            descriptor.fanChannels.firstOrNull { it.channel == config.channel }
-                ?: error("Unknown fan channel: ${config.channel} for device ${device.name}")
+        validateRequestMatchesDevice(device.type, request)
 
         val node = getScannedNode(device)
         val report = readFeatureReport(node.devicePath, 0x03u, descriptor.ctrlReportLength)
 
-        ControlReportWriter.encodeFanChannelConfig(report, fan.ctrlOffset, config)
-        ControlReportWriter.finalizeReport(report, descriptor.ctrlReportLength)
+        ConfigWriter.applyFlashConfig(report, descriptor, request)
+        ConfigWriter.finalizeReport(report, descriptor.ctrlReportLength)
 
         writeFeatureReport(node.devicePath, report)
-        writeFeatureReport(node.devicePath, ControlReportWriter.SECONDARY_COMMIT_REPORT)
+        writeFeatureReport(node.devicePath, ConfigWriter.SECONDARY_COMMIT_REPORT)
         Sleep(250u)
 
         val readback = readFeatureReport(node.devicePath, 0x03u, descriptor.ctrlReportLength)
-        val readbackConfig = ControlReportParser.parseFanChannelConfig(readback, fan.ctrlOffset, config.channel)
+        val readbackReport = ConfigParser.parseConfig(device, descriptor, readback)
 
-        verifyFanChannelConfig(expected = config, actual = readbackConfig)
+        ConfigWriter.verifyFlashConfig(expected = request, actual = readbackReport)
 
-        return FlashFanResponse(
-            status = STATUS_OK,
-            deviceId = device.id,
-            channel = config.channel,
-            config = readbackConfig,
-            bytesWritten = report.size,
-            verified = true,
-        )
-    }
-
-    override fun readSensorOffsets(device: DetectedHardwareDevice): SensorOffsetsResponse {
-        val descriptor =
-            DeviceRegistry.ALL.firstOrNull { it.type == device.type }
-                ?: error("Unsupported device type: ${device.type}")
-
-        val baseOffset =
-            descriptor.tempCtrlOffset
-                ?: error("Device ${device.name} does not support temperature offset configuration")
-
-        val node = getScannedNode(device)
-        val report = readFeatureReport(node.devicePath, 0x03u, descriptor.ctrlReportLength)
-
-        val offsets =
-            descriptor.tempSensors.map { sensor ->
-                val offset = ControlReportParser.parseSensorOffset(report, baseOffset, sensor.channel)
-                SensorOffset(sensor.channel, offset)
-            }
-
-        return SensorOffsetsResponse(deviceId = device.id, offsets = offsets)
-    }
-
-    override fun setSensorOffset(
-        device: DetectedHardwareDevice,
-        channel: Int,
-        offsetCelsius: Double,
-    ): SetSensorOffsetResponse {
-        val descriptor =
-            DeviceRegistry.ALL.firstOrNull { it.type == device.type }
-                ?: error("Unsupported device type: ${device.type}")
-
-        descriptor.tempSensors.firstOrNull { it.channel == channel }
-            ?: error("Unknown sensor channel: $channel for device ${device.name}")
-
-        val node = getScannedNode(device)
-        val baseOffset =
-            descriptor.tempCtrlOffset
-                ?: error("Device ${device.name} does not support direct HID temperature offset configuration")
-
-        val report = readFeatureReport(node.devicePath, 0x03u, descriptor.ctrlReportLength)
-
-        ControlReportWriter.encodeSensorOffset(report, baseOffset, channel, offsetCelsius)
-        ControlReportWriter.finalizeReport(report, descriptor.ctrlReportLength)
-
-        writeFeatureReport(node.devicePath, report)
-        writeFeatureReport(node.devicePath, ControlReportWriter.SECONDARY_COMMIT_REPORT)
-        Sleep(250u)
-
-        val readback = readFeatureReport(node.devicePath, 0x03u, descriptor.ctrlReportLength)
-        val readbackOffset = ControlReportParser.parseSensorOffset(readback, baseOffset, channel)
-        check(abs(readbackOffset - offsetCelsius) <= 0.1) {
-            "Verification failed: expected offset $offsetCelsius°C, read $readbackOffset°C"
-        }
-
-        return SetSensorOffsetResponse(
-            status = STATUS_OK,
-            deviceId = device.id,
-            channel = channel,
-            offsetCelsius = offsetCelsius,
-            verified = true,
-        )
+        return readbackReport
     }
 }
 
-private fun verifyFanChannelConfig(
-    expected: FanChannelConfig,
-    actual: FanChannelConfig,
+private fun validateRequestMatchesDevice(
+    type: DeviceType,
+    request: FlashConfigRequest,
 ) {
-    when (expected) {
-        is FixedFanConfig -> {
-            check(actual is FixedFanConfig) {
-                "Verification failed: expected FixedFanConfig, got ${actual::class.simpleName}"
+    when (type) {
+        DeviceType.OCTO ->
+            check(request is FlashOctoConfig) {
+                "Expected FlashOctoConfig for device type OCTO, got ${request::class.simpleName}"
             }
-            check(abs(actual.powerPercent - expected.powerPercent) <= 0.2) {
-                "Verification failed: expected power ${expected.powerPercent}%, read ${actual.powerPercent}%"
+        DeviceType.QUADRO ->
+            check(request is FlashQuadroConfig) {
+                "Expected FlashQuadroConfig for device type QUADRO, got ${request::class.simpleName}"
             }
-        }
-        is CurveFanConfig -> {
-            check(actual is CurveFanConfig) {
-                "Verification failed: expected CurveFanConfig, got ${actual::class.simpleName}"
+        DeviceType.D5_NEXT ->
+            check(request is FlashD5NextConfig) {
+                "Expected FlashD5NextConfig for device type D5_NEXT, got ${request::class.simpleName}"
             }
-            check(actual.sensorIndex == expected.sensorIndex) {
-                "Verification failed: expected sensorIndex ${expected.sensorIndex}, read ${actual.sensorIndex}"
-            }
-            for (i in 0 until 16) {
-                val expPt = expected.points[i]
-                val actPt = actual.points[i]
-                check(abs(actPt.temp - expPt.temp) <= 0.2 && abs(actPt.pwm - expPt.pwm) <= 0.2) {
-                    "Verification failed at point $i: expected (${expPt.temp}°C, ${expPt.pwm}%), read (${actPt.temp}°C, ${actPt.pwm}%)"
-                }
-            }
-        }
-        is TargetTempFanConfig -> {
-            check(actual is TargetTempFanConfig) {
-                "Verification failed: expected TargetTempFanConfig, got ${actual::class.simpleName}"
-            }
-            check(actual.sensorIndex == expected.sensorIndex) {
-                "Verification failed: expected sensorIndex ${expected.sensorIndex}, read ${actual.sensorIndex}"
-            }
-            check(abs(actual.targetTempCelsius - expected.targetTempCelsius) <= 0.2) {
-                "Verification failed: expected targetTemp ${expected.targetTempCelsius}°C, read ${actual.targetTempCelsius}°C"
-            }
-        }
-        is TwoPointFanConfig -> {
-            check(actual is TwoPointFanConfig) {
-                "Verification failed: expected TwoPointFanConfig, got ${actual::class.simpleName}"
-            }
-            check(actual.sensorIndex == expected.sensorIndex) {
-                "Verification failed: expected sensorIndex ${expected.sensorIndex}, read ${actual.sensorIndex}"
-            }
-        }
-        is UnconfiguredFanConfig, is UnknownFanConfig -> Unit
+        else -> error("Unsupported device type: $type")
     }
 }
 

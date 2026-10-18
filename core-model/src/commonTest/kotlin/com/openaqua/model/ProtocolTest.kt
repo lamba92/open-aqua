@@ -1,0 +1,111 @@
+package com.openaqua.model
+
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.Json
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
+
+class ProtocolTest {
+    private val strictJson =
+        Json {
+            ignoreUnknownKeys = false
+        }
+
+    @Test
+    fun testFlashOctoConfigValidation() {
+        // Channel 7 is valid
+        val validReq =
+            FlashOctoConfig(
+                fans = mapOf(7 to FixedFanConfig(channel = 7, powerPercent = 100.0)),
+            )
+        assertNotNull(validReq.fans)
+
+        // Channel 8 is invalid on Octo (must be 0..7)
+        assertFailsWith<IllegalArgumentException> {
+            FlashOctoConfig(
+                fans = mapOf(8 to FixedFanConfig(channel = 8, powerPercent = 100.0)),
+            )
+        }
+
+        // Sensor 4 is invalid on Octo (must be 0..3)
+        assertFailsWith<IllegalArgumentException> {
+            FlashOctoConfig(
+                sensorOffsets = mapOf(4 to 1.5),
+            )
+        }
+    }
+
+    @Test
+    fun testFlashQuadroConfigValidation() {
+        // Channel 3 is valid on Quadro
+        val validReq =
+            FlashQuadroConfig(
+                fans = mapOf(3 to FixedFanConfig(channel = 3, powerPercent = 100.0)),
+            )
+        assertNotNull(validReq.fans)
+
+        // Channel 4 is invalid on Quadro (must be 0..3)
+        assertFailsWith<IllegalArgumentException> {
+            FlashQuadroConfig(
+                fans = mapOf(4 to FixedFanConfig(channel = 4, powerPercent = 100.0)),
+            )
+        }
+    }
+
+    @Test
+    fun testStrictJsonRejectsInvalidDeviceFields() {
+        // Attempting to pass 'display' to FlashOctoConfig should fail during strict deserialization
+        val jsonWithDisplay = """{"display":{"brightnessPercent":80}}"""
+        assertFailsWith<SerializationException> {
+            strictJson.decodeFromString(FlashOctoConfig.serializer(), jsonWithDisplay)
+        }
+
+        // Attempting to pass 'flowPulsesPerLiter' to FlashOctoConfig should fail
+        val jsonWithFlow = """{"flowPulsesPerLiter":150}"""
+        assertFailsWith<SerializationException> {
+            strictJson.decodeFromString(FlashOctoConfig.serializer(), jsonWithFlow)
+        }
+
+        // But flowPulsesPerLiter succeeds on FlashQuadroConfig
+        val quadroParsed = strictJson.decodeFromString(FlashQuadroConfig.serializer(), jsonWithFlow)
+        assertEquals(150, quadroParsed.flowPulsesPerLiter)
+    }
+
+    @Test
+    fun testConfigPolymorphicSerialization() {
+        val json = Json { encodeDefaults = true }
+        val fans = List(8) { FixedFanConfig(it, 50.0) }
+        val offsets = List(4) { SensorOffset(it, 0.0) }
+        val report: DeviceConfig = OctoConfig(fans, offsets)
+
+        val serialized = json.encodeToString(DeviceConfig.serializer(), report)
+        assertTrue(serialized.contains(""""type":"octo""""))
+
+        val deserialized = json.decodeFromString(DeviceConfig.serializer(), serialized)
+        assertTrue(deserialized is OctoConfig)
+        val octo = deserialized as OctoConfig
+        assertEquals(8, octo.fans.size)
+        assertEquals(4, octo.sensorOffsets.size)
+    }
+
+    @Test
+    fun testTelemetryPolymorphicSerialization() {
+        val json = Json { encodeDefaults = true }
+        val fans = listOf(FanTelemetry(0, 2000, 5.0, 12.0, 0.4, 50.0))
+        val sensors = listOf(SensorTelemetry(0, 25.5))
+        val telemetry: DeviceTelemetry = QuadroTelemetry(fans, sensors, flowRateDlH = 200)
+
+        val serialized = json.encodeToString(DeviceTelemetry.serializer(), telemetry)
+        assertTrue(serialized.contains(""""type":"quadro""""))
+        assertTrue(serialized.contains(""""flowRateDlH":200"""))
+
+        val deserialized = json.decodeFromString(DeviceTelemetry.serializer(), serialized)
+        assertTrue(deserialized is QuadroTelemetry)
+        val quadro = deserialized as QuadroTelemetry
+        assertEquals(200, quadro.flowRateDlH)
+        assertEquals(1, quadro.fans.size)
+    }
+}

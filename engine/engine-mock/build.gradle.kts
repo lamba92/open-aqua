@@ -1,3 +1,7 @@
+@file:OptIn(org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeCacheApi::class)
+
+import org.jetbrains.kotlin.gradle.plugin.mpp.DisableCacheInKotlinVersion
+
 plugins {
     openaqua.engine
 }
@@ -8,6 +12,7 @@ kotlin {
             executable {
                 baseName = "open-aqua-engine-mock"
                 entryPoint = "com.openaqua.engine.mock.main"
+                disableNativeCache(version = DisableCacheInKotlinVersion.`2_4_0`, reason = "Clikt duplicate symbol workaround")
             }
         }
     }
@@ -16,6 +21,7 @@ kotlin {
             executable {
                 baseName = "open-aqua-engine-mock"
                 entryPoint = "com.openaqua.engine.mock.main"
+                disableNativeCache(version = DisableCacheInKotlinVersion.`2_4_0`, reason = "Clikt duplicate symbol workaround")
             }
         }
     }
@@ -24,6 +30,7 @@ kotlin {
             executable {
                 baseName = "open-aqua-engine-mock"
                 entryPoint = "com.openaqua.engine.mock.main"
+                disableNativeCache(version = DisableCacheInKotlinVersion.`2_4_0`, reason = "Clikt duplicate symbol workaround")
             }
         }
     }
@@ -32,6 +39,7 @@ kotlin {
             executable {
                 baseName = "open-aqua-engine-mock"
                 entryPoint = "com.openaqua.engine.mock.main"
+                disableNativeCache(version = DisableCacheInKotlinVersion.`2_4_0`, reason = "Clikt duplicate symbol workaround")
             }
         }
     }

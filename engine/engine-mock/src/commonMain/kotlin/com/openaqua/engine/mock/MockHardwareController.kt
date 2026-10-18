@@ -4,25 +4,68 @@ import com.openaqua.engine.hardware.HardwareController
 import com.openaqua.model.CurveFanConfig
 import com.openaqua.model.CurvePoint
 import com.openaqua.model.DetectedHardwareDevice
-import com.openaqua.model.DeviceCurves
+import com.openaqua.model.DeviceConfig
 import com.openaqua.model.DeviceRegistry
 import com.openaqua.model.DeviceTelemetry
 import com.openaqua.model.DeviceType
-import com.openaqua.model.FanChannelConfig
 import com.openaqua.model.FanTelemetry
 import com.openaqua.model.FixedFanConfig
-import com.openaqua.model.FlashFanResponse
+import com.openaqua.model.FlashConfigRequest
+import com.openaqua.model.FlashOctoConfig
+import com.openaqua.model.OctoConfig
+import com.openaqua.model.OctoTelemetry
 import com.openaqua.model.SensorOffset
-import com.openaqua.model.SensorOffsetsResponse
 import com.openaqua.model.SensorTelemetry
-import com.openaqua.model.SetSensorOffsetResponse
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.isActive
+import kotlin.time.Duration.Companion.seconds
 
 class MockHardwareController : HardwareController {
+    private val mockFans =
+        mutableListOf(
+            CurveFanConfig(
+                channel = 0,
+                sensorIndex = 0,
+                points =
+                    listOf(
+                        CurvePoint(20.0, 30.0),
+                        CurvePoint(22.5, 34.5),
+                        CurvePoint(25.0, 39.0),
+                        CurvePoint(27.5, 43.5),
+                        CurvePoint(30.0, 48.0),
+                        CurvePoint(32.5, 52.5),
+                        CurvePoint(35.0, 57.0),
+                        CurvePoint(37.5, 61.5),
+                        CurvePoint(40.0, 66.0),
+                        CurvePoint(42.5, 70.5),
+                        CurvePoint(45.0, 75.0),
+                        CurvePoint(47.5, 79.5),
+                        CurvePoint(50.0, 84.0),
+                        CurvePoint(52.5, 88.5),
+                        CurvePoint(55.0, 93.0),
+                        CurvePoint(57.5, 97.5),
+                    ),
+            ),
+            FixedFanConfig(channel = 1, powerPercent = 40.0),
+            FixedFanConfig(channel = 2, powerPercent = 50.0),
+            FixedFanConfig(channel = 3, powerPercent = 50.0),
+            FixedFanConfig(channel = 4, powerPercent = 0.0),
+            FixedFanConfig(channel = 5, powerPercent = 0.0),
+            FixedFanConfig(channel = 6, powerPercent = 0.0),
+            FixedFanConfig(channel = 7, powerPercent = 0.0),
+        )
+
+    private val mockOffsets =
+        mutableListOf(
+            SensorOffset(channel = 0, offsetCelsius = 0.0),
+            SensorOffset(channel = 1, offsetCelsius = -0.2),
+            SensorOffset(channel = 2, offsetCelsius = 0.0),
+            SensorOffset(channel = 3, offsetCelsius = 0.5),
+        )
+
     override fun scanDevices(): List<DetectedHardwareDevice> =
         listOf(
             DetectedHardwareDevice(
@@ -39,10 +82,7 @@ class MockHardwareController : HardwareController {
         flow {
             while (currentCoroutineContext().isActive) {
                 emit(
-                    DeviceTelemetry(
-                        deviceId = device.id,
-                        deviceType = device.type,
-                        name = device.name,
+                    OctoTelemetry(
                         sensors =
                             listOf(
                                 SensorTelemetry(0, 32.5),
@@ -117,96 +157,40 @@ class MockHardwareController : HardwareController {
                                     pwmPercent = 0.0,
                                 ),
                             ),
-                        flowRateDlH = null,
                     ),
                 )
-                delay(1000)
+                delay(1.seconds)
             }
         }
 
-    override fun readCurves(device: DetectedHardwareDevice): DeviceCurves =
-        DeviceCurves(
-            deviceId = device.id,
-            curves =
-                listOf(
-                    CurveFanConfig(
-                        channel = 0,
-                        sensorIndex = 0,
-                        points =
-                            List(16) { i ->
-                                CurvePoint(
-                                    temp = 20.0 + i * 2.5,
-                                    pwm =
-                                        30.0 + i * 4.5,
-                                )
-                            },
-                    ),
-                    CurveFanConfig(
-                        channel = 1,
-                        sensorIndex = 0,
-                        points =
-                            List(16) { i ->
-                                CurvePoint(
-                                    temp = 20.0 + i * 2.5,
-                                    pwm =
-                                        20.0 + i * 5.0,
-                                )
-                            },
-                    ),
-                    FixedFanConfig(
-                        channel = 2,
-                        powerPercent = 50.0,
-                    ),
-                    CurveFanConfig(
-                        channel = 3,
-                        sensorIndex = 1,
-                        points =
-                            List(16) { i ->
-                                CurvePoint(
-                                    temp = 20.0 + i * 2.5,
-                                    pwm =
-                                        15.0 + i * 5.5,
-                                )
-                            },
-                    ),
-                ),
+    override fun readConfig(device: DetectedHardwareDevice): DeviceConfig =
+        OctoConfig(
+            fans = mockFans.toList(),
+            sensorOffsets = mockOffsets.toList(),
         )
 
-    override fun flashFan(
+    override fun flashConfig(
         device: DetectedHardwareDevice,
-        config: FanChannelConfig,
-    ): FlashFanResponse =
-        FlashFanResponse(
-            status = "ok",
-            deviceId = device.id,
-            channel = config.channel,
-            config = config,
-            bytesWritten = 1632,
-            verified = true,
-        )
+        request: FlashConfigRequest,
+    ): DeviceConfig {
+        check(request is FlashOctoConfig) {
+            "Expected FlashOctoConfig for device type OCTO, got ${request::class.simpleName}"
+        }
 
-    override fun readSensorOffsets(device: DetectedHardwareDevice): SensorOffsetsResponse =
-        SensorOffsetsResponse(
-            deviceId = device.id,
-            offsets =
-                listOf(
-                    SensorOffset(channel = 0, offsetCelsius = 0.0),
-                    SensorOffset(channel = 1, offsetCelsius = -0.2),
-                    SensorOffset(channel = 2, offsetCelsius = 0.0),
-                    SensorOffset(channel = 3, offsetCelsius = 0.5),
-                ),
-        )
+        request.fans?.forEach { (channel, config) ->
+            val idx = mockFans.indexOfFirst { it.channel == channel }
+            if (idx >= 0) {
+                mockFans[idx] = config
+            }
+        }
 
-    override fun setSensorOffset(
-        device: DetectedHardwareDevice,
-        channel: Int,
-        offsetCelsius: Double,
-    ): SetSensorOffsetResponse =
-        SetSensorOffsetResponse(
-            status = "ok",
-            deviceId = device.id,
-            channel = channel,
-            offsetCelsius = offsetCelsius,
-            verified = true,
-        )
+        request.sensorOffsets?.forEach { (channel, offset) ->
+            val idx = mockOffsets.indexOfFirst { it.channel == channel }
+            if (idx >= 0) {
+                mockOffsets[idx] = SensorOffset(channel, offset)
+            }
+        }
+
+        return readConfig(device)
+    }
 }

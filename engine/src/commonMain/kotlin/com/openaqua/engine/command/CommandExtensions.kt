@@ -1,6 +1,5 @@
 package com.openaqua.engine.command
 
-import com.openaqua.model.EngineResponse
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -18,10 +17,10 @@ val prettyJson =
         encodeDefaults = true
     }
 
-fun printResponse(
-    response: EngineResponse,
+inline fun <reified T : Any> printResponse(
+    response: T,
     pretty: Boolean,
 ) {
     val serializer = if (pretty) prettyJson else defaultJson
-    println(serializer.encodeToString<EngineResponse>(response))
+    println(serializer.encodeToString(response))
 }

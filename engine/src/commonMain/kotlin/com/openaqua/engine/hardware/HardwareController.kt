@@ -1,12 +1,9 @@
 package com.openaqua.engine.hardware
 
 import com.openaqua.model.DetectedHardwareDevice
-import com.openaqua.model.DeviceCurves
+import com.openaqua.model.DeviceConfig
 import com.openaqua.model.DeviceTelemetry
-import com.openaqua.model.FanChannelConfig
-import com.openaqua.model.FlashFanResponse
-import com.openaqua.model.SensorOffsetsResponse
-import com.openaqua.model.SetSensorOffsetResponse
+import com.openaqua.model.FlashConfigRequest
 import kotlinx.coroutines.flow.Flow
 
 interface HardwareController {
@@ -14,20 +11,12 @@ interface HardwareController {
 
     fun streamTelemetry(device: DetectedHardwareDevice): Flow<DeviceTelemetry>
 
-    fun readCurves(device: DetectedHardwareDevice): DeviceCurves
+    fun readConfig(device: DetectedHardwareDevice): DeviceConfig
 
-    fun flashFan(
+    fun flashConfig(
         device: DetectedHardwareDevice,
-        config: FanChannelConfig,
-    ): FlashFanResponse
-
-    fun readSensorOffsets(device: DetectedHardwareDevice): SensorOffsetsResponse
-
-    fun setSensorOffset(
-        device: DetectedHardwareDevice,
-        channel: Int,
-        offsetCelsius: Double,
-    ): SetSensorOffsetResponse
+        request: FlashConfigRequest,
+    ): DeviceConfig
 }
 
 fun List<DetectedHardwareDevice>.findTarget(query: String): DetectedHardwareDevice? {
