@@ -17,6 +17,11 @@ interface HardwareController {
         device: DetectedHardwareDevice,
         request: FlashConfigRequest,
     ): DeviceConfig
+
+    fun feedVirtualSensors(
+        device: DetectedHardwareDevice,
+        sensors: Map<Int, Double>,
+    )
 }
 
 fun List<DetectedHardwareDevice>.findTarget(query: String): DetectedHardwareDevice? {
@@ -45,3 +50,6 @@ fun List<DetectedHardwareDevice>.findTarget(query: String): DetectedHardwareDevi
 
     return null
 }
+
+fun HardwareController.requireTarget(query: String): DetectedHardwareDevice =
+    scanDevices().findTarget(query) ?: error("Device '$query' not found")

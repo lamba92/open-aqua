@@ -4,6 +4,7 @@ import com.openaqua.engine.hardware.HardwareController
 import com.openaqua.engine.protocol.ConfigParser
 import com.openaqua.engine.protocol.ConfigWriter
 import com.openaqua.engine.protocol.StatusReportParser
+import com.openaqua.engine.protocol.VirtualSensorsWriter
 import com.openaqua.engine.util.listDirectory
 import com.openaqua.engine.util.readTextOrNull
 import com.openaqua.model.DetectedHardwareDevice
@@ -205,6 +206,34 @@ class LinuxHardwareController : HardwareController {
 
         return readbackReport
     }
+
+    override fun feedVirtualSensors(
+        device: DetectedHardwareDevice,
+        sensors: Map<Int, Double>,
+    ) {
+        val descriptor =
+            DeviceRegistry.ALL.firstOrNull { it.type == device.type }
+                ?: error("Unsupported device type: ${device.type}")
+
+        check(descriptor.virtualSensorsCount > 0) {
+            "${device.name} does not support virtual sensors"
+        }
+
+        val startChannel = if (device.type == DeviceType.D5_NEXT) 1 else 4
+        val slotMap = mutableMapOf<Int, Double>()
+        sensors.forEach { (channel, temp) ->
+            val slot = channel - startChannel
+            require(slot in 0 until descriptor.virtualSensorsCount) {
+                "Channel $channel is not a valid virtual sensor for ${device.name} (valid channels: $startChannel..${startChannel + descriptor.virtualSensorsCount - 1})"
+            }
+            slotMap[slot] = temp
+        }
+
+        val report = VirtualSensorsWriter.buildReport(descriptor, slotMap)
+        val node = getScannedNode(device)
+
+        writeOutputOrFeatureReport(node.hidrawPath, report)
+    }
 }
 
 private fun validateRequestMatchesDevice(
@@ -317,6 +346,33 @@ private fun writeFeatureReport(
             val cmd = hidiocsfeature(totalLen)
             val ret = ioctl(fd, cmd, buf)
             check(ret >= 0) { "ioctl HIDIOCSFEATURE failed on $hidrawPath" }
+        }
+    } finally {
+        close(fd)
+    }
+}
+
+private fun writeOutputOrFeatureReport(
+    hidrawPath: String,
+    reportData: UByteArray,
+) {
+    val totalLen = reportData.size
+    val fd = open(hidrawPath, O_RDWR)
+    check(fd >= 0) { "Cannot open $hidrawPath for writing" }
+
+    try {
+        memScoped {
+            val buf = allocArray<UByteVar>(totalLen)
+            for (i in 0 until totalLen) {
+                buf[i] = reportData[i]
+            }
+
+            val written = platform.posix.write(fd, buf, totalLen.toULong())
+            if (written < 0) {
+                val cmd = hidiocsfeature(totalLen)
+                val ret = ioctl(fd, cmd, buf)
+                check(ret >= 0) { "Failed to write report to $hidrawPath" }
+            }
         }
     } finally {
         close(fd)

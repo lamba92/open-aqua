@@ -1,43 +1,34 @@
 package com.openaqua.model
 
-import kotlinx.serialization.Serializable
-
-@Serializable
-enum class DeviceType(
-    val displayName: String,
-) {
-    OCTO("Aquacomputer OCTO"),
-    QUADRO("Aquacomputer QUADRO"),
-    D5_NEXT("Aquacomputer D5 NEXT"),
-    FARBWERK_360("Aquacomputer Farbwerk 360"),
-    HIGH_FLOW_NEXT("Aquacomputer High Flow NEXT"),
-    UNKNOWN("Unknown Aquacomputer Device"),
+enum class DeviceType {
+    OCTO,
+    QUADRO,
+    D5_NEXT,
+    FARBWERK_360,
+    HIGH_FLOW_NEXT,
 }
 
-@Serializable
-data class FanDescriptor(
+data class FanChannelDescriptor(
     val channel: Int,
     val ctrlOffset: Int,
-    val hwmonIndex: Int = channel + 1,
+    val statusOffset: Int,
 )
 
-@Serializable
 data class SensorDescriptor(
     val channel: Int,
-    val hwmonIndex: Int = channel + 1,
+    val hwmonIndex: Int,
     val isVirtual: Boolean = false,
 )
 
-@Serializable
 data class DeviceDescriptor(
     val type: DeviceType,
     val name: String,
-    val vendorId: Int = 0x0C70,
     val productId: Int,
     val ctrlReportLength: Int,
     val statusReportLength: Int,
-    val fanChannels: List<FanDescriptor>,
-    val tempSensors: List<SensorDescriptor>,
+    val secondaryReport: ByteArray? = null,
+    val fanChannels: List<FanChannelDescriptor> = emptyList(),
+    val tempSensors: List<SensorDescriptor> = emptyList(),
     val tempCtrlOffset: Int? = null,
     val firmwareVersionOffset: Int? = 0x0D,
     val hasFlowSensor: Boolean = false,
@@ -54,27 +45,24 @@ object DeviceRegistry {
             type = DeviceType.OCTO,
             name = "Aquacomputer OCTO",
             productId = 0xF011,
-            ctrlReportLength = 0x65F, // 1631 bytes (+1 ID)
-            statusReportLength = 0x147,
+            ctrlReportLength = 0x65F,
+            statusReportLength = 0x65F,
             fanChannels =
-                listOf(
-                    FanDescriptor(0, 0x5A, 1),
-                    FanDescriptor(1, 0xAF, 2),
-                    FanDescriptor(2, 0x104, 3),
-                    FanDescriptor(3, 0x159, 4),
-                    FanDescriptor(4, 0x1AE, 5),
-                    FanDescriptor(5, 0x203, 6),
-                    FanDescriptor(6, 0x258, 7),
-                    FanDescriptor(7, 0x2AD, 8),
-                ),
+                (0..7).map {
+                    FanChannelDescriptor(
+                        channel = it,
+                        ctrlOffset = 0x36 + (it * 0x55),
+                        statusOffset = 0x7D + (it * 0x0D),
+                    )
+                },
             tempSensors =
-                listOf(
-                    SensorDescriptor(0, 1),
-                    SensorDescriptor(1, 2),
-                    SensorDescriptor(2, 3),
-                    SensorDescriptor(3, 4),
-                ),
-            tempCtrlOffset = 0x0A,
+                (0..3).map {
+                    SensorDescriptor(
+                        channel = it,
+                        hwmonIndex = it + 1,
+                    )
+                },
+            tempCtrlOffset = 0x2DE,
             firmwareVersionOffset = 0x0D,
             hasFlowSensor = false,
             hasRgbpx = true,
@@ -88,22 +76,23 @@ object DeviceRegistry {
             name = "Aquacomputer QUADRO",
             productId = 0xF00D,
             ctrlReportLength = 0x3C1,
-            statusReportLength = 0xDC,
+            statusReportLength = 0x3C1,
             fanChannels =
-                listOf(
-                    FanDescriptor(0, 0x36, 1),
-                    FanDescriptor(1, 0x8B, 2),
-                    FanDescriptor(2, 0xE0, 3),
-                    FanDescriptor(3, 0x135, 4),
-                ),
+                (0..3).map {
+                    FanChannelDescriptor(
+                        channel = it,
+                        ctrlOffset = 0x36 + (it * 0x55),
+                        statusOffset = 0x70 + (it * 0x0D),
+                    )
+                },
             tempSensors =
-                listOf(
-                    SensorDescriptor(0, 1),
-                    SensorDescriptor(1, 2),
-                    SensorDescriptor(2, 3),
-                    SensorDescriptor(3, 4),
-                ),
-            tempCtrlOffset = 0x0A,
+                (0..3).map {
+                    SensorDescriptor(
+                        channel = it,
+                        hwmonIndex = it + 1,
+                    )
+                },
+            tempCtrlOffset = 0x1A2,
             firmwareVersionOffset = 0x0D,
             hasFlowSensor = true,
             hasRgbpx = true,
@@ -114,14 +103,14 @@ object DeviceRegistry {
     val D5_NEXT =
         DeviceDescriptor(
             type = DeviceType.D5_NEXT,
-            name = "Aquacomputer D5 NEXT",
+            name = "Aquacomputer D5 Next",
             productId = 0xF00E,
             ctrlReportLength = 0x329,
-            statusReportLength = 0x9E,
+            statusReportLength = 0x329,
             fanChannels =
                 listOf(
-                    FanDescriptor(0, 0x96, 1),
-                    FanDescriptor(1, 0x41, 2),
+                    FanChannelDescriptor(0, 0x36, 0x6C),
+                    FanChannelDescriptor(1, 0x8B, 0x5F),
                 ),
             tempSensors =
                 listOf(
@@ -138,4 +127,8 @@ object DeviceRegistry {
     val ALL = listOf(OCTO, QUADRO, D5_NEXT)
 
     fun findByProductId(productId: Int): DeviceDescriptor? = ALL.firstOrNull { it.productId == productId }
+
+    fun findByType(type: DeviceType): DeviceDescriptor = ALL.firstOrNull { it.type == type } ?: error("Unsupported device type: $type")
 }
+
+fun DetectedHardwareDevice.descriptor(): DeviceDescriptor = DeviceRegistry.findByType(type)

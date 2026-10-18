@@ -4,6 +4,7 @@ import com.openaqua.engine.hardware.HardwareController
 import com.openaqua.engine.protocol.ConfigParser
 import com.openaqua.engine.protocol.ConfigWriter
 import com.openaqua.engine.protocol.StatusReportParser
+import com.openaqua.engine.protocol.VirtualSensorsWriter
 import com.openaqua.model.DetectedHardwareDevice
 import com.openaqua.model.DeviceConfig
 import com.openaqua.model.DeviceDescriptor
@@ -43,6 +44,7 @@ import platform.windows.INVALID_HANDLE_VALUE
 import platform.windows.OPEN_EXISTING
 import platform.windows.ReadFile
 import platform.windows.Sleep
+import platform.windows.WriteFile
 import winhid.HIDD_ATTRIBUTES
 import winhid.HidD_GetAttributes
 import winhid.HidD_GetFeature
@@ -269,6 +271,34 @@ class WindowsHardwareController : HardwareController {
 
         return readbackReport
     }
+
+    override fun feedVirtualSensors(
+        device: DetectedHardwareDevice,
+        sensors: Map<Int, Double>,
+    ) {
+        val descriptor =
+            DeviceRegistry.ALL.firstOrNull { it.type == device.type }
+                ?: error("Unsupported device type: ${device.type}")
+
+        check(descriptor.virtualSensorsCount > 0) {
+            "${device.name} does not support virtual sensors"
+        }
+
+        val startChannel = if (device.type == DeviceType.D5_NEXT) 1 else 4
+        val slotMap = mutableMapOf<Int, Double>()
+        sensors.forEach { (channel, temp) ->
+            val slot = channel - startChannel
+            require(slot in 0 until descriptor.virtualSensorsCount) {
+                "Channel $channel is not a valid virtual sensor for ${device.name} (valid channels: $startChannel..${startChannel + descriptor.virtualSensorsCount - 1})"
+            }
+            slotMap[slot] = temp
+        }
+
+        val report = VirtualSensorsWriter.buildReport(descriptor, slotMap)
+        val node = getScannedNode(device)
+
+        writeOutputOrFeatureReport(node.devicePath, report)
+    }
 }
 
 private fun validateRequestMatchesDevice(
@@ -397,6 +427,42 @@ private fun writeFeatureReport(
 
             val ret = HidD_SetFeature(handle, buf, totalLen.toUInt())
             check(ret != 0.toUByte()) { "HidD_SetFeature failed on $devicePath" }
+        }
+    } finally {
+        CloseHandle(handle)
+    }
+}
+
+private fun writeOutputOrFeatureReport(
+    devicePath: String,
+    reportData: UByteArray,
+) {
+    val totalLen = reportData.size
+    val handle =
+        CreateFileW(
+            devicePath,
+            (GENERIC_READ or GENERIC_WRITE.toUInt()),
+            (FILE_SHARE_READ or FILE_SHARE_WRITE).toUInt(),
+            null,
+            OPEN_EXISTING.toUInt(),
+            0u,
+            null,
+        )
+    check(handle != INVALID_HANDLE_VALUE) { "Cannot open $devicePath for writing virtual sensors report" }
+
+    try {
+        memScoped {
+            val buf = allocArray<UByteVar>(totalLen)
+            for (i in 0 until totalLen) {
+                buf[i] = reportData[i]
+            }
+
+            val bytesWritten = alloc<UIntVar>()
+            val ok = WriteFile(handle, buf, totalLen.toUInt(), bytesWritten.ptr, null)
+            if (ok == 0 || bytesWritten.value != totalLen.toUInt()) {
+                val ret = HidD_SetFeature(handle, buf, totalLen.toUInt())
+                check(ret != 0.toUByte()) { "Failed to write report to $devicePath" }
+            }
         }
     } finally {
         CloseHandle(handle)

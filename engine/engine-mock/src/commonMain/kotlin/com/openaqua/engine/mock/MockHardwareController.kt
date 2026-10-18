@@ -66,6 +66,16 @@ class MockHardwareController : HardwareController {
             SensorOffset(channel = 3, offsetCelsius = 0.5),
         )
 
+    private val mockVirtualSensors: MutableMap<Int, Double?> =
+        (4..19)
+            .associateWith { channel ->
+                when (channel) {
+                    4 -> 38.2
+                    5 -> 55.0
+                    else -> null
+                }
+            }.toMutableMap()
+
     override fun scanDevices(): List<DetectedHardwareDevice> =
         listOf(
             DetectedHardwareDevice(
@@ -89,9 +99,10 @@ class MockHardwareController : HardwareController {
                                 SensorTelemetry(1, 22.8),
                                 SensorTelemetry(2, 27.4),
                                 SensorTelemetry(3, 43.1),
-                                SensorTelemetry(4, 38.2, isVirtual = true),
-                                SensorTelemetry(5, 55.0, isVirtual = true),
-                            ) + (6..19).map { SensorTelemetry(it, null, isVirtual = true) },
+                            ) +
+                                mockVirtualSensors.map { (ch, temp) ->
+                                    SensorTelemetry(ch, temp, isVirtual = true)
+                                },
                         fans =
                             listOf(
                                 FanTelemetry(
@@ -194,5 +205,16 @@ class MockHardwareController : HardwareController {
         }
 
         return readConfig(device)
+    }
+
+    override fun feedVirtualSensors(
+        device: DetectedHardwareDevice,
+        sensors: Map<Int, Double>,
+    ) {
+        sensors.forEach { (channel, temp) ->
+            if (channel in 4..19) {
+                mockVirtualSensors[channel] = temp
+            }
+        }
     }
 }

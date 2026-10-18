@@ -6,14 +6,12 @@ import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.openaqua.engine.hardware.HardwareController
-import com.openaqua.engine.hardware.findTarget
-import com.openaqua.engine.util.readTextOrNull
+import com.openaqua.engine.hardware.requireTarget
 import com.openaqua.model.DeviceType
 import com.openaqua.model.FlashConfigRequest
 import com.openaqua.model.FlashD5NextConfig
 import com.openaqua.model.FlashOctoConfig
 import com.openaqua.model.FlashQuadroConfig
-import kotlinx.io.files.Path
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
@@ -36,18 +34,8 @@ class FlashConfigCommand(
     private val pretty by option("--pretty", help = "Pretty-print JSON output").flag(default = false)
 
     override fun run() {
-        val devices = controller.scanDevices()
-        val target =
-            devices.findTarget(device)
-                ?: error("Device '$device' not found")
-
-        val rawJson =
-            when {
-                request != null && file != null -> error("Cannot specify both --request and --file")
-                request != null -> request!!
-                file != null -> Path(file!!).readTextOrNull() ?: error("Cannot read file '$file'")
-                else -> error("Must specify either --request or --file")
-            }
+        val target = controller.requireTarget(device)
+        val rawJson = readInputPayload(request, file) ?: error("Must specify either --request or --file")
 
         val jsonElement = strictJson.parseToJsonElement(rawJson)
         val hasTopLevelType = jsonElement is JsonObject && jsonElement.containsKey("type")

@@ -5,7 +5,7 @@ import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.openaqua.engine.hardware.HardwareController
-import com.openaqua.engine.hardware.findTarget
+import com.openaqua.engine.hardware.requireTarget
 import kotlinx.coroutines.runBlocking
 
 class StreamTelemetryCommand(
@@ -18,11 +18,7 @@ class StreamTelemetryCommand(
     private val device by option("--device", help = "Device ID or alias (e.g. octo-1)").required()
 
     override fun run() {
-        val devices = controller.scanDevices()
-        val target =
-            devices.findTarget(device)
-                ?: error("Device '$device' not found")
-
+        val target = controller.requireTarget(device)
         runBlocking {
             controller.streamTelemetry(target).collect { telemetry ->
                 printResponse(telemetry, pretty = false)

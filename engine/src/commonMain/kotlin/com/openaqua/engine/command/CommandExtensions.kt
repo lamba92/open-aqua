@@ -1,5 +1,7 @@
 package com.openaqua.engine.command
 
+import com.openaqua.engine.util.readTextOrNull
+import kotlinx.io.files.Path
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -24,3 +26,16 @@ inline fun <reified T : Any> printResponse(
     val serializer = if (pretty) prettyJson else defaultJson
     println(serializer.encodeToString(response))
 }
+
+fun readInputPayload(
+    inline: String?,
+    file: String?,
+    allowEmpty: Boolean = false,
+): String? =
+    when {
+        inline != null && file != null -> error("Cannot specify both inline argument and --file")
+        inline != null -> inline
+        file != null && file != "-" -> Path(file).readTextOrNull() ?: error("Cannot read file '$file'")
+        allowEmpty -> null
+        else -> error("Must specify either inline argument or --file")
+    }

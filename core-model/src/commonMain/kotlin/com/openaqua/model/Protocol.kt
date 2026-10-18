@@ -148,6 +148,11 @@ data class FlashD5NextConfig(
 ) : FlashConfigRequest
 
 @Serializable
+data class FeedVirtualSensorsRequest(
+    val sensors: Map<Int, Double>,
+)
+
+@Serializable
 @SerialName("error")
 data class ErrorResponse(
     val message: String,

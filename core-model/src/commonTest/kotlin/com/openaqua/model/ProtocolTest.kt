@@ -86,9 +86,8 @@ class ProtocolTest {
 
         val deserialized = json.decodeFromString(DeviceConfig.serializer(), serialized)
         assertTrue(deserialized is OctoConfig)
-        val octo = deserialized as OctoConfig
-        assertEquals(8, octo.fans.size)
-        assertEquals(4, octo.sensorOffsets.size)
+        assertEquals(8, deserialized.fans.size)
+        assertEquals(4, deserialized.sensorOffsets.size)
     }
 
     @Test
@@ -104,9 +103,8 @@ class ProtocolTest {
 
         val deserialized = json.decodeFromString(DeviceTelemetry.serializer(), serialized)
         assertTrue(deserialized is QuadroTelemetry)
-        val quadro = deserialized as QuadroTelemetry
-        assertEquals(200, quadro.flowRateDlH)
-        assertEquals(1, quadro.fans.size)
+        assertEquals(200, deserialized.flowRateDlH)
+        assertEquals(1, deserialized.fans.size)
     }
 
     @Test
@@ -133,12 +131,11 @@ class ProtocolTest {
 
         val deserialized = json.decodeFromString(DeviceTelemetry.serializer(), serialized)
         assertTrue(deserialized is D5NextTelemetry)
-        val d5 = deserialized as D5NextTelemetry
-        assertEquals(28.4, d5.coolantTempCelsius)
-        assertEquals(2, d5.virtualSensors.size)
-        assertTrue(d5.virtualSensors[0].isVirtual)
-        assertEquals(35.5, d5.virtualSensors[0].tempCelsius)
-        assertEquals(null, d5.virtualSensors[1].tempCelsius)
+        assertEquals(28.4, deserialized.coolantTempCelsius)
+        assertEquals(2, deserialized.virtualSensors.size)
+        assertTrue(deserialized.virtualSensors[0].isVirtual)
+        assertEquals(35.5, deserialized.virtualSensors[0].tempCelsius)
+        assertEquals(null, deserialized.virtualSensors[1].tempCelsius)
     }
 
     @Test
@@ -161,9 +158,23 @@ class ProtocolTest {
 
         val deserialized = json.decodeFromString(DeviceTelemetry.serializer(), serialized)
         assertTrue(deserialized is OctoTelemetry)
-        val octo = deserialized as OctoTelemetry
-        assertEquals(3, octo.sensors.size)
-        assertEquals(42.0, octo.sensors[1].tempCelsius)
-        assertTrue(octo.sensors[1].isVirtual)
+        assertEquals(3, deserialized.sensors.size)
+        assertEquals(42.0, deserialized.sensors[1].tempCelsius)
+        assertTrue(deserialized.sensors[1].isVirtual)
+    }
+
+    @Test
+    fun testFeedVirtualSensorsRequestSerialization() {
+        val json = Json { encodeDefaults = true }
+        val request = FeedVirtualSensorsRequest(sensors = mapOf(4 to 36.5, 5 to 48.0))
+
+        val serialized = json.encodeToString(FeedVirtualSensorsRequest.serializer(), request)
+        assertTrue(serialized.contains(""""4":36.5"""))
+        assertTrue(serialized.contains(""""5":48.0"""))
+
+        val deserialized = json.decodeFromString(FeedVirtualSensorsRequest.serializer(), serialized)
+        assertEquals(2, deserialized.sensors.size)
+        assertEquals(36.5, deserialized.sensors[4])
+        assertEquals(48.0, deserialized.sensors[5])
     }
 }

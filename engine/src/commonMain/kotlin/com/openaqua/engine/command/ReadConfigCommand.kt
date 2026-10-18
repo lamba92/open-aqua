@@ -6,7 +6,7 @@ import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.openaqua.engine.hardware.HardwareController
-import com.openaqua.engine.hardware.findTarget
+import com.openaqua.engine.hardware.requireTarget
 
 class ReadConfigCommand(
     private val controller: HardwareController,
@@ -19,11 +19,7 @@ class ReadConfigCommand(
     private val pretty by option("--pretty", help = "Pretty-print JSON output").flag(default = false)
 
     override fun run() {
-        val devices = controller.scanDevices()
-        val target =
-            devices.findTarget(device)
-                ?: error("Device '$device' not found")
-
+        val target = controller.requireTarget(device)
         val config = controller.readConfig(target)
         printResponse(config, pretty)
     }
