@@ -108,4 +108,62 @@ class ProtocolTest {
         assertEquals(200, quadro.flowRateDlH)
         assertEquals(1, quadro.fans.size)
     }
+
+    @Test
+    fun testD5NextTelemetrySerializationWithVirtualSensors() {
+        val json = Json { encodeDefaults = true }
+        val pump = FanTelemetry(0, 3000, 10.0, 12.0, 0.8, 60.0)
+        val fan = FanTelemetry(1, 1000, 2.0, 12.0, 0.16, 40.0)
+        val virtualSensors =
+            listOf(
+                SensorTelemetry(channel = 1, tempCelsius = 35.5, isVirtual = true),
+                SensorTelemetry(channel = 2, tempCelsius = null, isVirtual = true),
+            )
+        val telemetry: DeviceTelemetry =
+            D5NextTelemetry(
+                pump = pump,
+                fan = fan,
+                coolantTempCelsius = 28.4,
+                virtualSensors = virtualSensors,
+            )
+
+        val serialized = json.encodeToString(DeviceTelemetry.serializer(), telemetry)
+        assertTrue(serialized.contains(""""type":"d5next""""))
+        assertTrue(serialized.contains(""""virtualSensors""""))
+
+        val deserialized = json.decodeFromString(DeviceTelemetry.serializer(), serialized)
+        assertTrue(deserialized is D5NextTelemetry)
+        val d5 = deserialized as D5NextTelemetry
+        assertEquals(28.4, d5.coolantTempCelsius)
+        assertEquals(2, d5.virtualSensors.size)
+        assertTrue(d5.virtualSensors[0].isVirtual)
+        assertEquals(35.5, d5.virtualSensors[0].tempCelsius)
+        assertEquals(null, d5.virtualSensors[1].tempCelsius)
+    }
+
+    @Test
+    fun testOctoTelemetrySerializationWithVirtualSensors() {
+        val json = Json { encodeDefaults = true }
+        val sensors =
+            listOf(
+                SensorTelemetry(0, 30.0, isVirtual = false),
+                SensorTelemetry(4, 42.0, isVirtual = true),
+                SensorTelemetry(5, null, isVirtual = true),
+            )
+        val telemetry: DeviceTelemetry =
+            OctoTelemetry(
+                fans = emptyList(),
+                sensors = sensors,
+            )
+
+        val serialized = json.encodeToString(DeviceTelemetry.serializer(), telemetry)
+        assertTrue(serialized.contains(""""type":"octo""""))
+
+        val deserialized = json.decodeFromString(DeviceTelemetry.serializer(), serialized)
+        assertTrue(deserialized is OctoTelemetry)
+        val octo = deserialized as OctoTelemetry
+        assertEquals(3, octo.sensors.size)
+        assertEquals(42.0, octo.sensors[1].tempCelsius)
+        assertTrue(octo.sensors[1].isVirtual)
+    }
 }

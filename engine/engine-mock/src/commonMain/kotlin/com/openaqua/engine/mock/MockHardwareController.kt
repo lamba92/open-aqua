@@ -89,7 +89,9 @@ class MockHardwareController : HardwareController {
                                 SensorTelemetry(1, 22.8),
                                 SensorTelemetry(2, 27.4),
                                 SensorTelemetry(3, 43.1),
-                            ),
+                                SensorTelemetry(4, 38.2, isVirtual = true),
+                                SensorTelemetry(5, 55.0, isVirtual = true),
+                            ) + (6..19).map { SensorTelemetry(it, null, isVirtual = true) },
                         fans =
                             listOf(
                                 FanTelemetry(

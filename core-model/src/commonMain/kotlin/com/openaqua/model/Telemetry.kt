@@ -44,4 +44,5 @@ data class D5NextTelemetry(
     val pump: FanTelemetry,
     val fan: FanTelemetry,
     val coolantTempCelsius: Double? = null,
+    val virtualSensors: List<SensorTelemetry> = emptyList(),
 ) : DeviceTelemetry

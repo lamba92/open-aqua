@@ -86,6 +86,23 @@ object StatusReportParser {
         )
     }
 
+    private fun parseVirtualSensors(
+        report: UByteArray,
+        startOffset: Int?,
+        count: Int,
+        startChannel: Int,
+    ): List<SensorTelemetry> {
+        if (startOffset == null || count == 0) return emptyList()
+        return (0 until count).map { i ->
+            parseTemp(
+                channel = startChannel + i,
+                report = report,
+                offset = startOffset + (i * 2),
+                isVirtual = true,
+            )
+        }
+    }
+
     private fun parseOcto(report: UByteArray): OctoTelemetry {
         val octoFanOffsets = intArrayOf(0x7D, 0x8A, 0x97, 0xA4, 0xB1, 0xBE, 0xCB, 0xD8)
         val descriptor = DeviceRegistry.OCTO
@@ -97,14 +114,22 @@ object StatusReportParser {
             }
 
         val tempStart = 0x3D
-        val sensors =
+        val physicalSensors =
             descriptor.tempSensors.mapIndexed { index, sensor ->
-                parseTemp(sensor.channel, report, tempStart + (index * 2), sensor.isVirtual)
+                parseTemp(sensor.channel, report, tempStart + (index * 2), isVirtual = false)
             }
+
+        val virtualSensors =
+            parseVirtualSensors(
+                report = report,
+                startOffset = descriptor.virtualSensorsStartOffset,
+                count = descriptor.virtualSensorsCount,
+                startChannel = 4,
+            )
 
         return OctoTelemetry(
             fans = fans,
-            sensors = sensors,
+            sensors = physicalSensors + virtualSensors,
         )
     }
 
@@ -119,30 +144,48 @@ object StatusReportParser {
             }
 
         val tempStart = 0x34
-        val sensors =
+        val physicalSensors =
             descriptor.tempSensors.mapIndexed { index, sensor ->
-                parseTemp(sensor.channel, report, tempStart + (index * 2), sensor.isVirtual)
+                parseTemp(sensor.channel, report, tempStart + (index * 2), isVirtual = false)
             }
+
+        val virtualSensors =
+            parseVirtualSensors(
+                report = report,
+                startOffset = descriptor.virtualSensorsStartOffset,
+                count = descriptor.virtualSensorsCount,
+                startChannel = 4,
+            )
 
         val flowRaw = readU16Be(report, 0x6E)
         val flowRateDlH = if (flowRaw in 1..65534) flowRaw else null
 
         return QuadroTelemetry(
             fans = fans,
-            sensors = sensors,
+            sensors = physicalSensors + virtualSensors,
             flowRateDlH = flowRateDlH,
         )
     }
 
     private fun parseD5Next(report: UByteArray): D5NextTelemetry {
+        val descriptor = DeviceRegistry.D5_NEXT
         val pump = parseFan(channel = 0, report = report, baseOffset = 0x6C)
         val fan = parseFan(channel = 1, report = report, baseOffset = 0x5F)
         val coolantTemp = parseTemp(channel = 0, report = report, offset = 0x57).tempCelsius
+
+        val virtualSensors =
+            parseVirtualSensors(
+                report = report,
+                startOffset = descriptor.virtualSensorsStartOffset,
+                count = descriptor.virtualSensorsCount,
+                startChannel = 1,
+            )
 
         return D5NextTelemetry(
             pump = pump,
             fan = fan,
             coolantTempCelsius = coolantTemp,
+            virtualSensors = virtualSensors,
         )
     }
 }

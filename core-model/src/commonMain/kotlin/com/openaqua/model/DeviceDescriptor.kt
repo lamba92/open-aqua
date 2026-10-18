@@ -42,6 +42,8 @@ data class DeviceDescriptor(
     val firmwareVersionOffset: Int? = 0x0D,
     val hasFlowSensor: Boolean = false,
     val hasRgbpx: Boolean = false,
+    val virtualSensorsCount: Int = 0,
+    val virtualSensorsStartOffset: Int? = null,
 )
 
 object DeviceRegistry {
@@ -76,6 +78,8 @@ object DeviceRegistry {
             firmwareVersionOffset = 0x0D,
             hasFlowSensor = false,
             hasRgbpx = true,
+            virtualSensorsCount = 16,
+            virtualSensorsStartOffset = 0x45,
         )
 
     val QUADRO =
@@ -103,6 +107,8 @@ object DeviceRegistry {
             firmwareVersionOffset = 0x0D,
             hasFlowSensor = true,
             hasRgbpx = true,
+            virtualSensorsCount = 16,
+            virtualSensorsStartOffset = 0x3C,
         )
 
     val D5_NEXT =
@@ -125,6 +131,8 @@ object DeviceRegistry {
             firmwareVersionOffset = 0x0D,
             hasFlowSensor = true,
             hasRgbpx = true,
+            virtualSensorsCount = 8,
+            virtualSensorsStartOffset = 0x3F,
         )
 
     val ALL = listOf(OCTO, QUADRO, D5_NEXT)
