@@ -122,7 +122,7 @@ Inside each fan channel's block in Control Report `0x03`, Aquacomputer devices s
 ### 2. Checksum Algorithm (CRC-16-USB)
 Before sending the report back to the device, a 16-bit CRC must be appended to the last two bytes of the report:
 - **Polynomial**: `0x8005` (reversed: `0xA001`, `x^16 + x^15 + x^2 + 1`)
-- - **Initial value**: `0xFFFF`
+- **Initial value**: `0xFFFF`
 - **XOR Out**: `0xFFFF`
 - **Range**: Calculated over bytes `1` through `reportLength - 2`.
 
@@ -184,7 +184,7 @@ $ open-aqua-engine devices
 
 ### 2. Read Telemetry
 ```bash
-$ open-aqua-engine telemetry --device octo_0
+$ open-aqua-engine telemetry --device octo-1
 ```
 ```json
 {
@@ -204,68 +204,90 @@ $ open-aqua-engine telemetry --device octo_0
 }
 ```
 
-### 3. Read Hardware Curves
+### 3. Stream Telemetry (NDJSON)
+Continuously emits single-line JSON samples at the specified interval (ideal for reactive pipes without line buffering or unescaped newline hazards):
 ```bash
-$ open-aqua-engine curves --device octo_0
+$ open-aqua-engine stream-telemetry --device octo-1 --interval 1000
+```
+```ndjson
+{"type":"telemetry","deviceId":"octo_0","deviceType":"OCTO",...}
+{"type":"telemetry","deviceId":"octo_0","deviceType":"OCTO",...}
+```
+
+### 4. Read Hardware Fan Configurations & Curves
+```bash
+$ open-aqua-engine read-curves --device octo-1
 ```
 ```json
 {
   "type": "curves",
   "deviceId": "octo_0",
-  "curves": {
-    "fan4": [
-      {"temp": 25.0, "pwm": 15.0},
-      {"temp": 26.7, "pwm": 15.0},
-      {"temp": 35.2, "pwm": 26.0},
-      {"temp": 50.5, "pwm": 100.0}
-    ]
+  "configs": {
+    "fan1": {
+      "mode": "curve",
+      "channel": 0,
+      "sensorIndex": 0,
+      "points": [
+        {"temp": 25.0, "pwm": 20.0},
+        {"temp": 45.0, "pwm": 100.0}
+      ]
+    }
   }
 }
 ```
 
-### 4. Flash Curve to Hardware EEPROM
-Via generated curve parameters:
+### 5. Flash Fan Configuration to Hardware EEPROM
+Supports flashing any polymorphic fan channel mode (`curve`, `fixed`, `target_temp`, `two_point`):
 ```bash
-$ open-aqua-engine flash curve-params --device octo_0 --fan fan4 --curve-params '{"tMin":25.0,"tMax":75.0,"pMin":15.0,"pMax":100.0}'
-```
-
-Via explicit 16-point curve coordinates:
-```bash
-$ open-aqua-engine flash points --device octo_0 --fan fan4 --points '[{"temp":25.0,"pwm":15.0}, ...]'
+$ open-aqua-engine flash-fan --device octo-1 --config '{"channel":0,"mode":"curve","sensorIndex":0,"points":[{"temp":25.0,"pwm":20.0},{"temp":45.0,"pwm":100.0}]}'
 ```
 ```json
 {
-  "type": "flash",
+  "type": "flash-fan",
   "status": "ok",
   "deviceId": "octo_0",
-  "fanId": "fan4",
+  "channel": 0,
   "bytesWritten": 1631,
   "verified": true,
   "error": null
 }
 ```
 
-### 5. Set Sensor Calibration Offset
+### 6. Read Sensor Calibration Offsets
 ```bash
-$ open-aqua-engine sensor-offset --device octo_0 --sensor temp1 --offset 0.5
+$ open-aqua-engine read-offsets --device octo-1
 ```
 ```json
 {
-  "type": "set-sensor-offset",
-  "status": "ok",
+  "type": "sensor-offsets",
   "deviceId": "octo_0",
-  "sensorId": "temp1",
-  "offsetCelsius": 0.5,
-  "verified": true,
-  "error": null
+  "offsets": {
+    "0": 0.0,
+    "1": 0.5
+  }
 }
 ```
 
-### 6. Error Response
+### 7. Flash Sensor Calibration Offsets
+```bash
+$ open-aqua-engine flash-offsets --device octo-1 --offsets '{"0": 0.0, "1": 0.5}'
+```
+```json
+{
+  "type": "sensor-offsets",
+  "deviceId": "octo_0",
+  "offsets": {
+    "0": 0.0,
+    "1": 0.5
+  }
+}
+```
+
+### 8. Error Response
 ```json
 {
   "type": "error",
-  "error": "Device 'octo_0' not found",
+  "error": "Device 'octo-1' not found",
   "exceptionType": "IllegalStateException"
 }
 ```

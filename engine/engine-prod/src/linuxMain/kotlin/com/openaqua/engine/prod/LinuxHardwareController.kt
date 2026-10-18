@@ -7,7 +7,6 @@ import com.openaqua.engine.protocol.StatusReportParser
 import com.openaqua.engine.util.listDirectory
 import com.openaqua.engine.util.readTextOrNull
 import com.openaqua.model.CurveFanConfig
-import com.openaqua.model.CurvePoint
 import com.openaqua.model.DetectedHardwareDevice
 import com.openaqua.model.DeviceCurves
 import com.openaqua.model.DeviceDescriptor
@@ -15,7 +14,6 @@ import com.openaqua.model.DeviceRegistry
 import com.openaqua.model.DeviceTelemetry
 import com.openaqua.model.FanChannelConfig
 import com.openaqua.model.FixedFanConfig
-import com.openaqua.model.FlashCurveResponse
 import com.openaqua.model.FlashFanResponse
 import com.openaqua.model.SensorOffset
 import com.openaqua.model.SensorOffsetsResponse
@@ -228,35 +226,6 @@ class LinuxHardwareController : HardwareController {
         )
     }
 
-    override fun flashCurve(
-        device: DetectedHardwareDevice,
-        channel: Int,
-        points: List<CurvePoint>,
-        sensorIndex: Int?,
-    ): FlashCurveResponse {
-        val sIndex =
-            sensorIndex ?: run {
-                val curves = readCurves(device)
-                val existing = curves.curves.firstOrNull { it.channel == channel }
-                when (existing) {
-                    is CurveFanConfig -> existing.sensorIndex
-                    is TargetTempFanConfig -> existing.sensorIndex
-                    is TwoPointFanConfig -> existing.sensorIndex
-                    else -> 0
-                }
-            }
-        val config = CurveFanConfig(channel = channel, sensorIndex = sIndex, points = points)
-        val res = flashFan(device, config)
-        return FlashCurveResponse(
-            status = res.status,
-            deviceId = res.deviceId,
-            channel = res.channel,
-            bytesWritten = res.bytesWritten,
-            verified = res.verified,
-            error = res.error,
-        )
-    }
-
     override fun readSensorOffsets(device: DetectedHardwareDevice): SensorOffsetsResponse {
         val descriptor =
             DeviceRegistry.ALL.firstOrNull { it.type == device.type }
@@ -290,11 +259,11 @@ class LinuxHardwareController : HardwareController {
         descriptor.tempSensors.firstOrNull { it.channel == channel }
             ?: error("Unknown sensor channel: $channel for device ${device.name}")
 
+        val node = getScannedNode(device)
         val baseOffset =
             descriptor.tempCtrlOffset
                 ?: error("Device ${device.name} does not support direct HID temperature offset configuration")
 
-        val node = getScannedNode(device)
         val report = readFeatureReport(node.hidrawPath, 0x03u, descriptor.ctrlReportLength)
 
         ControlReportWriter.encodeSensorOffset(report, baseOffset, channel, offsetCelsius)

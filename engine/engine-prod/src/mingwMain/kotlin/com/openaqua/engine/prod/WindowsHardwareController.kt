@@ -5,7 +5,6 @@ import com.openaqua.engine.protocol.ControlReportParser
 import com.openaqua.engine.protocol.ControlReportWriter
 import com.openaqua.engine.protocol.StatusReportParser
 import com.openaqua.model.CurveFanConfig
-import com.openaqua.model.CurvePoint
 import com.openaqua.model.DetectedHardwareDevice
 import com.openaqua.model.DeviceCurves
 import com.openaqua.model.DeviceDescriptor
@@ -13,7 +12,6 @@ import com.openaqua.model.DeviceRegistry
 import com.openaqua.model.DeviceTelemetry
 import com.openaqua.model.FanChannelConfig
 import com.openaqua.model.FixedFanConfig
-import com.openaqua.model.FlashCurveResponse
 import com.openaqua.model.FlashFanResponse
 import com.openaqua.model.SensorOffset
 import com.openaqua.model.SensorOffsetsResponse
@@ -290,35 +288,6 @@ class WindowsHardwareController : HardwareController {
             config = readbackConfig,
             bytesWritten = report.size,
             verified = true,
-        )
-    }
-
-    override fun flashCurve(
-        device: DetectedHardwareDevice,
-        channel: Int,
-        points: List<CurvePoint>,
-        sensorIndex: Int?,
-    ): FlashCurveResponse {
-        val sIndex =
-            sensorIndex ?: run {
-                val curves = readCurves(device)
-                val existing = curves.curves.firstOrNull { it.channel == channel }
-                when (existing) {
-                    is CurveFanConfig -> existing.sensorIndex
-                    is TargetTempFanConfig -> existing.sensorIndex
-                    is TwoPointFanConfig -> existing.sensorIndex
-                    else -> 0
-                }
-            }
-        val config = CurveFanConfig(channel = channel, sensorIndex = sIndex, points = points)
-        val res = flashFan(device, config)
-        return FlashCurveResponse(
-            status = res.status,
-            deviceId = res.deviceId,
-            channel = res.channel,
-            bytesWritten = res.bytesWritten,
-            verified = res.verified,
-            error = res.error,
         )
     }
 

@@ -11,7 +11,6 @@ import com.openaqua.model.DeviceType
 import com.openaqua.model.FanChannelConfig
 import com.openaqua.model.FanTelemetry
 import com.openaqua.model.FixedFanConfig
-import com.openaqua.model.FlashCurveResponse
 import com.openaqua.model.FlashFanResponse
 import com.openaqua.model.SensorOffset
 import com.openaqua.model.SensorOffsetsResponse
@@ -185,22 +184,6 @@ class MockHardwareController : HardwareController {
             bytesWritten = 1632,
             verified = true,
         )
-
-    override fun flashCurve(
-        device: DetectedHardwareDevice,
-        channel: Int,
-        points: List<CurvePoint>,
-        sensorIndex: Int?,
-    ): FlashCurveResponse {
-        val res = flashFan(device, CurveFanConfig(channel = channel, sensorIndex = sensorIndex ?: 0, points = points))
-        return FlashCurveResponse(
-            status = res.status,
-            deviceId = res.deviceId,
-            channel = res.channel,
-            bytesWritten = res.bytesWritten,
-            verified = res.verified,
-        )
-    }
 
     override fun readSensorOffsets(device: DetectedHardwareDevice): SensorOffsetsResponse =
         SensorOffsetsResponse(

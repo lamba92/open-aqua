@@ -1,12 +1,9 @@
 package com.openaqua.engine.hardware
 
-import com.openaqua.model.AutoCurveParams
-import com.openaqua.model.CurvePoint
 import com.openaqua.model.DetectedHardwareDevice
 import com.openaqua.model.DeviceCurves
 import com.openaqua.model.DeviceTelemetry
 import com.openaqua.model.FanChannelConfig
-import com.openaqua.model.FlashCurveResponse
 import com.openaqua.model.FlashFanResponse
 import com.openaqua.model.SensorOffsetsResponse
 import com.openaqua.model.SetSensorOffsetResponse
@@ -24,13 +21,6 @@ interface HardwareController {
         config: FanChannelConfig,
     ): FlashFanResponse
 
-    fun flashCurve(
-        device: DetectedHardwareDevice,
-        channel: Int,
-        points: List<CurvePoint>,
-        sensorIndex: Int? = null,
-    ): FlashCurveResponse
-
     fun readSensorOffsets(device: DetectedHardwareDevice): SensorOffsetsResponse
 
     fun setSensorOffset(
@@ -39,13 +29,6 @@ interface HardwareController {
         offsetCelsius: Double,
     ): SetSensorOffsetResponse
 }
-
-fun HardwareController.flashCurve(
-    device: DetectedHardwareDevice,
-    channel: Int,
-    params: AutoCurveParams,
-    sensorIndex: Int? = null,
-): FlashCurveResponse = flashCurve(device, channel, params.toPoints(), sensorIndex)
 
 fun List<DetectedHardwareDevice>.findTarget(query: String): DetectedHardwareDevice? {
     val trimmed = query.trim()

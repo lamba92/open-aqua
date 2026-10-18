@@ -81,26 +81,6 @@ data class DeviceCurves(
 ) : EngineResponse
 
 @Serializable
-data class FlashCurveRequest(
-    val deviceId: String,
-    val channel: Int,
-    val points: List<CurvePoint>? = null,
-    val autoCurve: AutoCurveParams? = null,
-    val sensorIndex: Int? = null,
-)
-
-@Serializable
-@SerialName("flash-curves")
-data class FlashCurveResponse(
-    val status: String,
-    val deviceId: String,
-    val channel: Int,
-    val bytesWritten: Int,
-    val verified: Boolean,
-    val error: String? = null,
-) : EngineResponse
-
-@Serializable
 @SerialName("flash-fan")
 data class FlashFanResponse(
     val status: String,
