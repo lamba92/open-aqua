@@ -2,7 +2,6 @@ package com.openaqua.engine.command
 
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.Context
-import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.openaqua.engine.hardware.HardwareController
@@ -14,10 +13,9 @@ class StreamTelemetryCommand(
 ) : CliktCommand(
         name = "stream-telemetry",
     ) {
-    override fun help(context: Context): String = "Continuously stream live telemetry as NDJSON"
+    override fun help(context: Context): String = "Continuously stream live telemetry as NDJSON (one line per report)"
 
     private val device by option("--device", help = "Device ID or alias (e.g. octo-1)").required()
-    private val pretty by option("--pretty", help = "Pretty-print JSON output").flag(default = false)
 
     override fun run() {
         val devices = controller.scanDevices()
@@ -27,7 +25,7 @@ class StreamTelemetryCommand(
 
         runBlocking {
             controller.streamTelemetry(target).collect { telemetry ->
-                printResponse(telemetry, isPretty(pretty))
+                printResponse(telemetry, pretty = false)
             }
         }
     }
