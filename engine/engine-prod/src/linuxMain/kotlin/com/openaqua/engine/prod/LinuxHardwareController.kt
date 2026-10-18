@@ -1,21 +1,29 @@
 package com.openaqua.engine.prod
 
 import com.openaqua.engine.hardware.HardwareController
+import com.openaqua.engine.protocol.ControlReportParser
+import com.openaqua.engine.protocol.ControlReportWriter
 import com.openaqua.engine.protocol.StatusReportParser
-import com.openaqua.engine.util.crc16Usb
 import com.openaqua.engine.util.listDirectory
 import com.openaqua.engine.util.readTextOrNull
+import com.openaqua.model.CurveFanConfig
 import com.openaqua.model.CurvePoint
 import com.openaqua.model.DetectedHardwareDevice
 import com.openaqua.model.DeviceCurves
 import com.openaqua.model.DeviceDescriptor
 import com.openaqua.model.DeviceRegistry
 import com.openaqua.model.DeviceTelemetry
-import com.openaqua.model.FanCurve
+import com.openaqua.model.FanChannelConfig
+import com.openaqua.model.FixedFanConfig
 import com.openaqua.model.FlashCurveResponse
+import com.openaqua.model.FlashFanResponse
 import com.openaqua.model.SensorOffset
 import com.openaqua.model.SensorOffsetsResponse
 import com.openaqua.model.SetSensorOffsetResponse
+import com.openaqua.model.TargetTempFanConfig
+import com.openaqua.model.TwoPointFanConfig
+import com.openaqua.model.UnconfiguredFanConfig
+import com.openaqua.model.UnknownFanConfig
 import kotlinx.cinterop.UByteVar
 import kotlinx.cinterop.alloc
 import kotlinx.cinterop.allocArray
@@ -39,8 +47,6 @@ import platform.posix.pollfd
 import platform.posix.read
 import platform.posix.usleep
 import kotlin.math.abs
-import kotlin.math.round
-import kotlin.math.roundToInt
 
 private data class ScannedHardwareNode(
     val id: String,
@@ -179,10 +185,47 @@ class LinuxHardwareController : HardwareController {
         val report = readFeatureReport(node.hidrawPath, 0x03u, descriptor.ctrlReportLength)
         val curvesList =
             descriptor.fanChannels.map { fan ->
-                FanCurve(channel = fan.channel, points = parseCurvePoints(report, fan.ctrlOffset))
+                ControlReportParser.parseFanChannelConfig(report, fan.ctrlOffset, fan.channel)
             }
 
         return DeviceCurves(deviceId = device.id, curves = curvesList)
+    }
+
+    override fun flashFan(
+        device: DetectedHardwareDevice,
+        config: FanChannelConfig,
+    ): FlashFanResponse {
+        val descriptor =
+            DeviceRegistry.ALL.firstOrNull { it.type == device.type }
+                ?: error("Unsupported device type: ${device.type}")
+
+        val fan =
+            descriptor.fanChannels.firstOrNull { it.channel == config.channel }
+                ?: error("Unknown fan channel: ${config.channel} for device ${device.name}")
+
+        val node = getScannedNode(device)
+        val report = readFeatureReport(node.hidrawPath, 0x03u, descriptor.ctrlReportLength)
+
+        ControlReportWriter.encodeFanChannelConfig(report, fan.ctrlOffset, config)
+        ControlReportWriter.finalizeReport(report, descriptor.ctrlReportLength)
+
+        writeFeatureReport(node.hidrawPath, report)
+        writeFeatureReport(node.hidrawPath, ControlReportWriter.SECONDARY_COMMIT_REPORT)
+        usleep(250_000u)
+
+        val readback = readFeatureReport(node.hidrawPath, 0x03u, descriptor.ctrlReportLength)
+        val readbackConfig = ControlReportParser.parseFanChannelConfig(readback, fan.ctrlOffset, config.channel)
+
+        verifyFanChannelConfig(expected = config, actual = readbackConfig)
+
+        return FlashFanResponse(
+            status = STATUS_OK,
+            deviceId = device.id,
+            channel = config.channel,
+            config = readbackConfig,
+            bytesWritten = report.size,
+            verified = true,
+        )
     }
 
     override fun flashCurve(
@@ -191,75 +234,26 @@ class LinuxHardwareController : HardwareController {
         points: List<CurvePoint>,
         sensorIndex: Int?,
     ): FlashCurveResponse {
-        val descriptor =
-            DeviceRegistry.ALL.firstOrNull { it.type == device.type }
-                ?: error("Unsupported device type: ${device.type}")
-
-        val fan =
-            descriptor.fanChannels.firstOrNull { it.channel == channel }
-                ?: error("Unknown fan channel: $channel for device ${device.name}")
-
-        require(points.size == 16) {
-            "Expected exactly 16 curve points, got ${points.size}"
-        }
-
-        val node = getScannedNode(device)
-        val report = readFeatureReport(node.hidrawPath, 0x03u, descriptor.ctrlReportLength)
-        val base = fan.ctrlOffset
-
-        if (sensorIndex != null) {
-            report[base + 3] = ((sensorIndex ushr 8) and 0xFF).toUByte()
-            report[base + 4] = (sensorIndex and 0xFF).toUByte()
-            report[base + 0] = 0x02u
-        } else {
-            val existingSensor = ((report[base + 3].toInt() shl 8) or report[base + 4].toInt()) and 0xFFFF
-            if (existingSensor != 0xFFFF) {
-                report[base + 0] = 0x02u
+        val sIndex =
+            sensorIndex ?: run {
+                val curves = readCurves(device)
+                val existing = curves.curves.firstOrNull { it.channel == channel }
+                when (existing) {
+                    is CurveFanConfig -> existing.sensorIndex
+                    is TargetTempFanConfig -> existing.sensorIndex
+                    is TwoPointFanConfig -> existing.sensorIndex
+                    else -> 0
+                }
             }
-        }
-
-        for (i in 0 until 16) {
-            val pt = points[i]
-            val tRaw = (pt.temp * 100.0).roundToInt().coerceIn(-5000, 15000).toShort()
-            val pRaw = (pt.pwm * 100.0).roundToInt().coerceIn(0, 10000).toUShort()
-
-            val tOffset = base + 0x15 + (i * 2)
-            val pOffset = base + 0x35 + (i * 2)
-
-            report[tOffset] = ((tRaw.toInt() ushr 8) and 0xFF).toUByte()
-            report[tOffset + 1] = (tRaw.toInt() and 0xFF).toUByte()
-
-            report[pOffset] = ((pRaw.toInt() ushr 8) and 0xFF).toUByte()
-            report[pOffset + 1] = (pRaw.toInt() and 0xFF).toUByte()
-        }
-
-        val crcOffset = 1
-        val crcLen = descriptor.ctrlReportLength - 3
-        val crc = crc16Usb(report, crcOffset, crcLen)
-        val crcPos = descriptor.ctrlReportLength - 2
-        report[crcPos] = ((crc.toInt() ushr 8) and 0xFF).toUByte()
-        report[crcPos + 1] = (crc.toInt() and 0xFF).toUByte()
-
-        writeFeatureReport(node.hidrawPath, report)
-        usleep(250_000u)
-
-        val readback = readFeatureReport(node.hidrawPath, 0x03u, descriptor.ctrlReportLength)
-        val readbackPoints = parseCurvePoints(readback, base)
-        for (i in 0 until 16) {
-            val expected = points[i]
-            val actual = readbackPoints[i]
-
-            check(abs(actual.temp - expected.temp) <= 0.2 && abs(actual.pwm - expected.pwm) <= 0.2) {
-                "Verification failed at point $i: expected (${expected.temp}°C, ${expected.pwm}%), read (${actual.temp}°C, ${actual.pwm}%)"
-            }
-        }
-
+        val config = CurveFanConfig(channel = channel, sensorIndex = sIndex, points = points)
+        val res = flashFan(device, config)
         return FlashCurveResponse(
-            status = STATUS_OK,
-            deviceId = device.id,
-            channel = channel,
-            bytesWritten = report.size,
-            verified = true,
+            status = res.status,
+            deviceId = res.deviceId,
+            channel = res.channel,
+            bytesWritten = res.bytesWritten,
+            verified = res.verified,
+            error = res.error,
         )
     }
 
@@ -277,9 +271,7 @@ class LinuxHardwareController : HardwareController {
 
         val offsets =
             descriptor.tempSensors.map { sensor ->
-                val offsetPos = baseOffset + (sensor.channel * 2)
-                val raw = ((report[offsetPos].toInt() shl 8) or report[offsetPos + 1].toInt()).toShort()
-                val offset = round((raw.toDouble() / 100.0) * 10.0) / 10.0
+                val offset = ControlReportParser.parseSensorOffset(report, baseOffset, sensor.channel)
                 SensorOffset(sensor.channel, offset)
             }
 
@@ -298,31 +290,22 @@ class LinuxHardwareController : HardwareController {
         descriptor.tempSensors.firstOrNull { it.channel == channel }
             ?: error("Unknown sensor channel: $channel for device ${device.name}")
 
-        val node = getScannedNode(device)
         val baseOffset =
             descriptor.tempCtrlOffset
                 ?: error("Device ${device.name} does not support direct HID temperature offset configuration")
 
+        val node = getScannedNode(device)
         val report = readFeatureReport(node.hidrawPath, 0x03u, descriptor.ctrlReportLength)
-        val offsetPos = baseOffset + (channel * 2)
-        val centiCelsius = (offsetCelsius * 100.0).roundToInt().coerceIn(-1500, 1500).toShort()
 
-        report[offsetPos] = ((centiCelsius.toInt() ushr 8) and 0xFF).toUByte()
-        report[offsetPos + 1] = (centiCelsius.toInt() and 0xFF).toUByte()
-
-        val crcOffset = 1
-        val crcLen = descriptor.ctrlReportLength - 3
-        val crc = crc16Usb(report, crcOffset, crcLen)
-        val crcPos = descriptor.ctrlReportLength - 2
-        report[crcPos] = ((crc.toInt() ushr 8) and 0xFF).toUByte()
-        report[crcPos + 1] = (crc.toInt() and 0xFF).toUByte()
+        ControlReportWriter.encodeSensorOffset(report, baseOffset, channel, offsetCelsius)
+        ControlReportWriter.finalizeReport(report, descriptor.ctrlReportLength)
 
         writeFeatureReport(node.hidrawPath, report)
+        writeFeatureReport(node.hidrawPath, ControlReportWriter.SECONDARY_COMMIT_REPORT)
         usleep(250_000u)
 
         val readback = readFeatureReport(node.hidrawPath, 0x03u, descriptor.ctrlReportLength)
-        val readbackRaw = ((readback[offsetPos].toInt() shl 8) or readback[offsetPos + 1].toInt()).toShort()
-        val readbackOffset = round((readbackRaw.toDouble() / 100.0) * 10.0) / 10.0
+        val readbackOffset = ControlReportParser.parseSensorOffset(readback, baseOffset, channel)
         check(abs(readbackOffset - offsetCelsius) <= 0.1) {
             "Verification failed: expected offset $offsetCelsius°C, read $readbackOffset°C"
         }
@@ -337,22 +320,56 @@ class LinuxHardwareController : HardwareController {
     }
 }
 
-private fun parseCurvePoints(
-    report: UByteArray,
-    baseOffset: Int,
-): List<CurvePoint> =
-    (0 until 16).map { i ->
-        val tOffset = baseOffset + 0x15 + (i * 2)
-        val pOffset = baseOffset + 0x35 + (i * 2)
-
-        val tRaw = ((report[tOffset].toInt() shl 8) or report[tOffset + 1].toInt()).toShort()
-        val pRaw = ((report[pOffset].toInt() shl 8) or report[pOffset + 1].toInt()).toUShort()
-
-        val temp = round((tRaw.toDouble() / 100.0) * 10.0) / 10.0
-        val pwm = round((pRaw.toDouble() / 100.0) * 10.0) / 10.0
-
-        CurvePoint(temp = temp, pwm = pwm)
+private fun verifyFanChannelConfig(
+    expected: FanChannelConfig,
+    actual: FanChannelConfig,
+) {
+    when (expected) {
+        is FixedFanConfig -> {
+            check(actual is FixedFanConfig) {
+                "Verification failed: expected FixedFanConfig, got ${actual::class.simpleName}"
+            }
+            check(abs(actual.powerPercent - expected.powerPercent) <= 0.2) {
+                "Verification failed: expected power ${expected.powerPercent}%, read ${actual.powerPercent}%"
+            }
+        }
+        is CurveFanConfig -> {
+            check(actual is CurveFanConfig) {
+                "Verification failed: expected CurveFanConfig, got ${actual::class.simpleName}"
+            }
+            check(actual.sensorIndex == expected.sensorIndex) {
+                "Verification failed: expected sensorIndex ${expected.sensorIndex}, read ${actual.sensorIndex}"
+            }
+            for (i in 0 until 16) {
+                val expPt = expected.points[i]
+                val actPt = actual.points[i]
+                check(abs(actPt.temp - expPt.temp) <= 0.2 && abs(actPt.pwm - expPt.pwm) <= 0.2) {
+                    "Verification failed at point $i: expected (${expPt.temp}°C, ${expPt.pwm}%), read (${actPt.temp}°C, ${actPt.pwm}%)"
+                }
+            }
+        }
+        is TargetTempFanConfig -> {
+            check(actual is TargetTempFanConfig) {
+                "Verification failed: expected TargetTempFanConfig, got ${actual::class.simpleName}"
+            }
+            check(actual.sensorIndex == expected.sensorIndex) {
+                "Verification failed: expected sensorIndex ${expected.sensorIndex}, read ${actual.sensorIndex}"
+            }
+            check(abs(actual.targetTempCelsius - expected.targetTempCelsius) <= 0.2) {
+                "Verification failed: expected targetTemp ${expected.targetTempCelsius}°C, read ${actual.targetTempCelsius}°C"
+            }
+        }
+        is TwoPointFanConfig -> {
+            check(actual is TwoPointFanConfig) {
+                "Verification failed: expected TwoPointFanConfig, got ${actual::class.simpleName}"
+            }
+            check(actual.sensorIndex == expected.sensorIndex) {
+                "Verification failed: expected sensorIndex ${expected.sensorIndex}, read ${actual.sensorIndex}"
+            }
+        }
+        is UnconfiguredFanConfig, is UnknownFanConfig -> Unit
     }
+}
 
 private fun hidiocgfeature(len: Int): ULong = 0xC0000000UL or ((len.toULong() and 0x3FFFUL) shl 16) or 0x4807UL
 

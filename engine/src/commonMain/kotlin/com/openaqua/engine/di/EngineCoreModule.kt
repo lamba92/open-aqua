@@ -3,6 +3,7 @@ package com.openaqua.engine.di
 import com.github.ajalt.clikt.core.CliktCommand
 import com.openaqua.engine.command.DevicesCommand
 import com.openaqua.engine.command.FlashCurvesCommand
+import com.openaqua.engine.command.FlashFanCommand
 import com.openaqua.engine.command.FlashOffsetsCommand
 import com.openaqua.engine.command.OpenAquaEngineCommand
 import com.openaqua.engine.command.ReadCurvesCommand
@@ -21,6 +22,7 @@ val engineCoreModule =
         bindSingleton { StreamTelemetryCommand(instance()) }
         bindSingleton { ReadCurvesCommand(instance()) }
         bindSingleton { FlashCurvesCommand(instance()) }
+        bindSingleton { FlashFanCommand(instance()) }
         bindSingleton { ReadOffsetsCommand(instance()) }
         bindSingleton { FlashOffsetsCommand(instance()) }
         bindSingleton<List<CliktCommand>>(tag = "coreSubcommands") {
@@ -30,6 +32,7 @@ val engineCoreModule =
                 instance<StreamTelemetryCommand>(),
                 instance<ReadCurvesCommand>(),
                 instance<FlashCurvesCommand>(),
+                instance<FlashFanCommand>(),
                 instance<ReadOffsetsCommand>(),
                 instance<FlashOffsetsCommand>(),
             )

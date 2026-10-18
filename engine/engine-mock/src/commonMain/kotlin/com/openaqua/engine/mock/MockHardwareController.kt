@@ -1,15 +1,18 @@
 package com.openaqua.engine.mock
 
 import com.openaqua.engine.hardware.HardwareController
+import com.openaqua.model.CurveFanConfig
 import com.openaqua.model.CurvePoint
 import com.openaqua.model.DetectedHardwareDevice
 import com.openaqua.model.DeviceCurves
 import com.openaqua.model.DeviceRegistry
 import com.openaqua.model.DeviceTelemetry
 import com.openaqua.model.DeviceType
-import com.openaqua.model.FanCurve
+import com.openaqua.model.FanChannelConfig
 import com.openaqua.model.FanTelemetry
+import com.openaqua.model.FixedFanConfig
 import com.openaqua.model.FlashCurveResponse
+import com.openaqua.model.FlashFanResponse
 import com.openaqua.model.SensorOffset
 import com.openaqua.model.SensorOffsetsResponse
 import com.openaqua.model.SensorTelemetry
@@ -127,11 +130,60 @@ class MockHardwareController : HardwareController {
             deviceId = device.id,
             curves =
                 listOf(
-                    FanCurve(channel = 0, points = List(16) { i -> CurvePoint(temp = 20.0 + i * 2.5, pwm = 30.0 + i * 4.5) }),
-                    FanCurve(channel = 1, points = List(16) { i -> CurvePoint(temp = 20.0 + i * 2.5, pwm = 20.0 + i * 5.0) }),
-                    FanCurve(channel = 2, points = List(16) { i -> CurvePoint(temp = 20.0 + i * 2.5, pwm = 20.0 + i * 5.0) }),
-                    FanCurve(channel = 3, points = List(16) { i -> CurvePoint(temp = 20.0 + i * 2.5, pwm = 15.0 + i * 5.5) }),
+                    CurveFanConfig(
+                        channel = 0,
+                        sensorIndex = 0,
+                        points =
+                            List(16) { i ->
+                                CurvePoint(
+                                    temp = 20.0 + i * 2.5,
+                                    pwm =
+                                        30.0 + i * 4.5,
+                                )
+                            },
+                    ),
+                    CurveFanConfig(
+                        channel = 1,
+                        sensorIndex = 0,
+                        points =
+                            List(16) { i ->
+                                CurvePoint(
+                                    temp = 20.0 + i * 2.5,
+                                    pwm =
+                                        20.0 + i * 5.0,
+                                )
+                            },
+                    ),
+                    FixedFanConfig(
+                        channel = 2,
+                        powerPercent = 50.0,
+                    ),
+                    CurveFanConfig(
+                        channel = 3,
+                        sensorIndex = 1,
+                        points =
+                            List(16) { i ->
+                                CurvePoint(
+                                    temp = 20.0 + i * 2.5,
+                                    pwm =
+                                        15.0 + i * 5.5,
+                                )
+                            },
+                    ),
                 ),
+        )
+
+    override fun flashFan(
+        device: DetectedHardwareDevice,
+        config: FanChannelConfig,
+    ): FlashFanResponse =
+        FlashFanResponse(
+            status = "ok",
+            deviceId = device.id,
+            channel = config.channel,
+            config = config,
+            bytesWritten = 1632,
+            verified = true,
         )
 
     override fun flashCurve(
@@ -139,14 +191,16 @@ class MockHardwareController : HardwareController {
         channel: Int,
         points: List<CurvePoint>,
         sensorIndex: Int?,
-    ): FlashCurveResponse =
-        FlashCurveResponse(
-            status = "ok",
-            deviceId = device.id,
-            channel = channel,
-            bytesWritten = 1632,
-            verified = true,
+    ): FlashCurveResponse {
+        val res = flashFan(device, CurveFanConfig(channel = channel, sensorIndex = sensorIndex ?: 0, points = points))
+        return FlashCurveResponse(
+            status = res.status,
+            deviceId = res.deviceId,
+            channel = res.channel,
+            bytesWritten = res.bytesWritten,
+            verified = res.verified,
         )
+    }
 
     override fun readSensorOffsets(device: DetectedHardwareDevice): SensorOffsetsResponse =
         SensorOffsetsResponse(

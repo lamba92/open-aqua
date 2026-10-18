@@ -23,16 +23,61 @@ data class DetectedHardwareDevice(
 )
 
 @Serializable
-data class FanCurve(
-    val channel: Int,
+sealed interface FanChannelConfig {
+    val channel: Int
+}
+
+@Serializable
+@SerialName("curve")
+data class CurveFanConfig(
+    override val channel: Int,
+    val sensorIndex: Int,
     val points: List<CurvePoint>,
-)
+) : FanChannelConfig
+
+@Serializable
+@SerialName("fixed")
+data class FixedFanConfig(
+    override val channel: Int,
+    val powerPercent: Double,
+) : FanChannelConfig
+
+@Serializable
+@SerialName("target-temp")
+data class TargetTempFanConfig(
+    override val channel: Int,
+    val sensorIndex: Int,
+    val targetTempCelsius: Double,
+) : FanChannelConfig
+
+@Serializable
+@SerialName("two-point")
+data class TwoPointFanConfig(
+    override val channel: Int,
+    val sensorIndex: Int,
+) : FanChannelConfig
+
+@Serializable
+@SerialName("unconfigured")
+data class UnconfiguredFanConfig(
+    override val channel: Int,
+    val rawMode: Int,
+) : FanChannelConfig
+
+@Serializable
+@SerialName("unknown")
+data class UnknownFanConfig(
+    override val channel: Int,
+    val rawMode: Int,
+) : FanChannelConfig
+
+typealias FanCurve = FanChannelConfig
 
 @Serializable
 @SerialName("read-curves")
 data class DeviceCurves(
     val deviceId: String,
-    val curves: List<FanCurve>,
+    val curves: List<FanChannelConfig>,
 ) : EngineResponse
 
 @Serializable
@@ -50,6 +95,18 @@ data class FlashCurveResponse(
     val status: String,
     val deviceId: String,
     val channel: Int,
+    val bytesWritten: Int,
+    val verified: Boolean,
+    val error: String? = null,
+) : EngineResponse
+
+@Serializable
+@SerialName("flash-fan")
+data class FlashFanResponse(
+    val status: String,
+    val deviceId: String,
+    val channel: Int,
+    val config: FanChannelConfig,
     val bytesWritten: Int,
     val verified: Boolean,
     val error: String? = null,

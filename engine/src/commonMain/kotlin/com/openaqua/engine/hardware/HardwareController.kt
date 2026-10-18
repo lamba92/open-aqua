@@ -5,7 +5,9 @@ import com.openaqua.model.CurvePoint
 import com.openaqua.model.DetectedHardwareDevice
 import com.openaqua.model.DeviceCurves
 import com.openaqua.model.DeviceTelemetry
+import com.openaqua.model.FanChannelConfig
 import com.openaqua.model.FlashCurveResponse
+import com.openaqua.model.FlashFanResponse
 import com.openaqua.model.SensorOffsetsResponse
 import com.openaqua.model.SetSensorOffsetResponse
 import kotlinx.coroutines.flow.Flow
@@ -16,6 +18,11 @@ interface HardwareController {
     fun streamTelemetry(device: DetectedHardwareDevice): Flow<DeviceTelemetry>
 
     fun readCurves(device: DetectedHardwareDevice): DeviceCurves
+
+    fun flashFan(
+        device: DetectedHardwareDevice,
+        config: FanChannelConfig,
+    ): FlashFanResponse
 
     fun flashCurve(
         device: DetectedHardwareDevice,
