@@ -26,7 +26,6 @@ data class DeviceDescriptor(
     val productId: Int,
     val ctrlReportLength: Int,
     val statusReportLength: Int,
-    val secondaryReport: ByteArray? = null,
     val fanChannels: List<FanChannelDescriptor> = emptyList(),
     val tempSensors: List<SensorDescriptor> = emptyList(),
     val tempCtrlOffset: Int? = null,
