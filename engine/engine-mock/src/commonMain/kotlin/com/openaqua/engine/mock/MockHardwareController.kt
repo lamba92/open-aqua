@@ -14,6 +14,8 @@ import com.openaqua.model.FlashConfigRequest
 import com.openaqua.model.FlashOctoConfig
 import com.openaqua.model.OctoConfig
 import com.openaqua.model.OctoTelemetry
+import com.openaqua.model.RgbEffectMode
+import com.openaqua.model.RgbpxPortConfig
 import com.openaqua.model.SensorOffset
 import com.openaqua.model.SensorTelemetry
 import kotlinx.coroutines.currentCoroutineContext
@@ -56,6 +58,12 @@ class MockHardwareController : HardwareController {
             FixedFanConfig(channel = 5, powerPercent = 0.0),
             FixedFanConfig(channel = 6, powerPercent = 0.0),
             FixedFanConfig(channel = 7, powerPercent = 0.0),
+        )
+
+    private val mockRgbpx =
+        mutableMapOf(
+            0 to RgbpxPortConfig(port = 0, enabled = true, ledCount = 30, brightnessPercent = 100, mode = RgbEffectMode.STATIC),
+            1 to RgbpxPortConfig(port = 1, enabled = true, ledCount = 30, brightnessPercent = 100, mode = RgbEffectMode.STATIC),
         )
 
     private val mockOffsets =
@@ -180,6 +188,7 @@ class MockHardwareController : HardwareController {
         OctoConfig(
             fans = mockFans.toList(),
             sensorOffsets = mockOffsets.toList(),
+            rgbpx = mockRgbpx.values.toList(),
         )
 
     override fun flashConfig(
@@ -202,6 +211,10 @@ class MockHardwareController : HardwareController {
             if (idx >= 0) {
                 mockOffsets[idx] = SensorOffset(channel, offset)
             }
+        }
+
+        request.rgbpx?.forEach { (port, config) ->
+            mockRgbpx[port] = config
         }
 
         return readConfig(device)

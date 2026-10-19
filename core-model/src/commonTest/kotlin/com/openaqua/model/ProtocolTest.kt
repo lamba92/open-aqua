@@ -56,6 +56,71 @@ class ProtocolTest {
     }
 
     @Test
+    fun testFlashRgbpxValidation() {
+        // Valid OCTO RGBpx ports 0 and 1
+        val validOctoRgb =
+            FlashOctoConfig(
+                rgbpx =
+                    mapOf(
+                        0 to RgbpxPortConfig(port = 0, ledCount = 30, brightnessPercent = 80, mode = RgbEffectMode.STATIC),
+                        1 to RgbpxPortConfig(port = 1, ledCount = 60, brightnessPercent = 100, mode = RgbEffectMode.RAINBOW),
+                    ),
+            )
+        assertNotNull(validOctoRgb.rgbpx)
+        assertEquals(2, validOctoRgb.rgbpx?.size)
+
+        // Port 2 is invalid on OCTO (must be 0..1)
+        assertFailsWith<IllegalArgumentException> {
+            FlashOctoConfig(
+                rgbpx = mapOf(2 to RgbpxPortConfig(port = 2, ledCount = 30, brightnessPercent = 80)),
+            )
+        }
+
+        // Valid QUADRO RGBpx port 0
+        val validQuadroRgb =
+            FlashQuadroConfig(
+                rgbpx = mapOf(0 to RgbpxPortConfig(port = 0, ledCount = 45, brightnessPercent = 50)),
+            )
+        assertNotNull(validQuadroRgb.rgbpx)
+
+        // Port 1 is invalid on QUADRO (must be 0)
+        assertFailsWith<IllegalArgumentException> {
+            FlashQuadroConfig(
+                rgbpx = mapOf(1 to RgbpxPortConfig(port = 1, ledCount = 30, brightnessPercent = 80)),
+            )
+        }
+
+        // Valid D5 NEXT RGBpx port 0
+        val validD5Rgb =
+            FlashD5NextConfig(
+                rgbpx = mapOf(0 to RgbpxPortConfig(port = 0, ledCount = 64, brightnessPercent = 90)),
+            )
+        assertNotNull(validD5Rgb.rgbpx)
+
+        // Port 1 is invalid on D5 NEXT (must be 0)
+        assertFailsWith<IllegalArgumentException> {
+            FlashD5NextConfig(
+                rgbpx = mapOf(1 to RgbpxPortConfig(port = 1, ledCount = 30, brightnessPercent = 80)),
+            )
+        }
+
+        // LED count > 90 is invalid
+        assertFailsWith<IllegalArgumentException> {
+            RgbpxPortConfig(port = 0, ledCount = 91, brightnessPercent = 50)
+        }
+
+        // Brightness > 100% is invalid
+        assertFailsWith<IllegalArgumentException> {
+            RgbpxPortConfig(port = 0, ledCount = 30, brightnessPercent = 101)
+        }
+
+        // Color component > 255 is invalid
+        assertFailsWith<IllegalArgumentException> {
+            RgbColor(r = 256, g = 0, b = 0)
+        }
+    }
+
+    @Test
     fun testStrictJsonRejectsInvalidDeviceFields() {
         // Attempting to pass 'display' to FlashOctoConfig should fail during strict deserialization
         val jsonWithDisplay = """{"display":{"brightnessPercent":80}}"""
@@ -79,15 +144,31 @@ class ProtocolTest {
         val json = Json { encodeDefaults = true }
         val fans = List(8) { FixedFanConfig(it, 50.0) }
         val offsets = List(4) { SensorOffset(it, 0.0) }
-        val report: DeviceConfig = OctoConfig(fans, offsets)
+        val rgbpx =
+            listOf(
+                RgbpxPortConfig(
+                    port = 0,
+                    enabled = true,
+                    ledCount = 30,
+                    brightnessPercent = 80,
+                    mode = RgbEffectMode.STATIC,
+                    primaryColor = RgbColor(255, 128, 0),
+                ),
+            )
+        val report: DeviceConfig = OctoConfig(fans, offsets, rgbpx)
 
         val serialized = json.encodeToString(DeviceConfig.serializer(), report)
         assertTrue(serialized.contains(""""type":"octo""""))
+        assertTrue(serialized.contains(""""rgbpx""""))
+        assertTrue(serialized.contains(""""primaryColor":{"r":255,"g":128,"b":0}"""))
 
         val deserialized = json.decodeFromString(DeviceConfig.serializer(), serialized)
         assertTrue(deserialized is OctoConfig)
         assertEquals(8, deserialized.fans.size)
         assertEquals(4, deserialized.sensorOffsets.size)
+        assertEquals(1, deserialized.rgbpx.size)
+        assertEquals(RgbEffectMode.STATIC, deserialized.rgbpx[0].mode)
+        assertEquals(RgbColor(255, 128, 0), deserialized.rgbpx[0].primaryColor)
     }
 
     @Test

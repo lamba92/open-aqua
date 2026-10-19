@@ -11,6 +11,8 @@ import com.openaqua.model.FanChannelConfig
 import com.openaqua.model.FixedFanConfig
 import com.openaqua.model.OctoConfig
 import com.openaqua.model.QuadroConfig
+import com.openaqua.model.RgbEffectMode
+import com.openaqua.model.RgbpxPortConfig
 import com.openaqua.model.SensorOffset
 import com.openaqua.model.TargetTempFanConfig
 import com.openaqua.model.TwoPointFanConfig
@@ -140,6 +142,17 @@ object ConfigParser {
         }
     }
 
+    private fun defaultRgbpxPorts(descriptor: DeviceDescriptor): List<RgbpxPortConfig> =
+        (0 until descriptor.rgbpxPortCount).map { port ->
+            RgbpxPortConfig(
+                port = port,
+                enabled = true,
+                ledCount = 30,
+                brightnessPercent = 100,
+                mode = RgbEffectMode.STATIC,
+            )
+        }
+
     fun parseConfig(
         device: DetectedHardwareDevice,
         descriptor: DeviceDescriptor,
@@ -150,6 +163,7 @@ object ConfigParser {
                 OctoConfig(
                     fans = parseFans(report, descriptor),
                     sensorOffsets = parseOffsets(report, descriptor),
+                    rgbpx = defaultRgbpxPorts(descriptor),
                 )
             }
             DeviceType.QUADRO -> {
@@ -157,6 +171,7 @@ object ConfigParser {
                     fans = parseFans(report, descriptor),
                     sensorOffsets = parseOffsets(report, descriptor),
                     flowPulsesPerLiter = null,
+                    rgbpx = defaultRgbpxPorts(descriptor),
                 )
             }
             DeviceType.D5_NEXT -> {
@@ -169,6 +184,7 @@ object ConfigParser {
                     fan = fan,
                     coolantOffset = offset,
                     display = null,
+                    rgbpx = defaultRgbpxPorts(descriptor),
                 )
             }
             else -> error("Unsupported device type for config parsing: ${device.type}")

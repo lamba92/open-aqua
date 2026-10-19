@@ -33,6 +33,7 @@ data class DeviceDescriptor(
     val firmwareVersionOffset: Int? = 0x0D,
     val hasFlowSensor: Boolean = false,
     val hasRgbpx: Boolean = false,
+    val rgbpxPortCount: Int = 0,
     val virtualSensorsCount: Int = 0,
     val virtualSensorsStartOffset: Int? = null,
 )
@@ -66,6 +67,7 @@ object DeviceRegistry {
             firmwareVersionOffset = 0x0D,
             hasFlowSensor = false,
             hasRgbpx = true,
+            rgbpxPortCount = 2,
             virtualSensorsCount = 16,
             virtualSensorsStartOffset = 0x45,
         )
@@ -96,6 +98,7 @@ object DeviceRegistry {
             firmwareVersionOffset = 0x0D,
             hasFlowSensor = true,
             hasRgbpx = true,
+            rgbpxPortCount = 1,
             virtualSensorsCount = 16,
             virtualSensorsStartOffset = 0x3C,
         )
@@ -120,6 +123,7 @@ object DeviceRegistry {
             firmwareVersionOffset = 0x0D,
             hasFlowSensor = true,
             hasRgbpx = true,
+            rgbpxPortCount = 1,
             virtualSensorsCount = 8,
             virtualSensorsStartOffset = 0x3F,
         )
