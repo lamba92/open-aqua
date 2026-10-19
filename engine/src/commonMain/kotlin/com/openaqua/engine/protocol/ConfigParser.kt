@@ -17,7 +17,6 @@ import com.openaqua.model.SensorOffset
 import com.openaqua.model.TargetTempFanConfig
 import com.openaqua.model.TwoPointFanConfig
 import com.openaqua.model.UnconfiguredFanConfig
-import com.openaqua.model.UnknownFanConfig
 import kotlin.math.round
 
 object ConfigParser {
@@ -106,10 +105,7 @@ object ConfigParser {
                 }
             }
             else -> {
-                UnknownFanConfig(
-                    channel = channel,
-                    rawMode = mode,
-                )
+                error("Unknown fan mode $mode (0x${mode.toString(16)}) for channel $channel at offset 0x${baseOffset.toString(16)}")
             }
         }
     }

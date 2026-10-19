@@ -65,13 +65,6 @@ data class UnconfiguredFanConfig(
 ) : FanChannelConfig
 
 @Serializable
-@SerialName("unknown")
-data class UnknownFanConfig(
-    override val channel: Int,
-    val rawMode: Int,
-) : FanChannelConfig
-
-@Serializable
 data class SensorOffset(
     val channel: Int,
     val offsetCelsius: Double,

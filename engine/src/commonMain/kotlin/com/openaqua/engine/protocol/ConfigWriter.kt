@@ -18,7 +18,6 @@ import com.openaqua.model.SensorOffset
 import com.openaqua.model.TargetTempFanConfig
 import com.openaqua.model.TwoPointFanConfig
 import com.openaqua.model.UnconfiguredFanConfig
-import com.openaqua.model.UnknownFanConfig
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -77,9 +76,6 @@ object ConfigWriter {
                 report[baseOffset + 0] = config.rawMode.toUByte()
                 report[baseOffset + 3] = 0xFFu
                 report[baseOffset + 4] = 0xFFu
-            }
-            is UnknownFanConfig -> {
-                report[baseOffset + 0] = config.rawMode.toUByte()
             }
         }
     }
@@ -286,7 +282,7 @@ object ConfigWriter {
                     "Verification failed: expected sensorIndex ${expected.sensorIndex}, read ${actual.sensorIndex}"
                 }
             }
-            is UnconfiguredFanConfig, is UnknownFanConfig -> Unit
+            is UnconfiguredFanConfig -> Unit
         }
     }
 
