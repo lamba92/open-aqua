@@ -1,10 +1,12 @@
 package com.openaqua.engine.prod
 
+import com.openaqua.model.AutoCurveParams
 import com.openaqua.model.CurveFanConfig
 import com.openaqua.model.DeviceType
 import com.openaqua.model.FanChannelConfig
 import com.openaqua.model.FixedFanConfig
 import com.openaqua.model.FlashOctoConfig
+import com.openaqua.model.OctoAllowedSpecs
 import com.openaqua.model.OctoConfig
 import com.openaqua.model.OctoTelemetry
 import com.openaqua.model.TargetTempFanConfig
@@ -19,9 +21,10 @@ import kotlin.test.assertTrue
 /**
  * End-to-end hardware tests tailored specifically for lamba92's workstation environment
  * featuring a physical Aquacomputer OCTO controller with:
- *  - Fans 1-4 actively connected/occupied (channels 0..3)
- *  - Sensor 1 actively connected/occupied (channel 0)
- *  - Fan 5 unoccupied (channel 4), used as safe flash verification target
+ *  - Fans 1-4 actively connected/occupied (channels 0..3) -> Protected from writing
+ *  - Sensor 1 actively connected/occupied (channel 0) -> Protected from offset modification
+ *  - Fans 5-8 unoccupied (channels 4..7) -> Allowed for flash tests
+ *  - Virtual Sensors 5-19 -> Allowed for feeding tests
  *
  * NOTE: These tests interact with real physical USB hardware and are excluded by default
  * from `./gradlew check` and `./gradlew test`. To run them explicitly, pass `-Ptest.hardware=true`
@@ -29,6 +32,29 @@ import kotlin.test.assertTrue
  */
 class OctoHardwareTest {
     private val controller = WindowsHardwareController()
+
+    /**
+     * Declares which components on lamba92's OCTO are allowed to be modified during tests.
+     * Fans 1-4 (channels 0..3) and Sensor 1 (channel 0) are omitted/false to protect active hardware.
+     */
+    private val allowedSpecs =
+        OctoAllowedSpecs(
+            fans =
+                mapOf(
+                    4 to true, // Fan 5 (unoccupied)
+                    5 to true, // Fan 6 (unoccupied)
+                    6 to true, // Fan 7 (unoccupied)
+                    7 to true, // Fan 8 (unoccupied)
+                ),
+            sensorOffsets =
+                mapOf(
+                    1 to true, // Sensor 2 (unoccupied)
+                    2 to true, // Sensor 3 (unoccupied)
+                    3 to true, // Sensor 4 (unoccupied)
+                ),
+            virtualSensors =
+                (4..19).associateWith { true },
+        )
 
     @Test
     fun testOctoDetection() {
@@ -55,7 +81,7 @@ class OctoHardwareTest {
 
             println("Telemetry received with ${telemetry.fans.size} fans and ${telemetry.sensors.size} sensors")
 
-            // User specified: Fans 1-4 are occupied (indices 0..3)
+            // Fans 1-4 are occupied (indices 0..3)
             for (channel in 0..3) {
                 val fan = telemetry.fans.firstOrNull { it.channel == channel }
                 assertNotNull(fan, "Fan ${channel + 1} (channel $channel) must be present in telemetry")
@@ -66,7 +92,7 @@ class OctoHardwareTest {
                 assertTrue(fan.voltageVolts > 0.0, "Fan ${channel + 1} voltage should be > 0V")
             }
 
-            // User specified: Sensor 1 is occupied (channel 0)
+            // Sensor 1 is occupied (channel 0)
             val sensor1 = telemetry.sensors.firstOrNull { it.channel == 0 }
             assertNotNull(sensor1, "Sensor 1 (channel 0) must be present in telemetry")
             val temp = sensor1.tempCelsius
@@ -79,66 +105,136 @@ class OctoHardwareTest {
         }
 
     @Test
-    fun testConfigReadAndSafeFlashUnoccupiedFan() {
+    fun testFlashFixedPowerOnAllowedFans() {
         val octo =
             controller.scanDevices().firstOrNull { it.type == DeviceType.OCTO }
                 ?: error("OCTO not found")
 
-        val initialConfig = controller.readConfig(octo)
-        assertTrue(initialConfig is OctoConfig, "Config must be OctoConfig")
-        assertEquals(8, initialConfig.fans.size, "OCTO has 8 fan channels")
+        val initialConfig = controller.readConfig(octo) as OctoConfig
+        val testChannel = 4 // Fan 5
+        require(allowedSpecs.isFanAllowed(testChannel)) {
+            "Safety check failed: Channel $testChannel is not allowed in AllowedSpecs"
+        }
 
-        // Fans 1-4 (channels 0..3) and Sensor 1 (channel 0) MUST NOT be altered!
-        // We test flashing on Fan 5 (channel 4, unoccupied)
-        val testFanChannel = 4
-        val originalFan5Config = initialConfig.fans[testFanChannel]
-
+        val originalConfig = initialConfig.fans[testChannel]
         try {
-            // Flash a safe test fixed duty cycle to Fan 5 only
             val testTargetPower = 35.0
-            val testFixedConfig = FixedFanConfig(channel = testFanChannel, powerPercent = testTargetPower)
-            val testRequest =
-                FlashOctoConfig(
-                    fans = mapOf(testFanChannel to testFixedConfig),
-                )
+            val testFixedConfig = FixedFanConfig(channel = testChannel, powerPercent = testTargetPower)
+            val testRequest = FlashOctoConfig(fans = mapOf(testChannel to testFixedConfig))
 
-            println("Flashing test configuration to Fan 5 (channel $testFanChannel) with $testTargetPower% power...")
-            val readback = controller.flashConfig(octo, testRequest)
-            assertTrue(readback is OctoConfig)
-
-            val updatedFan5 = readback.fans[testFanChannel]
-            assertTrue(updatedFan5 is FixedFanConfig, "Fan 5 should now be FixedFanConfig")
-            assertEquals(testTargetPower, updatedFan5.powerPercent, 0.5, "Fan 5 power should match flashed value")
-            println("Verified Fan 5 updated successfully to ${updatedFan5.powerPercent}%")
+            println("Testing Fixed Power on allowed Fan ${testChannel + 1} ($testTargetPower%)...")
+            val readback = controller.flashConfig(octo, testRequest) as OctoConfig
+            val updated = readback.fans[testChannel]
+            assertTrue(updated is FixedFanConfig)
+            assertEquals(testTargetPower, updated.powerPercent, 0.5)
+            println("Verified Fixed Power flashed and read back successfully")
         } finally {
-            println("Restoring original Fan 5 configuration...")
-            // Restore only Fan 5 to its original config
-            val restoreRequest =
-                FlashOctoConfig(
-                    fans =
-                        mapOf(
-                            testFanChannel to originalFan5Config.toSafeRestorableConfig(testFanChannel),
-                        ),
-                )
-            controller.flashConfig(octo, restoreRequest)
-            val restoredConfig = controller.readConfig(octo) as OctoConfig
-            println("Restored Fan 5: ${restoredConfig.fans[testFanChannel]}")
+            restoreFanConfig(octo, testChannel, originalConfig)
         }
     }
 
     @Test
-    fun testFeedVirtualSensors() {
+    fun testFlashCurveOnAllowedFan() {
         val octo =
             controller.scanDevices().firstOrNull { it.type == DeviceType.OCTO }
                 ?: error("OCTO not found")
 
-        // OCTO virtual sensors are channels 4..19. Sensor 1 (channel 0) is occupied physical.
-        // We feed virtual sensor slot 2 (channel 5) with 26.5°C
-        val testChannel = 5
-        val testTemp = 26.5
+        val initialConfig = controller.readConfig(octo) as OctoConfig
+        val testChannel = 5 // Fan 6
+        require(allowedSpecs.isFanAllowed(testChannel)) {
+            "Safety check failed: Channel $testChannel is not allowed in AllowedSpecs"
+        }
+
+        val originalConfig = initialConfig.fans[testChannel]
+        try {
+            val curvePoints =
+                AutoCurveParams(
+                    tMin = 20.0,
+                    tMax = 50.0,
+                    pMin = 30.0,
+                    pMax = 90.0,
+                    shape = 0.5,
+                ).toPoints()
+
+            val testCurveConfig =
+                CurveFanConfig(
+                    channel = testChannel,
+                    sensorIndex = 0, // Bound to Sensor 1 for reference
+                    points = curvePoints,
+                )
+            val testRequest = FlashOctoConfig(fans = mapOf(testChannel to testCurveConfig))
+
+            println("Testing 16-point Curve on allowed Fan ${testChannel + 1}...")
+            val readback = controller.flashConfig(octo, testRequest) as OctoConfig
+            val updated = readback.fans[testChannel]
+            assertTrue(updated is CurveFanConfig)
+            assertEquals(0, updated.sensorIndex)
+            assertEquals(16, updated.points.size)
+            assertEquals(30.0, updated.points.first().pwm, 0.5)
+            assertEquals(90.0, updated.points.last().pwm, 0.5)
+            println("Verified 16-point Curve flashed and read back successfully")
+        } finally {
+            restoreFanConfig(octo, testChannel, originalConfig)
+        }
+    }
+
+    @Test
+    fun testFlashSensorOffsetOnAllowedSensor() {
+        val octo =
+            controller.scanDevices().firstOrNull { it.type == DeviceType.OCTO }
+                ?: error("OCTO not found")
+
+        val initialConfig = controller.readConfig(octo) as OctoConfig
+        val testSensorChannel = 1 // Sensor 2 (unoccupied)
+        require(allowedSpecs.isSensorOffsetAllowed(testSensorChannel)) {
+            "Safety check failed: Sensor channel $testSensorChannel is not allowed in AllowedSpecs"
+        }
+
+        val originalOffset = initialConfig.sensorOffsets.firstOrNull { it.channel == testSensorChannel }?.offsetCelsius ?: 0.0
+        try {
+            val testOffset = 2.5
+            println("Testing Sensor Offset on allowed Sensor ${testSensorChannel + 1} ($testOffset°C)...")
+            val testRequest = FlashOctoConfig(sensorOffsets = mapOf(testSensorChannel to testOffset))
+            val readback = controller.flashConfig(octo, testRequest) as OctoConfig
+            val updated = readback.sensorOffsets.first { it.channel == testSensorChannel }
+            assertEquals(testOffset, updated.offsetCelsius, 0.2)
+            println("Verified Sensor Offset flashed and read back successfully")
+        } finally {
+            println("Restoring Sensor ${testSensorChannel + 1} offset to $originalOffset°C...")
+            controller.flashConfig(octo, FlashOctoConfig(sensorOffsets = mapOf(testSensorChannel to originalOffset)))
+        }
+    }
+
+    @Test
+    fun testFeedVirtualSensorsOnAllowedChannels() {
+        val octo =
+            controller.scanDevices().firstOrNull { it.type == DeviceType.OCTO }
+                ?: error("OCTO not found")
+
+        val testChannel = 5 // Virtual sensor slot 2
+        require(allowedSpecs.isVirtualSensorAllowed(testChannel)) {
+            "Safety check failed: Virtual sensor channel $testChannel is not allowed in AllowedSpecs"
+        }
+
+        val testTemp = 28.5
         println("Feeding virtual sensor channel $testChannel with $testTemp°C...")
         controller.feedVirtualSensors(octo, mapOf(testChannel to testTemp))
         println("Virtual sensor packet sent successfully")
+    }
+
+    private fun restoreFanConfig(
+        octo: com.openaqua.model.DetectedHardwareDevice,
+        channel: Int,
+        config: FanChannelConfig,
+    ) {
+        println("Restoring Fan ${channel + 1} to original config...")
+        val restoreRequest =
+            FlashOctoConfig(
+                fans = mapOf(channel to config.toSafeRestorableConfig(channel)),
+            )
+        controller.flashConfig(octo, restoreRequest)
+        val restored = (controller.readConfig(octo) as OctoConfig).fans[channel]
+        println("Restored Fan ${channel + 1}: $restored")
     }
 
     private fun FanChannelConfig.toSafeRestorableConfig(channel: Int): FanChannelConfig =
