@@ -36,7 +36,7 @@ dependencies {
 
 compose.desktop {
     application {
-        mainClass = "com.openaqua.app.MainKt"
+        mainClass = "io.github.lamba92.openaqua.app.MainKt"
 
         nativeDistributions {
             targetFormats(
