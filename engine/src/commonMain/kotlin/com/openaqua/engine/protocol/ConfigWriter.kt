@@ -1,6 +1,7 @@
 package com.openaqua.engine.protocol
 
 import com.openaqua.engine.util.crc16Usb
+import com.openaqua.model.AutoCurveFanConfig
 import com.openaqua.model.CurveFanConfig
 import com.openaqua.model.CurvePoint
 import com.openaqua.model.D5NextConfig
@@ -58,6 +59,9 @@ object ConfigWriter {
                 report[baseOffset + 3] = ((config.sensorIndex ushr 8) and 0xFF).toUByte()
                 report[baseOffset + 4] = (config.sensorIndex and 0xFF).toUByte()
                 encodeCurvePoints(report, baseOffset, config.points)
+            }
+            is AutoCurveFanConfig -> {
+                encodeFanChannelConfig(report, baseOffset, config.toCurveFanConfig())
             }
             is TargetTempFanConfig -> {
                 report[baseOffset + 0] = ConfigParser.MODE_TARGET_TEMP.toUByte()
@@ -262,6 +266,9 @@ object ConfigWriter {
                         "Verification failed at point $i: expected (${expPt.temp}°C, ${expPt.pwm}%), read (${actPt.temp}°C, ${actPt.pwm}%)"
                     }
                 }
+            }
+            is AutoCurveFanConfig -> {
+                verifyFanChannelConfig(expected = expected.toCurveFanConfig(), actual = actual)
             }
             is TargetTempFanConfig -> {
                 check(actual is TargetTempFanConfig) {

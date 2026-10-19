@@ -1,6 +1,7 @@
 package com.openaqua.engine.prod
 
 import com.openaqua.engine.hardware.HardwareController
+import com.openaqua.model.AutoCurveFanConfig
 import com.openaqua.model.AutoCurveParams
 import com.openaqua.model.CurveFanConfig
 import com.openaqua.model.DetectedHardwareDevice
@@ -224,6 +225,33 @@ class OctoHardwareTest {
         }
 
     @Test
+    fun testFlashAutoCurveOnAllowedFan() =
+        withOctoSafeScope {
+            val testChannel = 6 // Fan 7
+            val testAutoCurve =
+                AutoCurveFanConfig(
+                    channel = testChannel,
+                    sensorIndex = 0,
+                    tMin = 25.0,
+                    tMax = 45.0,
+                    pMin = 20.0,
+                    pMax = 80.0,
+                    shape = 7.0,
+                )
+            val testRequest = FlashOctoConfig(fans = mapOf(testChannel to testAutoCurve))
+
+            println("Testing AutoCurveFanConfig with shape=7.0 on allowed Fan ${testChannel + 1}...")
+            val readback = flashAndVerify(testRequest)
+            val updated = readback.fans[testChannel]
+            assertTrue(updated is CurveFanConfig)
+            assertEquals(0, updated.sensorIndex)
+            assertEquals(16, updated.points.size)
+            assertEquals(20.0, updated.points.first().pwm, 0.5)
+            assertEquals(80.0, updated.points.last().pwm, 0.5)
+            println("Verified AutoCurveFanConfig flashed and verified successfully")
+        }
+
+    @Test
     fun testFlashSensorOffsetOnAllowedSensor() =
         withOctoSafeScope {
             val testSensorChannel = 1 // Sensor 2 (unoccupied)
@@ -257,6 +285,7 @@ class OctoHardwareTest {
             when (this) {
                 is FixedFanConfig -> this
                 is CurveFanConfig -> this
+                is AutoCurveFanConfig -> this
                 is TargetTempFanConfig -> this
                 is TwoPointFanConfig -> this
                 else -> FixedFanConfig(channel = channel, powerPercent = 50.0)

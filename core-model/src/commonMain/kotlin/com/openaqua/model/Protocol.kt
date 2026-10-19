@@ -36,6 +36,38 @@ data class CurveFanConfig(
 ) : FanChannelConfig
 
 @Serializable
+@SerialName("auto-curve")
+data class AutoCurveFanConfig(
+    override val channel: Int,
+    val sensorIndex: Int,
+    val tMin: Double,
+    val tMax: Double,
+    val pMin: Double,
+    val pMax: Double,
+    val shape: Double = 0.0,
+) : FanChannelConfig {
+    init {
+        require(shape in -10.0..10.0) { "Shape must be in range -10.0..10.0 (got $shape)" }
+        require(tMin < tMax) { "tMin ($tMin) must be less than tMax ($tMax)" }
+        require(pMin in 0.0..100.0 && pMax in 0.0..100.0) { "PWM values must be 0..100%" }
+    }
+
+    fun toCurveFanConfig(): CurveFanConfig =
+        CurveFanConfig(
+            channel = channel,
+            sensorIndex = sensorIndex,
+            points =
+                CurveMath.generateCurve(
+                    tMin = tMin,
+                    tMax = tMax,
+                    pMin = pMin,
+                    pMax = pMax,
+                    shape = shape,
+                ),
+        )
+}
+
+@Serializable
 @SerialName("fixed")
 data class FixedFanConfig(
     override val channel: Int,

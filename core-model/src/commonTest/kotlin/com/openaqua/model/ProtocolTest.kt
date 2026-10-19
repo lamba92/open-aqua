@@ -39,6 +39,83 @@ class ProtocolTest {
     }
 
     @Test
+    fun testAutoCurveFanConfigValidationAndSerialization() {
+        // Valid auto-curve config
+        val valid =
+            AutoCurveFanConfig(
+                channel = 1,
+                sensorIndex = 0,
+                tMin = 30.0,
+                tMax = 45.0,
+                pMin = 25.0,
+                pMax = 100.0,
+                shape = 7.0,
+            )
+        assertEquals(1, valid.channel)
+        val curveConfig = valid.toCurveFanConfig()
+        assertEquals(16, curveConfig.points.size)
+        assertEquals(30.0, curveConfig.points.first().temp)
+        assertEquals(25.0, curveConfig.points.first().pwm)
+        assertEquals(45.0, curveConfig.points.last().temp)
+        assertEquals(100.0, curveConfig.points.last().pwm)
+
+        // Invalid shape (out of range -10..10)
+        assertFailsWith<IllegalArgumentException> {
+            AutoCurveFanConfig(
+                channel = 0,
+                sensorIndex = 0,
+                tMin = 30.0,
+                tMax = 50.0,
+                pMin = 20.0,
+                pMax = 50.0,
+                shape = 11.0,
+            )
+        }
+
+        // Invalid temperature range (tMin >= tMax)
+        assertFailsWith<IllegalArgumentException> {
+            AutoCurveFanConfig(
+                channel = 0,
+                sensorIndex = 0,
+                tMin = 50.0,
+                tMax = 30.0,
+                pMin = 20.0,
+                pMax = 50.0,
+            )
+        }
+
+        // Invalid PWM range
+        assertFailsWith<IllegalArgumentException> {
+            AutoCurveFanConfig(
+                channel = 0,
+                sensorIndex = 0,
+                tMin = 30.0,
+                tMax = 50.0,
+                pMin = -5.0,
+                pMax = 50.0,
+            )
+        }
+
+        // Serialization in FlashOctoConfig
+        val json = Json { encodeDefaults = true }
+        val flashReq =
+            FlashOctoConfig(
+                fans = mapOf(1 to valid),
+            )
+        val serialized = json.encodeToString(FlashConfigRequest.serializer(), flashReq)
+        assertTrue(serialized.contains(""""type":"auto-curve""""))
+        assertTrue(serialized.contains(""""shape":7.0"""))
+
+        val deserialized = json.decodeFromString(FlashConfigRequest.serializer(), serialized)
+        assertTrue(deserialized is FlashOctoConfig)
+        val fan1 = deserialized.fans?.get(1)
+        assertTrue(fan1 is AutoCurveFanConfig)
+        assertEquals(7.0, fan1.shape)
+        assertEquals(30.0, fan1.tMin)
+        assertEquals(45.0, fan1.tMax)
+    }
+
+    @Test
     fun testFlashQuadroConfigValidation() {
         // Channel 3 is valid on Quadro
         val validReq =
