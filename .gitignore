@@ -28,3 +28,4 @@ replay_pid*
 local.properties
 *.log
 .kotlin/
+docker/windows-test/storage
