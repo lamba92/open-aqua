@@ -31,6 +31,7 @@ import kotlinx.cinterop.sizeOf
 import kotlinx.cinterop.toKStringFromUtf16
 import kotlinx.cinterop.value
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.isActive
@@ -40,16 +41,17 @@ import platform.windows.FILE_SHARE_READ
 import platform.windows.FILE_SHARE_WRITE
 import platform.windows.GENERIC_READ
 import platform.windows.GENERIC_WRITE
+import platform.windows.GetLastError
 import platform.windows.INVALID_HANDLE_VALUE
 import platform.windows.OPEN_EXISTING
 import platform.windows.ReadFile
 import platform.windows.Sleep
 import platform.windows.WriteFile
-import winhid.HIDD_ATTRIBUTES
 import winhid.HidD_GetAttributes
 import winhid.HidD_GetFeature
 import winhid.HidD_GetSerialNumberString
 import winhid.HidD_SetFeature
+import winhid.HidD_SetOutputReport
 import winhid.SP_DEVICE_INTERFACE_DATA
 import winhid.SP_DEVICE_INTERFACE_DETAIL_DATA_W
 import winhid.SetupDiDestroyDeviceInfoList
@@ -57,6 +59,7 @@ import winhid.SetupDiGetDeviceInterfaceDetailW
 import winhid.enum_device_interface
 import winhid.get_hid_dev_info
 import winhid.get_hid_guid
+import kotlin.time.Duration.Companion.seconds
 
 private const val HID_STATUS_REPORT_ID = 0x01
 
@@ -65,6 +68,7 @@ private data class ScannedWindowsNode(
     val descriptor: DeviceDescriptor,
     val serial: String?,
     val devicePath: String,
+    val fwVersion: Int?,
 )
 
 class WindowsHardwareController : HardwareController {
@@ -85,41 +89,35 @@ class WindowsHardwareController : HardwareController {
             get_hid_guid(hidGuid)
 
             val devInfo = get_hid_dev_info(hidGuid)
+            check(devInfo != INVALID_HANDLE_VALUE) { "SetupDiGetClassDevs failed" }
 
-            if (devInfo != null && devInfo != INVALID_HANDLE_VALUE) {
-                try {
-                    val ifData = alloc<SP_DEVICE_INTERFACE_DATA>()
-                    ifData.cbSize = sizeOf<SP_DEVICE_INTERFACE_DATA>().toUInt()
+            try {
+                val ifData = alloc<SP_DEVICE_INTERFACE_DATA>()
+                ifData.cbSize = sizeOf<SP_DEVICE_INTERFACE_DATA>().toUInt()
 
-                    var index = 0u
-                    while (enum_device_interface(devInfo, hidGuid, index, ifData.ptr) != 0) {
-                        index++
+                var index = 0u
+                while (enum_device_interface(devInfo, hidGuid, index++, ifData.ptr) != 0) {
+                    val reqSize = alloc<UIntVar>()
+                    SetupDiGetDeviceInterfaceDetailW(devInfo, ifData.ptr, null, 0u, reqSize.ptr, null)
 
-                        val requiredSize = alloc<UIntVar>()
-                        SetupDiGetDeviceInterfaceDetailW(devInfo, ifData.ptr, null, 0u, requiredSize.ptr, null)
+                    val detailSize = reqSize.value.toInt()
+                    if (detailSize <= 0) continue
 
-                        if (requiredSize.value > 0u) {
-                            val detailBuffer = allocArray<UByteVar>(requiredSize.value.toInt())
-                            val detailData = detailBuffer.reinterpret<SP_DEVICE_INTERFACE_DETAIL_DATA_W>()
-                            detailData.pointed.cbSize = if (sizeOf<CPointerVar<*>>() == 8L) 8u else 6u
+                    val detailBuf = allocArray<UByteVar>(detailSize)
+                    val detail = detailBuf.reinterpret<SP_DEVICE_INTERFACE_DETAIL_DATA_W>()
+                    val cbSize = if (sizeOf<CPointerVar<*>>() == 8L) 8u else (4u + 2u)
+                    detail.pointed.cbSize = cbSize
 
-                            if (SetupDiGetDeviceInterfaceDetailW(
-                                    devInfo,
-                                    ifData.ptr,
-                                    detailData,
-                                    requiredSize.value,
-                                    null,
-                                    null,
-                                ) != 0
-                            ) {
-                                val devicePath = detailData.pointed.DevicePath.toKStringFromUtf16()
-                                inspectDevicePath(devicePath)?.let { scanned.add(it) }
-                            }
+                    if (SetupDiGetDeviceInterfaceDetailW(devInfo, ifData.ptr, detail, detailSize.toUInt(), null, null) != 0) {
+                        val path = detail.pointed.DevicePath.toKStringFromUtf16()
+                        val node = inspectDevicePath(path)
+                        if (node != null && scanned.none { it.id == node.id }) {
+                            scanned.add(node)
                         }
                     }
-                } finally {
-                    SetupDiDestroyDeviceInfoList(devInfo)
                 }
+            } finally {
+                SetupDiDestroyDeviceInfoList(devInfo)
             }
         }
 
@@ -136,17 +134,13 @@ class WindowsHardwareController : HardwareController {
             .flatMap { (type, nodes) ->
                 val typePrefix = type.name.lowercase().replace('_', '-')
                 nodes.mapIndexed { index, node ->
-                    val fwVersion =
-                        node.descriptor.firmwareVersionOffset?.let { offset ->
-                            readFirmwareVersion(node.devicePath, offset)
-                        }
                     DetectedHardwareDevice(
                         id = node.id,
                         alias = "$typePrefix-${index + 1}",
                         type = node.descriptor.type,
                         name = node.descriptor.name,
                         serial = node.serial,
-                        firmwareVersion = fwVersion,
+                        firmwareVersion = node.fwVersion,
                     )
                 }
             }
@@ -156,7 +150,7 @@ class WindowsHardwareController : HardwareController {
         val handle =
             CreateFileW(
                 devicePath,
-                0u,
+                GENERIC_READ,
                 (FILE_SHARE_READ or FILE_SHARE_WRITE).toUInt(),
                 null,
                 OPEN_EXISTING.toUInt(),
@@ -167,24 +161,41 @@ class WindowsHardwareController : HardwareController {
 
         try {
             memScoped {
-                val attrs = alloc<HIDD_ATTRIBUTES>()
-                attrs.Size = sizeOf<HIDD_ATTRIBUTES>().toUInt()
+                val attribSize = 10
+                val attrib = allocArray<UByteVar>(attribSize)
+                attrib[0] = attribSize.toUByte()
 
-                if (HidD_GetAttributes(handle, attrs.ptr) == 0.toUByte()) return null
-                if (attrs.VendorID.toInt() != DeviceRegistry.AQUACOMPUTER_VENDOR_ID) return null
+                val ok = HidD_GetAttributes(handle, attrib.reinterpret())
+                if (ok == 0.toUByte()) return null
 
-                val descriptor = DeviceRegistry.findByProductId(attrs.ProductID.toInt()) ?: return null
+                val vid = (attrib[5].toInt() shl 8) or attrib[4].toInt()
+                val pid = (attrib[7].toInt() shl 8) or attrib[6].toInt()
 
-                val serialBuf = allocArray<UShortVar>(128)
-                val hasSerial = HidD_GetSerialNumberString(handle, serialBuf, 256u) != 0.toUByte()
-                val serial = if (hasSerial) serialBuf.toKStringFromUtf16().ifEmpty { null } else null
+                if (vid != DeviceRegistry.AQUACOMPUTER_VENDOR_ID) return null
+                val descriptor = DeviceRegistry.findByProductId(pid) ?: return null
 
-                val id = serial ?: devicePath
+                val serialBuf = allocArray<UByteVar>(256)
+                val serialOk = HidD_GetSerialNumberString(handle, serialBuf, 256u)
+                val serial =
+                    if (serialOk != 0.toUByte()) {
+                        serialBuf.reinterpret<UShortVar>().toKStringFromUtf16()
+                    } else {
+                        null
+                    }
+
+                val fw =
+                    descriptor.firmwareVersionOffset?.let { offset ->
+                        readFirmwareVersion(devicePath, offset)
+                    }
+
+                val id = "$vid-$pid" + if (serial != null) "-$serial" else ""
+
                 return ScannedWindowsNode(
                     id = id,
                     descriptor = descriptor,
                     serial = serial,
                     devicePath = devicePath,
+                    fwVersion = fw,
                 )
             }
         } finally {
@@ -209,23 +220,22 @@ class WindowsHardwareController : HardwareController {
                     0u,
                     null,
                 )
-            check(handle != INVALID_HANDLE_VALUE) { "Cannot open ${node.devicePath} for reading telemetry" }
+            check(handle != INVALID_HANDLE_VALUE) { "Cannot open device for streaming: ${node.devicePath}" }
 
             try {
                 memScoped {
-                    val bufSize = 512
-                    val buf = allocArray<UByteVar>(bufSize)
+                    val reportLen = descriptor.statusReportLength
+                    val buf = allocArray<UByteVar>(512)
                     val bytesRead = alloc<UIntVar>()
 
                     while (currentCoroutineContext().isActive) {
-                        val ok = ReadFile(handle, buf, bufSize.toUInt(), bytesRead.ptr, null)
-                        if (ok != 0 && bytesRead.value >= descriptor.statusReportLength.toUInt()) {
-                            if (buf[0].toInt() == HID_STATUS_REPORT_ID) {
-                                val report = UByteArray(bytesRead.value.toInt()) { buf[it] }
-                                val telemetry = StatusReportParser.parse(device, report)
-                                emit(telemetry)
-                            }
+                        val ok = ReadFile(handle, buf, 512u, bytesRead.ptr, null)
+                        if (ok != 0 && bytesRead.value >= reportLen.toUInt() && buf[0].toInt() == HID_STATUS_REPORT_ID) {
+                            val raw = UByteArray(bytesRead.value.toInt()) { buf[it] }
+                            val telemetry = StatusReportParser.parse(device, raw)
+                            emit(telemetry)
                         }
+                        delay(1.seconds)
                     }
                 }
             } finally {
@@ -261,7 +271,7 @@ class WindowsHardwareController : HardwareController {
         ConfigWriter.finalizeReport(report, descriptor.ctrlReportLength)
 
         writeFeatureReport(node.devicePath, report)
-        writeFeatureReport(node.devicePath, ConfigWriter.SECONDARY_COMMIT_REPORT)
+        writeOutputReport(node.devicePath, ConfigWriter.SECONDARY_COMMIT_REPORT)
         Sleep(250u)
 
         val readback = readFeatureReport(node.devicePath, 0x03u, descriptor.ctrlReportLength)
@@ -346,7 +356,10 @@ private fun readFeatureReport(
             buf[0] = reportId
 
             val ret = HidD_GetFeature(handle, buf, totalLen.toUInt())
-            check(ret != 0.toUByte()) { "HidD_GetFeature failed on $devicePath" }
+            check(ret != 0.toUByte()) {
+                val err = GetLastError()
+                "HidD_GetFeature failed on $devicePath: GetLastError=$err"
+            }
 
             val result = UByteArray(totalLen)
             for (i in 0 until totalLen) {
@@ -414,7 +427,10 @@ private fun writeFeatureReport(
             0u,
             null,
         )
-    check(handle != INVALID_HANDLE_VALUE) { "Cannot open $devicePath for writing feature report" }
+    check(handle != INVALID_HANDLE_VALUE) {
+        val err = GetLastError()
+        "Cannot open $devicePath for writing feature report: GetLastError=$err"
+    }
 
     try {
         memScoped {
@@ -426,7 +442,55 @@ private fun writeFeatureReport(
             Sleep(200u)
 
             val ret = HidD_SetFeature(handle, buf, totalLen.toUInt())
-            check(ret != 0.toUByte()) { "HidD_SetFeature failed on $devicePath" }
+            check(ret != 0.toUByte()) {
+                val err = GetLastError()
+                val reportId = reportData.getOrNull(0)?.toInt() ?: -1
+                "HidD_SetFeature failed on $devicePath (err=$err, reportId=0x${reportId.toString(16)}, totalLen=$totalLen)"
+            }
+        }
+    } finally {
+        CloseHandle(handle)
+    }
+}
+
+private fun writeOutputReport(
+    devicePath: String,
+    reportData: UByteArray,
+) {
+    val totalLen = reportData.size
+    val handle =
+        CreateFileW(
+            devicePath,
+            (GENERIC_READ or GENERIC_WRITE.toUInt()),
+            (FILE_SHARE_READ or FILE_SHARE_WRITE).toUInt(),
+            null,
+            OPEN_EXISTING.toUInt(),
+            0u,
+            null,
+        )
+    check(handle != INVALID_HANDLE_VALUE) {
+        val err = GetLastError()
+        "Cannot open $devicePath for writing output report: GetLastError=$err"
+    }
+
+    try {
+        memScoped {
+            val buf = allocArray<UByteVar>(totalLen)
+            for (i in 0 until totalLen) {
+                buf[i] = reportData[i]
+            }
+
+            Sleep(100u)
+
+            val ret = HidD_SetOutputReport(handle, buf, totalLen.toUInt())
+            if (ret == 0.toUByte()) {
+                val bytesWritten = alloc<UIntVar>()
+                val writeOk = WriteFile(handle, buf, totalLen.toUInt(), bytesWritten.ptr, null)
+                check(writeOk != 0) {
+                    val err = GetLastError()
+                    "Both HidD_SetOutputReport and WriteFile failed on $devicePath (err=$err)"
+                }
+            }
         }
     } finally {
         CloseHandle(handle)
@@ -448,7 +512,7 @@ private fun writeOutputOrFeatureReport(
             0u,
             null,
         )
-    check(handle != INVALID_HANDLE_VALUE) { "Cannot open $devicePath for writing virtual sensors report" }
+    check(handle != INVALID_HANDLE_VALUE) { "Cannot open $devicePath for writing report" }
 
     try {
         memScoped {
@@ -457,11 +521,16 @@ private fun writeOutputOrFeatureReport(
                 buf[i] = reportData[i]
             }
 
-            val bytesWritten = alloc<UIntVar>()
-            val ok = WriteFile(handle, buf, totalLen.toUInt(), bytesWritten.ptr, null)
-            if (ok == 0 || bytesWritten.value != totalLen.toUInt()) {
-                val ret = HidD_SetFeature(handle, buf, totalLen.toUInt())
-                check(ret != 0.toUByte()) { "Failed to write report to $devicePath" }
+            val setOutputOk = HidD_SetOutputReport(handle, buf, totalLen.toUInt())
+            if (setOutputOk == 0.toUByte()) {
+                val bytesWritten = alloc<UIntVar>()
+                val writeOk = WriteFile(handle, buf, totalLen.toUInt(), bytesWritten.ptr, null)
+                if (writeOk == 0) {
+                    val setFeatureOk = HidD_SetFeature(handle, buf, totalLen.toUInt())
+                    check(setFeatureOk != 0.toUByte()) {
+                        "HidD_SetOutputReport, WriteFile, and HidD_SetFeature all failed on $devicePath"
+                    }
+                }
             }
         }
     } finally {
