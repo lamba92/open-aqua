@@ -31,7 +31,7 @@ fun runOpenAquaEngine(
             init()
         }
     val rootCommand by di.instance<OpenAquaEngineCommand>()
-    val subcommands by di.instance<List<CliktCommand>>()
+    val subcommands by di.instance<Set<CliktCommand>>()
     val configuredRoot = rootCommand.subcommands(subcommands)
     try {
         configuredRoot.safeParse(args)

@@ -10,6 +10,7 @@ import com.openaqua.engine.command.ReadConfigCommand
 import com.openaqua.engine.command.StreamTelemetryCommand
 import com.openaqua.engine.command.TelemetryCommand
 import org.kodein.di.DI
+import org.kodein.di.bindSet
 import org.kodein.di.bindSingleton
 import org.kodein.di.instance
 
@@ -23,13 +24,11 @@ val engineCoreModule =
         bindSingleton { FlashConfigCommand(instance()) }
         bindSingleton { ConfigCommand(instance(), instance()) }
         bindSingleton { FeedVirtualSensorsCommand(instance()) }
-        bindSingleton<List<CliktCommand>>(tag = "coreSubcommands") {
-            listOf(
-                instance<DevicesCommand>(),
-                instance<TelemetryCommand>(),
-                instance<StreamTelemetryCommand>(),
-                instance<ConfigCommand>(),
-                instance<FeedVirtualSensorsCommand>(),
-            )
+        bindSet<CliktCommand> {
+            addSingleton { instance<DevicesCommand>() }
+            addSingleton { instance<TelemetryCommand>() }
+            addSingleton { instance<StreamTelemetryCommand>() }
+            addSingleton { instance<ConfigCommand>() }
+            addSingleton { instance<FeedVirtualSensorsCommand>() }
         }
     }
