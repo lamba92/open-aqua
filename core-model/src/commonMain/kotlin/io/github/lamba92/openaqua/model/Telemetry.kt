@@ -28,6 +28,7 @@ sealed interface DeviceTelemetry
 data class OctoTelemetry(
     val fans: List<FanTelemetry>,
     val sensors: List<SensorTelemetry>,
+    val flowRateDlH: Int? = null,
 ) : DeviceTelemetry
 
 @Serializable

@@ -127,9 +127,13 @@ object StatusReportParser {
                 startChannel = 4,
             )
 
+        val flowRaw = readU16Be(report, 0x7B)
+        val flowRateDlH = if (flowRaw in 1..65534) flowRaw else null
+
         return OctoTelemetry(
             fans = fans,
             sensors = physicalSensors + virtualSensors,
+            flowRateDlH = flowRateDlH,
         )
     }
 
