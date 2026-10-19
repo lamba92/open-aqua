@@ -11,6 +11,9 @@ import com.openaqua.model.OctoConfig
 import com.openaqua.model.OctoTelemetry
 import com.openaqua.model.TargetTempFanConfig
 import com.openaqua.model.TwoPointFanConfig
+import com.openaqua.model.isFanAllowed
+import com.openaqua.model.isSensorOffsetAllowed
+import com.openaqua.model.isVirtualSensorAllowed
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
@@ -37,10 +40,14 @@ class OctoHardwareTest {
      * Declares which components on lamba92's OCTO are allowed to be modified during tests.
      * Fans 1-4 (channels 0..3) and Sensor 1 (channel 0) are omitted/false to protect active hardware.
      */
-    private val allowedSpecs =
+    private val lamba92sOctoAllowedSpec =
         OctoAllowedSpecs(
             fans =
                 mapOf(
+                    0 to false,
+                    1 to false,
+                    2 to false,
+                    3 to false,
                     4 to true, // Fan 5 (unoccupied)
                     5 to true, // Fan 6 (unoccupied)
                     6 to true, // Fan 7 (unoccupied)
@@ -48,12 +55,12 @@ class OctoHardwareTest {
                 ),
             sensorOffsets =
                 mapOf(
+                    0 to false,
                     1 to true, // Sensor 2 (unoccupied)
                     2 to true, // Sensor 3 (unoccupied)
                     3 to true, // Sensor 4 (unoccupied)
                 ),
-            virtualSensors =
-                (4..19).associateWith { true },
+            virtualSensors = (0..19).associateWith { true },
         )
 
     @Test
@@ -112,7 +119,7 @@ class OctoHardwareTest {
 
         val initialConfig = controller.readConfig(octo) as OctoConfig
         val testChannel = 4 // Fan 5
-        require(allowedSpecs.isFanAllowed(testChannel)) {
+        require(lamba92sOctoAllowedSpec.isFanAllowed(testChannel)) {
             "Safety check failed: Channel $testChannel is not allowed in AllowedSpecs"
         }
 
@@ -141,7 +148,7 @@ class OctoHardwareTest {
 
         val initialConfig = controller.readConfig(octo) as OctoConfig
         val testChannel = 5 // Fan 6
-        require(allowedSpecs.isFanAllowed(testChannel)) {
+        require(lamba92sOctoAllowedSpec.isFanAllowed(testChannel)) {
             "Safety check failed: Channel $testChannel is not allowed in AllowedSpecs"
         }
 
@@ -186,7 +193,7 @@ class OctoHardwareTest {
 
         val initialConfig = controller.readConfig(octo) as OctoConfig
         val testSensorChannel = 1 // Sensor 2 (unoccupied)
-        require(allowedSpecs.isSensorOffsetAllowed(testSensorChannel)) {
+        require(lamba92sOctoAllowedSpec.isSensorOffsetAllowed(testSensorChannel)) {
             "Safety check failed: Sensor channel $testSensorChannel is not allowed in AllowedSpecs"
         }
 
@@ -212,7 +219,7 @@ class OctoHardwareTest {
                 ?: error("OCTO not found")
 
         val testChannel = 5 // Virtual sensor slot 2
-        require(allowedSpecs.isVirtualSensorAllowed(testChannel)) {
+        require(lamba92sOctoAllowedSpec.isVirtualSensorAllowed(testChannel)) {
             "Safety check failed: Virtual sensor channel $testChannel is not allowed in AllowedSpecs"
         }
 
