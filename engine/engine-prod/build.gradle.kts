@@ -26,6 +26,7 @@ kotlin {
                 entryPoint = "com.openaqua.engine.prod.main"
                 disableNativeCache(version = DisableCacheInKotlinVersion.`2_4_0`, reason = "Clikt duplicate symbol workaround")
             }
+            getTest("debug").disableNativeCache(version = DisableCacheInKotlinVersion.`2_4_0`, reason = "Clikt duplicate symbol workaround")
         }
     }
     linuxArm64 {
@@ -35,6 +36,7 @@ kotlin {
                 entryPoint = "com.openaqua.engine.prod.main"
                 disableNativeCache(version = DisableCacheInKotlinVersion.`2_4_0`, reason = "Clikt duplicate symbol workaround")
             }
+            getTest("debug").disableNativeCache(version = DisableCacheInKotlinVersion.`2_4_0`, reason = "Clikt duplicate symbol workaround")
         }
     }
     mingwX64 {
@@ -51,6 +53,7 @@ kotlin {
                 entryPoint = "com.openaqua.engine.prod.main"
                 disableNativeCache(version = DisableCacheInKotlinVersion.`2_4_0`, reason = "Clikt duplicate symbol workaround")
             }
+            getTest("debug").disableNativeCache(version = DisableCacheInKotlinVersion.`2_4_0`, reason = "Clikt duplicate symbol workaround")
         }
     }
 

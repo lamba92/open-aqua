@@ -28,10 +28,10 @@ import kotlin.test.assertTrue
  *
  * NOTE: These tests interact with real physical USB hardware and are excluded by default
  * from `./gradlew check` and `./gradlew test`. To run them explicitly, pass `-Ptest.hardware=true`
- * (e.g. `./gradlew.bat :engine:engine-prod:mingwX64Test -Ptest.hardware=true`).
+ * (e.g. `./gradlew.bat :engine:engine-prod:mingwX64Test -Ptest.hardware=true` or `./gradlew :engine:engine-prod:linuxX64Test -Ptest.hardware=true`).
  */
 class OctoHardwareTest {
-    private val controller = WindowsHardwareController()
+    private val controller = getPlatformHardwareController()
 
     /**
      * Declares which components on lamba92's OCTO are allowed to be modified during tests.
@@ -60,12 +60,12 @@ class OctoHardwareTest {
     fun testOctoDetection() {
         val devices = controller.scanDevices()
         val octo = devices.firstOrNull { it.type == DeviceType.OCTO }
-        assertNotNull(octo, "Aquacomputer OCTO must be detected on Windows")
+        assertNotNull(octo, "Aquacomputer OCTO must be detected")
         println("Detected OCTO: id=${octo.id}, serial=${octo.serial}, fw=${octo.firmwareVersion}")
 
-        assertNotNull(octo.serial, "OCTO serial number string should be readable via HidD_GetSerialNumberString")
+        assertNotNull(octo.serial, "OCTO serial number string should be readable")
         val fwVersion = octo.firmwareVersion
-        assertNotNull(fwVersion, "OCTO firmware version should be readable via status report")
+        assertNotNull(fwVersion, "OCTO firmware version should be readable")
         assertTrue(fwVersion > 0, "OCTO firmware version should be a positive integer")
     }
 
