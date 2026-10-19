@@ -1,5 +1,8 @@
 package io.github.lamba92.openaqua.model
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 enum class DeviceType {
     OCTO,
     QUADRO,
@@ -8,18 +11,21 @@ enum class DeviceType {
     HIGH_FLOW_NEXT,
 }
 
+@Serializable
 data class FanChannelDescriptor(
     val channel: Int,
     val ctrlOffset: Int,
     val statusOffset: Int,
 )
 
+@Serializable
 data class SensorDescriptor(
     val channel: Int,
     val hwmonIndex: Int,
     val isVirtual: Boolean = false,
 )
 
+@Serializable
 data class DeviceDescriptor(
     val type: DeviceType,
     val name: String,

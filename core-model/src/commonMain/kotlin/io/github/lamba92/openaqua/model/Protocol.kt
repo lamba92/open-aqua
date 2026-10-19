@@ -13,6 +13,12 @@ data class DevicesResponse(
 ) : EngineResponse
 
 @Serializable
+@SerialName("descriptors")
+data class DescriptorsResponse(
+    val descriptors: List<DeviceDescriptor>,
+) : EngineResponse
+
+@Serializable
 data class DetectedHardwareDevice(
     val id: String,
     val alias: String,

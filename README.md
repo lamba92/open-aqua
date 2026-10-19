@@ -25,19 +25,24 @@ Aquacomputer hardware (**OCTO**, **QUADRO**, **D5 NEXT**, etc.) represents the g
 
 | Component | Status | Description |
 | :--- | :---: | :--- |
-| **Native Engine CLI (`:engine:engine-prod`)** | 🟢 **Working** | Fully functional on both **Linux** (`linuxX64`) and **Windows** (`mingwX64`). Supports discovery, live telemetry snapshot, continuous NDJSON telemetry streaming, EEPROM curve reading/flashing, and virtual temperature sensor feeding. |
+| **Native Engine CLI (`:engine:engine-prod`)** | 🟢 **Working** | Fully functional on both **Linux** (`linuxX64`) and **Windows** (`mingwX64`). Supports discovery, live telemetry snapshot, continuous NDJSON telemetry streaming, EEPROM curve reading/flashing, virtual temperature sensor feeding, and device descriptor inspection. |
 | **Mock Engine (`:engine:engine-mock`)** | 🟢 **Working** | Functional on **Linux**, **Windows**, and **macOS** (`macosArm64`) for local development without physical hardware attached. |
 | **Desktop UI (`:app-compose`)** | 🟡 **In Development** | Compose Multiplatform Desktop frontend (Interactive Curve Studio, real-time gauges, local JSON profile management). |
 
 ---
 
-## Supported Hardware
+## Supported Hardware & Testing Status
 
-| Device | USB Product ID | Fan Channels | Temp Sensors | Flow Sensor | RGBpx | Status |
+> [!WARNING]
+> **Physical Hardware Disclaimer**: The maintainer only owns an **Aquacomputer OCTO** and has only physically tested on that hardware.
+>
+> While **Aquacomputer QUADRO** and **Aquacomputer D5 NEXT** have full device descriptors and protocol definitions implemented (based on reverse-engineering and driver specifications), **they have NOT been physically verified on hardware yet—expect bugs or untested edge cases on QUADRO and D5 NEXT**. Community testing, feedback, and issue reports for these devices are very welcome!
+
+| Device | USB Product ID | Fan Channels | Temp Sensors | Flow Sensor | RGBpx | Physical Testing Status |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Aquacomputer OCTO** | `0xF011` | 8 Channels (PWM) | 4 Physical + 16 Virtual | Yes (Dedicated port, dL/h) | 2 Ports | 🟢 Tested & Verified |
-| **Aquacomputer QUADRO** | `0xF00D` | 4 Channels (PWM) | 4 Physical + 16 Virtual | Yes (Dedicated port) | 1 Port | 🟡 Descriptor Ready |
-| **Aquacomputer D5 NEXT** | `0xF00E` | 2 (Pump + Fan) | 1 Liquid + 8 Virtual | Calculated / Virtual | 1 Port | 🟡 Descriptor Ready |
+| **Aquacomputer OCTO** | `0xF011` | 8 Channels (PWM) | 4 Physical + 16 Virtual | Yes (Dedicated port, dL/h) | 2 Ports | 🟢 **Physically Verified & Tested** (Linux & Windows) |
+| **Aquacomputer QUADRO** | `0xF00D` | 4 Channels (PWM) | 4 Physical + 16 Virtual | Yes (Dedicated port, dL/h) | 1 Port | 🟡 **Experimental / Untested on physical device** |
+| **Aquacomputer D5 NEXT** | `0xF00E` | 2 (Pump + Fan) | 1 Liquid + 8 Virtual | Calculated / Virtual | 1 Port | 🟡 **Experimental / Untested on physical device** |
 
 *(All devices share USB Vendor ID `0x0C70`)*
 
@@ -46,6 +51,15 @@ Aquacomputer hardware (**OCTO**, **QUADRO**, **D5 NEXT**, etc.) represents the g
 ## Engine CLI (`open-aqua-engine`)
 
 The engine binary provides a clean JSON / NDJSON command interface over stdin/stdout, making it ideal both for direct scripting and as the backend for the upcoming Compose Desktop UI.
+
+```bash
+$ open-aqua-engine --help
+Usage: open-aqua-engine [<options>] <command> [<args>]...
+
+  OpenAqua native hardware engine CLI. Provides low-level USB HID hardware
+  control for Aquacomputer devices. Supported devices: OCTO (physically
+  verified), QUADRO (experimental), D5 Next (experimental).
+```
 
 ### 1. Discover Connected Devices
 Enumerate all supported Aquacomputer devices connected via USB:
@@ -67,7 +81,36 @@ $ open-aqua-engine devices
 }
 ```
 
-### 2. Snapshot Telemetry
+### 2. Inspect Supported Device Descriptors
+Inspect hardware specifications, channel offsets, report sizes, and sensor capabilities. You can optionally filter by device type (`--type OCTO`):
+```bash
+$ open-aqua-engine descriptors --type OCTO --pretty
+```
+```json
+{
+  "descriptors": [
+    {
+      "type": "OCTO",
+      "name": "Aquacomputer OCTO",
+      "productId": 61457,
+      "ctrlReportLength": 1631,
+      "statusReportLength": 327,
+      "fanChannels": [
+        {"channel": 0, "ctrlOffset": 90, "statusOffset": 125},
+        {"channel": 1, "ctrlOffset": 175, "statusOffset": 138}
+      ],
+      "tempSensors": [
+        {"channel": 0, "hwmonIndex": 1, "isVirtual": false}
+      ],
+      "hasFlowSensor": true,
+      "flowSensorOffset": 123,
+      "virtualSensorsCount": 16
+    }
+  ]
+}
+```
+
+### 3. Snapshot Telemetry
 Read current real-time telemetry (temperatures, fan RPM, voltages, currents, power, flow rate):
 ```bash
 $ open-aqua-engine telemetry --device octo-1 --pretty
@@ -96,14 +139,14 @@ $ open-aqua-engine telemetry --device octo-1 --pretty
 }
 ```
 
-### 3. Continuous Telemetry Streaming (NDJSON)
+### 4. Continuous Telemetry Streaming (NDJSON)
 Continuously stream telemetry samples as line-delimited JSON (NDJSON):
 ```bash
 $ open-aqua-engine stream-telemetry --device octo-1
 ```
 *(Emits one self-contained JSON line per hardware report cycle)*
 
-### 4. Read Hardware Configuration
+### 5. Read Hardware Configuration
 Inspect the active curves, fixed PWM levels, and calibration offsets stored in the device's EEPROM:
 ```bash
 $ open-aqua-engine config read --device octo-1 --pretty
@@ -128,7 +171,7 @@ $ open-aqua-engine config read --device octo-1 --pretty
 }
 ```
 
-### 5. Flash Hardware Configuration
+### 6. Flash Hardware Configuration
 Atomically flash modified fan curves or fixed PWM settings into EEPROM. Unspecified channels remain untouched:
 ```bash
 $ open-aqua-engine config flash --device octo-1 --request '{"fans":{"0":{"type":"fixed","channel":0,"powerPercent":50.0}}}'
@@ -138,8 +181,8 @@ Or flash from a JSON file:
 $ open-aqua-engine config flash --device octo-1 --file custom-profile.json
 ```
 
-### 6. Feed Software / Virtual Temperature Sensors
-Stream external temperature readings (e.g., CPU package, GPU hotspot) from host monitoring tools directly to the hardware's 16 virtual sensor slots:
+### 7. Feed Software / Virtual Temperature Sensors
+Stream external temperature readings (e.g., CPU package, GPU hotspot) from host monitoring tools directly to the hardware's virtual sensor slots:
 ```bash
 $ echo '{"sensors":{"0":45.2,"1":58.0}}' | open-aqua-engine feed-virtual-sensors --device octo-1
 ```

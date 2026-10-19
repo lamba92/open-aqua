@@ -68,7 +68,7 @@ Aquacomputer hardware (OCTO, QUADRO, D5 NEXT, High Flow Next, Aquaero) is the go
 ```
 
 ### Module Breakdown
-- **`:core-model`**: Domain data models, polymorphic protocol responses (`EngineResponse`, `DeviceConfig`, `OctoTelemetry`), device descriptors (`DeviceRegistry`), and curve math (`CurveMath`).
+- **`:core-model`**: Domain data models, polymorphic protocol responses (`EngineResponse`, `DeviceConfig`, `OctoTelemetry`, `DescriptorsResponse`), device descriptors (`DeviceRegistry`), and curve math (`CurveMath`).
 - **`:engine`**: Core multiplatform library containing Clikt commands, the `HardwareController` interface, protocol parsers/writers, CRC-16 computation, and `engineCoreModule` (Kodein DI).
 - **`:engine:engine-mock`**: Standalone executable producing `open-aqua-engine-mock` with fake telemetry, devices, curve responses, and a simulation command for development on macOS/Linux without hardware.
 - **`:engine:engine-prod`**: Production native executable producing `open-aqua-engine`:
@@ -83,6 +83,7 @@ All Aquacomputer USB devices share vendor ID `0x0C70` and communicate via USB HI
 
 ### Device Descriptor Schema
 ```kotlin
+@Serializable
 data class DeviceDescriptor(
     val type: DeviceType,
     val name: String,
@@ -102,12 +103,14 @@ data class DeviceDescriptor(
     val virtualSensorsStartOffset: Int? = null,
 )
 
+@Serializable
 data class FanChannelDescriptor(
     val channel: Int,
     val ctrlOffset: Int,
     val statusOffset: Int,
 )
 
+@Serializable
 data class SensorDescriptor(
     val channel: Int,
     val hwmonIndex: Int,
@@ -115,14 +118,16 @@ data class SensorDescriptor(
 )
 ```
 
-### Supported Hardware Matrix
+### Supported Hardware Matrix & Testing Status
 
-| Device | Product ID | Fan Channels | Temp Sensors | Flow Sensor | Control Report Size | Status Report Size |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| **OCTO** | `0xF011` | 8 Channels | 4 Physical + 16 Virtual | Yes (Dedicated port, offset `0x7B`, dL/h) | `0x65F` (1631 bytes) | `0x147` (327 bytes) |
-| **QUADRO** | `0xF00D` | 4 Channels | 4 Physical + 16 Virtual | Yes (Dedicated port, offset `0x6E`, dL/h) | `0x3C1` (961 bytes) | `0xA5` (165 bytes) |
-| **D5 NEXT** | `0xF00E` | 2 (Pump + Fan) | 1 Liquid + 8 Virtual | Calculated / Virtual | `0x329` (809 bytes) | `0x147` (327 bytes) |
-| **FARBWERK 360**| `0xF010` | None | 4 Physical + 16 Virtual | None | `0xB6` | - |
+> **Disclaimer**: Only the **Aquacomputer OCTO** has been physically tested and verified against real hardware by the maintainer. **QUADRO** and **D5 NEXT** descriptors are implemented based on driver specifications and reverse engineering, but remain experimental until verified on hardware.
+
+| Device | Product ID | Fan Channels | Temp Sensors | Flow Sensor | Control Report Size | Status Report Size | Hardware Testing Status |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **OCTO** | `0xF011` | 8 Channels | 4 Physical + 16 Virtual | Yes (Dedicated port, offset `0x7B`, dL/h) | `0x65F` (1631 bytes) | `0x147` (327 bytes) | 🟢 Physically Verified (Linux & Windows) |
+| **QUADRO** | `0xF00D` | 4 Channels | 4 Physical + 16 Virtual | Yes (Dedicated port, offset `0x6E`, dL/h) | `0x3C1` (961 bytes) | `0xA5` (165 bytes) | 🟡 Experimental / Untested |
+| **D5 NEXT** | `0xF00E` | 2 (Pump + Fan) | 1 Liquid + 8 Virtual | Calculated / Virtual | `0x329` (809 bytes) | `0x147` (327 bytes) | 🟡 Experimental / Untested |
+| **FARBWERK 360**| `0xF010` | None | 4 Physical + 16 Virtual | None | `0xB6` | - | 📋 Planned |
 
 ---
 
@@ -209,7 +214,33 @@ $ open-aqua-engine devices
 }
 ```
 
-### 2. Read Telemetry
+### 2. Print Device Descriptors
+```bash
+$ open-aqua-engine descriptors --type OCTO --pretty
+```
+```json
+{
+  "descriptors": [
+    {
+      "type": "OCTO",
+      "name": "Aquacomputer OCTO",
+      "productId": 61457,
+      "ctrlReportLength": 1631,
+      "statusReportLength": 327,
+      "fanChannels": [
+        {"channel": 0, "ctrlOffset": 90, "statusOffset": 125}
+      ],
+      "tempSensors": [
+        {"channel": 0, "hwmonIndex": 1, "isVirtual": false}
+      ],
+      "hasFlowSensor": true,
+      "flowSensorOffset": 123
+    }
+  ]
+}
+```
+
+### 3. Read Telemetry
 ```bash
 $ open-aqua-engine telemetry --device octo-1 --pretty
 ```
@@ -228,7 +259,7 @@ $ open-aqua-engine telemetry --device octo-1 --pretty
 }
 ```
 
-### 3. Stream Telemetry (NDJSON)
+### 4. Stream Telemetry (NDJSON)
 Continuously emits single-line JSON samples at the hardware report rate:
 ```bash
 $ open-aqua-engine stream-telemetry --device octo-1
@@ -238,7 +269,7 @@ $ open-aqua-engine stream-telemetry --device octo-1
 {"type":"octo","flowRateDlH":182,"fans":[...],"sensors":[...]}
 ```
 
-### 4. Read Hardware Configuration
+### 5. Read Hardware Configuration
 Reads the complete persistent hardware configuration (fan channels, sensor calibration offsets, etc.) from EEPROM:
 ```bash
 $ open-aqua-engine config read --device octo-1 --pretty
@@ -271,7 +302,7 @@ $ open-aqua-engine config read --device octo-1 --pretty
 }
 ```
 
-### 5. Flash Hardware Configuration
+### 6. Flash Hardware Configuration
 Flashes changes to hardware EEPROM in a single atomic read-modify-write cycle. Any omitted field or channel is left unchanged:
 ```bash
 $ open-aqua-engine config flash --device octo-1 --request '{"fans":{"0":{"type":"fixed","channel":0,"powerPercent":60.0}}}'
@@ -281,7 +312,7 @@ Or from a JSON file:
 $ open-aqua-engine config flash --device octo-1 --file profile.json
 ```
 
-### 6. Feed Virtual Sensors
+### 7. Feed Virtual Sensors
 Streams host temperature readings over stdin to the hardware's 16 virtual temperature slots:
 ```bash
 $ echo '{"sensors":{"0":45.2,"1":58.0}}' | open-aqua-engine feed-virtual-sensors --device octo-1
@@ -311,7 +342,7 @@ $ echo '{"sensors":{"0":45.2,"1":58.0}}' | open-aqua-engine feed-virtual-sensors
 | Milestone | Status | Deliverables |
 | :--- | :---: | :--- |
 | **Phase 1: Project Scaffolding** | ✅ Complete | Multi-module Gradle project (`core-model`, `engine`, `app-compose`), Kotlin 2.x, Compose Multiplatform plugin. |
-| **Phase 2: Generic Engine & Models** | ✅ Complete | Cross-platform engine for **Linux** (`linuxX64`) and **Windows** (`mingwX64`) + `engine-mock` on macOS. Full discovery, telemetry, flow sensing, EEPROM curve reading & flashing, virtual sensor feeds. |
+| **Phase 2: Generic Engine & Models** | ✅ Complete | Cross-platform engine for **Linux** (`linuxX64`) and **Windows** (`mingwX64`) + `engine-mock` on macOS. Full discovery, descriptors inspection, telemetry, flow sensing, EEPROM curve reading & flashing, virtual sensor feeds. |
 | **Phase 3: Engine Bridge & Lifecycle** | ⏳ In Progress | `EngineBridge` in `app-compose` to extract embedded binary to cache and run CLI commands via coroutines with `StateFlow`. |
 | **Phase 4: Curve Studio Canvas** | 📋 Planned | Interactive Compose Desktop Canvas curve editor with draggable handles, shape slider, and live coolant operating point. |
 | **Phase 5: Dashboard & Polish** | 📋 Planned | Live hardware gauges, fan channel naming, theme styling (Dark Modern Glass), and desktop distribution packaging (`.deb`, `.rpm`, `.msi`, portable exe). |

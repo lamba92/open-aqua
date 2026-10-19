@@ -7,7 +7,8 @@ class OpenAquaEngineCommand :
     CliktCommand(
         name = "open-aqua-engine",
     ) {
-    override fun help(context: Context): String = "OpenAqua native hardware engine CLI"
+    override fun help(context: Context): String =
+        "OpenAqua native hardware engine CLI. Provides low-level USB HID hardware control for Aquacomputer devices. Supported devices: OCTO (physically verified), QUADRO (experimental), D5 Next (experimental)."
 
     override fun run() = Unit
 }
