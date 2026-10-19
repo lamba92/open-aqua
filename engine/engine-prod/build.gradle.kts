@@ -1,10 +1,16 @@
 @file:OptIn(org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeCacheApi::class)
 
+import io.github.lamba92.gradle.plugins.upx.UpxTask
 import org.jetbrains.kotlin.gradle.plugin.mpp.DisableCacheInKotlinVersion
 import org.jetbrains.kotlin.gradle.tasks.KotlinTest
 
 plugins {
     openaqua.engine
+    id("io.github.lamba92.upx")
+}
+
+upx {
+    bruteLevel = UpxTask.BruteLevel.ULTRA_BRUTE
 }
 
 val enableHardwareTests =
@@ -42,7 +48,7 @@ kotlin {
     mingwX64 {
         compilations.getByName("main") {
             cinterops {
-                val winhid by creating {
+                create("winhid") {
                     defFile(file("src/mingwMain/cinterop/winhid.def"))
                 }
             }
