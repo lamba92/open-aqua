@@ -110,11 +110,17 @@ class OctoHardwareTest {
         try {
             scope.block()
         } finally {
-            println("Safety Scope: Restoring initial OCTO configuration...")
+            println("Safety Scope: Restoring initial OCTO configuration for allowed test channels...")
             val restoreRequest =
                 FlashOctoConfig(
-                    fans = initialConfig.fans.associate { it.channel to it.toSafeRestorableConfig() },
-                    sensorOffsets = initialConfig.sensorOffsets.associate { it.channel to it.offsetCelsius },
+                    fans =
+                        initialConfig.fans
+                            .filter { lamba92sOctoAllowedSpec.isFanAllowed(it.channel) }
+                            .associate { it.channel to it.toSafeRestorableConfig() },
+                    sensorOffsets =
+                        initialConfig.sensorOffsets
+                            .filter { lamba92sOctoAllowedSpec.isSensorOffsetAllowed(it.channel) }
+                            .associate { it.channel to it.offsetCelsius },
                 )
             controller.flashConfig(octo, restoreRequest)
             println("Safety Scope: Successfully restored original OCTO configuration")
