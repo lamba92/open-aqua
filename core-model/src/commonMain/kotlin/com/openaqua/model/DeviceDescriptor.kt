@@ -47,7 +47,7 @@ object DeviceRegistry {
             name = "Aquacomputer OCTO",
             productId = 0xF011,
             ctrlReportLength = 0x65F,
-            statusReportLength = 0x65F,
+            statusReportLength = 0x147,
             fanChannels =
                 (0..7).map {
                     FanChannelDescriptor(
@@ -63,7 +63,7 @@ object DeviceRegistry {
                         hwmonIndex = it + 1,
                     )
                 },
-            tempCtrlOffset = 0x2DE,
+            tempCtrlOffset = 0x0A,
             firmwareVersionOffset = 0x0D,
             hasFlowSensor = false,
             hasRgbpx = true,
@@ -78,7 +78,7 @@ object DeviceRegistry {
             name = "Aquacomputer QUADRO",
             productId = 0xF00D,
             ctrlReportLength = 0x3C1,
-            statusReportLength = 0x3C1,
+            statusReportLength = 0xA5,
             fanChannels =
                 (0..3).map {
                     FanChannelDescriptor(
@@ -94,7 +94,7 @@ object DeviceRegistry {
                         hwmonIndex = it + 1,
                     )
                 },
-            tempCtrlOffset = 0x1A2,
+            tempCtrlOffset = 0x0A,
             firmwareVersionOffset = 0x0D,
             hasFlowSensor = true,
             hasRgbpx = true,
@@ -109,7 +109,7 @@ object DeviceRegistry {
             name = "Aquacomputer D5 Next",
             productId = 0xF00E,
             ctrlReportLength = 0x329,
-            statusReportLength = 0x329,
+            statusReportLength = 0x76,
             fanChannels =
                 listOf(
                     FanChannelDescriptor(0, 0x36, 0x6C),
