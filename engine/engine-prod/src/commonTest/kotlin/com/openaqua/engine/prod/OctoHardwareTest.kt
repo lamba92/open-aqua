@@ -30,6 +30,8 @@ import kotlin.test.assertTrue
  *  - Sensor 1 actively connected/occupied (channel 0) -> Protected from offset modification
  *  - Fans 5-8 unoccupied (channels 4..7) -> Allowed for flash tests
  *  - Virtual Sensors 5-19 -> Allowed for feeding tests
+ *  - RGBpx: Flashing is not yet tested here as report byte offsets and encoding for RGBpx
+ *    hardware controller memory are pending implementation in ConfigWriter.
  *
  * NOTE: These tests interact with real physical USB hardware and are excluded by default
  * from `./gradlew check` and `./gradlew test`. To run them explicitly, pass `-Ptest.hardware=true`
@@ -63,6 +65,8 @@ class OctoHardwareTest {
                     3 to true, // Sensor 4 (unoccupied)
                 ),
             virtualSensors = (0..19).associateWith { true },
+            // RGBpx ports 0..1 will be enabled here once RGBpx encoding is added to ConfigWriter
+            rgbpx = emptyMap(),
         )
 
     private class OctoTestScope(
