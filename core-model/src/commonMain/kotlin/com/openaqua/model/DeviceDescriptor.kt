@@ -52,7 +52,7 @@ object DeviceRegistry {
                 (0..7).map {
                     FanChannelDescriptor(
                         channel = it,
-                        ctrlOffset = 0x36 + (it * 0x55),
+                        ctrlOffset = 0x5A + (it * 0x55),
                         statusOffset = 0x7D + (it * 0x0D),
                     )
                 },
