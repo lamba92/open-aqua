@@ -1,9 +1,21 @@
 @file:OptIn(org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeCacheApi::class)
 
 import org.jetbrains.kotlin.gradle.plugin.mpp.DisableCacheInKotlinVersion
+import org.jetbrains.kotlin.gradle.tasks.KotlinTest
 
 plugins {
     openaqua.engine
+}
+
+val enableHardwareTests =
+    (project.findProperty("test.hardware") as? String)?.toBoolean()
+        ?: System.getenv("TEST_HARDWARE")?.toBoolean()
+        ?: false
+
+tasks.withType<KotlinTest>().configureEach {
+    if (!enableHardwareTests) {
+        (excludePatterns as MutableSet<String>).add("*Hardware*")
+    }
 }
 
 kotlin {
@@ -45,6 +57,10 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(projects.engine)
+        }
+        commonTest.dependencies {
+            implementation(kotlin("test"))
+            implementation(libs.kotlinx.coroutines.core)
         }
     }
 }

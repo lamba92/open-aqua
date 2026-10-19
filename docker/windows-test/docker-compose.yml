@@ -1,0 +1,26 @@
+services:
+  windows-octo-test:
+    image: dockurr/windows
+    container_name: windows-octo-test
+    environment:
+      # Tiny11 is a stripped-down, ultra-fast boot Windows 11 image without bloatware
+      VERSION: "tiny11"
+      DISK_SIZE: "24G"
+      RAM_SIZE: "6G"
+      CPU_CORES: "6"
+      # USB Passthrough for Aquacomputer OCTO (Vendor: 0x0c70, Product: 0xf011)
+      ARGUMENTS: "-device qemu-xhci,id=xhci -device usb-host,bus=xhci.0,vendorid=0x0c70,productid=0xf011"
+    devices:
+      - /dev/kvm
+      - /dev/bus/usb
+    cap_add:
+      - NET_ADMIN
+    ports:
+      - "8006:8006" # Web viewer: open http://localhost:8006 in browser to watch Windows console
+      - "3389:3389/tcp" # RDP
+      - "3389:3389/udp"
+    volumes:
+      # Mount the open-aqua workspace directly into the Windows VM at C:\workspace
+      - ../..:/workspace
+      - ./storage:/storage
+    restart: "no"
