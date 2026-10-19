@@ -42,7 +42,14 @@ java -version
 :RUN_TESTS
 echo.
 echo Navigating to workspace...
-cd /d C:\workspace
+if exist C:\workspace (
+    cd /d C:\workspace
+) else (
+    net use Z: \\host.lan\Data /persistent:yes 2>nul
+    cd /d Z:\
+)
+
+echo Current directory: %CD%
 
 echo Checking OCTO USB Device presence in Windows PnP...
 powershell -Command "Get-PnpDevice | Where-Object { $_.InstanceId -like '*0C70*' } | Select-Object Status, Class, FriendlyName, InstanceId"
