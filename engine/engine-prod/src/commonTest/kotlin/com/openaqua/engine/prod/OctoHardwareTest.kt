@@ -84,6 +84,15 @@ class OctoHardwareTest {
             }
             return controller.flashConfig(octo, request) as OctoConfig
         }
+
+        fun feedVirtualSensors(sensors: Map<Int, Double>) {
+            sensors.keys.forEach { channel ->
+                require(allowedSpecs.isVirtualSensorAllowed(channel)) {
+                    "Safety check failed: Virtual sensor channel $channel is not allowed in AllowedSpecs"
+                }
+            }
+            controller.feedVirtualSensors(octo, sensors)
+        }
     }
 
     private fun withOctoSafeScope(block: OctoTestScope.() -> Unit) {
@@ -217,21 +226,14 @@ class OctoHardwareTest {
         }
 
     @Test
-    fun testFeedVirtualSensorsOnAllowedChannels() {
-        val octo =
-            controller.scanDevices().firstOrNull { it.type == DeviceType.OCTO }
-                ?: error("OCTO not found")
-
-        val testChannel = 5 // Virtual sensor slot 2
-        require(lamba92sOctoAllowedSpec.isVirtualSensorAllowed(testChannel)) {
-            "Safety check failed: Virtual sensor channel $testChannel is not allowed in AllowedSpecs"
+    fun testFeedVirtualSensorsOnAllowedChannels() =
+        withOctoSafeScope {
+            val testChannel = 5 // Virtual sensor slot 2
+            val testTemp = 28.5
+            println("Feeding virtual sensor channel $testChannel with $testTemp°C...")
+            feedVirtualSensors(mapOf(testChannel to testTemp))
+            println("Virtual sensor packet sent successfully")
         }
-
-        val testTemp = 28.5
-        println("Feeding virtual sensor channel $testChannel with $testTemp°C...")
-        controller.feedVirtualSensors(octo, mapOf(testChannel to testTemp))
-        println("Virtual sensor packet sent successfully")
-    }
 
     companion object {
         private fun FanChannelConfig.toSafeRestorableConfig(): FanChannelConfig =
