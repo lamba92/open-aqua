@@ -1,13 +1,10 @@
 package io.github.lamba92.openaqua.app.util
 
-import open_aqua.app_compose.generated.resources.Res
-import org.jetbrains.compose.resources.ExperimentalResourceApi
 import java.nio.file.Path
 import kotlin.io.path.createTempDirectory
 import kotlin.io.path.writeBytes
 
 object EngineExtractor {
-    @OptIn(ExperimentalResourceApi::class)
     suspend fun extract(): Path {
         val os = System.getProperty("os.name").lowercase()
         val arch = System.getProperty("os.arch").lowercase()
@@ -42,7 +39,7 @@ object EngineExtractor {
                 ?: EngineExtractor::class.java
                     .getResourceAsStream("/files/bin/$resourceFileName")
                     ?.use { it.readAllBytes() }
-                ?: Res.readBytes("files/bin/$resourceFileName")
+                ?: error("Could not find engine binary on classpath: files/bin/$resourceFileName")
 
         targetExecutable.writeBytes(binaryBytes)
         targetExecutable.toFile().setExecutable(true)

@@ -16,9 +16,11 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import kotlinx.io.asSource
+import kotlinx.io.buffered
+import kotlinx.io.readLineStrict
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.decodeFromStream
 import java.nio.file.Path
 import kotlin.io.path.absolutePathString
 import kotlin.time.Duration
@@ -106,8 +108,12 @@ class OpenAquaEngineApi(
                 ).start()
             val result =
                 withTimeout(timeout) {
-                    val input = process.inputStream.
-                    when (val response = json.decodeFromStream<EngineResponse<T>>()) {
+                    val input =
+                        process.inputStream
+                            .asSource()
+                            .buffered()
+                            .readLineStrict()
+                    when (val response = json.decodeFromString<EngineResponse<T>>(input)) {
                         is EngineResponse.Error -> error(response.message)
                         is EngineResponse.Success<T> -> response.value
                     }

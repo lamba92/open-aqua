@@ -4,10 +4,13 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
+import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputFile
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 import org.gradle.internal.os.OperatingSystem
 import org.gradle.process.ExecOperations
@@ -15,6 +18,7 @@ import java.io.File
 import java.io.Serializable
 import javax.inject.Inject
 
+@CacheableTask
 abstract class UpxTask @Inject constructor(
     private val execOperations: ExecOperations,
 ) : DefaultTask() {
@@ -93,6 +97,7 @@ abstract class UpxTask @Inject constructor(
     }
 
     @get:InputFile
+    @get:PathSensitive(PathSensitivity.NAME_ONLY)
     abstract val inputExecutable: RegularFileProperty
 
     @get:OutputFile
@@ -132,6 +137,7 @@ abstract class UpxTask @Inject constructor(
     abstract val additionalOptions: ListProperty<String>
 
     @get:InputFile
+    @get:PathSensitive(PathSensitivity.NONE)
     abstract val upxExecutableFile: RegularFileProperty
 
     @TaskAction

@@ -39,9 +39,6 @@ val syncEngineBinaries =
         from(engineBinaries) {
             into("files/bin")
         }
-        from(engineBinaries) {
-            into("composeResources/files/bin")
-        }
     }
 
 plugins.withId("org.jetbrains.kotlin.jvm") {
