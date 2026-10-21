@@ -1,6 +1,7 @@
 package io.github.lamba92.openaqua.model
 
 import kotlinx.serialization.SerializationException
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -144,7 +145,7 @@ class ProtocolTest {
                     ),
             )
         assertNotNull(validOctoRgb.rgbpx)
-        assertEquals(2, validOctoRgb.rgbpx?.size)
+        assertEquals(2, validOctoRgb.rgbpx.size)
 
         // Port 2 is invalid on OCTO (must be 0..1)
         assertFailsWith<IllegalArgumentException> {
@@ -334,5 +335,44 @@ class ProtocolTest {
         assertEquals(2, deserialized.sensors.size)
         assertEquals(36.5, deserialized.sensors[4])
         assertEquals(48.0, deserialized.sensors[5])
+    }
+
+    @Test
+    fun testEngineResponseSerialization() {
+        val json = Json { encodeDefaults = true }
+
+        val devices =
+            listOf(
+                DetectedHardwareDevice(
+                    id = "octo-1",
+                    alias = "octo-1",
+                    type = DeviceType.OCTO,
+                    name = "Aqua Computer OCTO",
+                ),
+            )
+        val successResponse: EngineResponse<DevicesResponse> =
+            EngineResponse.Success(DevicesResponse(devices))
+        val serializedSuccess = json.encodeToString(successResponse)
+        assertTrue(serializedSuccess.contains(""""type":"success""""))
+        assertTrue(serializedSuccess.contains(""""id":"octo-1""""))
+
+        val deserializedSuccess = json.decodeFromString<EngineResponse<DevicesResponse>>(serializedSuccess)
+        assertTrue(deserializedSuccess is EngineResponse.Success)
+        assertEquals(1, deserializedSuccess.value.devices.size)
+        assertEquals(
+            "octo-1",
+            deserializedSuccess.value.devices
+                .first()
+                .id,
+        )
+
+        val errorResponse: EngineResponse<Nothing> = EngineResponse.Error("Device not found")
+        val serializedError = json.encodeToString(errorResponse)
+        assertTrue(serializedError.contains(""""type":"error""""))
+        assertTrue(serializedError.contains(""""message":"Device not found""""))
+
+        val deserializedError = json.decodeFromString<EngineResponse<DevicesResponse>>(serializedError)
+        assertTrue(deserializedError is EngineResponse.Error)
+        assertEquals("Device not found", deserializedError.message)
     }
 }

@@ -1,6 +1,7 @@
 package io.github.lamba92.openaqua.engine.command
 
 import io.github.lamba92.openaqua.engine.util.readTextOrNull
+import io.github.lamba92.openaqua.model.EngineResponse
 import kotlinx.io.files.Path
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -19,10 +20,20 @@ val prettyJson =
         encodeDefaults = true
     }
 
-inline fun <reified T : Any> printResponse(
-    response: T,
+inline fun <reified T : Any> printSuccessResponse(
+    value: T,
     pretty: Boolean,
 ) {
+    val response = EngineResponse.Success(value)
+    val serializer = if (pretty) prettyJson else defaultJson
+    println(serializer.encodeToString<EngineResponse<T>>(response))
+}
+
+fun printErrorResponse(
+    message: String,
+    pretty: Boolean,
+) {
+    val response: EngineResponse<Nothing> = EngineResponse.Error(message)
     val serializer = if (pretty) prettyJson else defaultJson
     println(serializer.encodeToString(response))
 }

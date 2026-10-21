@@ -16,8 +16,5 @@ class DevicesCommand(
 
     private val pretty by option("--pretty", help = "Pretty-print JSON output").flag(default = false)
 
-    override fun run() {
-        val devices = controller.scanDevices()
-        printResponse(DevicesResponse(devices), pretty)
-    }
+    override fun run() = printSuccessResponse(DevicesResponse(controller.scanDevices()), pretty)
 }

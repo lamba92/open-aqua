@@ -69,6 +69,6 @@ class FlashConfigCommand(
             }
 
         val response = controller.flashConfig(target, flashRequest)
-        printResponse(response, pretty)
+        printSuccessResponse(response, pretty)
     }
 }

@@ -6,9 +6,8 @@ import com.github.ajalt.clikt.core.CoreCliktCommand
 import com.github.ajalt.clikt.core.parse
 import com.github.ajalt.clikt.core.subcommands
 import io.github.lamba92.openaqua.engine.command.OpenAquaEngineCommand
-import io.github.lamba92.openaqua.engine.command.printResponse
+import io.github.lamba92.openaqua.engine.command.printErrorResponse
 import io.github.lamba92.openaqua.engine.di.engineCoreModule
-import io.github.lamba92.openaqua.model.ErrorResponse
 import org.kodein.di.DI
 import org.kodein.di.instance
 
@@ -36,12 +35,8 @@ fun runOpenAquaEngine(
     try {
         configuredRoot.safeParse(args)
     } catch (e: Throwable) {
-        val errorResponse =
-            ErrorResponse(
-                message = e.message ?: "Unknown error",
-            )
         val pretty = args.contains("--pretty")
-        printResponse(errorResponse, pretty)
+        printErrorResponse(e.message ?: "Unknown error", pretty)
         configuredRoot.currentContext.exitProcess(1)
     }
 }

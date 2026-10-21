@@ -18,9 +18,5 @@ class ReadConfigCommand(
     private val device by option("--device", help = "Device ID or alias (e.g. octo-1)").required()
     private val pretty by option("--pretty", help = "Pretty-print JSON output").flag(default = false)
 
-    override fun run() {
-        val target = controller.requireTarget(device)
-        val config = controller.readConfig(target)
-        printResponse(config, pretty)
-    }
+    override fun run() = printSuccessResponse(controller.readConfig(controller.requireTarget(device)), pretty)
 }

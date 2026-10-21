@@ -1,0 +1,58 @@
+<resources>
+    <string name="app_name">OpenAqua</string>
+    <string name="window_title">OpenAqua - Hydro-Telemetry Cockpit</string>
+    <string name="scanning_hardware">Scanning Aquacomputer Hardware...</string>
+    <string name="retry_scan">Retry Scan</string>
+    <string name="no_devices_found">No Aquacomputer devices detected</string>
+    <string name="refresh_devices">Refresh Devices</string>
+    <string name="refresh_telemetry">Refresh Telemetry</string>
+    
+    <!-- Navigation Components -->
+    <string name="nav_device_info">Device Info</string>
+    <string name="nav_fans">Fans</string>
+    <string name="nav_sensors">Sensors</string>
+
+    <!-- Device Info Screen -->
+    <string name="device_telemetry_identity_subtitle">Hardware telemetry &amp; device identity</string>
+    <string name="usb_hid_connected">USB HID Connected</string>
+    <string name="device_identification_title">Device Identification (devices command)</string>
+    <string name="info_device_name">Device Name</string>
+    <string name="info_hardware_alias">Hardware Alias</string>
+    <string name="info_serial_number">Serial Number</string>
+    <string name="info_unique_id">Unique ID</string>
+    <string name="info_firmware_version">Firmware Version</string>
+    <string name="info_device_architecture">Device Architecture</string>
+    <string name="hardware_descriptors_title">Hardware Descriptors &amp; Specifications</string>
+    <string name="spec_fan_channels">Fan Channels</string>
+    <string name="spec_temp_probes">Temperature Probes</string>
+    <string name="spec_virtual_sensors">Virtual Sensors</string>
+    <string name="spec_rgbpx_ports">RGBpx Ports</string>
+    <string name="spec_flow_sensor">Flow Sensor</string>
+    <string name="spec_usb_protocol">USB Protocol</string>
+
+    <!-- Fans Screen -->
+    <string name="fans_screen_title">Fans &amp; PWM Channels</string>
+    <string name="fans_screen_subtitle">Select a fan channel to configure speed profiles and telemetry</string>
+    <string name="fan_channels_header">FAN CHANNELS</string>
+    <string name="fan_settings_title_suffix">Settings</string>
+    <string name="fan_hardware_pin">Hardware Pin: %s</string>
+    <string name="metric_speed">Speed</string>
+    <string name="metric_pwm_duty">PWM Duty</string>
+    <string name="metric_voltage">Voltage</string>
+    <string name="metric_current">Current</string>
+    <string name="metric_power">Power</string>
+    <string name="fan_curve_studio_title">Fan Channel Configuration &amp; Curve Studio</string>
+    <string name="fan_curve_studio_desc">16-point custom fan curves, auto-curve progressive math, and EEPROM flash controls will be iterated here next.</string>
+
+    <!-- Sensors Screen -->
+    <string name="sensors_screen_title">Temperature Sensors</string>
+    <string name="sensors_screen_subtitle">NTC thermistor inputs and virtual software sensor slots</string>
+    <string name="temperature_probes_header">TEMPERATURE PROBES</string>
+    <string name="sensor_settings_title_suffix">Settings</string>
+    <string name="sensor_hardware_channel">Hardware Channel: %s</string>
+    <string name="metric_live_temperature">Live Temperature</string>
+    <string name="metric_probe_type">Probe Type</string>
+    <string name="metric_offset_calibration">Offset Calibration</string>
+    <string name="sensor_calibration_title">Sensor Calibration &amp; Virtual Feeds</string>
+    <string name="sensor_calibration_desc">NTC offset calibration sliders, virtual temperature streaming, and curve source binding will be iterated here next.</string>
+</resources>

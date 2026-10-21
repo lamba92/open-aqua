@@ -23,6 +23,6 @@ class TelemetryCommand(
     override fun run() {
         val target = controller.requireTarget(device)
         val telemetry = runBlocking { controller.streamTelemetry(target).first() }
-        printResponse(telemetry, pretty)
+        printSuccessResponse(telemetry, pretty)
     }
 }

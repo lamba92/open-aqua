@@ -21,7 +21,7 @@ class StreamTelemetryCommand(
         val target = controller.requireTarget(device)
         runBlocking {
             controller.streamTelemetry(target).collect { telemetry ->
-                printResponse(telemetry, pretty = false)
+                printSuccessResponse(telemetry, pretty = false)
             }
         }
     }

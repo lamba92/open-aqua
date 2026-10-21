@@ -4,19 +4,31 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-sealed interface EngineResponse
+sealed interface EngineResponse<T> {
+    @Serializable
+    @SerialName("error")
+    data class Error(
+        val message: String,
+    ) : EngineResponse<Nothing>
+
+    @Serializable
+    @SerialName("success")
+    data class Success<T>(
+        val value: T,
+    ) : EngineResponse<T>
+}
 
 @Serializable
 @SerialName("devices")
 data class DevicesResponse(
     val devices: List<DetectedHardwareDevice>,
-) : EngineResponse
+)
 
 @Serializable
 @SerialName("descriptors")
 data class DescriptorsResponse(
     val descriptors: List<DeviceDescriptor>,
-) : EngineResponse
+)
 
 @Serializable
 data class DetectedHardwareDevice(
@@ -247,9 +259,3 @@ data class FlashD5NextConfig(
 data class FeedVirtualSensorsRequest(
     val sensors: Map<Int, Double>,
 )
-
-@Serializable
-@SerialName("error")
-data class ErrorResponse(
-    val message: String,
-) : EngineResponse
