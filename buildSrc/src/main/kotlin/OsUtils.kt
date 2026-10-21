@@ -1,37 +1,20 @@
-import io.github.lamba92.gradle.plugins.engine.TARGET_PLATFORM_ATTRIBUTE
-import io.github.lamba92.gradle.plugins.engine.toCanonicalBinaryName
+import io.github.lamba92.gradle.plugins.engine.Arch
+import io.github.lamba92.gradle.plugins.engine.Os
 
-enum class SupportedTargets {
-    LinuxX64,
-    LinuxArm64,
-    WindowsX64,
-    MacOSX64,
-    MacOSArm64;
+enum class SupportedTargets(val os: Os, val arch: Arch) {
+    LinuxX64(Os.LINUX, Arch.X64),
+    LinuxArm64(Os.LINUX, Arch.ARM64),
+    WindowsX64(Os.WINDOWS, Arch.X64),
+    MacOSX64(Os.MACOS, Arch.X64),
+    MacOSArm64(Os.MACOS, Arch.ARM64),
+    ;
 
     companion object {
         fun getCurrent(): SupportedTargets {
-            val arch = when (val archString = System.getProperty("os.arch")) {
-                "x86_64", "amd64" -> "x64"
-                "aarch64" -> "arm"
-                else -> error("Unsupported OS arch: $archString")
-            }
-            val os = System.getProperty("os.name")
-            return when {
-                os.equals("Mac OS X", ignoreCase = true) && arch == "x64" -> MacOSX64
-                os.equals("Mac OS X", ignoreCase = true) && arch == "arm" -> MacOSArm64
-                os.startsWith("Win", ignoreCase = true) && arch == "x64" -> WindowsX64
-                os.startsWith("Linux", ignoreCase = true) && arch == "x64" -> LinuxX64
-                os.startsWith("Linux", ignoreCase = true) && arch == "arm" -> LinuxArm64
-                else -> error("Unsupported Compose Desktop target: $os $arch")
-            }
+            val os = Os.current()
+            val arch = Arch.current()
+            return values().firstOrNull { it.os == os && it.arch == arch }
+                ?: error("Unsupported current target: OS=$os, Arch=$arch")
         }
     }
-}
-
-fun SupportedTargets.toTargetPlatformName(): String = when (this) {
-    SupportedTargets.LinuxX64 -> "linuxX64"
-    SupportedTargets.LinuxArm64 -> "linuxArm64"
-    SupportedTargets.WindowsX64 -> "mingwX64"
-    SupportedTargets.MacOSX64 -> "macosX64"
-    SupportedTargets.MacOSArm64 -> "macosArm64"
 }

@@ -149,36 +149,42 @@ abstract class UpxTask @Inject constructor(
         outputFile.parentFile?.mkdirs()
 
         val inputFile = inputExecutable.get().asFile
-        val fileToCompress: File = if (strip.get()) {
-            val strippedFile = temporaryDir.resolve("stripped-${inputFile.name}")
-            if (strippedFile.exists()) {
-                strippedFile.delete()
-            }
-            val os = OperatingSystem.current()
-            val stripTool = stripExecutable.get()
-            val stripResult = runCatching {
-                if (os.isMacOsX) {
-                    inputFile.copyTo(strippedFile, overwrite = true)
-                    execOperations.exec {
-                        executable = stripTool
-                        args(strippedFile.absolutePath)
-                    }
-                } else {
-                    execOperations.exec {
-                        executable = stripTool
-                        args("-s", inputFile.absolutePath, "-o", strippedFile.absolutePath)
-                    }
+        val fileToCompress: File =
+            if (strip.get()) {
+                val strippedFile = temporaryDir.resolve("stripped-${inputFile.name}")
+                if (strippedFile.exists()) {
+                    strippedFile.delete()
                 }
-            }
-            if (stripResult.isSuccess && strippedFile.exists()) {
-                strippedFile
+                val os = OperatingSystem.current()
+                val stripTool = stripExecutable.get()
+                val stripResult =
+                    runCatching {
+                        if (os.isMacOsX) {
+                            inputFile.copyTo(strippedFile, overwrite = true)
+                            strippedFile.setExecutable(true)
+                            execOperations.exec {
+                                executable = stripTool
+                                args(strippedFile.absolutePath)
+                            }
+                        } else {
+                            execOperations.exec {
+                                executable = stripTool
+                                args("-s", inputFile.absolutePath, "-o", strippedFile.absolutePath)
+                            }
+                        }
+                    }
+                if (stripResult.isSuccess && strippedFile.exists()) {
+                    strippedFile.setExecutable(true)
+                    strippedFile
+                } else {
+                    logger.warn("Stripping executable before UPX compression failed: ${stripResult.exceptionOrNull()?.message}. Using original binary.")
+                    inputFile
+                }
             } else {
-                logger.warn("Stripping executable before UPX compression failed: ${stripResult.exceptionOrNull()?.message}. Using original binary.")
                 inputFile
             }
-        } else {
-            inputFile
-        }
+
+        fileToCompress.setExecutable(true)
 
         try {
             execOperations.exec {

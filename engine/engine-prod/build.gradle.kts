@@ -7,6 +7,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinTest
 plugins {
     openaqua.engine
     id("io.github.lamba92.upx")
+    id("openaqua.engine.producer")
 }
 
 upx {
@@ -71,5 +72,26 @@ kotlin {
             implementation(kotlin("test"))
             implementation(libs.kotlinx.coroutines.core)
         }
+    }
+}
+
+engineBinaries {
+    register("linuxX64") {
+        fromUpx(
+            kotlin.linuxX64().binaries.getExecutable("release"),
+            tasks.named<UpxTask>("compressReleaseExecutableLinuxX64"),
+        )
+    }
+    register("linuxArm64") {
+        fromUpx(
+            kotlin.linuxArm64().binaries.getExecutable("release"),
+            tasks.named<UpxTask>("compressReleaseExecutableLinuxArm64"),
+        )
+    }
+    register("mingwX64") {
+        fromUpx(
+            kotlin.mingwX64().binaries.getExecutable("release"),
+            tasks.named<UpxTask>("compressReleaseExecutableMingwX64"),
+        )
     }
 }

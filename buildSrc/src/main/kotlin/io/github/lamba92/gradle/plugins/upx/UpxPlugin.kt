@@ -1,12 +1,9 @@
 package io.github.lamba92.gradle.plugins.upx
 
-import io.github.lamba92.gradle.plugins.engine.TARGET_PLATFORM_ATTRIBUTE
-import io.github.lamba92.gradle.plugins.engine.toCanonicalBinaryName
 import org.gradle.api.Named
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
-import org.gradle.api.attributes.Usage
 import org.gradle.api.file.DuplicatesStrategy
 import org.gradle.api.file.RegularFile
 import org.gradle.api.file.RegularFileProperty
@@ -53,7 +50,7 @@ class UpxPlugin : Plugin<Project> {
 
     override fun apply(target: Project): Unit =
         with(target) {
-            val versionProperty = objects.property<String>().convention("4.2.4")
+            val versionProperty = objects.property<String>().convention("5.2.1")
             val localUpxPath = objects.fileProperty()
             val stripProperty = objects.property<Boolean>().convention(true)
             val lzmaProperty = objects.property<Boolean>().convention(true)
@@ -153,23 +150,6 @@ class UpxPlugin : Plugin<Project> {
                     description = "Compress all release native executables with UPX"
                 }
 
-            val prepareCompressedEngineBinariesAll =
-                tasks.maybeRegister("prepareCompressedEngineBinariesAll", Sync::class.java) {
-                    group = "upx"
-                    description = "Collects all UPX-compressed release executables"
-                    into(layout.buildDirectory.dir("engine-binaries/all"))
-                }
-
-            configurations.maybeCreate("compressedEngineBinariesAll").apply {
-                isCanBeConsumed = true
-                isCanBeResolved = false
-                attributes {
-                    attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage::class.java, "compressed-engine-binaries"))
-                    attribute(TARGET_PLATFORM_ATTRIBUTE, "all")
-                }
-                outgoing.artifact(prepareCompressedEngineBinariesAll)
-            }
-
             plugins.withId("org.jetbrains.kotlin.multiplatform") {
                 val kotlinExtension = extensions.getByType<KotlinMultiplatformExtension>()
                 kotlinExtension.targets.withType<KotlinNativeTarget>().configureEach {
@@ -218,32 +198,6 @@ class UpxPlugin : Plugin<Project> {
                         if (buildTypeName == "release") {
                             compressRelease.configure {
                                 dependsOn(compressTask)
-                            }
-
-                            val canonicalBinaryName = konanTarget.toCanonicalBinaryName()
-
-                            val prepareTargetTask =
-                                tasks.register<Sync>("prepareCompressedEngineBinary$taskSuffix") {
-                                    from(compressTask.flatMap { it.outputExecutable }) {
-                                        rename { canonicalBinaryName }
-                                    }
-                                    into(layout.buildDirectory.dir("engine-binaries/$targetName"))
-                                }
-
-                            prepareCompressedEngineBinariesAll.configure {
-                                from(compressTask.flatMap { it.outputExecutable }) {
-                                    rename { canonicalBinaryName }
-                                }
-                            }
-
-                            configurations.maybeCreate("compressedEngineBinary$taskSuffix").apply {
-                                isCanBeConsumed = true
-                                isCanBeResolved = false
-                                attributes {
-                                    attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage::class.java, "compressed-engine-binaries"))
-                                    attribute(TARGET_PLATFORM_ATTRIBUTE, targetName)
-                                }
-                                outgoing.artifact(prepareTargetTask)
                             }
                         }
 

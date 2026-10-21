@@ -1,3 +1,5 @@
+import io.github.lamba92.gradle.plugins.engine.Arch
+import io.github.lamba92.gradle.plugins.engine.Os
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
 plugins {
@@ -17,6 +19,13 @@ ktlint {
     filter {
         exclude("**/build/**")
         exclude("**/generated/**")
+    }
+}
+
+engineBinaries {
+    if (Os.current() == Os.MACOS) {
+        os.set(Os.LINUX)
+        arch.set(Arch.X64)
     }
 }
 
