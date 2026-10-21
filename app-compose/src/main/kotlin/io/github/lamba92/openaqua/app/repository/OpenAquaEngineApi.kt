@@ -106,7 +106,8 @@ class OpenAquaEngineApi(
                 ).start()
             val result =
                 withTimeout(timeout) {
-                    when (val response = json.decodeFromStream<EngineResponse<T>>(process.inputStream)) {
+                    val input = process.inputStream.
+                    when (val response = json.decodeFromStream<EngineResponse<T>>()) {
                         is EngineResponse.Error -> error(response.message)
                         is EngineResponse.Success<T> -> response.value
                     }

@@ -1,3 +1,6 @@
+import io.github.lamba92.gradle.plugins.engine.TARGET_PLATFORM_ATTRIBUTE
+import io.github.lamba92.gradle.plugins.engine.toCanonicalBinaryName
+
 enum class SupportedTargets {
     LinuxX64,
     LinuxArm64,
@@ -22,6 +25,13 @@ enum class SupportedTargets {
                 else -> error("Unsupported Compose Desktop target: $os $arch")
             }
         }
-
     }
+}
+
+fun SupportedTargets.toTargetPlatformName(): String = when (this) {
+    SupportedTargets.LinuxX64 -> "linuxX64"
+    SupportedTargets.LinuxArm64 -> "linuxArm64"
+    SupportedTargets.WindowsX64 -> "mingwX64"
+    SupportedTargets.MacOSX64 -> "macosX64"
+    SupportedTargets.MacOSArm64 -> "macosArm64"
 }

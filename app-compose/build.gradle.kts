@@ -1,5 +1,3 @@
-import org.jetbrains.compose.desktop.application.dsl.TargetFormat
-
 plugins {
     id(libs.plugins.kotlin.jvm)
     id(libs.plugins.kotlin.serialization)
@@ -32,24 +30,14 @@ dependencies {
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.swing)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.kotlinx.io.core)
 }
 
-fun getCurrentPlatformComposeRuntime() = when (SupportedTargets.getCurrent()) {
-    SupportedTargets.LinuxX64 -> libs.compose.desktop.linux.x64
-    SupportedTargets.LinuxArm64 -> libs.compose.desktop.linux.arm64
-    SupportedTargets.WindowsX64 -> libs.compose.desktop.windows.x64
-    SupportedTargets.MacOSX64 -> libs.compose.desktop.macos.x64
-    SupportedTargets.MacOSArm64 -> libs.compose.desktop.macos.arm64
-}
-
-compose.desktop {
-    application {
-        mainClass = "io.github.lamba92.openaqua.app.MainKt"
-
-        nativeDistributions {
-            targetFormats(TargetFormat.Deb, TargetFormat.Rpm)
-            packageName = "open-aqua"
-            packageVersion = "1.0.0"
-        }
+fun getCurrentPlatformComposeRuntime() =
+    when (SupportedTargets.getCurrent()) {
+        SupportedTargets.LinuxX64 -> libs.compose.desktop.linux.x64
+        SupportedTargets.LinuxArm64 -> libs.compose.desktop.linux.arm64
+        SupportedTargets.WindowsX64 -> libs.compose.desktop.windows.x64
+        SupportedTargets.MacOSX64 -> libs.compose.desktop.macos.x64
+        SupportedTargets.MacOSArm64 -> libs.compose.desktop.macos.arm64
     }
-}

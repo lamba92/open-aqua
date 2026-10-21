@@ -1,9 +1,15 @@
 @file:OptIn(org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeCacheApi::class)
 
+import io.github.lamba92.gradle.plugins.upx.UpxTask
 import org.jetbrains.kotlin.gradle.plugin.mpp.DisableCacheInKotlinVersion
 
 plugins {
     openaqua.engine
+    id("io.github.lamba92.upx")
+}
+
+upx {
+    bruteLevel = UpxTask.BruteLevel.ULTRA_BRUTE
 }
 
 kotlin {
