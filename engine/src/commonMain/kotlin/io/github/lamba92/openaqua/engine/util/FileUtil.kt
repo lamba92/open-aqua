@@ -19,6 +19,22 @@ fun Path.readTextOrNull(fileSystem: FileSystem = SystemFileSystem): String? =
         null
     }
 
+fun Path.writeText(
+    text: String,
+    fileSystem: FileSystem = SystemFileSystem,
+) {
+    fileSystem.sink(this).buffered().use { it.write(text.encodeToByteArray()) }
+}
+
+fun Path.atomicWriteText(
+    text: String,
+    fileSystem: FileSystem = SystemFileSystem,
+) {
+    val tempPath = Path("$this.tmp")
+    tempPath.writeText(text, fileSystem)
+    fileSystem.atomicMove(tempPath, this)
+}
+
 fun Path.listDirectory(fileSystem: FileSystem = SystemFileSystem): List<Path> =
     if (!fileSystem.exists(this)) {
         emptyList()
