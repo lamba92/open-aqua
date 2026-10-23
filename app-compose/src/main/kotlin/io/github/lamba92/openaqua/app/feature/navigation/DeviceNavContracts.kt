@@ -1,52 +1,25 @@
 package io.github.lamba92.openaqua.app.feature.navigation
 
-import io.github.lamba92.openaqua.model.DetectedHardwareDevice
-
-enum class DeviceNavComponent {
-    DEVICE_INFO,
-    FANS,
-    SENSORS,
-}
+import io.github.lamba92.openaqua.app.repository.DeviceState
 
 sealed interface DeviceNavState {
     data object Loading : DeviceNavState
 
-    data class Error(
-        val message: String,
-    ) : DeviceNavState
+    data object NoDevices : DeviceNavState
 
     data class Ready(
-        val devices: List<DetectedHardwareDevice>,
-        val selectedDevice: DetectedHardwareDevice,
-        val selectedComponent: DeviceNavComponent = DeviceNavComponent.DEVICE_INFO,
-        val isRefreshing: Boolean = false,
-    ) : DeviceNavState
+        val devices: List<DeviceState>,
+        val selectedDeviceId: String,
+    ) : DeviceNavState {
+        val selectedDeviceState: DeviceState
+            get() = devices.firstOrNull { it.device.id == selectedDeviceId } ?: devices.first()
+    }
 }
 
 sealed interface DeviceNavEvent {
-    data object LoadDevices : DeviceNavEvent
-
-    data object RefreshDevices : DeviceNavEvent
-
     data class SelectDevice(
-        val device: DetectedHardwareDevice,
-    ) : DeviceNavEvent
-
-    data class SelectComponent(
-        val component: DeviceNavComponent,
+        val deviceId: String,
     ) : DeviceNavEvent
 }
 
-sealed interface DeviceNavEffect {
-    data class DeviceChanged(
-        val device: DetectedHardwareDevice,
-    ) : DeviceNavEffect
-
-    data class ComponentChanged(
-        val component: DeviceNavComponent,
-    ) : DeviceNavEffect
-
-    data class ErrorNotification(
-        val message: String,
-    ) : DeviceNavEffect
-}
+sealed interface DeviceNavEffect

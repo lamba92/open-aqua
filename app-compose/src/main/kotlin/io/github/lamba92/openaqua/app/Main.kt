@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Warning
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -33,28 +32,25 @@ import io.github.lamba92.openaqua.app.coroutine.DefaultCoroutineScopeProvider
 import io.github.lamba92.openaqua.app.di.LocalDI
 import io.github.lamba92.openaqua.app.di.createOpenAquaDI
 import io.github.lamba92.openaqua.app.di.rememberInstance
-import io.github.lamba92.openaqua.app.feature.fans.FansViewModel
-import io.github.lamba92.openaqua.app.feature.info.DeviceInfoViewModel
-import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavComponent
-import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavEvent
+import io.github.lamba92.openaqua.app.feature.device.d5next.D5NextScreen
+import io.github.lamba92.openaqua.app.feature.device.octo.OctoScreen
+import io.github.lamba92.openaqua.app.feature.device.quadro.QuadroScreen
 import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavState
 import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavViewModel
-import io.github.lamba92.openaqua.app.feature.sensors.SensorsViewModel
+import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavigationRailScaffold
 import io.github.lamba92.openaqua.app.theme.CyanBright
 import io.github.lamba92.openaqua.app.theme.ObsidianBg
 import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
 import io.github.lamba92.openaqua.app.theme.StatusWarning
 import io.github.lamba92.openaqua.app.theme.TextPrimary
 import io.github.lamba92.openaqua.app.theme.TextSecondary
-import io.github.lamba92.openaqua.app.ui.navigation.TwoLayerNavigationScaffold
-import io.github.lamba92.openaqua.app.ui.screens.DeviceInfoScreen
-import io.github.lamba92.openaqua.app.ui.screens.FansScreen
-import io.github.lamba92.openaqua.app.ui.screens.SensorsScreen
 import io.github.lamba92.openaqua.app.util.EngineExtractor
+import io.github.lamba92.openaqua.model.DeviceType
 import kotlinx.coroutines.runBlocking
 import open_aqua.app_compose.generated.resources.Res
-import open_aqua.app_compose.generated.resources.retry_scan
+import open_aqua.app_compose.generated.resources.no_devices_found
 import open_aqua.app_compose.generated.resources.scanning_hardware
+import open_aqua.app_compose.generated.resources.unsupported_device
 import open_aqua.app_compose.generated.resources.window_title
 import org.jetbrains.compose.resources.stringResource
 
@@ -95,12 +91,7 @@ fun main() {
 }
 
 @Composable
-fun OpenAquaApp(
-    navViewModel: DeviceNavViewModel = rememberInstance(),
-    infoViewModel: DeviceInfoViewModel = rememberInstance(),
-    fansViewModel: FansViewModel = rememberInstance(),
-    sensorsViewModel: SensorsViewModel = rememberInstance(),
-) {
+fun OpenAquaApp(navViewModel: DeviceNavViewModel = rememberInstance()) {
     val navState by navViewModel.state.collectAsState()
 
     Box(
@@ -110,92 +101,105 @@ fun OpenAquaApp(
                 .background(ObsidianBg),
     ) {
         when (val state = navState) {
-            DeviceNavState.Loading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.padding(16.dp),
-                    ) {
-                        CircularProgressIndicator(
-                            color = CyanBright,
-                            modifier = Modifier.size(48.dp),
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = stringResource(Res.string.scanning_hardware),
-                            color = TextSecondary,
-                            fontSize = 14.sp,
-                        )
-                    }
-                }
-            }
+            DeviceNavState.Loading -> LoadingIndicator()
+            DeviceNavState.NoDevices -> NoDevicesDetected()
+            is DeviceNavState.Ready -> DeviceReady(state, navViewModel)
+        }
+    }
+}
 
-            is DeviceNavState.Error -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.padding(24.dp),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Warning,
-                            contentDescription = null,
-                            tint = StatusWarning,
-                            modifier = Modifier.size(48.dp),
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = state.message,
-                            color = TextPrimary,
-                            fontSize = 16.sp,
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Button(onClick = { navViewModel.onEvent(DeviceNavEvent.RefreshDevices) }) {
-                            Text(stringResource(Res.string.retry_scan))
-                        }
-                    }
-                }
-            }
+@Composable
+private fun DeviceReady(
+    state: DeviceNavState.Ready,
+    navViewModel: DeviceNavViewModel,
+) {
+    val selectedDevice = state.selectedDeviceState.device
 
-            is DeviceNavState.Ready -> {
-                TwoLayerNavigationScaffold(
-                    devices = state.devices,
-                    selectedDevice = state.selectedDevice,
-                    selectedComponent = state.selectedComponent,
-                    onSelectDevice = { navViewModel.onEvent(DeviceNavEvent.SelectDevice(it)) },
-                    onSelectComponent = { navViewModel.onEvent(DeviceNavEvent.SelectComponent(it)) },
-                    onRefreshDevices = { navViewModel.onEvent(DeviceNavEvent.RefreshDevices) },
-                    isRefreshing = state.isRefreshing,
-                ) {
-                    when (state.selectedComponent) {
-                        DeviceNavComponent.DEVICE_INFO -> {
-                            DeviceInfoScreen(
-                                device = state.selectedDevice,
-                                viewModel = infoViewModel,
-                            )
-                        }
+    DeviceNavigationRailScaffold(
+        state = state,
+        onEvent = navViewModel::onEvent,
+    ) {
+        when (selectedDevice.type) {
+            DeviceType.OCTO -> OctoScreen(viewModel = rememberInstance(arg = selectedDevice.id))
+            DeviceType.QUADRO -> QuadroScreen(viewModel = rememberInstance(arg = selectedDevice.id))
+            DeviceType.D5_NEXT -> D5NextScreen(viewModel = rememberInstance(arg = selectedDevice.id))
+            else -> UnsupportedDevice(selectedDevice.type)
+        }
+    }
+}
 
-                        DeviceNavComponent.FANS -> {
-                            FansScreen(
-                                device = state.selectedDevice,
-                                viewModel = fansViewModel,
-                            )
-                        }
+@Composable
+private fun UnsupportedDevice(type: DeviceType) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(24.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.Warning,
+                contentDescription = null,
+                tint = StatusWarning,
+                modifier = Modifier.size(48.dp),
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = stringResource(Res.string.unsupported_device, type.name),
+                color = TextPrimary,
+                fontSize = 16.sp,
+            )
+        }
+    }
+}
 
-                        DeviceNavComponent.SENSORS -> {
-                            SensorsScreen(
-                                device = state.selectedDevice,
-                                viewModel = sensorsViewModel,
-                            )
-                        }
-                    }
-                }
-            }
+@Composable
+private fun NoDevicesDetected() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(24.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.Warning,
+                contentDescription = null,
+                tint = StatusWarning,
+                modifier = Modifier.size(48.dp),
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = stringResource(Res.string.no_devices_found),
+                color = TextPrimary,
+                fontSize = 16.sp,
+            )
+        }
+    }
+}
+
+@Composable
+private fun LoadingIndicator() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(16.dp),
+        ) {
+            CircularProgressIndicator(
+                color = CyanBright,
+                modifier = Modifier.size(48.dp),
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = stringResource(Res.string.scanning_hardware),
+                color = TextSecondary,
+                fontSize = 14.sp,
+            )
         }
     }
 }

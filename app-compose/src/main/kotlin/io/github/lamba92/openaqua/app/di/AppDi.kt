@@ -5,12 +5,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import io.github.lamba92.openaqua.app.coroutine.CoroutineScopeProvider
 import io.github.lamba92.openaqua.app.coroutine.DefaultCoroutineScopeProvider
-import io.github.lamba92.openaqua.app.feature.fans.FansViewModel
-import io.github.lamba92.openaqua.app.feature.info.DeviceInfoViewModel
+import io.github.lamba92.openaqua.app.feature.device.d5next.D5NextViewModel
+import io.github.lamba92.openaqua.app.feature.device.octo.OctoViewModel
+import io.github.lamba92.openaqua.app.feature.device.quadro.QuadroViewModel
 import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavViewModel
-import io.github.lamba92.openaqua.app.feature.sensors.SensorsViewModel
+import io.github.lamba92.openaqua.app.repository.DeviceDataCacheService
 import io.github.lamba92.openaqua.app.repository.OpenAquaEngineApi
 import org.kodein.di.DI
+import org.kodein.di.bindMultiton
 import org.kodein.di.bindSingleton
 import org.kodein.di.direct
 import org.kodein.di.instance
@@ -21,15 +23,33 @@ fun createAppModule(
     scopeProvider: CoroutineScopeProvider = DefaultCoroutineScopeProvider(),
 ) = DI.Module("appModule") {
     bindSingleton<CoroutineScopeProvider> { scopeProvider }
-    bindSingleton<OpenAquaEngineApi> {
-        OpenAquaEngineApi(
-            enginePath = enginePath,
+    bindSingleton<OpenAquaEngineApi> { OpenAquaEngineApi(enginePath = enginePath) }
+    bindSingleton { DeviceDataCacheService(openAquaEngineApi = instance(), coroutineScopeProvider = instance()) }
+    bindSingleton { DeviceNavViewModel(dataCacheService = instance(), scopeProvider = instance()) }
+    bindMultiton { deviceId: String ->
+        OctoViewModel(
+            repository = instance(),
+            cacheService = instance(),
+            scopeProvider = instance(),
+            deviceId = deviceId,
         )
     }
-    bindSingleton { DeviceNavViewModel(instance(), instance()) }
-    bindSingleton { DeviceInfoViewModel(instance(), instance()) }
-    bindSingleton { FansViewModel(instance(), instance()) }
-    bindSingleton { SensorsViewModel(instance(), instance()) }
+    bindMultiton { deviceId: String ->
+        QuadroViewModel(
+            repository = instance(),
+            cacheService = instance(),
+            scopeProvider = instance(),
+            deviceId = deviceId,
+        )
+    }
+    bindMultiton { deviceId: String ->
+        D5NextViewModel(
+            repository = instance(),
+            cacheService = instance(),
+            scopeProvider = instance(),
+            deviceId = deviceId,
+        )
+    }
 }
 
 fun createOpenAquaDI(
@@ -45,5 +65,14 @@ val LocalDI = staticCompositionLocalOf<DI> { error("No DI container provided") }
 @Composable
 inline fun <reified T : Any> rememberInstance(tag: Any? = null): T {
     val di = LocalDI.current
-    return remember(di, tag) { di.direct.instance<T>(tag) }
+    return remember(di, tag) { di.direct.instance(tag) }
+}
+
+@Composable
+inline fun <reified T : Any, reified A : Any> rememberInstance(
+    tag: Any? = null,
+    arg: A,
+): T {
+    val di = LocalDI.current
+    return remember(di, tag, arg) { di.direct.instance(tag, arg) }
 }

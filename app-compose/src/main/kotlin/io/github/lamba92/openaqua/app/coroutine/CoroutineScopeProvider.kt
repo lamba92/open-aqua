@@ -11,43 +11,42 @@ import kotlinx.coroutines.SupervisorJob
 import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.coroutines.CoroutineContext
 
+private val DEFAULT_EXCEPTION_HANDLER_CALLBACK = { ctx: CoroutineContext, throwable: Throwable ->
+    System.err.println("[CoroutineScopeProvider] Uncaught exception in $ctx: ${throwable.message}")
+    throwable.printStackTrace()
+}
+
 interface CoroutineScopeProvider {
     fun getScope(
         name: String,
         dispatcher: CoroutineDispatcher = Dispatchers.Default,
+        onException: (CoroutineContext, Throwable) -> Unit = DEFAULT_EXCEPTION_HANDLER_CALLBACK
     ): CoroutineScope
 
     fun cancelAll(cause: CancellationException? = null)
 }
 
 context(context: T)
-fun <T : Any> CoroutineScopeProvider.getScope(dispatcher: CoroutineDispatcher = Dispatchers.Default) =
-    getScope(name = context::class.qualifiedName!!, dispatcher = dispatcher)
+fun <T : Any> CoroutineScopeProvider.getScope(
+    dispatcher: CoroutineDispatcher = Dispatchers.Default,
+    onException: (CoroutineContext, Throwable) -> Unit = DEFAULT_EXCEPTION_HANDLER_CALLBACK
+) =
+    getScope(name = context::class.qualifiedName!!, dispatcher = dispatcher, onException = onException)
 
 class DefaultCoroutineScopeProvider(
     private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default,
-    private val onException: (CoroutineContext, Throwable) -> Unit = { ctx, throwable ->
-        System.err.println("[CoroutineScopeProvider] Uncaught exception in $ctx: ${throwable.message}")
-        throwable.printStackTrace()
-    },
 ) : CoroutineScopeProvider {
     private val rootSupervisor = SupervisorJob()
     private val scopes = CopyOnWriteArrayList<CoroutineScope>()
 
-    private val exceptionHandler =
-        CoroutineExceptionHandler { ctx, throwable ->
-            if (throwable !is CancellationException) {
-                onException(ctx, throwable)
-            }
-        }
-
     override fun getScope(
         name: String,
         dispatcher: CoroutineDispatcher,
+        onException: (CoroutineContext, Throwable) -> Unit
     ): CoroutineScope {
         val childJob = SupervisorJob(rootSupervisor)
         val effectiveDispatcher = if (dispatcher == Dispatchers.Default && defaultDispatcher != Dispatchers.Default) defaultDispatcher else dispatcher
-        val context = childJob + effectiveDispatcher + exceptionHandler + CoroutineName(name)
+        val context = childJob + effectiveDispatcher + CoroutineExceptionHandler(onException) + CoroutineName(name)
         val scope = CoroutineScope(context)
         scopes.add(scope)
         return scope

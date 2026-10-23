@@ -12,7 +12,9 @@ import io.github.lamba92.openaqua.model.FlashConfigRequest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
@@ -87,10 +89,11 @@ class OpenAquaEngineApi(
             val writer = process.outputStream.bufferedWriter()
             source
                 .flowOn(Dispatchers.Default)
-                .collect { request ->
+                .onEach { request ->
                     writer.write(json.encodeToString(FeedVirtualSensorsRequest.serializer(), request) + "\n")
                     writer.flush()
-                }
+                }.flowOn(Dispatchers.IO)
+                .collect()
         } finally {
             process.destroy()
         }
