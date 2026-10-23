@@ -6,8 +6,10 @@ import io.github.lamba92.openaqua.engine.protocol.ConfigWriter
 import io.github.lamba92.openaqua.engine.protocol.StatusReportParser
 import io.github.lamba92.openaqua.engine.protocol.VirtualSensorsWriter
 import io.github.lamba92.openaqua.model.DetectedHardwareDevice
+import io.github.lamba92.openaqua.model.DeviceAlias
 import io.github.lamba92.openaqua.model.DeviceConfig
 import io.github.lamba92.openaqua.model.DeviceDescriptor
+import io.github.lamba92.openaqua.model.DeviceId
 import io.github.lamba92.openaqua.model.DeviceRegistry
 import io.github.lamba92.openaqua.model.DeviceTelemetry
 import io.github.lamba92.openaqua.model.DeviceType
@@ -64,7 +66,7 @@ import kotlin.time.Duration.Companion.seconds
 private const val HID_STATUS_REPORT_ID = 0x01
 
 private data class ScannedWindowsNode(
-    val id: String,
+    val id: DeviceId,
     val descriptor: DeviceDescriptor,
     val serial: String?,
     val devicePath: String,
@@ -72,7 +74,7 @@ private data class ScannedWindowsNode(
 )
 
 class WindowsHardwareController : HardwareController {
-    private val scannedNodes = mutableMapOf<String, ScannedWindowsNode>()
+    private val scannedNodes = mutableMapOf<DeviceId, ScannedWindowsNode>()
 
     private fun getScannedNode(device: DetectedHardwareDevice): ScannedWindowsNode =
         scannedNodes[device.id] ?: run {
@@ -136,7 +138,7 @@ class WindowsHardwareController : HardwareController {
                 nodes.mapIndexed { index, node ->
                     DetectedHardwareDevice(
                         id = node.id,
-                        alias = "$typePrefix-${index + 1}",
+                        alias = DeviceAlias.from("$typePrefix-${index + 1}"),
                         type = node.descriptor.type,
                         name = node.descriptor.name,
                         serial = node.serial,
@@ -188,7 +190,7 @@ class WindowsHardwareController : HardwareController {
                         readFirmwareVersion(devicePath, offset)
                     }
 
-                val id = "$vid-$pid" + if (serial != null) "-$serial" else ""
+                val id = DeviceId.from("$vid-$pid" + if (serial != null) "-$serial" else "")
 
                 return ScannedWindowsNode(
                     id = id,

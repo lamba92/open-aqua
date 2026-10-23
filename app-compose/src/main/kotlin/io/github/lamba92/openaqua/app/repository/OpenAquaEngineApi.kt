@@ -4,6 +4,7 @@ package io.github.lamba92.openaqua.app.repository
 
 import io.github.lamba92.openaqua.model.DescriptorsResponse
 import io.github.lamba92.openaqua.model.DeviceConfig
+import io.github.lamba92.openaqua.model.DeviceId
 import io.github.lamba92.openaqua.model.DeviceTelemetry
 import io.github.lamba92.openaqua.model.DevicesResponse
 import io.github.lamba92.openaqua.model.EngineResponse
@@ -42,11 +43,11 @@ class OpenAquaEngineApi(
 
     suspend fun listDescriptors(): DescriptorsResponse = executeAndDecodeWithTimeout("descriptors")
 
-    fun getTelemetryStream(deviceId: String): Flow<DeviceTelemetry> =
+    fun getTelemetryStream(deviceId: DeviceId): Flow<DeviceTelemetry> =
         channelFlow {
             withContext(Dispatchers.IO) {
                 val process =
-                    ProcessBuilder(enginePath.absolutePathString(), "stream-telemetry", "--device=$deviceId").start()
+                    ProcessBuilder(enginePath.absolutePathString(), "stream-telemetry", "--device=${deviceId.value}").start()
                 try {
                     val reader = process.inputStream.bufferedReader()
                     while (isActive) {
@@ -62,28 +63,28 @@ class OpenAquaEngineApi(
             }
         }
 
-    suspend fun getDeviceConfig(deviceId: String): DeviceConfig = executeAndDecodeWithTimeout("config", "read", "--device=$deviceId")
+    suspend fun getDeviceConfig(deviceId: DeviceId): DeviceConfig = executeAndDecodeWithTimeout("config", "read", "--device=${deviceId.value}")
 
     suspend fun flashConfig(
-        deviceId: String,
+        deviceId: DeviceId,
         config: FlashConfigRequest,
     ): DeviceConfig =
         executeAndDecodeWithTimeout(
             "config",
             "flash",
-            "--device=$deviceId",
+            "--device=${deviceId.value}",
             "--request=${json.encodeToString(FlashConfigRequest.serializer(), config)}",
         )
 
     suspend fun feedVirtualSensors(
-        deviceId: String,
+        deviceId: DeviceId,
         source: Flow<FeedVirtualSensorsRequest>,
     ) = withContext(Dispatchers.IO) {
         val process =
             ProcessBuilder(
                 enginePath.absolutePathString(),
                 "feed-virtual-sensors",
-                "--device=$deviceId",
+                "--device=${deviceId.value}",
             ).start()
         try {
             val writer = process.outputStream.bufferedWriter()

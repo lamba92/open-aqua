@@ -4,6 +4,7 @@ import io.github.lamba92.openaqua.app.coroutine.CoroutineScopeProvider
 import io.github.lamba92.openaqua.app.coroutine.getScope
 import io.github.lamba92.openaqua.app.mvi.MVIViewModel
 import io.github.lamba92.openaqua.app.repository.DeviceDataCacheService
+import io.github.lamba92.openaqua.model.DeviceId
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -65,7 +66,7 @@ class DeviceNavViewModel(
         }
     }
 
-    private fun selectDevice(deviceId: String) {
+    private fun selectDevice(deviceId: DeviceId) {
         state.update { currentState ->
             when (currentState) {
                 is DeviceNavState.Ready -> currentState.copy(selectedDeviceId = deviceId)

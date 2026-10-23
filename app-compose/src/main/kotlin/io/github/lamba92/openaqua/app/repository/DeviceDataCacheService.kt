@@ -10,6 +10,7 @@ import io.github.lamba92.openaqua.model.D5NextTelemetry
 import io.github.lamba92.openaqua.model.DetectedHardwareDevice
 import io.github.lamba92.openaqua.model.DeviceConfig
 import io.github.lamba92.openaqua.model.DeviceDescriptor
+import io.github.lamba92.openaqua.model.DeviceId
 import io.github.lamba92.openaqua.model.DeviceRegistry
 import io.github.lamba92.openaqua.model.DeviceTelemetry
 import io.github.lamba92.openaqua.model.DeviceType
@@ -73,12 +74,12 @@ class DeviceDataCacheService(
                 initialValue = State.Loading,
             )
 
-    fun getDeviceStateFlow(deviceId: String): Flow<DeviceState> =
+    fun getDeviceStateFlow(deviceId: DeviceId): Flow<DeviceState> =
         state
             .filterIsInstance<State.Ready>()
             .mapNotNull { ready -> ready.deviceStates.firstOrNull { it.device.id == deviceId } }
 
-    fun getReadyDeviceStateFlow(deviceId: String): Flow<DeviceState.Ready> =
+    fun getReadyDeviceStateFlow(deviceId: DeviceId): Flow<DeviceState.Ready> =
         getDeviceStateFlow(deviceId)
             .filterIsInstance<DeviceState.Ready>()
 

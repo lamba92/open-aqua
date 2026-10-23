@@ -26,11 +26,14 @@ interface HardwareController {
 
 fun List<DetectedHardwareDevice>.findTarget(query: String): DetectedHardwareDevice? {
     val trimmed = query.trim()
-    firstOrNull { it.id.equals(trimmed, ignoreCase = true) || it.alias.equals(trimmed, ignoreCase = true) }?.let { return it }
+    firstOrNull {
+        it.id.value.equals(trimmed, ignoreCase = true) ||
+            it.alias.value.equals(trimmed, ignoreCase = true)
+    }?.let { return it }
 
     val noHyphenQuery = trimmed.replace("-", "").replace("_", "")
     firstOrNull {
-        it.alias
+        it.alias.value
             .replace("-", "")
             .replace("_", "")
             .equals(noHyphenQuery, ignoreCase = true)

@@ -39,8 +39,8 @@ class MockHardwareController : HardwareController {
 
     override fun readConfig(device: DetectedHardwareDevice): DeviceConfig {
         val storage = loadMockStorage()
-        return storage.configs[device.alias]
-            ?: storage.configs[device.id]
+        return storage.configs[device.alias.value]
+            ?: storage.configs[device.id.value]
             ?: error("No configuration found for device ${device.alias} (${device.id})")
     }
 
@@ -50,8 +50,8 @@ class MockHardwareController : HardwareController {
     ): DeviceConfig {
         val storage = loadMockStorage()
         val current =
-            storage.configs[device.alias]
-                ?: storage.configs[device.id]
+            storage.configs[device.alias.value]
+                ?: storage.configs[device.id.value]
                 ?: error("No configuration found for device ${device.alias} (${device.id})")
 
         val updatedConfig: DeviceConfig =
@@ -131,7 +131,7 @@ class MockHardwareController : HardwareController {
             }
 
         val updatedMap = storage.configs.toMutableMap()
-        val key = if (storage.configs.containsKey(device.alias)) device.alias else device.id
+        val key = if (storage.configs.containsKey(device.alias.value)) device.alias.value else device.id.value
         updatedMap[key] = updatedConfig
         saveMockStorage(storage.copy(configs = updatedMap))
 
@@ -143,7 +143,7 @@ class MockHardwareController : HardwareController {
         sensors: Map<Int, Double>,
     ) {
         val storage = loadMockVirtualSensorsStorage().toMutableMap()
-        val key = if (storage.containsKey(device.alias)) device.alias else device.id
+        val key = if (storage.containsKey(device.alias.value)) device.alias.value else device.id.value
         val deviceSensors = (storage[key] ?: emptyMap()).toMutableMap()
 
         val allowedRange =
@@ -166,7 +166,7 @@ class MockHardwareController : HardwareController {
             while (currentCoroutineContext().isActive) {
                 val config = readConfig(device)
                 val allSensorsStorage = loadMockVirtualSensorsStorage()
-                val virtualSensorsMap = allSensorsStorage[device.alias] ?: allSensorsStorage[device.id] ?: emptyMap()
+                val virtualSensorsMap = allSensorsStorage[device.alias.value] ?: allSensorsStorage[device.id.value] ?: emptyMap()
 
                 when (device.type) {
                     DeviceType.OCTO -> {

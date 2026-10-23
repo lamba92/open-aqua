@@ -90,7 +90,7 @@ fun DeviceDrawerScaffold(
                         modifier = Modifier.padding(horizontal = 12.dp),
                     )
                     Text(
-                        text = device.alias.ifBlank { device.id },
+                        text = device.alias.value,
                         color = ElectricCyan,
                         fontSize = 11.sp,
                         fontFamily = FontFamily.Monospace,

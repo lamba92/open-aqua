@@ -11,6 +11,7 @@ import io.github.lamba92.openaqua.app.feature.device.quadro.QuadroViewModel
 import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavViewModel
 import io.github.lamba92.openaqua.app.repository.DeviceDataCacheService
 import io.github.lamba92.openaqua.app.repository.OpenAquaEngineApi
+import io.github.lamba92.openaqua.model.DeviceId
 import org.kodein.di.DI
 import org.kodein.di.bindMultiton
 import org.kodein.di.bindSingleton
@@ -26,7 +27,7 @@ fun createAppModule(
     bindSingleton<OpenAquaEngineApi> { OpenAquaEngineApi(enginePath = enginePath) }
     bindSingleton { DeviceDataCacheService(openAquaEngineApi = instance(), coroutineScopeProvider = instance()) }
     bindSingleton { DeviceNavViewModel(dataCacheService = instance(), scopeProvider = instance()) }
-    bindMultiton { deviceId: String ->
+    bindMultiton { deviceId: DeviceId ->
         OctoViewModel(
             repository = instance(),
             cacheService = instance(),
@@ -34,7 +35,7 @@ fun createAppModule(
             deviceId = deviceId,
         )
     }
-    bindMultiton { deviceId: String ->
+    bindMultiton { deviceId: DeviceId ->
         QuadroViewModel(
             repository = instance(),
             cacheService = instance(),
@@ -42,7 +43,7 @@ fun createAppModule(
             deviceId = deviceId,
         )
     }
-    bindMultiton { deviceId: String ->
+    bindMultiton { deviceId: DeviceId ->
         D5NextViewModel(
             repository = instance(),
             cacheService = instance(),

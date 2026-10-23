@@ -344,8 +344,8 @@ class ProtocolTest {
         val devices =
             listOf(
                 DetectedHardwareDevice(
-                    id = "octo-1",
-                    alias = "octo-1",
+                    id = DeviceId.from("octo-1"),
+                    alias = DeviceAlias.from("octo-1"),
                     type = DeviceType.OCTO,
                     name = "Aqua Computer OCTO",
                 ),
@@ -360,7 +360,7 @@ class ProtocolTest {
         assertTrue(deserializedSuccess is EngineResponse.Success)
         assertEquals(1, deserializedSuccess.value.devices.size)
         assertEquals(
-            "octo-1",
+            DeviceId.from("octo-1"),
             deserializedSuccess.value.devices
                 .first()
                 .id,

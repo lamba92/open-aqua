@@ -2,6 +2,39 @@ package io.github.lamba92.openaqua.model
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlin.jvm.JvmInline
+
+@Serializable
+@JvmInline
+value class DeviceId(
+    val value: String,
+) {
+    init {
+        require(value.isNotBlank()) { "DeviceId cannot be blank" }
+    }
+
+    override fun toString(): String = value
+
+    companion object {
+        fun from(string: String): DeviceId = DeviceId(string.trim())
+    }
+}
+
+@Serializable
+@JvmInline
+value class DeviceAlias(
+    val value: String,
+) {
+    init {
+        require(value.isNotBlank()) { "DeviceAlias cannot be blank" }
+    }
+
+    override fun toString(): String = value
+
+    companion object {
+        fun from(string: String): DeviceAlias = DeviceAlias(string.trim())
+    }
+}
 
 @Serializable
 sealed interface EngineResponse<T> {
@@ -32,8 +65,8 @@ data class DescriptorsResponse(
 
 @Serializable
 data class DetectedHardwareDevice(
-    val id: String,
-    val alias: String,
+    val id: DeviceId,
+    val alias: DeviceAlias,
     val type: DeviceType,
     val name: String,
     val serial: String? = null,

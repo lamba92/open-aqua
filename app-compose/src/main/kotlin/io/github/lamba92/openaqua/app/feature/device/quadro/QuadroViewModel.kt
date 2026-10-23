@@ -9,6 +9,7 @@ import io.github.lamba92.openaqua.app.mvi.MVIViewModel
 import io.github.lamba92.openaqua.app.repository.DeviceDataCacheService
 import io.github.lamba92.openaqua.app.repository.DeviceState
 import io.github.lamba92.openaqua.app.repository.OpenAquaEngineApi
+import io.github.lamba92.openaqua.model.DeviceId
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,7 +23,7 @@ class QuadroViewModel(
     @Suppress("unused") private val repository: OpenAquaEngineApi,
     cacheService: DeviceDataCacheService,
     scopeProvider: CoroutineScopeProvider,
-    deviceId: String,
+    deviceId: DeviceId,
 ) : MVIViewModel<QuadroState, QuadroEvent, QuadroEffect> {
     override val viewModelScope: CoroutineScope = scopeProvider.getScope()
 

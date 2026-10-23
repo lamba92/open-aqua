@@ -196,13 +196,13 @@ fun DeviceInfoContent(
                     InfoRow(label = stringResource(Res.string.info_device_name), value = device.name)
                     InfoRow(
                         label = stringResource(Res.string.info_hardware_alias),
-                        value = device.alias.ifBlank { notAvailable },
+                        value = device.alias.value,
                     )
                     InfoRow(
                         label = stringResource(Res.string.info_serial_number),
                         value = device.serial ?: notAvailable,
                     )
-                    InfoRow(label = stringResource(Res.string.info_unique_id), value = device.id)
+                    InfoRow(label = stringResource(Res.string.info_unique_id), value = device.id.value)
                     InfoRow(
                         label = stringResource(Res.string.info_firmware_version),
                         value =

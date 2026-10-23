@@ -8,8 +8,10 @@ import io.github.lamba92.openaqua.engine.protocol.VirtualSensorsWriter
 import io.github.lamba92.openaqua.engine.util.listDirectory
 import io.github.lamba92.openaqua.engine.util.readTextOrNull
 import io.github.lamba92.openaqua.model.DetectedHardwareDevice
+import io.github.lamba92.openaqua.model.DeviceAlias
 import io.github.lamba92.openaqua.model.DeviceConfig
 import io.github.lamba92.openaqua.model.DeviceDescriptor
+import io.github.lamba92.openaqua.model.DeviceId
 import io.github.lamba92.openaqua.model.DeviceRegistry
 import io.github.lamba92.openaqua.model.DeviceTelemetry
 import io.github.lamba92.openaqua.model.DeviceType
@@ -41,14 +43,14 @@ import platform.posix.read
 import platform.posix.usleep
 
 private data class ScannedHardwareNode(
-    val id: String,
+    val id: DeviceId,
     val descriptor: DeviceDescriptor,
     val serial: String?,
     val hidrawPath: String,
 )
 
 class LinuxHardwareController : HardwareController {
-    private val scannedNodes = mutableMapOf<String, ScannedHardwareNode>()
+    private val scannedNodes = mutableMapOf<DeviceId, ScannedHardwareNode>()
 
     private fun getScannedNode(device: DetectedHardwareDevice): ScannedHardwareNode =
         scannedNodes[device.id] ?: run {
@@ -91,7 +93,7 @@ class LinuxHardwareController : HardwareController {
             }
 
             val descriptor = DeviceRegistry.findByProductId(productId) ?: continue
-            val id = hidUniq ?: entryName
+            val id = DeviceId.from(hidUniq ?: entryName)
 
             scanned.add(
                 ScannedHardwareNode(
@@ -122,7 +124,7 @@ class LinuxHardwareController : HardwareController {
                         }
                     DetectedHardwareDevice(
                         id = node.id,
-                        alias = "$typePrefix-${index + 1}",
+                        alias = DeviceAlias.from("$typePrefix-${index + 1}"),
                         type = node.descriptor.type,
                         name = node.descriptor.name,
                         serial = node.serial,

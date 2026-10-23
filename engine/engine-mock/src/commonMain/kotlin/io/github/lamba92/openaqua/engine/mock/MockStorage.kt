@@ -7,7 +7,9 @@ import io.github.lamba92.openaqua.model.CurveFanConfig
 import io.github.lamba92.openaqua.model.CurvePoint
 import io.github.lamba92.openaqua.model.D5NextConfig
 import io.github.lamba92.openaqua.model.DetectedHardwareDevice
+import io.github.lamba92.openaqua.model.DeviceAlias
 import io.github.lamba92.openaqua.model.DeviceConfig
+import io.github.lamba92.openaqua.model.DeviceId
 import io.github.lamba92.openaqua.model.DeviceRegistry
 import io.github.lamba92.openaqua.model.DeviceType
 import io.github.lamba92.openaqua.model.DisplayConfig
@@ -118,24 +120,24 @@ fun defaultMockStorage(): MockConfigStorage =
         devices =
             listOf(
                 DetectedHardwareDevice(
-                    id = "mock_octo_0",
-                    alias = "octo-1",
+                    id = DeviceId.from("mock_octo_0"),
+                    alias = DeviceAlias.from("octo-1"),
                     type = DeviceType.OCTO,
                     name = DeviceRegistry.OCTO.name,
                     serial = "13235-54067-MOCK",
                     firmwareVersion = 1020,
                 ),
                 DetectedHardwareDevice(
-                    id = "mock_quadro_0",
-                    alias = "quadro-1",
+                    id = DeviceId.from("mock_quadro_0"),
+                    alias = DeviceAlias.from("quadro-1"),
                     type = DeviceType.QUADRO,
                     name = DeviceRegistry.QUADRO.name,
                     serial = "13236-54068-MOCK",
                     firmwareVersion = 1018,
                 ),
                 DetectedHardwareDevice(
-                    id = "mock_d5next_0",
-                    alias = "d5next-1",
+                    id = DeviceId.from("mock_d5next_0"),
+                    alias = DeviceAlias.from("d5next-1"),
                     type = DeviceType.D5_NEXT,
                     name = DeviceRegistry.D5_NEXT.name,
                     serial = "13237-54069-MOCK",

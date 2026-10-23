@@ -11,6 +11,7 @@ import io.github.lamba92.openaqua.app.mvi.MVIViewModel
 import io.github.lamba92.openaqua.app.repository.DeviceDataCacheService
 import io.github.lamba92.openaqua.app.repository.DeviceState
 import io.github.lamba92.openaqua.app.repository.OpenAquaEngineApi
+import io.github.lamba92.openaqua.model.DeviceId
 import io.github.lamba92.openaqua.model.SensorTelemetry
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -25,7 +26,7 @@ class D5NextViewModel(
     @Suppress("unused") private val repository: OpenAquaEngineApi,
     cacheService: DeviceDataCacheService,
     scopeProvider: CoroutineScopeProvider,
-    deviceId: String,
+    deviceId: DeviceId,
 ) : MVIViewModel<D5NextState, D5NextEvent, D5NextEffect> {
     override val viewModelScope: CoroutineScope = scopeProvider.getScope()
 
