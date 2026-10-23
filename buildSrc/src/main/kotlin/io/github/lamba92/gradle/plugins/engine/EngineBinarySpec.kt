@@ -40,7 +40,7 @@ abstract class EngineBinarySpec @Inject constructor(
         val (detectedOs, detectedArch) = executable.target.konanTarget.toOsAndArch()
         os.convention(detectedOs)
         arch.convention(detectedArch)
-        binaryFile.convention(layout.file(executable.linkTaskProvider.flatMap { it.outputFile }))
+        binaryFile.set(layout.file(executable.linkTaskProvider.map { it.outputFile.get() }))
     }
 
     fun fromUpx(
