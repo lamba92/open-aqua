@@ -2,7 +2,6 @@ package io.github.lamba92.openaqua.app.feature.device.d5next
 
 import io.github.lamba92.openaqua.app.coroutine.CoroutineScopeProvider
 import io.github.lamba92.openaqua.app.coroutine.getScope
-import io.github.lamba92.openaqua.app.feature.device.common.CommonDeviceTab
 import io.github.lamba92.openaqua.app.feature.device.common.FanItem
 import io.github.lamba92.openaqua.app.feature.device.common.SensorChannelKind
 import io.github.lamba92.openaqua.app.feature.device.common.SensorItem
@@ -58,7 +57,6 @@ class D5NextViewModel(
                         is DeviceState.D5Next ->
                             D5NextState.Ready(
                                 deviceState = deviceState,
-                                selectedTab = CommonDeviceTab.DEVICE_INFO,
                                 pump = deviceState.toPumpItem(),
                                 fan = deviceState.toFanItem(),
                                 selectedCoolingTarget = D5NextCoolingTarget.PUMP,
@@ -75,7 +73,6 @@ class D5NextViewModel(
         state.update { current ->
             if (current !is D5NextState.Ready) return@update current
             when (event) {
-                is D5NextEvent.SelectTab -> current.copy(selectedTab = event.tab)
                 is D5NextEvent.SelectCoolingTarget -> current.copy(selectedCoolingTarget = event.target)
                 is D5NextEvent.SelectSensor -> current.copy(selectedSensorChannel = event.channel)
             }

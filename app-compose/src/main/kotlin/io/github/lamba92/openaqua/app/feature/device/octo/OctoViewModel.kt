@@ -2,7 +2,6 @@ package io.github.lamba92.openaqua.app.feature.device.octo
 
 import io.github.lamba92.openaqua.app.coroutine.CoroutineScopeProvider
 import io.github.lamba92.openaqua.app.coroutine.getScope
-import io.github.lamba92.openaqua.app.feature.device.common.CommonDeviceTab
 import io.github.lamba92.openaqua.app.feature.device.common.toPwmFanItems
 import io.github.lamba92.openaqua.app.feature.device.common.toSensorItems
 import io.github.lamba92.openaqua.app.mvi.MVIViewModel
@@ -54,7 +53,6 @@ class OctoViewModel(
                         is DeviceState.Octo ->
                             OctoState.Ready(
                                 deviceState = deviceState,
-                                selectedTab = CommonDeviceTab.DEVICE_INFO,
                                 fans = deviceState.telemetry.fans.toPwmFanItems(deviceState.config.fans),
                                 selectedFanChannel = 0,
                                 sensors = deviceState.telemetry.sensors.toSensorItems(deviceState.config.sensorOffsets),
@@ -70,7 +68,6 @@ class OctoViewModel(
         state.update { current ->
             if (current !is OctoState.Ready) return@update current
             when (event) {
-                is OctoEvent.SelectTab -> current.copy(selectedTab = event.tab)
                 is OctoEvent.SelectFan -> current.copy(selectedFanChannel = event.channel)
                 is OctoEvent.SelectSensor -> current.copy(selectedSensorChannel = event.channel)
             }

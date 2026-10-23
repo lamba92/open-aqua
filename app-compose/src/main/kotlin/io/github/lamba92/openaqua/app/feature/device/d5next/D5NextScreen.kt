@@ -24,6 +24,8 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 fun D5NextScreen(
     viewModel: D5NextViewModel,
+    selectedTab: CommonDeviceTab,
+    onSelectTab: (CommonDeviceTab) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsState()
@@ -34,11 +36,11 @@ fun D5NextScreen(
         is D5NextState.Ready -> {
             DeviceDrawerScaffold(
                 device = s.deviceState.device,
-                selectedTab = s.selectedTab,
-                onSelectTab = { viewModel.onEvent(D5NextEvent.SelectTab(it)) },
+                selectedTab = selectedTab,
+                onSelectTab = onSelectTab,
                 modifier = modifier,
             ) {
-                when (s.selectedTab) {
+                when (selectedTab) {
                     CommonDeviceTab.DEVICE_INFO ->
                         DeviceInfoContent(
                             deviceState = s.deviceState,

@@ -2,6 +2,7 @@ package io.github.lamba92.openaqua.app.feature.navigation
 
 import io.github.lamba92.openaqua.app.coroutine.CoroutineScopeProvider
 import io.github.lamba92.openaqua.app.coroutine.getScope
+import io.github.lamba92.openaqua.app.feature.device.common.CommonDeviceTab
 import io.github.lamba92.openaqua.app.mvi.MVIViewModel
 import io.github.lamba92.openaqua.app.repository.DeviceDataCacheService
 import io.github.lamba92.openaqua.model.DeviceId
@@ -63,6 +64,7 @@ class DeviceNavViewModel(
     override fun onEvent(event: DeviceNavEvent) {
         when (event) {
             is DeviceNavEvent.SelectDevice -> selectDevice(event.deviceId)
+            is DeviceNavEvent.SelectTab -> selectTab(event.tab)
         }
     }
 
@@ -70,6 +72,15 @@ class DeviceNavViewModel(
         state.update { currentState ->
             when (currentState) {
                 is DeviceNavState.Ready -> currentState.copy(selectedDeviceId = deviceId)
+                else -> currentState
+            }
+        }
+    }
+
+    private fun selectTab(tab: CommonDeviceTab) {
+        state.update { currentState ->
+            when (currentState) {
+                is DeviceNavState.Ready -> currentState.copy(selectedTab = tab)
                 else -> currentState
             }
         }

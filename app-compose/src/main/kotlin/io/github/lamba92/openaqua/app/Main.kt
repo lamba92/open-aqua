@@ -32,9 +32,11 @@ import io.github.lamba92.openaqua.app.coroutine.DefaultCoroutineScopeProvider
 import io.github.lamba92.openaqua.app.di.LocalDI
 import io.github.lamba92.openaqua.app.di.createOpenAquaDI
 import io.github.lamba92.openaqua.app.di.rememberInstance
+import io.github.lamba92.openaqua.app.feature.device.common.CommonDeviceTab
 import io.github.lamba92.openaqua.app.feature.device.d5next.D5NextScreen
 import io.github.lamba92.openaqua.app.feature.device.octo.OctoScreen
 import io.github.lamba92.openaqua.app.feature.device.quadro.QuadroScreen
+import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavEvent
 import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavState
 import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavViewModel
 import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavigationRailScaffold
@@ -114,15 +116,33 @@ private fun DeviceReady(
     navViewModel: DeviceNavViewModel,
 ) {
     val selectedDevice = state.selectedDeviceState.device
+    val onSelectTab = { tab: CommonDeviceTab ->
+        navViewModel.onEvent(DeviceNavEvent.SelectTab(tab))
+    }
 
     DeviceNavigationRailScaffold(
         state = state,
         onEvent = navViewModel::onEvent,
     ) {
         when (selectedDevice.type) {
-            DeviceType.OCTO -> OctoScreen(viewModel = rememberInstance(arg = selectedDevice.id))
-            DeviceType.QUADRO -> QuadroScreen(viewModel = rememberInstance(arg = selectedDevice.id))
-            DeviceType.D5_NEXT -> D5NextScreen(viewModel = rememberInstance(arg = selectedDevice.id))
+            DeviceType.OCTO ->
+                OctoScreen(
+                    viewModel = rememberInstance(arg = selectedDevice.id),
+                    selectedTab = state.selectedTab,
+                    onSelectTab = onSelectTab,
+                )
+            DeviceType.QUADRO ->
+                QuadroScreen(
+                    viewModel = rememberInstance(arg = selectedDevice.id),
+                    selectedTab = state.selectedTab,
+                    onSelectTab = onSelectTab,
+                )
+            DeviceType.D5_NEXT ->
+                D5NextScreen(
+                    viewModel = rememberInstance(arg = selectedDevice.id),
+                    selectedTab = state.selectedTab,
+                    onSelectTab = onSelectTab,
+                )
             else -> UnsupportedDevice(selectedDevice.type)
         }
     }

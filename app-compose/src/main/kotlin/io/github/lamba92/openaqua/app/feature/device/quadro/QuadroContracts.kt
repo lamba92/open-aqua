@@ -1,6 +1,5 @@
 package io.github.lamba92.openaqua.app.feature.device.quadro
 
-import io.github.lamba92.openaqua.app.feature.device.common.CommonDeviceTab
 import io.github.lamba92.openaqua.app.feature.device.common.FanItem
 import io.github.lamba92.openaqua.app.feature.device.common.SensorItem
 import io.github.lamba92.openaqua.app.repository.DeviceErrorType
@@ -17,7 +16,6 @@ sealed interface QuadroState {
 
     data class Ready(
         val deviceState: DeviceState.Quadro,
-        val selectedTab: CommonDeviceTab = CommonDeviceTab.DEVICE_INFO,
         val fans: List<FanItem>,
         val selectedFanChannel: Int = 0,
         val sensors: List<SensorItem>,
@@ -26,10 +24,6 @@ sealed interface QuadroState {
 }
 
 sealed interface QuadroEvent {
-    data class SelectTab(
-        val tab: CommonDeviceTab,
-    ) : QuadroEvent
-
     data class SelectFan(
         val channel: Int,
     ) : QuadroEvent

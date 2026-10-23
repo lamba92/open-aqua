@@ -1,6 +1,5 @@
 package io.github.lamba92.openaqua.app.feature.device.d5next
 
-import io.github.lamba92.openaqua.app.feature.device.common.CommonDeviceTab
 import io.github.lamba92.openaqua.app.feature.device.common.FanItem
 import io.github.lamba92.openaqua.app.feature.device.common.SensorItem
 import io.github.lamba92.openaqua.app.repository.DeviceErrorType
@@ -22,7 +21,6 @@ sealed interface D5NextState {
 
     data class Ready(
         val deviceState: DeviceState.D5Next,
-        val selectedTab: CommonDeviceTab = CommonDeviceTab.DEVICE_INFO,
         val pump: FanItem,
         val fan: FanItem,
         val selectedCoolingTarget: D5NextCoolingTarget = D5NextCoolingTarget.PUMP,
@@ -32,10 +30,6 @@ sealed interface D5NextState {
 }
 
 sealed interface D5NextEvent {
-    data class SelectTab(
-        val tab: CommonDeviceTab,
-    ) : D5NextEvent
-
     data class SelectCoolingTarget(
         val target: D5NextCoolingTarget,
     ) : D5NextEvent
