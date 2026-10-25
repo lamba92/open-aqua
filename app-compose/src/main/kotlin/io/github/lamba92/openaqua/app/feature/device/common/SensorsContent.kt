@@ -12,6 +12,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
@@ -24,14 +28,19 @@ import io.github.lamba92.openaqua.app.ui.components.ChannelDetailHeader
 import io.github.lamba92.openaqua.app.ui.components.ChannelPageScaffold
 import io.github.lamba92.openaqua.app.ui.components.FeaturePlaceholderBox
 import io.github.lamba92.openaqua.app.ui.components.MetricCard
+import io.github.lamba92.openaqua.app.ui.components.OpenAquaOutlinedButton
+import io.github.lamba92.openaqua.app.ui.components.RenameDialog
 import io.github.lamba92.openaqua.app.ui.components.SquareSelectionButton
 import open_aqua.app_compose.generated.resources.Res
+import open_aqua.app_compose.generated.resources.action_rename
+import open_aqua.app_compose.generated.resources.ic_edit
 import open_aqua.app_compose.generated.resources.ic_sensor
 import open_aqua.app_compose.generated.resources.ic_sensors
 import open_aqua.app_compose.generated.resources.ic_tune
 import open_aqua.app_compose.generated.resources.metric_live_temperature
 import open_aqua.app_compose.generated.resources.metric_offset_calibration
 import open_aqua.app_compose.generated.resources.metric_probe_type
+import open_aqua.app_compose.generated.resources.rename_dialog_title
 import open_aqua.app_compose.generated.resources.sensor_calibration_desc
 import open_aqua.app_compose.generated.resources.sensor_calibration_title
 import open_aqua.app_compose.generated.resources.sensor_channel_name
@@ -63,8 +72,10 @@ fun SensorsContent(
     selectedChannel: Int,
     onSelectSensor: (Int) -> Unit,
     modifier: Modifier = Modifier,
+    onRenameSensor: ((channel: Int, name: String?) -> Unit)? = null,
 ) {
     val selectedSensor = sensors.firstOrNull { it.channel == selectedChannel } ?: sensors.firstOrNull()
+    var renamingSensor by remember { mutableStateOf<SensorItem?>(null) }
 
     ChannelPageScaffold(
         title = stringResource(Res.string.sensors_screen_title),
@@ -81,6 +92,7 @@ fun SensorsContent(
                     name = sensorName,
                     selected = isSelected,
                     onClick = { onSelectSensor(sensor.channel) },
+                    onDoubleClick = onRenameSensor?.let { { renamingSensor = sensor } },
                     badgeText = sensorPin,
                     valueText =
                         temp?.let {
@@ -115,6 +127,16 @@ fun SensorsContent(
                         icon = painterResource(Res.drawable.ic_tune),
                         title = stringResource(Res.string.sensor_settings_title, selectedSensorName),
                         subtitle = stringResource(Res.string.sensor_hardware_channel, selectedSensorPin),
+                        trailingContent =
+                            onRenameSensor?.let {
+                                {
+                                    OpenAquaOutlinedButton(
+                                        text = stringResource(Res.string.action_rename),
+                                        icon = painterResource(Res.drawable.ic_edit),
+                                        onClick = { renamingSensor = selectedSensor },
+                                    )
+                                }
+                            },
                     )
 
                     // Live metrics telemetry
@@ -155,6 +177,20 @@ fun SensorsContent(
             }
         },
     )
+
+    val activeRenamingSensor = renamingSensor
+    if (activeRenamingSensor != null && onRenameSensor != null) {
+        RenameDialog(
+            title = stringResource(Res.string.rename_dialog_title, activeRenamingSensor.resolveName()),
+            initialValue = activeRenamingSensor.customName ?: "",
+            icon = painterResource(Res.drawable.ic_edit),
+            onConfirm = { newName ->
+                onRenameSensor(activeRenamingSensor.channel, newName)
+                renamingSensor = null
+            },
+            onDismiss = { renamingSensor = null },
+        )
+    }
 }
 
 @Composable

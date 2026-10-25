@@ -13,6 +13,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
@@ -25,8 +29,11 @@ import io.github.lamba92.openaqua.app.ui.components.ChannelDetailHeader
 import io.github.lamba92.openaqua.app.ui.components.ChannelPageScaffold
 import io.github.lamba92.openaqua.app.ui.components.FeaturePlaceholderBox
 import io.github.lamba92.openaqua.app.ui.components.MetricCard
+import io.github.lamba92.openaqua.app.ui.components.OpenAquaOutlinedButton
+import io.github.lamba92.openaqua.app.ui.components.RenameDialog
 import io.github.lamba92.openaqua.app.ui.components.SquareSelectionButton
 import open_aqua.app_compose.generated.resources.Res
+import open_aqua.app_compose.generated.resources.action_rename
 import open_aqua.app_compose.generated.resources.fan_channel_name
 import open_aqua.app_compose.generated.resources.fan_channel_pin
 import open_aqua.app_compose.generated.resources.fan_channels_header
@@ -41,6 +48,7 @@ import open_aqua.app_compose.generated.resources.fan_settings_title
 import open_aqua.app_compose.generated.resources.fan_voltage_value
 import open_aqua.app_compose.generated.resources.fans_screen_subtitle
 import open_aqua.app_compose.generated.resources.fans_screen_title
+import open_aqua.app_compose.generated.resources.ic_edit
 import open_aqua.app_compose.generated.resources.ic_fan
 import open_aqua.app_compose.generated.resources.ic_speed
 import open_aqua.app_compose.generated.resources.ic_tune
@@ -49,6 +57,7 @@ import open_aqua.app_compose.generated.resources.metric_power
 import open_aqua.app_compose.generated.resources.metric_pwm_duty
 import open_aqua.app_compose.generated.resources.metric_speed
 import open_aqua.app_compose.generated.resources.metric_voltage
+import open_aqua.app_compose.generated.resources.rename_dialog_title
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
@@ -58,8 +67,10 @@ fun FansContent(
     selectedChannel: Int,
     onSelectFan: (Int) -> Unit,
     modifier: Modifier = Modifier,
+    onRenameFan: ((channel: Int, name: String?) -> Unit)? = null,
 ) {
     val selectedFan = fans.firstOrNull { it.channel == selectedChannel } ?: fans.firstOrNull()
+    var renamingFan by remember { mutableStateOf<FanItem?>(null) }
 
     FansPageScaffold(
         modifier = modifier,
@@ -72,6 +83,7 @@ fun FansContent(
                     rpm = fan.telemetry.rpm,
                     selected = fan.channel == selectedChannel,
                     onClick = { onSelectFan(fan.channel) },
+                    onDoubleClick = onRenameFan?.let { { renamingFan = fan } },
                 )
             }
         },
@@ -82,10 +94,27 @@ fun FansContent(
                     name = selectedFan.customName ?: stringResource(Res.string.fan_channel_name, fanNumber),
                     pinLabel = stringResource(Res.string.fan_channel_pin, fanNumber),
                     fan = selectedFan,
+                    onRenameClick = onRenameFan?.let { { renamingFan = selectedFan } },
                 )
             }
         },
     )
+
+    val activeRenamingFan = renamingFan
+    if (activeRenamingFan != null && onRenameFan != null) {
+        val fanNumber = activeRenamingFan.channel + 1
+        val defaultName = stringResource(Res.string.fan_channel_name, fanNumber)
+        RenameDialog(
+            title = stringResource(Res.string.rename_dialog_title, activeRenamingFan.customName ?: defaultName),
+            initialValue = activeRenamingFan.customName ?: "",
+            icon = painterResource(Res.drawable.ic_edit),
+            onConfirm = { newName ->
+                onRenameFan(activeRenamingFan.channel, newName)
+                renamingFan = null
+            },
+            onDismiss = { renamingFan = null },
+        )
+    }
 }
 
 @Composable
@@ -112,11 +141,13 @@ fun FanSelectionTile(
     selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onDoubleClick: (() -> Unit)? = null,
 ) {
     SquareSelectionButton(
         name = name,
         selected = selected,
         onClick = onClick,
+        onDoubleClick = onDoubleClick,
         badgeText = pinLabel,
         valueText = stringResource(Res.string.fan_rpm_value, rpm.coerceAtLeast(0)),
         modifier = modifier,
@@ -138,6 +169,7 @@ fun FanChannelDetailCard(
     pinLabel: String,
     fan: FanItem,
     modifier: Modifier = Modifier,
+    onRenameClick: (() -> Unit)? = null,
 ) {
     Column(
         modifier =
@@ -153,6 +185,16 @@ fun FanChannelDetailCard(
             icon = painterResource(Res.drawable.ic_tune),
             title = stringResource(Res.string.fan_settings_title, name),
             subtitle = stringResource(Res.string.fan_hardware_pin, pinLabel),
+            trailingContent =
+                onRenameClick?.let {
+                    {
+                        OpenAquaOutlinedButton(
+                            text = stringResource(Res.string.action_rename),
+                            icon = painterResource(Res.drawable.ic_edit),
+                            onClick = it,
+                        )
+                    }
+                },
         )
 
         // Live metrics telemetry

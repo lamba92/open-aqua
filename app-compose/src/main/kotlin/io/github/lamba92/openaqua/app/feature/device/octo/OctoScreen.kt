@@ -41,12 +41,18 @@ fun OctoScreen(
                             fans = s.fans,
                             selectedChannel = s.selectedFanChannel,
                             onSelectFan = { viewModel.onEvent(OctoEvent.SelectFan(it)) },
+                            onRenameFan = { channel, name ->
+                                viewModel.onEvent(OctoEvent.RenameFan(channel = channel, name = name))
+                            },
                         )
                     CommonDeviceTab.SENSORS ->
                         SensorsContent(
                             sensors = s.sensors,
                             selectedChannel = s.selectedSensorChannel,
                             onSelectSensor = { viewModel.onEvent(OctoEvent.SelectSensor(it)) },
+                            onRenameSensor = { channel, name ->
+                                viewModel.onEvent(OctoEvent.RenameSensor(channel = channel, name = name))
+                            },
                         )
                 }
             }

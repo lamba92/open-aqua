@@ -41,12 +41,18 @@ fun QuadroScreen(
                             fans = s.fans,
                             selectedChannel = s.selectedFanChannel,
                             onSelectFan = { viewModel.onEvent(QuadroEvent.SelectFan(it)) },
+                            onRenameFan = { channel, name ->
+                                viewModel.onEvent(QuadroEvent.RenameFan(channel = channel, name = name))
+                            },
                         )
                     CommonDeviceTab.SENSORS ->
                         SensorsContent(
                             sensors = s.sensors,
                             selectedChannel = s.selectedSensorChannel,
                             onSelectSensor = { viewModel.onEvent(QuadroEvent.SelectSensor(it)) },
+                            onRenameSensor = { channel, name ->
+                                viewModel.onEvent(QuadroEvent.RenameSensor(channel = channel, name = name))
+                            },
                         )
                 }
             }

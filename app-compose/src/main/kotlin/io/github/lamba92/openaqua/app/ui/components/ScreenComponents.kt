@@ -160,6 +160,7 @@ fun ChannelDetailHeader(
     title: String,
     subtitle: String,
     modifier: Modifier = Modifier,
+    trailingContent: (@Composable RowScope.() -> Unit)? = null,
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -192,6 +193,7 @@ fun ChannelDetailHeader(
                 )
             }
         }
+        trailingContent?.invoke(this)
     }
 }
 

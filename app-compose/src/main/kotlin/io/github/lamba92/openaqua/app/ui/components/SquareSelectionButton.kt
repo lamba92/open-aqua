@@ -1,9 +1,10 @@
 package io.github.lamba92.openaqua.app.ui.components
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,12 +41,14 @@ private val TrimmedLineHeightStyle =
         trim = LineHeightStyle.Trim.Both,
     )
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun SquareSelectionButton(
     name: String,
     selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onDoubleClick: (() -> Unit)? = null,
     size: Dp = 82.dp,
     badgeText: String? = null,
     valueText: String? = null,
@@ -71,7 +74,10 @@ fun SquareSelectionButton(
                                 BorderStroke(1.dp, BorderOutline)
                             },
                         shape = RoundedCornerShape(12.dp),
-                    ).clickable(onClick = onClick)
+                    ).combinedClickable(
+                        onClick = onClick,
+                        onDoubleClick = onDoubleClick,
+                    )
                     .padding(8.dp),
         ) {
             // Top badge (e.g. "CH 1", "T1")

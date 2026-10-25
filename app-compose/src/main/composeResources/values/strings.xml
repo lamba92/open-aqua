@@ -106,6 +106,14 @@
     <string name="sensor_calibration_title">Sensor Calibration &amp; Virtual Feeds</string>
     <string name="sensor_calibration_desc">NTC offset calibration sliders, virtual temperature streaming, and curve source binding will be iterated here next.</string>
 
+    <!-- Renaming -->
+    <string name="action_rename">Rename</string>
+    <string name="rename_dialog_title">Rename %1$s</string>
+    <string name="rename_dialog_save">Save</string>
+    <string name="rename_dialog_cancel">Cancel</string>
+    <string name="rename_dialog_label">Custom name</string>
+    <string name="rename_dialog_placeholder">Enter custom name or leave empty for default</string>
+
     <!-- Settings Screen -->
     <string name="settings_screen_title">Settings</string>
     <string name="settings_screen_subtitle">Application preferences and local storage management</string>
