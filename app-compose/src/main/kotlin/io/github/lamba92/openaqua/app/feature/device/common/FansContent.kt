@@ -2,42 +2,29 @@ package io.github.lamba92.openaqua.app.feature.device.common
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import io.github.lamba92.openaqua.app.theme.BorderOutline
 import io.github.lamba92.openaqua.app.theme.CoolantTeal
 import io.github.lamba92.openaqua.app.theme.CyanBright
-import io.github.lamba92.openaqua.app.theme.ElectricCyan
-import io.github.lamba92.openaqua.app.theme.SurfaceContainer
-import io.github.lamba92.openaqua.app.theme.SurfaceContainerHigh
 import io.github.lamba92.openaqua.app.theme.SurfaceContainerLow
 import io.github.lamba92.openaqua.app.theme.TextMuted
-import io.github.lamba92.openaqua.app.theme.TextPrimary
+import io.github.lamba92.openaqua.app.ui.components.ChannelDetailHeader
+import io.github.lamba92.openaqua.app.ui.components.ChannelPageScaffold
+import io.github.lamba92.openaqua.app.ui.components.FeaturePlaceholderBox
+import io.github.lamba92.openaqua.app.ui.components.MetricCard
 import io.github.lamba92.openaqua.app.ui.components.SquareSelectionButton
 import open_aqua.app_compose.generated.resources.Res
 import open_aqua.app_compose.generated.resources.fan_channel_name
@@ -107,70 +94,14 @@ fun FansPageScaffold(
     detailContent: @Composable () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Box(
-        modifier =
-            modifier
-                .fillMaxSize()
-                .padding(24.dp),
-    ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(20.dp),
-        ) {
-            // Header
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column {
-                    Text(
-                        text = stringResource(Res.string.fans_screen_title),
-                        color = TextPrimary,
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    Text(
-                        text = stringResource(Res.string.fans_screen_subtitle),
-                        color = TextMuted,
-                        fontSize = 13.sp,
-                    )
-                }
-            }
-
-            HorizontalDivider(color = BorderOutline)
-
-            // TOP ROW: Square buttons with channel name below
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                Text(
-                    text = stringResource(Res.string.fan_channels_header),
-                    color = ElectricCyan,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = FontFamily.Monospace,
-                )
-
-                Row(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    content = selectorRow,
-                )
-            }
-
-            HorizontalDivider(color = BorderOutline)
-
-            detailContent()
-        }
-    }
+    ChannelPageScaffold(
+        title = stringResource(Res.string.fans_screen_title),
+        subtitle = stringResource(Res.string.fans_screen_subtitle),
+        selectorHeader = stringResource(Res.string.fan_channels_header),
+        selectorRow = selectorRow,
+        detailContent = detailContent,
+        modifier = modifier,
+    )
 }
 
 @Composable
@@ -218,36 +149,11 @@ fun FanChannelDetailCard(
                 .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                Icon(
-                    painter = painterResource(Res.drawable.ic_tune),
-                    contentDescription = null,
-                    tint = CyanBright,
-                    modifier = Modifier.size(20.dp),
-                )
-                Column {
-                    Text(
-                        text = stringResource(Res.string.fan_settings_title, name),
-                        color = TextPrimary,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    Text(
-                        text = stringResource(Res.string.fan_hardware_pin, pinLabel),
-                        color = TextMuted,
-                        fontSize = 12.sp,
-                    )
-                }
-            }
-        }
+        ChannelDetailHeader(
+            icon = painterResource(Res.drawable.ic_tune),
+            title = stringResource(Res.string.fan_settings_title, name),
+            subtitle = stringResource(Res.string.fan_hardware_pin, pinLabel),
+        )
 
         // Live metrics telemetry
         val tel = fan.telemetry
@@ -295,40 +201,11 @@ fun FanChannelDetailCard(
         }
 
         // Iteration Placeholder Container
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(SurfaceContainer)
-                    .border(1.dp, BorderOutline, RoundedCornerShape(12.dp))
-                    .padding(24.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Icon(
-                    painter = painterResource(Res.drawable.ic_speed),
-                    contentDescription = null,
-                    tint = ElectricCyan.copy(alpha = 0.7f),
-                    modifier = Modifier.size(32.dp),
-                )
-                Text(
-                    text = stringResource(Res.string.fan_curve_studio_title),
-                    color = TextPrimary,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Text(
-                    text = stringResource(Res.string.fan_curve_studio_desc),
-                    color = TextMuted,
-                    fontSize = 12.sp,
-                    fontFamily = FontFamily.Monospace,
-                )
-            }
-        }
+        FeaturePlaceholderBox(
+            icon = painterResource(Res.drawable.ic_speed),
+            title = stringResource(Res.string.fan_curve_studio_title),
+            description = stringResource(Res.string.fan_curve_studio_desc),
+        )
     }
 }
 
@@ -338,27 +215,10 @@ private fun FanMetricCard(
     value: String,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier =
-            modifier
-                .width(130.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(SurfaceContainerHigh)
-                .border(1.dp, BorderOutline, RoundedCornerShape(8.dp))
-                .padding(10.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
-    ) {
-        Text(
-            text = label,
-            color = TextMuted,
-            fontSize = 11.sp,
-        )
-        Text(
-            text = value,
-            color = TextPrimary,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold,
-            fontFamily = FontFamily.Monospace,
-        )
-    }
+    MetricCard(
+        label = label,
+        value = value,
+        width = 130.dp,
+        modifier = modifier,
+    )
 }

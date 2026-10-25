@@ -21,6 +21,7 @@ import io.github.lamba92.openaqua.model.OctoConfig
 import io.github.lamba92.openaqua.model.OctoTelemetry
 import io.github.lamba92.openaqua.model.QuadroConfig
 import io.github.lamba92.openaqua.model.QuadroTelemetry
+import io.github.lamba92.openaqua.model.RgbpxPortConfig
 import io.github.lamba92.openaqua.model.SensorOffset
 import io.github.lamba92.openaqua.model.SensorTelemetry
 import io.github.lamba92.openaqua.model.TargetTempFanConfig
@@ -58,62 +59,25 @@ class MockHardwareController : HardwareController {
             when (request) {
                 is FlashOctoConfig -> {
                     check(current is OctoConfig) { "Expected OctoConfig for device ${device.alias}, got ${current::class.simpleName}" }
-                    val updatedFans = current.fans.toMutableList()
-                    request.fans?.forEach { (channel, config) ->
-                        val idx = updatedFans.indexOfFirst { it.channel == channel }
-                        if (idx >= 0) updatedFans[idx] = config
-                    }
-
-                    val updatedOffsets = current.sensorOffsets.toMutableList()
-                    request.sensorOffsets?.forEach { (channel, offset) ->
-                        val idx = updatedOffsets.indexOfFirst { it.channel == channel }
-                        if (idx >= 0) updatedOffsets[idx] = SensorOffset(channel, offset)
-                    }
-
-                    val updatedRgbpx = current.rgbpx.associateBy { it.port }.toMutableMap()
-                    request.rgbpx?.forEach { (port, config) ->
-                        updatedRgbpx[port] = config
-                    }
-
                     OctoConfig(
-                        fans = updatedFans,
-                        sensorOffsets = updatedOffsets,
-                        rgbpx = updatedRgbpx.values.toList(),
+                        fans = current.fans.applyFanUpdates(request.fans),
+                        sensorOffsets = current.sensorOffsets.applyOffsetUpdates(request.sensorOffsets),
+                        rgbpx = current.rgbpx.applyRgbpxUpdates(request.rgbpx),
                     )
                 }
+
                 is FlashQuadroConfig -> {
                     check(current is QuadroConfig) { "Expected QuadroConfig for device ${device.alias}, got ${current::class.simpleName}" }
-                    val updatedFans = current.fans.toMutableList()
-                    request.fans?.forEach { (channel, config) ->
-                        val idx = updatedFans.indexOfFirst { it.channel == channel }
-                        if (idx >= 0) updatedFans[idx] = config
-                    }
-
-                    val updatedOffsets = current.sensorOffsets.toMutableList()
-                    request.sensorOffsets?.forEach { (channel, offset) ->
-                        val idx = updatedOffsets.indexOfFirst { it.channel == channel }
-                        if (idx >= 0) updatedOffsets[idx] = SensorOffset(channel, offset)
-                    }
-
-                    val updatedRgbpx = current.rgbpx.associateBy { it.port }.toMutableMap()
-                    request.rgbpx?.forEach { (port, config) ->
-                        updatedRgbpx[port] = config
-                    }
-
                     QuadroConfig(
-                        fans = updatedFans,
-                        sensorOffsets = updatedOffsets,
+                        fans = current.fans.applyFanUpdates(request.fans),
+                        sensorOffsets = current.sensorOffsets.applyOffsetUpdates(request.sensorOffsets),
                         flowPulsesPerLiter = request.flowPulsesPerLiter ?: current.flowPulsesPerLiter,
-                        rgbpx = updatedRgbpx.values.toList(),
+                        rgbpx = current.rgbpx.applyRgbpxUpdates(request.rgbpx),
                     )
                 }
+
                 is FlashD5NextConfig -> {
                     check(current is D5NextConfig) { "Expected D5NextConfig for device ${device.alias}, got ${current::class.simpleName}" }
-                    val updatedRgbpx = current.rgbpx.associateBy { it.port }.toMutableMap()
-                    request.rgbpx?.forEach { (port, config) ->
-                        updatedRgbpx[port] = config
-                    }
-
                     val newCoolantOffset = request.coolantOffset
                     D5NextConfig(
                         pump = request.pump ?: current.pump,
@@ -125,7 +89,7 @@ class MockHardwareController : HardwareController {
                                 current.coolantOffset
                             },
                         display = request.display ?: current.display,
-                        rgbpx = updatedRgbpx.values.toList(),
+                        rgbpx = current.rgbpx.applyRgbpxUpdates(request.rgbpx),
                     )
                 }
             }
@@ -136,6 +100,32 @@ class MockHardwareController : HardwareController {
         saveMockStorage(storage.copy(configs = updatedMap))
 
         return updatedConfig
+    }
+
+    private fun List<FanChannelConfig>.applyFanUpdates(updates: Map<Int, FanChannelConfig>?): List<FanChannelConfig> {
+        val updatedFans = toMutableList()
+        updates?.forEach { (channel, config) ->
+            val idx = updatedFans.indexOfFirst { it.channel == channel }
+            if (idx >= 0) updatedFans[idx] = config
+        }
+        return updatedFans
+    }
+
+    private fun List<SensorOffset>.applyOffsetUpdates(updates: Map<Int, Double>?): List<SensorOffset> {
+        val updatedOffsets = toMutableList()
+        updates?.forEach { (channel, offset) ->
+            val idx = updatedOffsets.indexOfFirst { it.channel == channel }
+            if (idx >= 0) updatedOffsets[idx] = SensorOffset(channel, offset)
+        }
+        return updatedOffsets
+    }
+
+    private fun List<RgbpxPortConfig>.applyRgbpxUpdates(updates: Map<Int, RgbpxPortConfig>?): List<RgbpxPortConfig> {
+        val updatedRgbpx = associateBy { it.port }.toMutableMap()
+        updates?.forEach { (port, config) ->
+            updatedRgbpx[port] = config
+        }
+        return updatedRgbpx.values.toList()
     }
 
     override fun feedVirtualSensors(
@@ -166,21 +156,25 @@ class MockHardwareController : HardwareController {
             while (currentCoroutineContext().isActive) {
                 val config = readConfig(device)
                 val allSensorsStorage = loadMockVirtualSensorsStorage()
-                val virtualSensorsMap = allSensorsStorage[device.alias.value] ?: allSensorsStorage[device.id.value] ?: emptyMap()
+                val virtualSensorsMap =
+                    allSensorsStorage[device.alias.value] ?: allSensorsStorage[device.id.value] ?: emptyMap()
 
                 when (device.type) {
                     DeviceType.OCTO -> {
                         check(config is OctoConfig)
                         emit(generateOctoTelemetry(config, virtualSensorsMap))
                     }
+
                     DeviceType.QUADRO -> {
                         check(config is QuadroConfig)
                         emit(generateQuadroTelemetry(config, virtualSensorsMap))
                     }
+
                     DeviceType.D5_NEXT -> {
                         check(config is D5NextConfig)
                         emit(generateD5NextTelemetry(config, virtualSensorsMap))
                     }
+
                     else -> error("Telemetry simulation for ${device.type} is not implemented")
                 }
                 delay(1.seconds)
@@ -205,7 +199,13 @@ class MockHardwareController : HardwareController {
         val fans =
             (0..7).map { ch ->
                 val fanConfig = config.fans.firstOrNull { it.channel == ch }
-                simulateFan(ch, fanConfig, allSensors, maxRpm = if (ch == 0) 2500 else 1800, maxAmps = if (ch == 0) 0.70 else 0.30)
+                simulateFan(
+                    ch,
+                    fanConfig,
+                    allSensors,
+                    maxRpm = if (ch == 0) 2500 else 1800,
+                    maxAmps = if (ch == 0) 0.70 else 0.30
+                )
             }
 
         val flowRateDlH =
@@ -263,7 +263,8 @@ class MockHardwareController : HardwareController {
             (1..8).map { ch ->
                 SensorTelemetry(channel = ch, tempCelsius = virtualSensorsMap[ch], isVirtual = true)
             }
-        val allSensors = (listOf(SensorTelemetry(0, coolantTemp)) + virtualSensors).associate { it.channel to it.tempCelsius }
+        val allSensors =
+            (listOf(SensorTelemetry(0, coolantTemp)) + virtualSensors).associate { it.channel to it.tempCelsius }
 
         val pump = simulateFan(0, config.pump, allSensors, maxRpm = 4800, maxAmps = 1.8)
         val fan = simulateFan(1, config.fan, allSensors, maxRpm = 2000, maxAmps = 0.5)
@@ -321,10 +322,12 @@ class MockHardwareController : HardwareController {
                 val temp = sensorTemps[config.sensorIndex]
                 if (temp != null) evaluateCurve(config.points, temp) else 100.0
             }
+
             is AutoCurveFanConfig -> {
                 val temp = sensorTemps[config.sensorIndex]
                 if (temp != null) evaluateCurve(config.toCurveFanConfig().points, temp) else 100.0
             }
+
             is TargetTempFanConfig -> {
                 val temp = sensorTemps[config.sensorIndex]
                 if (temp != null) {
@@ -334,6 +337,7 @@ class MockHardwareController : HardwareController {
                     100.0
                 }
             }
+
             is TwoPointFanConfig -> {
                 val temp = sensorTemps[config.sensorIndex]
                 if (temp != null) {
@@ -342,6 +346,7 @@ class MockHardwareController : HardwareController {
                     100.0
                 }
             }
+
             is UnconfiguredFanConfig, null -> 0.0
         }.coerceIn(0.0, 100.0)
 

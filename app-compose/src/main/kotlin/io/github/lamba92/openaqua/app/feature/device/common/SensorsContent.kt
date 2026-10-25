@@ -2,41 +2,28 @@ package io.github.lamba92.openaqua.app.feature.device.common
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import io.github.lamba92.openaqua.app.theme.BorderOutline
 import io.github.lamba92.openaqua.app.theme.CoolantTeal
 import io.github.lamba92.openaqua.app.theme.CyanBright
-import io.github.lamba92.openaqua.app.theme.ElectricCyan
-import io.github.lamba92.openaqua.app.theme.SurfaceContainer
-import io.github.lamba92.openaqua.app.theme.SurfaceContainerHigh
 import io.github.lamba92.openaqua.app.theme.SurfaceContainerLow
 import io.github.lamba92.openaqua.app.theme.TextMuted
-import io.github.lamba92.openaqua.app.theme.TextPrimary
+import io.github.lamba92.openaqua.app.ui.components.ChannelDetailHeader
+import io.github.lamba92.openaqua.app.ui.components.ChannelPageScaffold
+import io.github.lamba92.openaqua.app.ui.components.FeaturePlaceholderBox
+import io.github.lamba92.openaqua.app.ui.components.MetricCard
 import io.github.lamba92.openaqua.app.ui.components.SquareSelectionButton
 import open_aqua.app_compose.generated.resources.Res
 import open_aqua.app_compose.generated.resources.ic_sensor
@@ -79,92 +66,38 @@ fun SensorsContent(
 ) {
     val selectedSensor = sensors.firstOrNull { it.channel == selectedChannel } ?: sensors.firstOrNull()
 
-    Box(
-        modifier =
-            modifier
-                .fillMaxSize()
-                .padding(24.dp),
-    ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(20.dp),
-        ) {
-            // Header
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column {
-                    Text(
-                        text = stringResource(Res.string.sensors_screen_title),
-                        color = TextPrimary,
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    Text(
-                        text = stringResource(Res.string.sensors_screen_subtitle),
-                        color = TextMuted,
-                        fontSize = 13.sp,
-                    )
-                }
-            }
-
-            HorizontalDivider(color = BorderOutline)
-
-            // TOP ROW: Square buttons with sensor name below
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                Text(
-                    text = stringResource(Res.string.temperature_probes_header),
-                    color = ElectricCyan,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = FontFamily.Monospace,
-                )
-
-                Row(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    sensors.forEach { sensor ->
-                        val isSelected = sensor.channel == selectedChannel
-                        val temp = sensor.telemetry.tempCelsius
-                        val sensorName = sensor.resolveName()
-                        val sensorPin = sensor.resolvePinLabel()
-                        SquareSelectionButton(
-                            name = sensorName,
-                            selected = isSelected,
-                            onClick = { onSelectSensor(sensor.channel) },
-                            badgeText = sensorPin,
-                            valueText =
-                                temp?.let {
-                                    stringResource(Res.string.sensor_temp_short_value, "%.1f".format(it))
-                                } ?: stringResource(Res.string.sensor_temp_short_disconnected),
-                            icon = {
-                                Icon(
-                                    painter = painterResource(Res.drawable.ic_sensor),
-                                    contentDescription = sensorName,
-                                    tint = if (isSelected) CyanBright else (if (temp != null) CoolantTeal else TextMuted),
-                                    modifier = Modifier.size(24.dp),
-                                )
-                            },
+    ChannelPageScaffold(
+        title = stringResource(Res.string.sensors_screen_title),
+        subtitle = stringResource(Res.string.sensors_screen_subtitle),
+        selectorHeader = stringResource(Res.string.temperature_probes_header),
+        modifier = modifier,
+        selectorRow = {
+            sensors.forEach { sensor ->
+                val isSelected = sensor.channel == selectedChannel
+                val temp = sensor.telemetry.tempCelsius
+                val sensorName = sensor.resolveName()
+                val sensorPin = sensor.resolvePinLabel()
+                SquareSelectionButton(
+                    name = sensorName,
+                    selected = isSelected,
+                    onClick = { onSelectSensor(sensor.channel) },
+                    badgeText = sensorPin,
+                    valueText =
+                        temp?.let {
+                            stringResource(Res.string.sensor_temp_short_value, "%.1f".format(it))
+                        } ?: stringResource(Res.string.sensor_temp_short_disconnected),
+                    icon = {
+                        Icon(
+                            painter = painterResource(Res.drawable.ic_sensor),
+                            contentDescription = sensorName,
+                            tint = if (isSelected) CyanBright else (if (temp != null) CoolantTeal else TextMuted),
+                            modifier = Modifier.size(24.dp),
                         )
-                    }
-                }
+                    },
+                )
             }
-
-            HorizontalDivider(color = BorderOutline)
-
-            // SETTINGS PAGE BELOW (For selected sensor)
+        },
+        detailContent = {
             if (selectedSensor != null) {
                 val selectedSensorName = selectedSensor.resolveName()
                 val selectedSensorPin = selectedSensor.resolvePinLabel()
@@ -178,36 +111,11 @@ fun SensorsContent(
                             .padding(20.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        ) {
-                            Icon(
-                                painter = painterResource(Res.drawable.ic_tune),
-                                contentDescription = null,
-                                tint = CyanBright,
-                                modifier = Modifier.size(20.dp),
-                            )
-                            Column {
-                                Text(
-                                    text = stringResource(Res.string.sensor_settings_title, selectedSensorName),
-                                    color = TextPrimary,
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Bold,
-                                )
-                                Text(
-                                    text = stringResource(Res.string.sensor_hardware_channel, selectedSensorPin),
-                                    color = TextMuted,
-                                    fontSize = 12.sp,
-                                )
-                            }
-                        }
-                    }
+                    ChannelDetailHeader(
+                        icon = painterResource(Res.drawable.ic_tune),
+                        title = stringResource(Res.string.sensor_settings_title, selectedSensorName),
+                        subtitle = stringResource(Res.string.sensor_hardware_channel, selectedSensorPin),
+                    )
 
                     // Live metrics telemetry
                     val temp = selectedSensor.telemetry.tempCelsius
@@ -238,44 +146,15 @@ fun SensorsContent(
                     }
 
                     // Iteration Placeholder Container
-                    Box(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(SurfaceContainer)
-                                .border(1.dp, BorderOutline, RoundedCornerShape(12.dp))
-                                .padding(24.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            Icon(
-                                painter = painterResource(Res.drawable.ic_sensors),
-                                contentDescription = null,
-                                tint = ElectricCyan.copy(alpha = 0.7f),
-                                modifier = Modifier.size(32.dp),
-                            )
-                            Text(
-                                text = stringResource(Res.string.sensor_calibration_title),
-                                color = TextPrimary,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.SemiBold,
-                            )
-                            Text(
-                                text = stringResource(Res.string.sensor_calibration_desc),
-                                color = TextMuted,
-                                fontSize = 12.sp,
-                                fontFamily = FontFamily.Monospace,
-                            )
-                        }
-                    }
+                    FeaturePlaceholderBox(
+                        icon = painterResource(Res.drawable.ic_sensors),
+                        title = stringResource(Res.string.sensor_calibration_title),
+                        description = stringResource(Res.string.sensor_calibration_desc),
+                    )
                 }
             }
-        }
-    }
+        },
+    )
 }
 
 @Composable
@@ -308,27 +187,10 @@ private fun SensorMetricCard(
     value: String,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier =
-            modifier
-                .width(160.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(SurfaceContainerHigh)
-                .border(1.dp, BorderOutline, RoundedCornerShape(8.dp))
-                .padding(10.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
-    ) {
-        Text(
-            text = label,
-            color = TextMuted,
-            fontSize = 11.sp,
-        )
-        Text(
-            text = value,
-            color = TextPrimary,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold,
-            fontFamily = FontFamily.Monospace,
-        )
-    }
+    MetricCard(
+        label = label,
+        value = value,
+        width = 160.dp,
+        modifier = modifier,
+    )
 }

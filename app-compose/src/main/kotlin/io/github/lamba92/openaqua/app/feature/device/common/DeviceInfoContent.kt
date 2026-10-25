@@ -19,7 +19,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -31,7 +30,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.lamba92.openaqua.app.repository.DeviceState
 import io.github.lamba92.openaqua.app.theme.BorderOutline
-import io.github.lamba92.openaqua.app.theme.CyanBright
 import io.github.lamba92.openaqua.app.theme.ElectricCyan
 import io.github.lamba92.openaqua.app.theme.StatusNominal
 import io.github.lamba92.openaqua.app.theme.SurfaceContainer
@@ -41,6 +39,8 @@ import io.github.lamba92.openaqua.app.theme.TextMuted
 import io.github.lamba92.openaqua.app.theme.TextPrimary
 import io.github.lamba92.openaqua.app.theme.TextSecondary
 import io.github.lamba92.openaqua.app.ui.components.DeviceIllustration
+import io.github.lamba92.openaqua.app.ui.components.ScreenHeader
+import io.github.lamba92.openaqua.app.ui.components.SectionHeader
 import open_aqua.app_compose.generated.resources.Res
 import open_aqua.app_compose.generated.resources.device_identification_title
 import open_aqua.app_compose.generated.resources.device_telemetry_identity_subtitle
@@ -104,51 +104,37 @@ fun DeviceInfoContent(
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
             // Title Header
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column {
-                    Text(
-                        text = device.name,
-                        color = TextPrimary,
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    Text(
-                        text = stringResource(Res.string.device_telemetry_identity_subtitle),
-                        color = TextMuted,
-                        fontSize = 13.sp,
-                    )
-                }
-
-                // Status Badge
-                Row(
-                    modifier =
-                        Modifier
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(SurfaceContainerHigh)
-                            .border(1.dp, BorderOutline, RoundedCornerShape(20.dp))
-                            .padding(horizontal = 12.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    Box(
+            ScreenHeader(
+                title = device.name,
+                subtitle = stringResource(Res.string.device_telemetry_identity_subtitle),
+                trailingContent = {
+                    // Status Badge
+                    Row(
                         modifier =
                             Modifier
-                                .size(8.dp)
-                                .clip(CircleShape)
-                                .background(StatusNominal),
-                    )
-                    Text(
-                        text = stringResource(Res.string.usb_hid_connected),
-                        color = TextPrimary,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium,
-                    )
-                }
-            }
+                                .clip(RoundedCornerShape(20.dp))
+                                .background(SurfaceContainerHigh)
+                                .border(1.dp, BorderOutline, RoundedCornerShape(20.dp))
+                                .padding(horizontal = 12.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        Box(
+                            modifier =
+                                Modifier
+                                    .size(8.dp)
+                                    .clip(CircleShape)
+                                    .background(StatusNominal),
+                        )
+                        Text(
+                            text = stringResource(Res.string.usb_hid_connected),
+                            color = TextPrimary,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                        )
+                    }
+                },
+            )
 
             HorizontalDivider(color = BorderOutline)
 
@@ -175,23 +161,10 @@ fun DeviceInfoContent(
                             .padding(20.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp),
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        Icon(
-                            painter = painterResource(Res.drawable.ic_memory),
-                            contentDescription = null,
-                            tint = CyanBright,
-                            modifier = Modifier.size(20.dp),
-                        )
-                        Text(
-                            text = stringResource(Res.string.device_identification_title),
-                            color = CyanBright,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                        )
-                    }
+                    SectionHeader(
+                        icon = painterResource(Res.drawable.ic_memory),
+                        title = stringResource(Res.string.device_identification_title),
+                    )
 
                     InfoRow(label = stringResource(Res.string.info_device_name), value = device.name)
                     InfoRow(
@@ -225,23 +198,10 @@ fun DeviceInfoContent(
                         .padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Icon(
-                        painter = painterResource(Res.drawable.ic_usb),
-                        contentDescription = null,
-                        tint = CyanBright,
-                        modifier = Modifier.size(20.dp),
-                    )
-                    Text(
-                        text = stringResource(Res.string.hardware_descriptors_title),
-                        color = CyanBright,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
+                SectionHeader(
+                    icon = painterResource(Res.drawable.ic_usb),
+                    title = stringResource(Res.string.hardware_descriptors_title),
+                )
                 FlowRow(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
