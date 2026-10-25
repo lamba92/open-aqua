@@ -30,3 +30,4 @@ local.properties
 .kotlin/
 docker/windows-test/storage
 mock-*.json
+/skills/
