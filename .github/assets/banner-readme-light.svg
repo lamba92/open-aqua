@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 320" width="1000" height="320">
+<g transform="translate(20, 5) scale(0.6)">
+  <path
+    d="M 256 64 C 256 64 112 236 112 332 A 144 144 0 0 0 400 332 C 400 236 256 64 256 64 Z"
+    fill="none"
+    stroke="#32C3F2"
+    stroke-width="30"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <polyline
+    points="222,276 168,330 222,384"
+    fill="none"
+    stroke="#32C3F2"
+    stroke-width="28"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <polyline
+    points="290,276 344,330 290,384"
+    fill="none"
+    stroke="#32C3F2"
+    stroke-width="28"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</g>
+  <text x="310" y="200" font-family="Inter, Montserrat, system-ui, -apple-system, sans-serif" font-size="108" font-weight="700" letter-spacing="-2"><tspan fill="#0B192C">open-</tspan><tspan fill="#32C3F2">aqua</tspan></text>
+</svg>

@@ -50,16 +50,23 @@ import io.github.lamba92.openaqua.app.util.EngineExtractor
 import io.github.lamba92.openaqua.model.DeviceType
 import kotlinx.coroutines.runBlocking
 import open_aqua.app_compose.generated.resources.Res
+import open_aqua.app_compose.generated.resources.ic_app_icon
 import open_aqua.app_compose.generated.resources.no_devices_found
 import open_aqua.app_compose.generated.resources.scanning_hardware
 import open_aqua.app_compose.generated.resources.unsupported_device
 import open_aqua.app_compose.generated.resources.window_title
+import org.jetbrains.compose.resources.ExperimentalResourceApi
+import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
+import java.awt.Taskbar
+import javax.imageio.ImageIO
 
 fun main() {
     val enginePath = runBlocking { EngineExtractor.extract() }
     val scopeProvider = DefaultCoroutineScopeProvider()
     val di = createOpenAquaDI(enginePath, scopeProvider)
+
+    configureTaskbarIcon()
 
     application {
         val windowState =
@@ -82,10 +89,27 @@ fun main() {
             },
             state = windowState,
             title = stringResource(Res.string.window_title),
+            icon = painterResource(Res.drawable.ic_app_icon),
         ) {
             CompositionLocalProvider(LocalDI provides di) {
                 OpenAquaTheme {
                     OpenAquaApp()
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalResourceApi::class)
+private fun configureTaskbarIcon() {
+    runCatching {
+        if (Taskbar.isTaskbarSupported()) {
+            val taskbar = Taskbar.getTaskbar()
+            if (taskbar.isSupported(Taskbar.Feature.ICON_IMAGE)) {
+                val iconBytes = runBlocking { Res.readBytes("drawable/ic_app_icon.png") }
+                val awtImage = ImageIO.read(iconBytes.inputStream())
+                if (awtImage != null) {
+                    taskbar.iconImage = awtImage
                 }
             }
         }

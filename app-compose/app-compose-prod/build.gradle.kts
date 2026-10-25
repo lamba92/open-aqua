@@ -24,8 +24,8 @@ ktlint {
 
 engineBinaries {
     if (Os.current() == Os.MACOS) {
-        os.set(Os.LINUX)
-        arch.set(Arch.X64)
+        os = Os.LINUX
+        arch = Arch.X64
     }
 }
 
@@ -52,6 +52,16 @@ compose.desktop {
             targetFormats(TargetFormat.Deb, TargetFormat.Rpm, TargetFormat.Msi)
             packageName = "open-aqua"
             packageVersion = "1.0.0"
+
+            linux {
+                iconFile = rootProject.file(".github/assets/icon-512.png")
+            }
+            windows {
+                iconFile = rootProject.file(".github/assets/favicon.ico")
+            }
+            macOS {
+                iconFile = rootProject.file(".github/assets/icon.icns")
+            }
         }
     }
 }

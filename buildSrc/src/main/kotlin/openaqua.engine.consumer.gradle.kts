@@ -17,7 +17,7 @@ open class EngineBinariesConsumerExtension @Inject constructor(
     val bundleAll: Property<Boolean> = objects.property(Boolean::class.java).convention(false)
 
     fun all() {
-        bundleAll.set(true)
+        bundleAll = true
     }
 }
 

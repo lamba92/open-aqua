@@ -1,27 +1,37 @@
 package io.github.lamba92.openaqua.app.theme
 
 import androidx.compose.ui.graphics.Color
+import io.github.lamba92.openaqua.theme.OpenAquaPalette
+import io.github.lamba92.openaqua.theme.ThemeColor
+
+fun ThemeColor.toComposeColor(): Color = Color(argb)
+
+// Brand Identity Tokens
+val BrandDeepNavy = OpenAquaPalette.DeepNavy.toComposeColor()
+val BrandAquaBlue = OpenAquaPalette.AquaBlue.toComposeColor()
+val BrandPureWhite = OpenAquaPalette.PureWhite.toComposeColor()
+val BrandElectricCyan = OpenAquaPalette.BrandElectricCyan.toComposeColor()
 
 // Hydro-Telemetry Design System Palette
-val ObsidianBg = Color(0xFF0E131E)
-val SurfaceContainerLowest = Color(0xFF090E19)
-val SurfaceContainerLow = Color(0xFF171C27)
-val SurfaceContainer = Color(0xFF1B202B)
-val SurfaceContainerHigh = Color(0xFF252A35)
-val SurfaceContainerHighest = Color(0xFF303541)
-val SurfaceBright = Color(0xFF343945)
+val ObsidianBg = OpenAquaPalette.ObsidianBg.toComposeColor()
+val SurfaceContainerLowest = OpenAquaPalette.SurfaceContainerLowest.toComposeColor()
+val SurfaceContainerLow = OpenAquaPalette.SurfaceContainerLow.toComposeColor()
+val SurfaceContainer = OpenAquaPalette.SurfaceContainer.toComposeColor()
+val SurfaceContainerHigh = OpenAquaPalette.SurfaceContainerHigh.toComposeColor()
+val SurfaceContainerHighest = OpenAquaPalette.SurfaceContainerHighest.toComposeColor()
+val SurfaceBright = OpenAquaPalette.SurfaceBright.toComposeColor()
 
-val ElectricCyan = Color(0xFF00F2FE)
-val CyanBright = Color(0xFF6FF6FF)
-val CoolantTeal = Color(0xFF4FDBC8)
-val TealDark = Color(0xFF04B4A2)
-val SkyBlue = Color(0xFF38BDF8)
+val ElectricCyan = OpenAquaPalette.ElectricCyan.toComposeColor()
+val CyanBright = OpenAquaPalette.CyanBright.toComposeColor()
+val CoolantTeal = OpenAquaPalette.CoolantTeal.toComposeColor()
+val TealDark = OpenAquaPalette.TealDark.toComposeColor()
+val SkyBlue = OpenAquaPalette.SkyBlue.toComposeColor()
 
-val TextPrimary = Color(0xFFDEE2F2)
-val TextSecondary = Color(0xFFB9CACB)
-val TextMuted = Color(0xFF849495)
-val BorderOutline = Color(0xFF3A494B)
+val TextPrimary = OpenAquaPalette.TextPrimary.toComposeColor()
+val TextSecondary = OpenAquaPalette.TextSecondary.toComposeColor()
+val TextMuted = OpenAquaPalette.TextMuted.toComposeColor()
+val BorderOutline = OpenAquaPalette.BorderOutline.toComposeColor()
 
-val StatusNominal = Color(0xFF10B981)
-val StatusWarning = Color(0xFFF59E0B)
-val StatusCritical = Color(0xFFEF4444)
+val StatusNominal = OpenAquaPalette.StatusNominal.toComposeColor()
+val StatusWarning = OpenAquaPalette.StatusWarning.toComposeColor()
+val StatusCritical = OpenAquaPalette.StatusCritical.toComposeColor()

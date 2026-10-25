@@ -23,6 +23,7 @@ ktlint {
 
 dependencies {
     implementation(projects.coreModel)
+    api(projects.coreTheme)
     implementation(getCurrentPlatformComposeRuntime())
     implementation(libs.compose.material3)
     implementation(libs.compose.material.icons.extended)

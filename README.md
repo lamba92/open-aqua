@@ -1,3 +1,11 @@
+<div align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset=".github/assets/banner-readme-dark.svg" />
+    <source media="(prefers-color-scheme: light)" srcset=".github/assets/banner-readme-light.svg" />
+    <img alt="open-aqua" src=".github/assets/banner-readme-dark.svg" width="600" />
+  </picture>
+</div>
+
 # OpenAqua
 
 > **An open-source, cross-platform thermal management and telemetry suite for Aquacomputer devices, designed for Linux and Windows.**
@@ -39,7 +47,7 @@ Aquacomputer hardware (**OCTO**, **QUADRO**, **D5 NEXT**, etc.) represents the g
 > While **Aquacomputer QUADRO** and **Aquacomputer D5 NEXT** have full device descriptors and protocol definitions implemented (based on reverse-engineering and driver specifications), **they have NOT been physically verified on hardware yet—expect bugs or untested edge cases on QUADRO and D5 NEXT**. Community testing, feedback, and issue reports for these devices are very welcome!
 
 | Device | USB Product ID | Fan Channels | Temp Sensors | Flow Sensor | RGBpx | Physical Testing Status |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| :--- | :---: | :---: | :---: | :---: | :---: | :--- |
 | **Aquacomputer OCTO** | `0xF011` | 8 Channels (PWM) | 4 Physical + 16 Virtual | Yes (Dedicated port, dL/h) | 2 Ports | 🟢 **Physically Verified & Tested** (Linux & Windows) |
 | **Aquacomputer QUADRO** | `0xF00D` | 4 Channels (PWM) | 4 Physical + 16 Virtual | Yes (Dedicated port, dL/h) | 1 Port | 🟡 **Experimental / Untested on physical device** |
 | **Aquacomputer D5 NEXT** | `0xF00E` | 2 (Pump + Fan) | 1 Liquid + 8 Virtual | Calculated / Virtual | 1 Port | 🟡 **Experimental / Untested on physical device** |
@@ -248,6 +256,7 @@ Binaries will be placed in `engine/engine-prod/build/bin/<target>/releaseExecuta
 
 - **[ARCHITECTURE.md](ARCHITECTURE.md)**: Detailed technical specification of the multi-module architecture, generic device abstraction, protocol byte offsets, CRC-16 implementation, and Aquasuite curve math replication.
 - **[FEATURES.md](FEATURES.md)**: Functional and visual specification for the upcoming Compose Desktop UI and JSON profile management.
+- **[.github/assets/BRAND_GUIDELINES.md](.github/assets/BRAND_GUIDELINES.md)**: Official brand color palette, typography, and icon asset specifications.
 - **[docker/windows-test/README.md](docker/windows-test/README.md)**: Automated Docker + QEMU/KVM Windows testing environment for validating Windows builds against physical USB devices.
 
 ---

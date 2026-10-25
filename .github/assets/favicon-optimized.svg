@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="96" fill="#0B192C" />
+  <g transform="translate(61.44, 53.76) scale(0.76)">
+    <path
+      d="M 256 56 C 256 56 104 236 104 336 A 152 152 0 0 0 408 336 C 408 236 256 56 256 56 Z"
+      fill="none"
+      stroke="#32C3F2"
+      stroke-width="40"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+    <polyline
+      points="218,272 162,328 218,384"
+      fill="none"
+      stroke="#32C3F2"
+      stroke-width="38"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+    <polyline
+      points="294,272 350,328 294,384"
+      fill="none"
+      stroke="#32C3F2"
+      stroke-width="38"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+  </g>
+</svg>

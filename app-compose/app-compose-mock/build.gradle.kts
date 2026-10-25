@@ -43,6 +43,16 @@ compose.desktop {
             targetFormats(TargetFormat.Deb, TargetFormat.Rpm)
             packageName = "open-aqua-mock"
             packageVersion = "1.0.0"
+
+            linux {
+                iconFile = rootProject.file(".github/assets/icon-512.png")
+            }
+            windows {
+                iconFile = rootProject.file(".github/assets/favicon.ico")
+            }
+            macOS {
+                iconFile = rootProject.file(".github/assets/icon.icns")
+            }
         }
     }
 }

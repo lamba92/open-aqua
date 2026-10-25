@@ -40,11 +40,11 @@ class UpxPlugin : Plugin<Project> {
         override fun getName(): String = name
 
         fun ultraBrute() {
-            bruteLevel.set(UpxTask.BruteLevel.ULTRA_BRUTE)
+            bruteLevel = UpxTask.BruteLevel.ULTRA_BRUTE
         }
 
         fun brute() {
-            bruteLevel.set(UpxTask.BruteLevel.BRUTE)
+            bruteLevel = UpxTask.BruteLevel.BRUTE
         }
     }
 
@@ -172,7 +172,7 @@ class UpxPlugin : Plugin<Project> {
                                     },
                                 )
                                 inputExecutable.fileProvider(linkTaskProvider.flatMap { it.outputFile })
-                                upxExecutableFile.set(upxExecutable)
+                                upxExecutableFile = upxExecutable
 
                                 strip.convention(extension.strip)
                                 lzma.convention(extension.lzma)
