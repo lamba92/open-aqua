@@ -32,7 +32,7 @@ engineBinaries {
 dependencies {
     implementation(projects.appCompose)
     implementation(getCurrentPlatformComposeRuntime())
-    "engineBinaries"(projects.engine.engineProd)
+    engineBinaries(projects.engine.engineProd)
 }
 
 fun getCurrentPlatformComposeRuntime() =
@@ -49,7 +49,7 @@ compose.desktop {
         mainClass = "io.github.lamba92.openaqua.app.MainKt"
 
         nativeDistributions {
-            targetFormats(TargetFormat.Deb, TargetFormat.Rpm)
+            targetFormats(TargetFormat.Deb, TargetFormat.Rpm, TargetFormat.Msi)
             packageName = "open-aqua"
             packageVersion = "1.0.0"
         }
