@@ -16,7 +16,9 @@ import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.NavigationDrawerItem
+import androidx.compose.material3.NavigationDrawerItemColors
 import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.material3.PermanentDrawerSheet
 import androidx.compose.material3.PermanentNavigationDrawer
@@ -25,8 +27,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -53,6 +57,12 @@ import open_aqua.app_compose.generated.resources.nav_fans
 import open_aqua.app_compose.generated.resources.nav_sensors
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
+
+private val DrawerLineHeightStyle =
+    LineHeightStyle(
+        alignment = LineHeightStyle.Alignment.Center,
+        trim = LineHeightStyle.Trim.Both,
+    )
 
 @Composable
 fun DeviceDrawerScaffold(
@@ -111,55 +121,68 @@ fun DeviceDrawerScaffold(
                             unselectedTextColor = TextSecondary,
                         )
 
-                    NavigationDrawerItem(
-                        label = { Text(stringResource(Res.string.nav_device_info), fontSize = 13.sp) },
-                        icon = {
-                            Icon(
-                                painter = painterResource(Res.drawable.ic_info),
-                                contentDescription = null,
-                                modifier = Modifier.size(20.dp),
-                            )
-                        },
+                    DeviceDrawerTabItem(
+                        label = stringResource(Res.string.nav_device_info),
+                        icon = painterResource(Res.drawable.ic_info),
                         selected = selectedTab == CommonDeviceTab.DEVICE_INFO,
                         onClick = { onSelectTab(CommonDeviceTab.DEVICE_INFO) },
                         colors = drawerColors,
-                        shape = RoundedCornerShape(8.dp),
                     )
 
-                    NavigationDrawerItem(
-                        label = { Text(stringResource(Res.string.nav_fans), fontSize = 13.sp) },
-                        icon = {
-                            Icon(
-                                painter = painterResource(Res.drawable.ic_fan),
-                                contentDescription = null,
-                                modifier = Modifier.size(20.dp),
-                            )
-                        },
+                    DeviceDrawerTabItem(
+                        label = stringResource(Res.string.nav_fans),
+                        icon = painterResource(Res.drawable.ic_fan),
                         selected = selectedTab == CommonDeviceTab.FANS,
                         onClick = { onSelectTab(CommonDeviceTab.FANS) },
                         colors = drawerColors,
-                        shape = RoundedCornerShape(8.dp),
                     )
 
-                    NavigationDrawerItem(
-                        label = { Text(stringResource(Res.string.nav_sensors), fontSize = 13.sp) },
-                        icon = {
-                            Icon(
-                                painter = painterResource(Res.drawable.ic_sensor),
-                                contentDescription = null,
-                                modifier = Modifier.size(20.dp),
-                            )
-                        },
+                    DeviceDrawerTabItem(
+                        label = stringResource(Res.string.nav_sensors),
+                        icon = painterResource(Res.drawable.ic_sensor),
                         selected = selectedTab == CommonDeviceTab.SENSORS,
                         onClick = { onSelectTab(CommonDeviceTab.SENSORS) },
                         colors = drawerColors,
-                        shape = RoundedCornerShape(8.dp),
                     )
                 }
             }
         },
         modifier = modifier.fillMaxSize(),
         content = content,
+    )
+}
+
+@Composable
+private fun DeviceDrawerTabItem(
+    label: String,
+    icon: Painter,
+    selected: Boolean,
+    onClick: () -> Unit,
+    colors: NavigationDrawerItemColors,
+    modifier: Modifier = Modifier,
+) {
+    NavigationDrawerItem(
+        label = {
+            Text(
+                text = label,
+                fontSize = 13.sp,
+                lineHeight = 20.sp,
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
+                style = LocalTextStyle.current.copy(lineHeightStyle = DrawerLineHeightStyle),
+            )
+        },
+        icon = {
+            Icon(
+                painter = icon,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+            )
+        },
+        selected = selected,
+        onClick = onClick,
+        colors = colors,
+        shape = RoundedCornerShape(8.dp),
+        modifier = modifier,
     )
 }
 
