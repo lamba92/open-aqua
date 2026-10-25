@@ -43,7 +43,10 @@ import io.github.lamba92.openaqua.app.theme.TextSecondary
 import open_aqua.app_compose.generated.resources.Res
 import open_aqua.app_compose.generated.resources.ic_device
 import open_aqua.app_compose.generated.resources.ic_openaqua
+import open_aqua.app_compose.generated.resources.ic_settings
+import open_aqua.app_compose.generated.resources.nav_settings
 import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun DeviceNavigationRailScaffold(
@@ -53,9 +56,17 @@ fun DeviceNavigationRailScaffold(
     content: @Composable () -> Unit,
 ) {
     val selectedDevice = state.selectedDeviceState.device
+    val railItemColors =
+        NavigationRailItemDefaults.colors(
+            selectedIconColor = ObsidianBg,
+            selectedTextColor = CyanBright,
+            indicatorColor = CyanBright,
+            unselectedIconColor = TextSecondary,
+            unselectedTextColor = TextMuted,
+        )
 
     Row(modifier = modifier.fillMaxSize()) {
-        // LAYER 1: Material 3 NavigationRail (Devices)
+        // LAYER 1: Material 3 NavigationRail (Devices + Settings at bottom)
         NavigationRail(
             modifier = Modifier.fillMaxHeight(),
             containerColor = SurfaceContainerLowest,
@@ -95,7 +106,7 @@ fun DeviceNavigationRailScaffold(
             ) {
                 state.devices.forEach { deviceState ->
                     val device = deviceState.device
-                    val isSelected = device.id == selectedDevice.id
+                    val isSelected = !state.isSettingsSelected && device.id == selectedDevice.id
                     val statusColor =
                         when (deviceState) {
                             is DeviceState.Connecting -> ElectricCyan
@@ -130,16 +141,42 @@ fun DeviceNavigationRailScaffold(
                                 overflow = TextOverflow.Ellipsis,
                             )
                         },
-                        colors =
-                            NavigationRailItemDefaults.colors(
-                                selectedIconColor = ObsidianBg,
-                                selectedTextColor = CyanBright,
-                                indicatorColor = CyanBright,
-                                unselectedIconColor = TextSecondary,
-                                unselectedTextColor = TextMuted,
-                            ),
+                        colors = railItemColors,
                     )
                 }
+            }
+
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(bottom = 12.dp),
+            ) {
+                HorizontalDivider(
+                    color = BorderOutline,
+                    modifier = Modifier.width(48.dp),
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                val settingsLabel = stringResource(Res.string.nav_settings)
+                NavigationRailItem(
+                    selected = state.isSettingsSelected,
+                    onClick = { onEvent(DeviceNavEvent.SelectSettings) },
+                    icon = {
+                        Icon(
+                            painter = painterResource(Res.drawable.ic_settings),
+                            contentDescription = settingsLabel,
+                            modifier = Modifier.size(24.dp),
+                        )
+                    },
+                    label = {
+                        Text(
+                            text = settingsLabel,
+                            fontSize = 10.sp,
+                            fontFamily = FontFamily.Monospace,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    },
+                    colors = railItemColors,
+                )
             }
         }
 

@@ -20,10 +20,12 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
+import java.awt.Desktop
 import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
+import kotlin.io.path.absolutePathString
 import kotlin.io.path.createDirectories
 import kotlin.io.path.exists
 import kotlin.io.path.readText
@@ -41,6 +43,9 @@ class AppDataRepository(
             val data: AppStoredData,
         ) : State
     }
+
+    val storageDirectory: Path
+        get() = storagePath.parent ?: storagePath.toAbsolutePath().parent
 
     private val json =
         Json {
@@ -78,6 +83,29 @@ class AppDataRepository(
             when (current) {
                 State.Loading -> current
                 is State.Ready -> State.Ready(transform(current.data))
+            }
+        }
+    }
+
+    fun resetToDefaults() {
+        update { AppStoredData() }
+    }
+
+    fun openDataFolder() {
+        coroutineScope.launch {
+            val dir = storageDirectory
+            dir.createDirectories()
+            if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.OPEN)) {
+                Desktop.getDesktop().open(dir.toFile())
+            } else {
+                val os = System.getProperty("os.name").lowercase()
+                val cmd =
+                    when {
+                        os.contains("mac") -> listOf("open", dir.absolutePathString())
+                        os.contains("win") -> listOf("explorer", dir.absolutePathString())
+                        else -> listOf("xdg-open", dir.absolutePathString())
+                    }
+                ProcessBuilder(cmd).start()
             }
         }
     }

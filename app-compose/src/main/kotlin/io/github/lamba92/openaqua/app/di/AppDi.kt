@@ -9,6 +9,7 @@ import io.github.lamba92.openaqua.app.feature.device.d5next.D5NextViewModel
 import io.github.lamba92.openaqua.app.feature.device.octo.OctoViewModel
 import io.github.lamba92.openaqua.app.feature.device.quadro.QuadroViewModel
 import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavViewModel
+import io.github.lamba92.openaqua.app.feature.settings.SettingsViewModel
 import io.github.lamba92.openaqua.app.repository.AppDataRepository
 import io.github.lamba92.openaqua.app.repository.DeviceDataCacheService
 import io.github.lamba92.openaqua.app.repository.OpenAquaEngineApi
@@ -29,6 +30,7 @@ fun createAppModule(
     bindSingleton { AppDataRepository(coroutineScopeProvider = instance()) }
     bindSingleton { DeviceDataCacheService(openAquaEngineApi = instance(), coroutineScopeProvider = instance()) }
     bindSingleton { DeviceNavViewModel(dataCacheService = instance(), scopeProvider = instance()) }
+    bindSingleton { SettingsViewModel(appDataRepository = instance(), scopeProvider = instance()) }
     bindMultiton { deviceId: DeviceId ->
         OctoViewModel(
             repository = instance(),

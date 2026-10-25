@@ -13,6 +13,7 @@ sealed interface DeviceNavState {
         val devices: List<DeviceState>,
         val selectedDeviceId: DeviceId,
         val selectedTab: CommonDeviceTab = CommonDeviceTab.DEVICE_INFO,
+        val isSettingsSelected: Boolean = false,
     ) : DeviceNavState {
         val selectedDeviceState: DeviceState
             get() = devices.firstOrNull { it.device.id == selectedDeviceId } ?: devices.first()
@@ -27,6 +28,8 @@ sealed interface DeviceNavEvent {
     data class SelectTab(
         val tab: CommonDeviceTab,
     ) : DeviceNavEvent
+
+    data object SelectSettings : DeviceNavEvent
 }
 
 sealed interface DeviceNavEffect

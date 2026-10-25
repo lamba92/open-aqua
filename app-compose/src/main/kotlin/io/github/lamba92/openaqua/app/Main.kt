@@ -40,6 +40,7 @@ import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavEvent
 import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavState
 import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavViewModel
 import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavigationRailScaffold
+import io.github.lamba92.openaqua.app.feature.settings.SettingsScreen
 import io.github.lamba92.openaqua.app.theme.CyanBright
 import io.github.lamba92.openaqua.app.theme.ObsidianBg
 import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
@@ -148,26 +149,32 @@ private fun DeviceReady(
         state = state,
         onEvent = navViewModel::onEvent,
     ) {
-        when (selectedDevice.type) {
-            DeviceType.OCTO ->
-                OctoScreen(
-                    viewModel = rememberInstance(arg = selectedDevice.id),
-                    selectedTab = state.selectedTab,
-                    onSelectTab = onSelectTab,
-                )
-            DeviceType.QUADRO ->
-                QuadroScreen(
-                    viewModel = rememberInstance(arg = selectedDevice.id),
-                    selectedTab = state.selectedTab,
-                    onSelectTab = onSelectTab,
-                )
-            DeviceType.D5_NEXT ->
-                D5NextScreen(
-                    viewModel = rememberInstance(arg = selectedDevice.id),
-                    selectedTab = state.selectedTab,
-                    onSelectTab = onSelectTab,
-                )
-            else -> UnsupportedDevice(selectedDevice.type)
+        if (state.isSettingsSelected) {
+            SettingsScreen(
+                viewModel = rememberInstance(),
+            )
+        } else {
+            when (selectedDevice.type) {
+                DeviceType.OCTO ->
+                    OctoScreen(
+                        viewModel = rememberInstance(arg = selectedDevice.id),
+                        selectedTab = state.selectedTab,
+                        onSelectTab = onSelectTab,
+                    )
+                DeviceType.QUADRO ->
+                    QuadroScreen(
+                        viewModel = rememberInstance(arg = selectedDevice.id),
+                        selectedTab = state.selectedTab,
+                        onSelectTab = onSelectTab,
+                    )
+                DeviceType.D5_NEXT ->
+                    D5NextScreen(
+                        viewModel = rememberInstance(arg = selectedDevice.id),
+                        selectedTab = state.selectedTab,
+                        onSelectTab = onSelectTab,
+                    )
+                else -> UnsupportedDevice(selectedDevice.type)
+            }
         }
     }
 }

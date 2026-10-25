@@ -16,6 +16,7 @@
     <string name="nav_device_info">Device Info</string>
     <string name="nav_fans">Fans</string>
     <string name="nav_sensors">Sensors</string>
+    <string name="nav_settings">Settings</string>
 
     <!-- Device Info Screen -->
     <string name="device_telemetry_identity_subtitle">Hardware telemetry &amp; device identity</string>
@@ -104,4 +105,19 @@
     <string name="metric_offset_calibration">Offset Calibration</string>
     <string name="sensor_calibration_title">Sensor Calibration &amp; Virtual Feeds</string>
     <string name="sensor_calibration_desc">NTC offset calibration sliders, virtual temperature streaming, and curve source binding will be iterated here next.</string>
+
+    <!-- Settings Screen -->
+    <string name="settings_screen_title">Settings</string>
+    <string name="settings_screen_subtitle">Application preferences and local storage management</string>
+    <string name="settings_app_data_title">App data</string>
+    <string name="settings_open_data_folder_title">Open data folder</string>
+    <string name="settings_open_data_folder_desc">Open the directory where local OpenAqua settings such as custom fan and sensor names are stored</string>
+    <string name="settings_open_data_folder_button">Open data folder</string>
+    <string name="settings_restore_defaults_title">Restore defaults</string>
+    <string name="settings_restore_defaults_desc">Reset local OpenAqua settings such as custom fan and sensor names. Data and configurations stored on your hardware devices will NOT be changed.</string>
+    <string name="settings_restore_defaults_button">Restore defaults</string>
+    <string name="settings_reset_dialog_title">Restore default app data?</string>
+    <string name="settings_reset_dialog_message">This will only reset local OpenAqua settings such as custom fan and sensor names back to their defaults. Data and configurations stored on your hardware devices will NOT be changed.</string>
+    <string name="settings_reset_dialog_cancel">Do NOT reset</string>
+    <string name="settings_reset_dialog_confirm">Reset data</string>
 </resources>

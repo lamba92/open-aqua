@@ -65,13 +65,18 @@ class DeviceNavViewModel(
         when (event) {
             is DeviceNavEvent.SelectDevice -> selectDevice(event.deviceId)
             is DeviceNavEvent.SelectTab -> selectTab(event.tab)
+            DeviceNavEvent.SelectSettings -> selectSettings()
         }
     }
 
     private fun selectDevice(deviceId: DeviceId) {
         state.update { currentState ->
             when (currentState) {
-                is DeviceNavState.Ready -> currentState.copy(selectedDeviceId = deviceId)
+                is DeviceNavState.Ready ->
+                    currentState.copy(
+                        selectedDeviceId = deviceId,
+                        isSettingsSelected = false,
+                    )
                 else -> currentState
             }
         }
@@ -81,6 +86,15 @@ class DeviceNavViewModel(
         state.update { currentState ->
             when (currentState) {
                 is DeviceNavState.Ready -> currentState.copy(selectedTab = tab)
+                else -> currentState
+            }
+        }
+    }
+
+    private fun selectSettings() {
+        state.update { currentState ->
+            when (currentState) {
+                is DeviceNavState.Ready -> currentState.copy(isSettingsSelected = true)
                 else -> currentState
             }
         }
