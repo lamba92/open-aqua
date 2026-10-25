@@ -45,13 +45,13 @@ compose.desktop {
             packageVersion = "1.0.0"
 
             linux {
-                iconFile = rootProject.file(".github/assets/icon-512.png")
+                iconFile.set(rootProject.file("assets/generated/icon-512.png"))
             }
             windows {
-                iconFile = rootProject.file(".github/assets/favicon.ico")
+                iconFile.set(rootProject.file("assets/generated/favicon.ico"))
             }
             macOS {
-                iconFile = rootProject.file(".github/assets/icon.icns")
+                iconFile.set(rootProject.file("assets/generated/icon.icns"))
             }
         }
     }

@@ -1,8 +1,8 @@
 <div align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset=".github/assets/banner-readme-dark.svg" />
-    <source media="(prefers-color-scheme: light)" srcset=".github/assets/banner-readme-light.svg" />
-    <img alt="open-aqua" src=".github/assets/banner-readme-dark.svg" width="600" />
+    <source media="(prefers-color-scheme: dark)" srcset="assets/generated/banner-readme-dark.svg" />
+    <source media="(prefers-color-scheme: light)" srcset="assets/generated/banner-readme-light.svg" />
+    <img alt="open-aqua" src="assets/generated/banner-readme-dark.svg" width="600" />
   </picture>
 </div>
 
@@ -62,8 +62,7 @@ The engine binary provides a clean JSON / NDJSON command interface over stdin/st
 
 ```bash
 $ open-aqua-engine --help
-Usage: open-aqua-engine [<options>] <command> [<args>]...
-
+Usage: open-aqua-engine [<options>] <command> [<args>]...\n
   OpenAqua native hardware engine CLI. Provides low-level USB HID hardware
   control for Aquacomputer devices. Supported devices: OCTO (physically
   verified), QUADRO (experimental), D5 Next (experimental).
@@ -256,7 +255,7 @@ Binaries will be placed in `engine/engine-prod/build/bin/<target>/releaseExecuta
 
 - **[ARCHITECTURE.md](ARCHITECTURE.md)**: Detailed technical specification of the multi-module architecture, generic device abstraction, protocol byte offsets, CRC-16 implementation, and Aquasuite curve math replication.
 - **[FEATURES.md](FEATURES.md)**: Functional and visual specification for the upcoming Compose Desktop UI and JSON profile management.
-- **[.github/assets/BRAND_GUIDELINES.md](.github/assets/BRAND_GUIDELINES.md)**: Official brand color palette, typography, and icon asset specifications.
+- **[assets/BRAND_GUIDELINES.md](assets/BRAND_GUIDELINES.md)**: Official brand color palette, typography, and icon asset specifications.
 - **[docker/windows-test/README.md](docker/windows-test/README.md)**: Automated Docker + QEMU/KVM Windows testing environment for validating Windows builds against physical USB devices.
 
 ---

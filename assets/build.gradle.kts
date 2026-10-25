@@ -25,11 +25,11 @@ dependencies {
 
 val generateBrandAssets by tasks.registering(JavaExec::class) {
     group = "branding"
-    description = "Generates all OpenAqua SVG, PNG, ICO, and ICNS brand assets and syncs them into the repository."
+    description = "Generates all OpenAqua SVG, PNG, ICO, and ICNS brand assets into assets/generated/ and syncs runtime icons."
     classpath = sourceSets.main.get().runtimeClasspath
     mainClass.set(application.mainClass)
     args(
-        rootProject.file(".github/assets").absolutePath,
+        project.file("generated").absolutePath,
         rootProject.file("app-compose/src/main/composeResources").absolutePath,
     )
     jvmArgs("-Djava.awt.headless=true")

@@ -1,6 +1,7 @@
 package io.github.lamba92.openaqua.brand
 
 import io.github.lamba92.openaqua.theme.OpenAquaPalette
+import io.github.lamba92.openaqua.theme.toAwtColor
 import java.awt.BasicStroke
 import java.awt.Font
 import java.awt.Graphics2D
@@ -32,10 +33,9 @@ object BrandTransforms {
 }
 
 fun main(args: Array<String>) {
-    val githubAssetsDir = File(args.getOrNull(0) ?: ".github/assets").apply { mkdirs() }
+    val assetsDir = File(args.getOrNull(0) ?: "assets").apply { mkdirs() }
     val composeResourcesDir = File(args.getOrNull(1) ?: "app-compose/src/main/composeResources")
     val composeDrawableDir = File(composeResourcesDir, "drawable").apply { mkdirs() }
-    val composeFilesDir = File(composeResourcesDir, "files").apply { mkdirs() }
 
     // 1. Generate Master SVGs
     val iconTransparentSvg = SvgGenerator.iconTransparent()
@@ -45,12 +45,12 @@ fun main(args: Array<String>) {
     val bannerReadmeLightSvg = SvgGenerator.bannerReadme(darkMode = false)
     val bannerReadmeDarkSvg = SvgGenerator.bannerReadme(darkMode = true)
 
-    File(githubAssetsDir, "icon-transparent.svg").writeText(iconTransparentSvg)
-    File(githubAssetsDir, "app-icon-squircle.svg").writeText(appIconSquircleSvg)
-    File(githubAssetsDir, "favicon-optimized.svg").writeText(faviconOptimizedSvg)
-    File(githubAssetsDir, "banner-social-1200x630.svg").writeText(bannerSocialSvg)
-    File(githubAssetsDir, "banner-readme-light.svg").writeText(bannerReadmeLightSvg)
-    File(githubAssetsDir, "banner-readme-dark.svg").writeText(bannerReadmeDarkSvg)
+    File(assetsDir, "icon-transparent.svg").writeText(iconTransparentSvg)
+    File(assetsDir, "app-icon-squircle.svg").writeText(appIconSquircleSvg)
+    File(assetsDir, "favicon-optimized.svg").writeText(faviconOptimizedSvg)
+    File(assetsDir, "banner-social-1200x630.svg").writeText(bannerSocialSvg)
+    File(assetsDir, "banner-readme-light.svg").writeText(bannerReadmeLightSvg)
+    File(assetsDir, "banner-readme-dark.svg").writeText(bannerReadmeDarkSvg)
 
     // 2. Rasterize PNGs
     val appleTouchPng = RasterRenderer.renderSquircleIconPng(180)
@@ -58,35 +58,25 @@ fun main(args: Array<String>) {
     val icon512Png = RasterRenderer.renderSquircleIconPng(512)
     val bannerSocialPng = RasterRenderer.renderSocialBannerPng()
 
-    File(githubAssetsDir, "apple-touch-icon.png").writeBytes(appleTouchPng)
-    File(githubAssetsDir, "icon-192.png").writeBytes(icon192Png)
-    File(githubAssetsDir, "icon-512.png").writeBytes(icon512Png)
-    File(githubAssetsDir, "banner-social-1200x630.png").writeBytes(bannerSocialPng)
+    File(assetsDir, "apple-touch-icon.png").writeBytes(appleTouchPng)
+    File(assetsDir, "icon-192.png").writeBytes(icon192Png)
+    File(assetsDir, "icon-512.png").writeBytes(icon512Png)
+    File(assetsDir, "banner-social-1200x630.png").writeBytes(bannerSocialPng)
 
     // 3. Generate multi-resolution ICO & macOS ICNS containers
     val faviconIco = BinaryContainerEncoder.encodeIco(listOf(16, 32, 48, 64, 256))
     val macOsIcns = BinaryContainerEncoder.encodeIcns()
 
-    File(githubAssetsDir, "favicon.ico").writeBytes(faviconIco)
-    File(githubAssetsDir, "icon.icns").writeBytes(macOsIcns)
+    File(assetsDir, "favicon.ico").writeBytes(faviconIco)
+    File(assetsDir, "icon.icns").writeBytes(macOsIcns)
 
-    // 4. Sync into Compose Multiplatform resources
+    // 4. Sync runtime icons into Compose Multiplatform resources
     File(composeDrawableDir, "ic_openaqua.svg").writeText(iconTransparentSvg)
-    File(composeDrawableDir, "ic_app_squircle.svg").writeText(appIconSquircleSvg)
     File(composeDrawableDir, "ic_app_icon.png").writeBytes(icon512Png)
 
-    File(composeFilesDir, "icon-transparent.svg").writeText(iconTransparentSvg)
-    File(composeFilesDir, "app-icon-squircle.svg").writeText(appIconSquircleSvg)
-    File(composeFilesDir, "favicon-optimized.svg").writeText(faviconOptimizedSvg)
-    File(composeFilesDir, "apple-touch-icon.png").writeBytes(appleTouchPng)
-    File(composeFilesDir, "icon-192.png").writeBytes(icon192Png)
-    File(composeFilesDir, "icon-512.png").writeBytes(icon512Png)
-    File(composeFilesDir, "favicon.ico").writeBytes(faviconIco)
-    File(composeFilesDir, "icon.icns").writeBytes(macOsIcns)
-
     println("Generated and synced OpenAqua brand assets to:")
-    println("  - ${githubAssetsDir.absolutePath}")
-    println("  - ${composeResourcesDir.absolutePath}")
+    println("  - ${assetsDir.absolutePath}")
+    println("  - ${composeDrawableDir.absolutePath}")
 }
 
 object SvgGenerator {

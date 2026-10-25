@@ -13,9 +13,9 @@ value class ThemeColor(
 
     val hex: String
         get() = "#%02X%02X%02X".format(red, green, blue)
-
-    fun toAwtColor(): AwtColor = AwtColor(red, green, blue, alpha)
 }
+
+fun ThemeColor.toAwtColor(): AwtColor = AwtColor(red, green, blue, alpha)
 
 object OpenAquaPalette {
     // Master Brand Tokens

@@ -3,5 +3,5 @@
 tasks.register("generateBrandAssets") {
     group = "branding"
     description = "Generates all OpenAqua SVG, PNG, ICO, and ICNS brand assets and syncs them into the repository."
-    dependsOn(":brand-assets:generateBrandAssets")
+    dependsOn(":assets:generateBrandAssets")
 }
