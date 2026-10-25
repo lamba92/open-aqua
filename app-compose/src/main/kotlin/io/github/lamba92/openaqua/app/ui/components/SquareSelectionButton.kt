@@ -7,11 +7,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -32,6 +33,12 @@ import io.github.lamba92.openaqua.app.theme.SurfaceContainerLow
 import io.github.lamba92.openaqua.app.theme.TextMuted
 import io.github.lamba92.openaqua.app.theme.TextPrimary
 import io.github.lamba92.openaqua.app.theme.TextSecondary
+
+private val TrimmedLineHeightStyle =
+    LineHeightStyle(
+        alignment = LineHeightStyle.Alignment.Center,
+        trim = LineHeightStyle.Trim.Both,
+    )
 
 @Composable
 fun SquareSelectionButton(
@@ -65,49 +72,49 @@ fun SquareSelectionButton(
                             },
                         shape = RoundedCornerShape(12.dp),
                     ).clickable(onClick = onClick)
-                    .padding(6.dp),
-            contentAlignment = Alignment.Center,
+                    .padding(8.dp),
         ) {
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.SpaceBetween,
+            // Top badge (e.g. "CH 1", "T1")
+            if (badgeText != null) {
+                Text(
+                    text = badgeText,
+                    color = if (selected) ElectricCyan else TextMuted,
+                    fontSize = 10.sp,
+                    lineHeight = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.Monospace,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    style = LocalTextStyle.current.copy(lineHeightStyle = TrimmedLineHeightStyle),
+                    modifier = Modifier.align(Alignment.TopCenter),
+                )
+            }
+
+            // Center Icon
+            Box(
+                modifier =
+                    Modifier
+                        .size(26.dp)
+                        .align(Alignment.Center),
+                contentAlignment = Alignment.Center,
             ) {
-                // Top badge (e.g. "CH 1", "T1")
-                if (badgeText != null) {
-                    Text(
-                        text = badgeText,
-                        color = if (selected) ElectricCyan else TextMuted,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = FontFamily.Monospace,
-                    )
-                } else {
-                    Box(modifier = Modifier.size(1.dp))
-                }
+                icon()
+            }
 
-                // Center Icon
-                Box(
-                    modifier = Modifier.size(26.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    icon()
-                }
-
-                // Bottom value text (e.g. "2184 RPM", "34.8°C")
-                if (valueText != null) {
-                    Text(
-                        text = valueText,
-                        color = if (selected) TextPrimary else TextSecondary,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        fontFamily = FontFamily.Monospace,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                } else {
-                    Box(modifier = Modifier.size(1.dp))
-                }
+            // Bottom value text (e.g. "2184 RPM", "34.8°C")
+            if (valueText != null) {
+                Text(
+                    text = valueText,
+                    color = if (selected) TextPrimary else TextSecondary,
+                    fontSize = 11.sp,
+                    lineHeight = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    fontFamily = FontFamily.Monospace,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    style = LocalTextStyle.current.copy(lineHeightStyle = TrimmedLineHeightStyle),
+                    modifier = Modifier.align(Alignment.BottomCenter),
+                )
             }
         }
 

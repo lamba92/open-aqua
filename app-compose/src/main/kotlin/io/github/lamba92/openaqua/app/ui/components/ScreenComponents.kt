@@ -49,17 +49,19 @@ fun ScreenHeader(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column {
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
                 text = title,
                 color = TextPrimary,
                 fontSize = 24.sp,
+                lineHeight = 28.sp,
                 fontWeight = FontWeight.Bold,
             )
             Text(
                 text = subtitle,
                 color = TextMuted,
                 fontSize = 13.sp,
+                lineHeight = 18.sp,
             )
         }
         trailingContent?.invoke(this)
@@ -103,6 +105,7 @@ fun ChannelPageScaffold(
                     text = selectorHeader,
                     color = ElectricCyan,
                     fontSize = 12.sp,
+                    lineHeight = 16.sp,
                     fontWeight = FontWeight.Bold,
                     fontFamily = FontFamily.Monospace,
                 )
@@ -145,6 +148,7 @@ fun SectionHeader(
             text = title,
             color = CyanBright,
             fontSize = 14.sp,
+            lineHeight = 18.sp,
             fontWeight = FontWeight.Bold,
         )
     }
@@ -172,17 +176,19 @@ fun ChannelDetailHeader(
                 tint = CyanBright,
                 modifier = Modifier.size(20.dp),
             )
-            Column {
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
                     text = title,
                     color = TextPrimary,
                     fontSize = 16.sp,
+                    lineHeight = 20.sp,
                     fontWeight = FontWeight.Bold,
                 )
                 Text(
                     text = subtitle,
                     color = TextMuted,
                     fontSize = 12.sp,
+                    lineHeight = 16.sp,
                 )
             }
         }
@@ -220,12 +226,14 @@ fun FeaturePlaceholderBox(
                 text = title,
                 color = TextPrimary,
                 fontSize = 14.sp,
+                lineHeight = 18.sp,
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
                 text = description,
                 color = TextMuted,
                 fontSize = 12.sp,
+                lineHeight = 16.sp,
                 fontFamily = FontFamily.Monospace,
             )
         }
@@ -247,17 +255,19 @@ fun MetricCard(
                 .background(SurfaceContainerHigh)
                 .border(1.dp, BorderOutline, RoundedCornerShape(8.dp))
                 .padding(10.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Text(
             text = label,
             color = TextMuted,
             fontSize = 11.sp,
+            lineHeight = 14.sp,
         )
         Text(
             text = value,
             color = TextPrimary,
             fontSize = 14.sp,
+            lineHeight = 18.sp,
             fontWeight = FontWeight.Bold,
             fontFamily = FontFamily.Monospace,
         )
