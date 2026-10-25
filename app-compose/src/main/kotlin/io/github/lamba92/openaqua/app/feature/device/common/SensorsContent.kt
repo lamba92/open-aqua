@@ -280,7 +280,7 @@ fun SensorsContent(
 
 @Composable
 private fun SensorItem.resolveName(): String =
-    when (kind) {
+    customName ?: when (kind) {
         SensorChannelKind.PHYSICAL_NTC -> stringResource(Res.string.sensor_channel_name, channel + 1)
         SensorChannelKind.VIRTUAL -> stringResource(Res.string.sensor_virtual_name, channel + 1)
         SensorChannelKind.INTEGRATED_COOLANT -> stringResource(Res.string.sensor_coolant_name)

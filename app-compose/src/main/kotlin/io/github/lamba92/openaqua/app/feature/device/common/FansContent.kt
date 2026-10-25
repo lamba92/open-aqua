@@ -80,7 +80,7 @@ fun FansContent(
             fans.forEach { fan ->
                 val fanNumber = fan.channel + 1
                 FanSelectionTile(
-                    name = stringResource(Res.string.fan_channel_name, fanNumber),
+                    name = fan.customName ?: stringResource(Res.string.fan_channel_name, fanNumber),
                     pinLabel = stringResource(Res.string.fan_channel_pin, fanNumber),
                     rpm = fan.telemetry.rpm,
                     selected = fan.channel == selectedChannel,
@@ -92,7 +92,7 @@ fun FansContent(
             if (selectedFan != null) {
                 val fanNumber = selectedFan.channel + 1
                 FanChannelDetailCard(
-                    name = stringResource(Res.string.fan_channel_name, fanNumber),
+                    name = selectedFan.customName ?: stringResource(Res.string.fan_channel_name, fanNumber),
                     pinLabel = stringResource(Res.string.fan_channel_pin, fanNumber),
                     fan = selectedFan,
                 )

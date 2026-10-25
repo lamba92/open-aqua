@@ -37,6 +37,16 @@ sealed interface D5NextEvent {
     data class SelectSensor(
         val channel: Int,
     ) : D5NextEvent
+
+    data class RenameFan(
+        val channel: Int,
+        val name: String?,
+    ) : D5NextEvent
+
+    data class RenameSensor(
+        val channel: Int,
+        val name: String?,
+    ) : D5NextEvent
 }
 
 sealed interface D5NextEffect

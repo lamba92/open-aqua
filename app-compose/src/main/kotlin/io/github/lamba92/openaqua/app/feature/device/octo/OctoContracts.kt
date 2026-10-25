@@ -31,6 +31,16 @@ sealed interface OctoEvent {
     data class SelectSensor(
         val channel: Int,
     ) : OctoEvent
+
+    data class RenameFan(
+        val channel: Int,
+        val name: String?,
+    ) : OctoEvent
+
+    data class RenameSensor(
+        val channel: Int,
+        val name: String?,
+    ) : OctoEvent
 }
 
 sealed interface OctoEffect

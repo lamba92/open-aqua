@@ -9,6 +9,7 @@ import io.github.lamba92.openaqua.app.feature.device.d5next.D5NextViewModel
 import io.github.lamba92.openaqua.app.feature.device.octo.OctoViewModel
 import io.github.lamba92.openaqua.app.feature.device.quadro.QuadroViewModel
 import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavViewModel
+import io.github.lamba92.openaqua.app.repository.AppDataRepository
 import io.github.lamba92.openaqua.app.repository.DeviceDataCacheService
 import io.github.lamba92.openaqua.app.repository.OpenAquaEngineApi
 import io.github.lamba92.openaqua.model.DeviceId
@@ -25,12 +26,14 @@ fun createAppModule(
 ) = DI.Module("appModule") {
     bindSingleton<CoroutineScopeProvider> { scopeProvider }
     bindSingleton<OpenAquaEngineApi> { OpenAquaEngineApi(enginePath = enginePath) }
+    bindSingleton { AppDataRepository(coroutineScopeProvider = instance()) }
     bindSingleton { DeviceDataCacheService(openAquaEngineApi = instance(), coroutineScopeProvider = instance()) }
     bindSingleton { DeviceNavViewModel(dataCacheService = instance(), scopeProvider = instance()) }
     bindMultiton { deviceId: DeviceId ->
         OctoViewModel(
             repository = instance(),
             cacheService = instance(),
+            appDataRepository = instance(),
             scopeProvider = instance(),
             deviceId = deviceId,
         )
@@ -39,6 +42,7 @@ fun createAppModule(
         QuadroViewModel(
             repository = instance(),
             cacheService = instance(),
+            appDataRepository = instance(),
             scopeProvider = instance(),
             deviceId = deviceId,
         )
@@ -47,6 +51,7 @@ fun createAppModule(
         D5NextViewModel(
             repository = instance(),
             cacheService = instance(),
+            appDataRepository = instance(),
             scopeProvider = instance(),
             deviceId = deviceId,
         )

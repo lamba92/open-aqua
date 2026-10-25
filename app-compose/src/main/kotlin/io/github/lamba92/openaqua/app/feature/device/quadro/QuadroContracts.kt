@@ -31,6 +31,16 @@ sealed interface QuadroEvent {
     data class SelectSensor(
         val channel: Int,
     ) : QuadroEvent
+
+    data class RenameFan(
+        val channel: Int,
+        val name: String?,
+    ) : QuadroEvent
+
+    data class RenameSensor(
+        val channel: Int,
+        val name: String?,
+    ) : QuadroEvent
 }
 
 sealed interface QuadroEffect

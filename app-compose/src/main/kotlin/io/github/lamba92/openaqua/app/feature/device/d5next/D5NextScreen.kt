@@ -72,9 +72,9 @@ private fun D5NextCoolingContent(
     onSelectTarget: (D5NextCoolingTarget) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val pumpName = stringResource(Res.string.d5_pump_name)
+    val pumpName = pump.customName ?: stringResource(Res.string.d5_pump_name)
     val pumpPin = stringResource(Res.string.d5_pump_pin)
-    val fanName = stringResource(Res.string.d5_fan_name)
+    val fanName = fan.customName ?: stringResource(Res.string.d5_fan_name)
     val fanPin = stringResource(Res.string.d5_fan_pin)
 
     FansPageScaffold(
