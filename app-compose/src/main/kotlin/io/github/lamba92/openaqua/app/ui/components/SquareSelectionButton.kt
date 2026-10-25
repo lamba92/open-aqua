@@ -1,10 +1,9 @@
 package io.github.lamba92.openaqua.app.ui.components
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,6 +14,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,6 +37,7 @@ import io.github.lamba92.openaqua.app.theme.SurfaceContainerLow
 import io.github.lamba92.openaqua.app.theme.TextMuted
 import io.github.lamba92.openaqua.app.theme.TextPrimary
 import io.github.lamba92.openaqua.app.theme.TextSecondary
+import java.awt.Toolkit
 
 private val TrimmedLineHeightStyle =
     LineHeightStyle(
@@ -41,7 +45,6 @@ private val TrimmedLineHeightStyle =
         trim = LineHeightStyle.Trim.Both,
     )
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun SquareSelectionButton(
     name: String,
@@ -54,6 +57,16 @@ fun SquareSelectionButton(
     valueText: String? = null,
     icon: @Composable () -> Unit,
 ) {
+    val doubleClickInterval =
+        remember {
+            try {
+                (Toolkit.getDefaultToolkit().getDesktopProperty("awt.multiClickInterval") as? Number)?.toLong() ?: 500L
+            } catch (_: Throwable) {
+                500L
+            }
+        }
+    var lastClickTime by remember { mutableStateOf(0L) }
+
     Column(
         modifier = modifier.width(size + 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -74,10 +87,18 @@ fun SquareSelectionButton(
                                 BorderStroke(1.dp, BorderOutline)
                             },
                         shape = RoundedCornerShape(12.dp),
-                    ).combinedClickable(
-                        onClick = onClick,
-                        onDoubleClick = onDoubleClick,
-                    )
+                    ).clickable {
+                        onClick()
+                        if (onDoubleClick != null) {
+                            val now = System.currentTimeMillis()
+                            if (now - lastClickTime <= doubleClickInterval) {
+                                lastClickTime = 0L
+                                onDoubleClick()
+                            } else {
+                                lastClickTime = now
+                            }
+                        }
+                    }
                     .padding(8.dp),
         ) {
             // Top badge (e.g. "CH 1", "T1")
