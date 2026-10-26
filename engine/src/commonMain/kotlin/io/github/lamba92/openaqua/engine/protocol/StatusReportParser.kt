@@ -55,9 +55,13 @@ object StatusReportParser {
         val currentAmps = round((rawCurrent.toDouble() / 1000.0) * 1000.0) / 1000.0
         val powerWatts = round((rawPower.toDouble() / 100.0) * 100.0) / 100.0
 
+        val status = if (baseOffset + 12 < report.size) report[baseOffset + 12].toInt() else 0
+        val isDisconnected = rawRpm == 0 && ((status and 0x0C) != 0 || (currentAmps == 0.0 && powerWatts == 0.0))
+        val rpm = if (isDisconnected) null else rawRpm
+
         return FanTelemetry(
             channel = channel,
-            rpm = rawRpm,
+            rpm = rpm,
             powerWatts = powerWatts,
             voltageVolts = voltageVolts,
             currentAmps = currentAmps,

@@ -252,7 +252,11 @@ class ProtocolTest {
     @Test
     fun testTelemetryPolymorphicSerialization() {
         val json = Json { encodeDefaults = true }
-        val fans = listOf(FanTelemetry(0, 2000, 5.0, 12.0, 0.4, 50.0))
+        val fans =
+            listOf(
+                FanTelemetry(0, 2000, 5.0, 12.0, 0.4, 50.0),
+                FanTelemetry(1, null, 0.0, 12.0, 0.0, 100.0),
+            )
         val sensors = listOf(SensorTelemetry(0, 25.5))
         val telemetry: DeviceTelemetry = QuadroTelemetry(fans, sensors, flowRateDlH = 200)
 
@@ -263,7 +267,9 @@ class ProtocolTest {
         val deserialized = json.decodeFromString(DeviceTelemetry.serializer(), serialized)
         assertTrue(deserialized is QuadroTelemetry)
         assertEquals(200, deserialized.flowRateDlH)
-        assertEquals(1, deserialized.fans.size)
+        assertEquals(2, deserialized.fans.size)
+        assertEquals(2000, deserialized.fans[0].rpm)
+        assertEquals(null, deserialized.fans[1].rpm)
     }
 
     @Test

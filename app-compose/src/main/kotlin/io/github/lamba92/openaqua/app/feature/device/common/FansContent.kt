@@ -40,9 +40,11 @@ import open_aqua.app_compose.generated.resources.fan_channels_header
 import open_aqua.app_compose.generated.resources.fan_current_value
 import open_aqua.app_compose.generated.resources.fan_curve_studio_desc
 import open_aqua.app_compose.generated.resources.fan_curve_studio_title
+import open_aqua.app_compose.generated.resources.fan_disconnected
 import open_aqua.app_compose.generated.resources.fan_hardware_pin
 import open_aqua.app_compose.generated.resources.fan_power_value
 import open_aqua.app_compose.generated.resources.fan_pwm_value
+import open_aqua.app_compose.generated.resources.fan_rpm_short_disconnected
 import open_aqua.app_compose.generated.resources.fan_rpm_value
 import open_aqua.app_compose.generated.resources.fan_settings_title
 import open_aqua.app_compose.generated.resources.fan_voltage_value
@@ -137,7 +139,7 @@ fun FansPageScaffold(
 fun FanSelectionTile(
     name: String,
     pinLabel: String,
-    rpm: Int,
+    rpm: Int?,
     selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -149,13 +151,16 @@ fun FanSelectionTile(
         onClick = onClick,
         onDoubleClick = onDoubleClick,
         badgeText = pinLabel,
-        valueText = stringResource(Res.string.fan_rpm_value, rpm.coerceAtLeast(0)),
+        valueText =
+            rpm?.let {
+                stringResource(Res.string.fan_rpm_value, it.coerceAtLeast(0))
+            } ?: stringResource(Res.string.fan_rpm_short_disconnected),
         modifier = modifier,
         icon = {
             Icon(
                 painter = painterResource(Res.drawable.ic_fan),
                 contentDescription = name,
-                tint = if (selected) CyanBright else (if (rpm > 0) CoolantTeal else TextMuted),
+                tint = if (selected) CyanBright else (if (rpm != null && rpm > 0) CoolantTeal else TextMuted),
                 modifier = Modifier.size(24.dp),
             )
         },
@@ -206,7 +211,10 @@ fun FanChannelDetailCard(
         ) {
             FanMetricCard(
                 label = stringResource(Res.string.metric_speed),
-                value = stringResource(Res.string.fan_rpm_value, tel.rpm),
+                value =
+                    tel.rpm?.let {
+                        stringResource(Res.string.fan_rpm_value, it)
+                    } ?: stringResource(Res.string.fan_disconnected),
             )
             FanMetricCard(
                 label = stringResource(Res.string.metric_pwm_duty),

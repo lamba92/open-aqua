@@ -13,7 +13,7 @@ data class SensorTelemetry(
 @Serializable
 data class FanTelemetry(
     val channel: Int,
-    val rpm: Int,
+    val rpm: Int?,
     val powerWatts: Double,
     val voltageVolts: Double,
     val currentAmps: Double,

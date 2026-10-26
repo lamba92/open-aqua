@@ -204,12 +204,12 @@ class MockHardwareController : HardwareController {
                     fanConfig,
                     allSensors,
                     maxRpm = if (ch == 0) 2500 else 1800,
-                    maxAmps = if (ch == 0) 0.70 else 0.30
+                    maxAmps = if (ch == 0) 0.70 else 0.30,
                 )
             }
 
         val flowRateDlH =
-            if (fans.any { it.rpm > 0 }) {
+            if (fans.any { (it.rpm ?: 0) > 0 }) {
                 val pumpPwm = fans.firstOrNull { it.channel == 0 }?.pwmPercent ?: 50.0
                 round(60.0 + (pumpPwm / 100.0) * 140.0).toInt()
             } else {
@@ -241,7 +241,7 @@ class MockHardwareController : HardwareController {
             }
 
         val flowRateDlH =
-            if (fans.any { it.rpm > 0 }) {
+            if (fans.any { (it.rpm ?: 0) > 0 }) {
                 val fan0Pwm = fans.firstOrNull { it.channel == 0 }?.pwmPercent ?: 50.0
                 round(50.0 + (fan0Pwm / 100.0) * 120.0).toInt()
             } else {
@@ -290,7 +290,7 @@ class MockHardwareController : HardwareController {
         return if (finalPwm == 0.0) {
             FanTelemetry(
                 channel = channel,
-                rpm = 0,
+                rpm = null,
                 powerWatts = 0.0,
                 voltageVolts = 0.0,
                 currentAmps = 0.0,
