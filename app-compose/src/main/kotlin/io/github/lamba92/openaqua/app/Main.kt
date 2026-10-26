@@ -42,15 +42,12 @@ import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavState
 import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavViewModel
 import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavigationRailScaffold
 import io.github.lamba92.openaqua.app.feature.settings.SettingsScreen
+import io.github.lamba92.openaqua.app.model.AppStoredData
 import io.github.lamba92.openaqua.app.repository.AppDataRepository
-import io.github.lamba92.openaqua.app.theme.AppFontFamily
 import io.github.lamba92.openaqua.app.theme.AppMetrics
-import io.github.lamba92.openaqua.app.theme.AppMetricsScale
-import io.github.lamba92.openaqua.app.theme.FontScaleConstants
 import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
 import io.github.lamba92.openaqua.app.util.EngineExtractor
 import io.github.lamba92.openaqua.model.DeviceType
-import io.github.lamba92.openaqua.theme.AppColorScheme
 import io.github.lamba92.openaqua.theme.ThemePalette
 import kotlinx.coroutines.runBlocking
 import open_aqua.app_compose.generated.resources.Res
@@ -105,30 +102,24 @@ fun main() {
 @Composable
 private fun OpenAquaThemedApp(appDataRepository: AppDataRepository = rememberInstance()) {
     val appDataState by appDataRepository.state.collectAsState()
+    val storedData = (appDataState as? AppDataRepository.State.Ready)?.data ?: AppStoredData()
     val palette =
-        remember(appDataState) {
-            val scheme = (appDataState as? AppDataRepository.State.Ready)?.data?.colorScheme ?: AppColorScheme.HYDRO_DARK
-            ThemePalette.fromColorScheme(scheme)
+        remember(storedData.colorScheme) {
+            ThemePalette.fromColorScheme(storedData.colorScheme)
         }
     val metrics =
-        remember(appDataState) {
-            val scale = (appDataState as? AppDataRepository.State.Ready)?.data?.metricsScale ?: AppMetricsScale.STANDARD
-            AppMetrics.fromScale(scale)
+        remember(storedData.metricsScale) {
+            AppMetrics.fromScale(storedData.metricsScale)
         }
-    val fontFamily =
-        remember(appDataState) {
-            (appDataState as? AppDataRepository.State.Ready)?.data?.fontFamily ?: AppFontFamily.JETBRAINS_MONO
-        }
-    val fontSp =
-        remember(appDataState) {
-            (appDataState as? AppDataRepository.State.Ready)?.data?.fontSp ?: FontScaleConstants.DEFAULT_SP
-        }
+    val fontFamily = storedData.fontFamily
+    val fontSp = storedData.fontSp
 
     OpenAquaTheme(
         palette = palette,
         metrics = metrics,
         fontFamilyPreference = fontFamily,
         fontSp = fontSp,
+        preferences = storedData,
     ) {
         OpenAquaApp()
     }

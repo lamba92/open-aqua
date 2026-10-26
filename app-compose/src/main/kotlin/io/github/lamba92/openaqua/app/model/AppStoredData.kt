@@ -13,6 +13,9 @@ data class AppStoredData(
     val metricsScale: AppMetricsScale = AppMetricsScale.STANDARD,
     val fontSp: Int = FontScaleConstants.DEFAULT_SP,
     val fontFamily: AppFontFamily = AppFontFamily.JETBRAINS_MONO,
+    val hideDisconnectedFans: Boolean = false,
+    val hideDisconnectedSensors: Boolean = false,
+    val hideUnconfiguredVirtualSensors: Boolean = false,
     val devices: Map<DeviceId, DeviceStoredData> = emptyMap(),
 )
 

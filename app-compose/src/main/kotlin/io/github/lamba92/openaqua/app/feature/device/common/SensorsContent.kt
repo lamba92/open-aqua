@@ -28,6 +28,8 @@ import io.github.lamba92.openaqua.app.ui.components.FeaturePlaceholderBox
 import io.github.lamba92.openaqua.app.ui.components.MetricCard
 import io.github.lamba92.openaqua.app.ui.components.OpenAquaOutlinedButton
 import io.github.lamba92.openaqua.app.ui.components.RenameDialog
+import io.github.lamba92.openaqua.app.ui.components.VisibilityEmptyState
+import io.github.lamba92.openaqua.app.ui.components.VisibilityFilterChip
 import io.github.lamba92.openaqua.app.ui.components.sensorTemperatureColor
 import open_aqua.app_compose.generated.resources.Res
 import open_aqua.app_compose.generated.resources.action_rename
@@ -60,6 +62,7 @@ import open_aqua.app_compose.generated.resources.sensor_virtual_pin
 import open_aqua.app_compose.generated.resources.sensors_screen_subtitle
 import open_aqua.app_compose.generated.resources.sensors_screen_title
 import open_aqua.app_compose.generated.resources.temperature_probes_header
+import open_aqua.app_compose.generated.resources.visibility_no_sensors_visible
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
@@ -72,7 +75,38 @@ fun SensorsContent(
     modifier: Modifier = Modifier,
     onRenameSensor: ((channel: Int, name: String?) -> Unit)? = null,
 ) {
-    val selectedSensor = sensors.firstOrNull { it.channel == selectedChannel } ?: sensors.firstOrNull()
+    val preferences = OpenAquaTheme.preferences
+    var showAllOverride by remember { mutableStateOf(false) }
+
+    val isSensorHidden: (SensorItem) -> Boolean = { sensor ->
+        when (sensor.kind) {
+            SensorChannelKind.PHYSICAL_NTC -> preferences.hideDisconnectedSensors && sensor.telemetry.tempCelsius == null
+            SensorChannelKind.VIRTUAL -> preferences.hideUnconfiguredVirtualSensors && sensor.telemetry.tempCelsius == null
+            SensorChannelKind.INTEGRATED_COOLANT -> false
+        }
+    }
+
+    val hiddenCount =
+        remember(sensors, preferences.hideDisconnectedSensors, preferences.hideUnconfiguredVirtualSensors) {
+            sensors.count(isSensorHidden)
+        }
+
+    val displayedSensors =
+        remember(
+            sensors,
+            showAllOverride,
+            preferences.hideDisconnectedSensors,
+            preferences.hideUnconfiguredVirtualSensors,
+        ) {
+            if (showAllOverride) {
+                sensors
+            } else {
+                sensors.filterNot(isSensorHidden)
+            }
+        }
+
+    val selectedSensor =
+        displayedSensors.firstOrNull { it.channel == selectedChannel } ?: displayedSensors.firstOrNull()
     var renamingSensor by remember { mutableStateOf<SensorItem?>(null) }
     val colors = OpenAquaTheme.colors
     val metrics = OpenAquaTheme.metrics
@@ -82,9 +116,21 @@ fun SensorsContent(
         subtitle = stringResource(Res.string.sensors_screen_subtitle),
         selectorHeader = stringResource(Res.string.temperature_probes_header),
         modifier = modifier,
+        selectorHeaderTrailing =
+            if (hiddenCount > 0 || showAllOverride) {
+                {
+                    VisibilityFilterChip(
+                        hiddenCount = hiddenCount,
+                        showingAll = showAllOverride,
+                        onClick = { showAllOverride = !showAllOverride },
+                    )
+                }
+            } else {
+                null
+            },
         selectorContent = {
-            sensors.forEach { sensor ->
-                val isSelected = sensor.channel == selectedChannel
+            displayedSensors.forEach { sensor ->
+                val isSelected = sensor.channel == selectedSensor?.channel
                 val temp = sensor.telemetry.tempCelsius
                 val sensorName = sensor.resolveName()
                 val sensorPin = sensor.resolvePinLabel()
@@ -99,7 +145,12 @@ fun SensorsContent(
             }
         },
         detailContent = {
-            if (selectedSensor != null) {
+            if (displayedSensors.isEmpty()) {
+                VisibilityEmptyState(
+                    message = stringResource(Res.string.visibility_no_sensors_visible),
+                    onShowAll = { showAllOverride = true },
+                )
+            } else if (selectedSensor != null) {
                 val selectedSensorName = selectedSensor.resolveName()
                 val selectedSensorPin = selectedSensor.resolvePinLabel()
                 Column(
@@ -109,7 +160,7 @@ fun SensorsContent(
                             .clip(RoundedCornerShape(metrics.radiusLarge))
                             .background(colors.surfaceLow)
                             .border(metrics.strokeThin, colors.borderOutline, RoundedCornerShape(metrics.radiusLarge))
-                            .padding(metrics.spacingXl),
+                            .padding(metrics.spacingXxl),
                     verticalArrangement = Arrangement.spacedBy(metrics.spacingLg),
                 ) {
                     ChannelDetailHeader(

@@ -23,6 +23,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -55,18 +57,27 @@ import open_aqua.app_compose.generated.resources.font_preset_small
 import open_aqua.app_compose.generated.resources.font_preset_standard
 import open_aqua.app_compose.generated.resources.ic_folder_open
 import open_aqua.app_compose.generated.resources.ic_restart_alt
+import open_aqua.app_compose.generated.resources.ic_sensors
 import open_aqua.app_compose.generated.resources.ic_settings
 import open_aqua.app_compose.generated.resources.ic_tune
 import open_aqua.app_compose.generated.resources.ic_warning
 import open_aqua.app_compose.generated.resources.settings_app_data_title
 import open_aqua.app_compose.generated.resources.settings_appearance_desc
 import open_aqua.app_compose.generated.resources.settings_appearance_title
+import open_aqua.app_compose.generated.resources.settings_channel_visibility_desc
+import open_aqua.app_compose.generated.resources.settings_channel_visibility_title
 import open_aqua.app_compose.generated.resources.settings_color_scheme_desc
 import open_aqua.app_compose.generated.resources.settings_color_scheme_title
 import open_aqua.app_compose.generated.resources.settings_font_family_desc
 import open_aqua.app_compose.generated.resources.settings_font_family_title
 import open_aqua.app_compose.generated.resources.settings_font_scale_desc
 import open_aqua.app_compose.generated.resources.settings_font_scale_title
+import open_aqua.app_compose.generated.resources.settings_hide_disconnected_fans_desc
+import open_aqua.app_compose.generated.resources.settings_hide_disconnected_fans_title
+import open_aqua.app_compose.generated.resources.settings_hide_disconnected_sensors_desc
+import open_aqua.app_compose.generated.resources.settings_hide_disconnected_sensors_title
+import open_aqua.app_compose.generated.resources.settings_hide_unconfigured_virtual_sensors_desc
+import open_aqua.app_compose.generated.resources.settings_hide_unconfigured_virtual_sensors_title
 import open_aqua.app_compose.generated.resources.settings_metrics_scale_desc
 import open_aqua.app_compose.generated.resources.settings_metrics_scale_title
 import open_aqua.app_compose.generated.resources.settings_open_data_folder_button
@@ -156,6 +167,24 @@ fun SettingsScreen(
                         onSelectMetricsScale = { viewModel.onEvent(SettingsEvent.SelectMetricsScale(it)) },
                         onSelectFontFamily = { viewModel.onEvent(SettingsEvent.SelectFontFamily(it)) },
                         onSetFontSp = { viewModel.onEvent(SettingsEvent.SetFontSp(it)) },
+                    )
+
+                    HorizontalDivider(color = colors.borderOutline)
+
+                    // Channel Visibility section
+                    ChannelVisibilitySection(
+                        hideDisconnectedFans = state.hideDisconnectedFans,
+                        hideDisconnectedSensors = state.hideDisconnectedSensors,
+                        hideUnconfiguredVirtualSensors = state.hideUnconfiguredVirtualSensors,
+                        onToggleHideDisconnectedFans = {
+                            viewModel.onEvent(SettingsEvent.ToggleHideDisconnectedFans(it))
+                        },
+                        onToggleHideDisconnectedSensors = {
+                            viewModel.onEvent(SettingsEvent.ToggleHideDisconnectedSensors(it))
+                        },
+                        onToggleHideUnconfiguredVirtualSensors = {
+                            viewModel.onEvent(SettingsEvent.ToggleHideUnconfiguredVirtualSensors(it))
+                        },
                     )
 
                     HorizontalDivider(color = colors.borderOutline)
@@ -321,6 +350,116 @@ private fun AppearanceSection(
         FontSizeSection(
             selectedFontSp = selectedFontSp,
             onSetFontSp = onSetFontSp,
+        )
+    }
+}
+
+@Composable
+private fun ChannelVisibilitySection(
+    hideDisconnectedFans: Boolean,
+    hideDisconnectedSensors: Boolean,
+    hideUnconfiguredVirtualSensors: Boolean,
+    onToggleHideDisconnectedFans: (Boolean) -> Unit,
+    onToggleHideDisconnectedSensors: (Boolean) -> Unit,
+    onToggleHideUnconfiguredVirtualSensors: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = OpenAquaTheme.colors
+    val metrics = OpenAquaTheme.metrics
+
+    Column(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(metrics.radiusLarge))
+                .background(colors.surfaceLow)
+                .border(metrics.strokeThin, colors.borderOutline, RoundedCornerShape(metrics.radiusLarge))
+                .padding(metrics.spacingXl),
+        verticalArrangement = Arrangement.spacedBy(metrics.spacingLg),
+    ) {
+        SectionHeader(
+            icon = painterResource(Res.drawable.ic_sensors),
+            title = stringResource(Res.string.settings_channel_visibility_title),
+        )
+
+        Text(
+            text = stringResource(Res.string.settings_channel_visibility_desc),
+            color = colors.textMuted,
+            fontSize = 12.sp,
+        )
+
+        SettingToggleRow(
+            title = stringResource(Res.string.settings_hide_disconnected_fans_title),
+            description = stringResource(Res.string.settings_hide_disconnected_fans_desc),
+            checked = hideDisconnectedFans,
+            onCheckedChange = onToggleHideDisconnectedFans,
+        )
+
+        HorizontalDivider(color = colors.borderOutline)
+
+        SettingToggleRow(
+            title = stringResource(Res.string.settings_hide_disconnected_sensors_title),
+            description = stringResource(Res.string.settings_hide_disconnected_sensors_desc),
+            checked = hideDisconnectedSensors,
+            onCheckedChange = onToggleHideDisconnectedSensors,
+        )
+
+        HorizontalDivider(color = colors.borderOutline)
+
+        SettingToggleRow(
+            title = stringResource(Res.string.settings_hide_unconfigured_virtual_sensors_title),
+            description = stringResource(Res.string.settings_hide_unconfigured_virtual_sensors_desc),
+            checked = hideUnconfiguredVirtualSensors,
+            onCheckedChange = onToggleHideUnconfiguredVirtualSensors,
+        )
+    }
+}
+
+@Composable
+private fun SettingToggleRow(
+    title: String,
+    description: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = OpenAquaTheme.colors
+    val metrics = OpenAquaTheme.metrics
+
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(
+            modifier = Modifier.weight(1f).padding(end = metrics.spacingLg),
+            verticalArrangement = Arrangement.spacedBy(metrics.spacingXs),
+        ) {
+            Text(
+                text = title,
+                color = colors.textPrimary,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = description,
+                color = colors.textMuted,
+                fontSize = 12.sp,
+            )
+        }
+
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            colors =
+                SwitchDefaults.colors(
+                    checkedThumbColor = colors.surfaceLowest,
+                    checkedTrackColor = colors.primaryBright,
+                    checkedBorderColor = colors.primaryBright,
+                    uncheckedThumbColor = colors.textMuted,
+                    uncheckedTrackColor = colors.surfaceHigh,
+                    uncheckedBorderColor = colors.borderOutline,
+                ),
         )
     }
 }

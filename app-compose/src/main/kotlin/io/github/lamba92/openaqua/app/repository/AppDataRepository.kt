@@ -110,6 +110,18 @@ class AppDataRepository(
         update { it.copy(fontFamily = fontFamily) }
     }
 
+    fun setHideDisconnectedFans(hide: Boolean) {
+        update { it.copy(hideDisconnectedFans = hide) }
+    }
+
+    fun setHideDisconnectedSensors(hide: Boolean) {
+        update { it.copy(hideDisconnectedSensors = hide) }
+    }
+
+    fun setHideUnconfiguredVirtualSensors(hide: Boolean) {
+        update { it.copy(hideUnconfiguredVirtualSensors = hide) }
+    }
+
     fun openDataFolder() {
         coroutineScope.launch {
             val dir = storageDirectory

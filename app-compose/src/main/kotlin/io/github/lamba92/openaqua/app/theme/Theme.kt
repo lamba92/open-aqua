@@ -10,6 +10,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.Density
+import io.github.lamba92.openaqua.app.model.AppStoredData
 import io.github.lamba92.openaqua.theme.AppColorScheme
 import io.github.lamba92.openaqua.theme.ThemePalette
 import open_aqua.app_compose.generated.resources.Res
@@ -22,6 +23,7 @@ import open_aqua.app_compose.generated.resources.metrics_scale_compact
 import open_aqua.app_compose.generated.resources.metrics_scale_standard
 import org.jetbrains.compose.resources.StringResource
 
+val LocalAppPreferences = staticCompositionLocalOf { AppStoredData() }
 val LocalAppMetrics = staticCompositionLocalOf { AppMetrics.Standard }
 val LocalAppColors = staticCompositionLocalOf { AppColors.fromPalette(ThemePalette.HydroDark) }
 val LocalAppTypography = staticCompositionLocalOf { AppTypography() }
@@ -67,6 +69,11 @@ val AppMetricsScale.stringResource: StringResource
         }
 
 object OpenAquaTheme {
+    val preferences: AppStoredData
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalAppPreferences.current
+
     val colors: AppColors
         @Composable
         @ReadOnlyComposable
@@ -90,6 +97,7 @@ fun OpenAquaTheme(
     metrics: AppMetrics = AppMetrics.Standard,
     fontFamilyPreference: AppFontFamily = AppFontFamily.JETBRAINS_MONO,
     fontSp: Int = FontScaleConstants.DEFAULT_SP,
+    preferences: AppStoredData = AppStoredData(),
     content: @Composable () -> Unit,
 ) {
     val jetBrainsMono = rememberJetBrainsMonoFontFamily()
@@ -152,6 +160,7 @@ fun OpenAquaTheme(
         }
 
     CompositionLocalProvider(
+        LocalAppPreferences provides preferences,
         LocalDensity provides scaledDensity,
         LocalAppMetrics provides metrics,
         LocalAppColors provides appColors,

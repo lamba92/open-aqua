@@ -37,6 +37,9 @@ class SettingsViewModel(
                         metricsScale = ready.data.metricsScale,
                         fontSp = ready.data.fontSp,
                         fontFamily = ready.data.fontFamily,
+                        hideDisconnectedFans = ready.data.hideDisconnectedFans,
+                        hideDisconnectedSensors = ready.data.hideDisconnectedSensors,
+                        hideUnconfiguredVirtualSensors = ready.data.hideUnconfiguredVirtualSensors,
                     )
                 }
             }.launchIn(viewModelScope)
@@ -55,6 +58,10 @@ class SettingsViewModel(
             is SettingsEvent.SelectMetricsScale -> appDataRepository.setMetricsScale(event.scale)
             is SettingsEvent.SetFontSp -> appDataRepository.setFontSp(event.sp)
             is SettingsEvent.SelectFontFamily -> appDataRepository.setFontFamily(event.family)
+            is SettingsEvent.ToggleHideDisconnectedFans -> appDataRepository.setHideDisconnectedFans(event.hide)
+            is SettingsEvent.ToggleHideDisconnectedSensors -> appDataRepository.setHideDisconnectedSensors(event.hide)
+            is SettingsEvent.ToggleHideUnconfiguredVirtualSensors ->
+                appDataRepository.setHideUnconfiguredVirtualSensors(event.hide)
         }
     }
 }

@@ -142,6 +142,25 @@
     <string name="settings_font_family_desc">Select typography for cockpit metrics, telemetry, and labels</string>
     <string name="font_family_jetbrains_mono">JetBrains Mono (Recommended)</string>
     <string name="font_family_system_default">System Default</string>
+
+    <!-- Channel Visibility Settings -->
+    <string name="settings_channel_visibility_title">Channel Visibility</string>
+    <string name="settings_channel_visibility_desc">Choose whether to show or hide disconnected ports and unconfigured sensor slots across device views</string>
+    <string name="settings_hide_disconnected_fans_title">Hide disconnected fans</string>
+    <string name="settings_hide_disconnected_fans_desc">Hide PWM channels that have no fan connected or are reporting disconnected status</string>
+    <string name="settings_hide_disconnected_sensors_title">Hide disconnected temperature probes</string>
+    <string name="settings_hide_disconnected_sensors_desc">Hide physical 10k NTC thermistor channels that have no probe plugged in</string>
+    <string name="settings_hide_unconfigured_virtual_sensors_title">Hide unconfigured virtual sensors</string>
+    <string name="settings_hide_unconfigured_virtual_sensors_desc">Hide virtual software sensor slots that have not received host temperature telemetry</string>
+
+    <!-- Visibility Filter In-Screen Controls -->
+    <string name="visibility_filter_hidden_count">%1$d hidden</string>
+    <string name="visibility_filter_hide_inactive">Hide inactive</string>
+    <string name="visibility_no_fans_visible">All fan channels are currently disconnected and hidden by visibility filters</string>
+    <string name="visibility_no_sensors_visible">All sensor channels are currently inactive and hidden by visibility filters</string>
+    <string name="visibility_show_all_action">Show all channels</string>
+
+    <!-- App Data Section -->
     <string name="settings_app_data_title">App data</string>
     <string name="settings_open_data_folder_title">Open data folder</string>
     <string name="settings_open_data_folder_desc">Open the directory where local OpenAqua settings such as custom fan and sensor names are stored</string>

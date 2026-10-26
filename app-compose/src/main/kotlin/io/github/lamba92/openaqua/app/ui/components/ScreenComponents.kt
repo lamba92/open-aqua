@@ -3,6 +3,7 @@ package io.github.lamba92.openaqua.app.ui.components
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,10 +13,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
@@ -32,6 +35,7 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import io.github.lamba92.openaqua.app.theme.ChannelDetailHeaderColors
 import io.github.lamba92.openaqua.app.theme.ChannelDetailHeaderMetrics
 import io.github.lamba92.openaqua.app.theme.FeaturePlaceholderBoxColors
@@ -53,6 +57,14 @@ import io.github.lamba92.openaqua.app.theme.ScreenHeaderColors
 import io.github.lamba92.openaqua.app.theme.ScreenHeaderMetrics
 import io.github.lamba92.openaqua.app.theme.SectionHeaderColors
 import io.github.lamba92.openaqua.app.theme.SectionHeaderMetrics
+import open_aqua.app_compose.generated.resources.Res
+import open_aqua.app_compose.generated.resources.ic_info
+import open_aqua.app_compose.generated.resources.ic_tune
+import open_aqua.app_compose.generated.resources.visibility_filter_hidden_count
+import open_aqua.app_compose.generated.resources.visibility_filter_hide_inactive
+import open_aqua.app_compose.generated.resources.visibility_show_all_action
+import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
 
 fun Modifier.scrollFadingEdge(
     color: Color,
@@ -202,6 +214,7 @@ fun ChannelPageScaffold(
     selectorHeader: String,
     detailContent: @Composable () -> Unit,
     modifier: Modifier = Modifier,
+    selectorHeaderTrailing: (@Composable RowScope.() -> Unit)? = null,
     selectorContent: @Composable () -> Unit,
 ) {
     val colors = OpenAquaTheme.colors
@@ -256,15 +269,21 @@ fun ChannelPageScaffold(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(metrics.spacingSm),
                 ) {
-                    Text(
-                        text = selectorHeader,
-                        color = colors.primary,
-                        fontSize = metrics.channelSelectionTile.badgeTextSize,
-                        lineHeight = metrics.channelSelectionTile.badgeLineHeight,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
-                        modifier = Modifier.padding(horizontal = metrics.spacingXxl),
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = metrics.spacingXxl),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = selectorHeader,
+                            color = colors.primary,
+                            fontSize = metrics.channelSelectionTile.badgeTextSize,
+                            lineHeight = metrics.channelSelectionTile.badgeLineHeight,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
+                        )
+                        selectorHeaderTrailing?.invoke(this)
+                    }
 
                     FlowRow(
                         modifier =
@@ -292,6 +311,94 @@ fun ChannelPageScaffold(
                 }
             }
         }
+    }
+}
+
+@Composable
+fun VisibilityFilterChip(
+    hiddenCount: Int,
+    showingAll: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = OpenAquaTheme.colors
+    val metrics = OpenAquaTheme.metrics
+    val shape = RoundedCornerShape(metrics.radiusSmall)
+    val text =
+        if (showingAll) {
+            stringResource(Res.string.visibility_filter_hide_inactive)
+        } else {
+            stringResource(Res.string.visibility_filter_hidden_count, hiddenCount)
+        }
+    val borderColor = if (showingAll) colors.primaryBright else colors.borderOutline
+    val containerColor = if (showingAll) colors.surfaceHigh else colors.surfaceLowest
+    val textColor = if (showingAll) colors.primaryBright else colors.textSecondary
+
+    Row(
+        modifier =
+            modifier
+                .clip(shape)
+                .background(containerColor)
+                .border(metrics.strokeThin, borderColor, shape)
+                .clickable { onClick() }
+                .padding(horizontal = 10.dp, vertical = 5.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .size(6.dp)
+                    .offset(y = 1.5.dp)
+                    .clip(CircleShape)
+                    .background(if (showingAll) colors.statusWarning else colors.primary),
+        )
+        Text(
+            text = text,
+            color = textColor,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium,
+            fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
+        )
+    }
+}
+
+@Composable
+fun VisibilityEmptyState(
+    message: String,
+    onShowAll: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = OpenAquaTheme.colors
+    val metrics = OpenAquaTheme.metrics
+
+    Column(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(metrics.radiusLarge))
+                .background(colors.surfaceLow)
+                .border(metrics.strokeThin, colors.borderOutline, RoundedCornerShape(metrics.radiusLarge))
+                .padding(metrics.spacingXxl),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(metrics.spacingLg),
+    ) {
+        Icon(
+            painter = painterResource(Res.drawable.ic_info),
+            contentDescription = null,
+            tint = colors.textMuted,
+            modifier = Modifier.size(36.dp),
+        )
+        Text(
+            text = message,
+            color = colors.textSecondary,
+            fontSize = 14.sp,
+        )
+        OpenAquaOutlinedButton(
+            text = stringResource(Res.string.visibility_show_all_action),
+            icon = painterResource(Res.drawable.ic_tune),
+            onClick = onShowAll,
+        )
     }
 }
 

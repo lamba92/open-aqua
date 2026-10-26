@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -28,6 +29,8 @@ import io.github.lamba92.openaqua.app.ui.components.FeaturePlaceholderBox
 import io.github.lamba92.openaqua.app.ui.components.MetricCard
 import io.github.lamba92.openaqua.app.ui.components.OpenAquaOutlinedButton
 import io.github.lamba92.openaqua.app.ui.components.RenameDialog
+import io.github.lamba92.openaqua.app.ui.components.VisibilityEmptyState
+import io.github.lamba92.openaqua.app.ui.components.VisibilityFilterChip
 import open_aqua.app_compose.generated.resources.Res
 import open_aqua.app_compose.generated.resources.action_rename
 import open_aqua.app_compose.generated.resources.fan_channel_name
@@ -56,6 +59,7 @@ import open_aqua.app_compose.generated.resources.metric_pwm_duty
 import open_aqua.app_compose.generated.resources.metric_speed
 import open_aqua.app_compose.generated.resources.metric_voltage
 import open_aqua.app_compose.generated.resources.rename_dialog_title
+import open_aqua.app_compose.generated.resources.visibility_no_fans_visible
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
@@ -67,27 +71,65 @@ fun FansContent(
     modifier: Modifier = Modifier,
     onRenameFan: ((channel: Int, name: String?) -> Unit)? = null,
 ) {
-    val selectedFan = fans.firstOrNull { it.channel == selectedChannel } ?: fans.firstOrNull()
+    val preferences = OpenAquaTheme.preferences
+    var showAllOverride by remember { mutableStateOf(false) }
+
+    val isFanHidden: (FanItem) -> Boolean = { fan ->
+        preferences.hideDisconnectedFans && fan.telemetry.rpm == null
+    }
+
+    val hiddenCount =
+        remember(fans, preferences.hideDisconnectedFans) {
+            fans.count(isFanHidden)
+        }
+
+    val displayedFans =
+        remember(fans, showAllOverride, preferences.hideDisconnectedFans) {
+            if (showAllOverride || !preferences.hideDisconnectedFans) {
+                fans
+            } else {
+                fans.filterNot(isFanHidden)
+            }
+        }
+
+    val selectedFan = displayedFans.firstOrNull { it.channel == selectedChannel } ?: displayedFans.firstOrNull()
     var renamingFan by remember { mutableStateOf<FanItem?>(null) }
 
     FansPageScaffold(
         modifier = modifier,
+        selectorHeaderTrailing =
+            if (hiddenCount > 0 || showAllOverride) {
+                {
+                    VisibilityFilterChip(
+                        hiddenCount = hiddenCount,
+                        showingAll = showAllOverride,
+                        onClick = { showAllOverride = !showAllOverride },
+                    )
+                }
+            } else {
+                null
+            },
         selectorContent = {
-            fans.forEach { fan ->
+            displayedFans.forEach { fan ->
                 val fanNumber = fan.channel + 1
                 FanSelectionTile(
                     name = fan.customName ?: stringResource(Res.string.fan_channel_name, fanNumber),
                     pinLabel = stringResource(Res.string.fan_channel_pin, fanNumber),
                     rpm = fan.telemetry.rpm,
                     pwmPercent = fan.telemetry.pwmPercent,
-                    selected = fan.channel == selectedChannel,
+                    selected = fan.channel == selectedFan?.channel,
                     onClick = { onSelectFan(fan.channel) },
                     onDoubleClick = onRenameFan?.let { { renamingFan = fan } },
                 )
             }
         },
         detailContent = {
-            if (selectedFan != null) {
+            if (displayedFans.isEmpty()) {
+                VisibilityEmptyState(
+                    message = stringResource(Res.string.visibility_no_fans_visible),
+                    onShowAll = { showAllOverride = true },
+                )
+            } else if (selectedFan != null) {
                 val fanNumber = selectedFan.channel + 1
                 FanChannelDetailCard(
                     name = selectedFan.customName ?: stringResource(Res.string.fan_channel_name, fanNumber),
@@ -120,12 +162,14 @@ fun FansContent(
 fun FansPageScaffold(
     detailContent: @Composable () -> Unit,
     modifier: Modifier = Modifier,
+    selectorHeaderTrailing: (@Composable RowScope.() -> Unit)? = null,
     selectorContent: @Composable () -> Unit,
 ) {
     ChannelPageScaffold(
         title = stringResource(Res.string.fans_screen_title),
         subtitle = stringResource(Res.string.fans_screen_subtitle),
         selectorHeader = stringResource(Res.string.fan_channels_header),
+        selectorHeaderTrailing = selectorHeaderTrailing,
         selectorContent = selectorContent,
         detailContent = detailContent,
         modifier = modifier,
@@ -181,7 +225,14 @@ fun FanSelectionTile(
             Icon(
                 painter = painterResource(Res.drawable.ic_fan),
                 contentDescription = name,
-                tint = if (selected) colors.primaryBright else (if (!isDisconnected && rpm > 0) CoolantTeal else colors.textMuted),
+                tint =
+                    if (selected) {
+                        colors.primaryBright
+                    } else if (!isDisconnected && rpm > 0) {
+                        CoolantTeal
+                    } else {
+                        colors.textMuted
+                    },
                 modifier = Modifier.size(metrics.iconSize),
             )
         },
@@ -207,7 +258,7 @@ fun FanChannelDetailCard(
                 .clip(RoundedCornerShape(metrics.radiusLarge))
                 .background(colors.surfaceLow)
                 .border(metrics.strokeThin, colors.borderOutline, RoundedCornerShape(metrics.radiusLarge))
-                .padding(metrics.spacingXl),
+                .padding(metrics.spacingXxl),
         verticalArrangement = Arrangement.spacedBy(metrics.spacingLg),
     ) {
         ChannelDetailHeader(

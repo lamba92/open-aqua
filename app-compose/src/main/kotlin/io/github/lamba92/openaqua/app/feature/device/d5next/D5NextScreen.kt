@@ -17,7 +17,9 @@ import io.github.lamba92.openaqua.app.feature.device.common.FanItem
 import io.github.lamba92.openaqua.app.feature.device.common.FanSelectionTile
 import io.github.lamba92.openaqua.app.feature.device.common.FansPageScaffold
 import io.github.lamba92.openaqua.app.feature.device.common.SensorsContent
+import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
 import io.github.lamba92.openaqua.app.ui.components.RenameDialog
+import io.github.lamba92.openaqua.app.ui.components.VisibilityFilterChip
 import open_aqua.app_compose.generated.resources.Res
 import open_aqua.app_compose.generated.resources.d5_fan_name
 import open_aqua.app_compose.generated.resources.d5_fan_pin
@@ -86,6 +88,21 @@ private fun D5NextCoolingContent(
     modifier: Modifier = Modifier,
     onRenameFan: ((channel: Int, name: String?) -> Unit)? = null,
 ) {
+    val preferences = OpenAquaTheme.preferences
+    var showAllOverride by remember { mutableStateOf(false) }
+
+    val isFanDisconnected = fan.telemetry.rpm == null
+    val isFanHidden = preferences.hideDisconnectedFans && isFanDisconnected
+    val hiddenCount = if (isFanHidden) 1 else 0
+    val showFan = showAllOverride || !isFanHidden
+
+    val effectiveTarget =
+        if (!showFan && selectedTarget == D5NextCoolingTarget.FAN) {
+            D5NextCoolingTarget.PUMP
+        } else {
+            selectedTarget
+        }
+
     val pumpName = pump.customName ?: stringResource(Res.string.d5_pump_name)
     val pumpPin = stringResource(Res.string.d5_pump_pin)
     val fanName = fan.customName ?: stringResource(Res.string.d5_fan_name)
@@ -94,28 +111,42 @@ private fun D5NextCoolingContent(
 
     FansPageScaffold(
         modifier = modifier,
+        selectorHeaderTrailing =
+            if (hiddenCount > 0 || showAllOverride) {
+                {
+                    VisibilityFilterChip(
+                        hiddenCount = hiddenCount,
+                        showingAll = showAllOverride,
+                        onClick = { showAllOverride = !showAllOverride },
+                    )
+                }
+            } else {
+                null
+            },
         selectorContent = {
             FanSelectionTile(
                 name = pumpName,
                 pinLabel = pumpPin,
                 rpm = pump.telemetry.rpm,
                 pwmPercent = pump.telemetry.pwmPercent,
-                selected = selectedTarget == D5NextCoolingTarget.PUMP,
+                selected = effectiveTarget == D5NextCoolingTarget.PUMP,
                 onClick = { onSelectTarget(D5NextCoolingTarget.PUMP) },
                 onDoubleClick = onRenameFan?.let { { renamingFan = pump } },
             )
-            FanSelectionTile(
-                name = fanName,
-                pinLabel = fanPin,
-                rpm = fan.telemetry.rpm,
-                pwmPercent = fan.telemetry.pwmPercent,
-                selected = selectedTarget == D5NextCoolingTarget.FAN,
-                onClick = { onSelectTarget(D5NextCoolingTarget.FAN) },
-                onDoubleClick = onRenameFan?.let { { renamingFan = fan } },
-            )
+            if (showFan) {
+                FanSelectionTile(
+                    name = fanName,
+                    pinLabel = fanPin,
+                    rpm = fan.telemetry.rpm,
+                    pwmPercent = fan.telemetry.pwmPercent,
+                    selected = effectiveTarget == D5NextCoolingTarget.FAN,
+                    onClick = { onSelectTarget(D5NextCoolingTarget.FAN) },
+                    onDoubleClick = onRenameFan?.let { { renamingFan = fan } },
+                )
+            }
         },
         detailContent = {
-            when (selectedTarget) {
+            when (effectiveTarget) {
                 D5NextCoolingTarget.PUMP ->
                     FanChannelDetailCard(
                         name = pumpName,
