@@ -67,7 +67,7 @@
     <string name="fan_settings_title_suffix">Settings</string>
     <string name="fan_hardware_pin">Hardware Pin: %1$s</string>
     <string name="fan_rpm_value">%1$d RPM</string>
-    <string name="fan_pwm_value">%1$s%%</string>
+    <string name="fan_pwm_value">%1$s%</string>
     <string name="fan_voltage_value">%1$s V</string>
     <string name="fan_current_value">%1$s A</string>
     <string name="fan_power_value">%1$s W</string>
