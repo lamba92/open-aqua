@@ -87,9 +87,9 @@
     <string name="temperature_probes_header">TEMPERATURE PROBES</string>
     <string name="sensor_channel_name">Sensor %1$d</string>
     <string name="sensor_channel_pin">T%1$d</string>
-    <string name="sensor_virtual_name">Virtual Sensor %1$d</string>
+    <string name="sensor_virtual_name">Virtual %1$d</string>
     <string name="sensor_virtual_pin">VS%1$d</string>
-    <string name="sensor_coolant_name">Coolant Sensor</string>
+    <string name="sensor_coolant_name">Coolant</string>
     <string name="sensor_coolant_pin">COOLANT</string>
     <string name="sensor_settings_title">%1$s Settings</string>
     <string name="sensor_settings_title_suffix">Settings</string>

@@ -98,8 +98,7 @@ fun SquareSelectionButton(
                                 lastClickTime = now
                             }
                         }
-                    }
-                    .padding(8.dp),
+                    }.padding(8.dp),
         ) {
             // Top badge (e.g. "CH 1", "T1")
             if (badgeText != null) {
@@ -152,7 +151,7 @@ fun SquareSelectionButton(
             fontSize = 12.sp,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
             textAlign = TextAlign.Center,
-            maxLines = 2,
+            maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             lineHeight = 14.sp,
         )
