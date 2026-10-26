@@ -7,6 +7,7 @@ import org.gradle.api.provider.Property
 import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
+import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.PathSensitive
@@ -33,6 +34,7 @@ abstract class UpxTask @Inject constructor(
         strip.convention(true)
         lzma.convention(true)
         stripExecutable.convention("strip")
+        upxVersion.convention("5.2.1")
         additionalOptions.convention(emptyList())
         outputExecutable.convention(
             inputExecutable.flatMap { input ->
@@ -101,7 +103,6 @@ abstract class UpxTask @Inject constructor(
     abstract val inputExecutable: RegularFileProperty
 
     @get:OutputFile
-    @get:Optional
     abstract val outputExecutable: RegularFileProperty
 
     @get:Input
@@ -134,10 +135,12 @@ abstract class UpxTask @Inject constructor(
     abstract val stripExecutable: Property<String>
 
     @get:Input
+    abstract val upxVersion: Property<String>
+
+    @get:Input
     abstract val additionalOptions: ListProperty<String>
 
-    @get:InputFile
-    @get:PathSensitive(PathSensitivity.NONE)
+    @get:Internal
     abstract val upxExecutableFile: RegularFileProperty
 
     @TaskAction

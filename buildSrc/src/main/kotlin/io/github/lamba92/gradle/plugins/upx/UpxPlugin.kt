@@ -117,8 +117,10 @@ class UpxPlugin : Plugin<Project> {
                 }
 
             val defaultUpxExecutable: Provider<RegularFile> =
-                rootProject.layout.buildDirectory.file(
-                    if (os.isWindows) "upx/exec/upx.exe" else "upx/exec/upx",
+                rootProject.layout.file(
+                    unzipUpx.map { sync ->
+                        sync.destinationDir.resolve(if (os.isWindows) "upx.exe" else "upx")
+                    },
                 )
 
             val upxExecutable: Provider<RegularFile> = localUpxPath.orElse(defaultUpxExecutable)
@@ -166,13 +168,9 @@ class UpxPlugin : Plugin<Project> {
                         val compressTask =
                             tasks.register<UpxTask>("compress$taskSuffix") {
                                 dependsOn(linkTaskProvider)
-                                dependsOn(
-                                    provider {
-                                        if (localUpxPath.isPresent) emptyList<TaskProvider<*>>() else listOf(unzipUpx)
-                                    },
-                                )
                                 inputExecutable.fileProvider(linkTaskProvider.flatMap { it.outputFile })
                                 upxExecutableFile = upxExecutable
+                                upxVersion.convention(extension.version)
 
                                 strip.convention(extension.strip)
                                 lzma.convention(extension.lzma)
