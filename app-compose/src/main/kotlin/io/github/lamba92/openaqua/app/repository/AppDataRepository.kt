@@ -6,7 +6,10 @@ import io.github.lamba92.openaqua.app.model.AppStoredData
 import io.github.lamba92.openaqua.app.model.DeviceStoredData
 import io.github.lamba92.openaqua.app.model.FanStoredData
 import io.github.lamba92.openaqua.app.model.SensorStoredData
+import io.github.lamba92.openaqua.app.theme.AppFontFamily
+import io.github.lamba92.openaqua.app.theme.AppMetricsScale
 import io.github.lamba92.openaqua.model.DeviceId
+import io.github.lamba92.openaqua.theme.AppColorScheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -89,6 +92,22 @@ class AppDataRepository(
 
     fun resetToDefaults() {
         update { AppStoredData() }
+    }
+
+    fun setColorScheme(colorScheme: AppColorScheme) {
+        update { it.copy(colorScheme = colorScheme) }
+    }
+
+    fun setMetricsScale(metricsScale: AppMetricsScale) {
+        update { it.copy(metricsScale = metricsScale) }
+    }
+
+    fun setFontSp(fontSp: Int) {
+        update { it.copy(fontSp = fontSp) }
+    }
+
+    fun setFontFamily(fontFamily: AppFontFamily) {
+        update { it.copy(fontFamily = fontFamily) }
     }
 
     fun openDataFolder() {

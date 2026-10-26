@@ -94,11 +94,12 @@ private fun D5NextCoolingContent(
 
     FansPageScaffold(
         modifier = modifier,
-        selectorRow = {
+        selectorContent = {
             FanSelectionTile(
                 name = pumpName,
                 pinLabel = pumpPin,
                 rpm = pump.telemetry.rpm,
+                pwmPercent = pump.telemetry.pwmPercent,
                 selected = selectedTarget == D5NextCoolingTarget.PUMP,
                 onClick = { onSelectTarget(D5NextCoolingTarget.PUMP) },
                 onDoubleClick = onRenameFan?.let { { renamingFan = pump } },
@@ -107,6 +108,7 @@ private fun D5NextCoolingContent(
                 name = fanName,
                 pinLabel = fanPin,
                 rpm = fan.telemetry.rpm,
+                pwmPercent = fan.telemetry.pwmPercent,
                 selected = selectedTarget == D5NextCoolingTarget.FAN,
                 onClick = { onSelectTarget(D5NextCoolingTarget.FAN) },
                 onDoubleClick = onRenameFan?.let { { renamingFan = fan } },

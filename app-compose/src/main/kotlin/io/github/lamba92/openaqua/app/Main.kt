@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.DpSize
@@ -41,14 +42,16 @@ import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavState
 import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavViewModel
 import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavigationRailScaffold
 import io.github.lamba92.openaqua.app.feature.settings.SettingsScreen
-import io.github.lamba92.openaqua.app.theme.CyanBright
-import io.github.lamba92.openaqua.app.theme.ObsidianBg
+import io.github.lamba92.openaqua.app.repository.AppDataRepository
+import io.github.lamba92.openaqua.app.theme.AppFontFamily
+import io.github.lamba92.openaqua.app.theme.AppMetrics
+import io.github.lamba92.openaqua.app.theme.AppMetricsScale
+import io.github.lamba92.openaqua.app.theme.FontScaleConstants
 import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
-import io.github.lamba92.openaqua.app.theme.StatusWarning
-import io.github.lamba92.openaqua.app.theme.TextPrimary
-import io.github.lamba92.openaqua.app.theme.TextSecondary
 import io.github.lamba92.openaqua.app.util.EngineExtractor
 import io.github.lamba92.openaqua.model.DeviceType
+import io.github.lamba92.openaqua.theme.AppColorScheme
+import io.github.lamba92.openaqua.theme.ThemePalette
 import kotlinx.coroutines.runBlocking
 import open_aqua.app_compose.generated.resources.Res
 import open_aqua.app_compose.generated.resources.ic_app_icon
@@ -93,11 +96,41 @@ fun main() {
             icon = painterResource(Res.drawable.ic_app_icon),
         ) {
             CompositionLocalProvider(LocalDI provides di) {
-                OpenAquaTheme {
-                    OpenAquaApp()
-                }
+                OpenAquaThemedApp()
             }
         }
+    }
+}
+
+@Composable
+private fun OpenAquaThemedApp(appDataRepository: AppDataRepository = rememberInstance()) {
+    val appDataState by appDataRepository.state.collectAsState()
+    val palette =
+        remember(appDataState) {
+            val scheme = (appDataState as? AppDataRepository.State.Ready)?.data?.colorScheme ?: AppColorScheme.HYDRO_DARK
+            ThemePalette.fromColorScheme(scheme)
+        }
+    val metrics =
+        remember(appDataState) {
+            val scale = (appDataState as? AppDataRepository.State.Ready)?.data?.metricsScale ?: AppMetricsScale.STANDARD
+            AppMetrics.fromScale(scale)
+        }
+    val fontFamily =
+        remember(appDataState) {
+            (appDataState as? AppDataRepository.State.Ready)?.data?.fontFamily ?: AppFontFamily.JETBRAINS_MONO
+        }
+    val fontSp =
+        remember(appDataState) {
+            (appDataState as? AppDataRepository.State.Ready)?.data?.fontSp ?: FontScaleConstants.DEFAULT_SP
+        }
+
+    OpenAquaTheme(
+        palette = palette,
+        metrics = metrics,
+        fontFamilyPreference = fontFamily,
+        fontSp = fontSp,
+    ) {
+        OpenAquaApp()
     }
 }
 
@@ -125,7 +158,7 @@ fun OpenAquaApp(navViewModel: DeviceNavViewModel = rememberInstance()) {
         modifier =
             Modifier
                 .fillMaxSize()
-                .background(ObsidianBg),
+                .background(OpenAquaTheme.colors.background),
     ) {
         when (val state = navState) {
             DeviceNavState.Loading -> LoadingIndicator()
@@ -192,13 +225,13 @@ private fun UnsupportedDevice(type: DeviceType) {
             Icon(
                 imageVector = Icons.Outlined.Warning,
                 contentDescription = null,
-                tint = StatusWarning,
+                tint = OpenAquaTheme.colors.statusWarning,
                 modifier = Modifier.size(48.dp),
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = stringResource(Res.string.unsupported_device, type.name),
-                color = TextPrimary,
+                color = OpenAquaTheme.colors.textPrimary,
                 fontSize = 16.sp,
             )
         }
@@ -218,13 +251,13 @@ private fun NoDevicesDetected() {
             Icon(
                 imageVector = Icons.Outlined.Warning,
                 contentDescription = null,
-                tint = StatusWarning,
+                tint = OpenAquaTheme.colors.statusWarning,
                 modifier = Modifier.size(48.dp),
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = stringResource(Res.string.no_devices_found),
-                color = TextPrimary,
+                color = OpenAquaTheme.colors.textPrimary,
                 fontSize = 16.sp,
             )
         }
@@ -242,13 +275,13 @@ private fun LoadingIndicator() {
             modifier = Modifier.padding(16.dp),
         ) {
             CircularProgressIndicator(
-                color = CyanBright,
+                color = OpenAquaTheme.colors.primaryBright,
                 modifier = Modifier.size(48.dp),
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = stringResource(Res.string.scanning_hardware),
-                color = TextSecondary,
+                color = OpenAquaTheme.colors.textSecondary,
                 fontSize = 14.sp,
             )
         }

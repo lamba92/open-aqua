@@ -26,24 +26,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.lamba92.openaqua.app.repository.DeviceState
-import io.github.lamba92.openaqua.app.theme.BorderOutline
-import io.github.lamba92.openaqua.app.theme.ElectricCyan
-import io.github.lamba92.openaqua.app.theme.StatusNominal
-import io.github.lamba92.openaqua.app.theme.SurfaceContainer
-import io.github.lamba92.openaqua.app.theme.SurfaceContainerHigh
-import io.github.lamba92.openaqua.app.theme.SurfaceContainerLow
-import io.github.lamba92.openaqua.app.theme.TextMuted
-import io.github.lamba92.openaqua.app.theme.TextPrimary
-import io.github.lamba92.openaqua.app.theme.TextSecondary
+import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
 import io.github.lamba92.openaqua.app.ui.components.DeviceIllustration
 import io.github.lamba92.openaqua.app.ui.components.ScreenHeader
 import io.github.lamba92.openaqua.app.ui.components.SectionHeader
+import io.github.lamba92.openaqua.app.ui.components.scrollFadingEdge
 import open_aqua.app_compose.generated.resources.Res
 import open_aqua.app_compose.generated.resources.device_identification_title
 import open_aqua.app_compose.generated.resources.device_telemetry_identity_subtitle
@@ -92,188 +84,218 @@ fun DeviceInfoContent(
     val device = deviceState.device
     val descriptor = deviceState.descriptor
     val notAvailable = stringResource(Res.string.info_not_available)
+    val colors = OpenAquaTheme.colors
+    val metrics = OpenAquaTheme.metrics
 
-    Box(
-        modifier =
-            modifier
-                .fillMaxSize()
-                .padding(24.dp),
+    Column(
+        modifier = modifier.fillMaxSize(),
     ) {
+        // Top-level fixed header
         Column(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(20.dp),
+            modifier = Modifier.fillMaxWidth(),
         ) {
-            // Title Header
-            ScreenHeader(
-                title = device.name,
-                subtitle = stringResource(Res.string.device_telemetry_identity_subtitle),
-                trailingContent = {
-                    // Status Badge
-                    Row(
-                        modifier =
-                            Modifier
-                                .clip(RoundedCornerShape(20.dp))
-                                .background(SurfaceContainerHigh)
-                                .border(1.dp, BorderOutline, RoundedCornerShape(20.dp))
-                                .padding(horizontal = 12.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    ) {
-                        Box(
-                            modifier =
-                                Modifier
-                                    .size(8.dp)
-                                    .clip(CircleShape)
-                                    .background(StatusNominal),
-                        )
-                        Text(
-                            text = stringResource(Res.string.usb_hid_connected),
-                            color = TextPrimary,
-                            fontSize = 12.sp,
-                            lineHeight = 16.sp,
-                            fontWeight = FontWeight.Medium,
-                        )
-                    }
-                },
-            )
-
-            HorizontalDivider(color = BorderOutline)
-
-            // Image / Visual Representation and High-Level Specs
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .height(IntrinsicSize.Min),
-                horizontalArrangement = Arrangement.spacedBy(20.dp),
-            ) {
-                DeviceIllustration(
-                    type = device.type,
-                    modifier =
-                        Modifier
-                            .weight(0.42f)
-                            .fillMaxHeight(),
-                )
-
-                Column(
-                    modifier =
-                        Modifier
-                            .weight(0.58f)
-                            .fillMaxHeight()
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(SurfaceContainerLow)
-                            .border(1.dp, BorderOutline, RoundedCornerShape(16.dp))
-                            .padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp),
-                ) {
-                    SectionHeader(
-                        icon = painterResource(Res.drawable.ic_memory),
-                        title = stringResource(Res.string.device_identification_title),
-                    )
-
-                    InfoRow(label = stringResource(Res.string.info_device_name), value = device.name)
-                    InfoRow(
-                        label = stringResource(Res.string.info_hardware_alias),
-                        value = device.alias.value,
-                    )
-                    InfoRow(
-                        label = stringResource(Res.string.info_serial_number),
-                        value = device.serial ?: notAvailable,
-                    )
-                    InfoRow(label = stringResource(Res.string.info_unique_id), value = device.id.value)
-                    InfoRow(
-                        label = stringResource(Res.string.info_firmware_version),
-                        value =
-                            device.firmwareVersion?.let {
-                                stringResource(Res.string.info_firmware_version_value, it)
-                            } ?: stringResource(Res.string.info_unknown),
-                    )
-                    InfoRow(label = stringResource(Res.string.info_device_architecture), value = device.type.name)
-                }
-            }
-
-            // Hardware Capabilities & Descriptors Section
             Column(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(SurfaceContainerLow)
-                        .border(1.dp, BorderOutline, RoundedCornerShape(16.dp))
-                        .padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp),
+                        .padding(horizontal = metrics.spacingXxl)
+                        .padding(top = metrics.spacingXxl, bottom = metrics.spacingLg),
+                verticalArrangement = Arrangement.spacedBy(metrics.spacingLg),
             ) {
-                SectionHeader(
-                    icon = painterResource(Res.drawable.ic_usb),
-                    title = stringResource(Res.string.hardware_descriptors_title),
+                ScreenHeader(
+                    title = device.name,
+                    subtitle = stringResource(Res.string.device_telemetry_identity_subtitle),
+                    trailingContent = {
+                        Row(
+                            modifier =
+                                Modifier
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .background(colors.surfaceHigh)
+                                    .border(metrics.strokeThin, colors.borderOutline, RoundedCornerShape(20.dp))
+                                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .size(8.dp)
+                                        .clip(CircleShape)
+                                        .background(colors.statusNominal),
+                            )
+                            Text(
+                                text = stringResource(Res.string.usb_hid_connected),
+                                color = colors.textPrimary,
+                                fontSize = 12.sp,
+                                lineHeight = 16.sp,
+                                fontWeight = FontWeight.Medium,
+                            )
+                        }
+                    },
                 )
-                FlowRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+            }
+
+            HorizontalDivider(
+                color = colors.borderOutline,
+                modifier = Modifier.padding(horizontal = metrics.spacingXxl),
+            )
+        }
+
+        val scrollState = rememberScrollState()
+
+        // Scrolling content with internal padding and top fading edge
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .scrollFadingEdge(
+                        color = colors.background,
+                        scrollState = scrollState,
+                        height = 36.dp,
+                    ),
+        ) {
+            Column(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .verticalScroll(scrollState)
+                        .padding(horizontal = metrics.spacingXxl)
+                        .padding(top = metrics.spacingLg, bottom = metrics.spacingXxl),
+                verticalArrangement = Arrangement.spacedBy(metrics.spacingXl),
+            ) {
+                // Image / Visual Representation and High-Level Specs
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(IntrinsicSize.Min),
+                    horizontalArrangement = Arrangement.spacedBy(metrics.spacingXl),
                 ) {
-                    SpecCard(
-                        title = stringResource(Res.string.spec_fan_channels),
-                        value = stringResource(Res.string.spec_fan_channels_value, descriptor.fanChannels.size),
-                        subtitle = stringResource(Res.string.spec_fan_channels_subtitle),
+                    DeviceIllustration(
+                        type = device.type,
+                        modifier =
+                            Modifier
+                                .weight(0.42f)
+                                .fillMaxHeight(),
                     )
-                    SpecCard(
-                        title = stringResource(Res.string.spec_temp_probes),
-                        value = stringResource(Res.string.spec_temp_probes_value, descriptor.tempSensors.size),
-                        subtitle = stringResource(Res.string.spec_temp_probes_subtitle),
+
+                    Column(
+                        modifier =
+                            Modifier
+                                .weight(0.58f)
+                                .fillMaxHeight()
+                                .clip(RoundedCornerShape(metrics.radiusLarge))
+                                .background(colors.surfaceLow)
+                                .border(metrics.strokeThin, colors.borderOutline, RoundedCornerShape(metrics.radiusLarge))
+                                .padding(metrics.spacingXl),
+                        verticalArrangement = Arrangement.spacedBy(14.dp),
+                    ) {
+                        SectionHeader(
+                            icon = painterResource(Res.drawable.ic_memory),
+                            title = stringResource(Res.string.device_identification_title),
+                        )
+
+                        InfoRow(label = stringResource(Res.string.info_device_name), value = device.name)
+                        InfoRow(
+                            label = stringResource(Res.string.info_hardware_alias),
+                            value = device.alias.value,
+                        )
+                        InfoRow(
+                            label = stringResource(Res.string.info_serial_number),
+                            value = device.serial ?: notAvailable,
+                        )
+                        InfoRow(label = stringResource(Res.string.info_unique_id), value = device.id.value)
+                        InfoRow(
+                            label = stringResource(Res.string.info_firmware_version),
+                            value =
+                                device.firmwareVersion?.let {
+                                    stringResource(Res.string.info_firmware_version_value, it)
+                                } ?: stringResource(Res.string.info_unknown),
+                        )
+                        InfoRow(label = stringResource(Res.string.info_device_architecture), value = device.type.name)
+                    }
+                }
+
+                // Hardware Capabilities & Descriptors Section
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(metrics.radiusLarge))
+                            .background(colors.surfaceLow)
+                            .border(metrics.strokeThin, colors.borderOutline, RoundedCornerShape(metrics.radiusLarge))
+                            .padding(metrics.spacingXl),
+                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                ) {
+                    SectionHeader(
+                        icon = painterResource(Res.drawable.ic_usb),
+                        title = stringResource(Res.string.hardware_descriptors_title),
                     )
-                    SpecCard(
-                        title = stringResource(Res.string.spec_virtual_sensors),
-                        value = stringResource(Res.string.spec_virtual_sensors_value, descriptor.virtualSensorsCount),
-                        subtitle = stringResource(Res.string.spec_virtual_sensors_subtitle),
-                    )
-                    SpecCard(
-                        title = stringResource(Res.string.spec_rgbpx_ports),
-                        value =
-                            if (descriptor.hasRgbpx) {
-                                stringResource(Res.string.spec_rgbpx_ports_value, descriptor.rgbpxPortCount)
-                            } else {
-                                stringResource(Res.string.spec_rgbpx_ports_none)
-                            },
-                        subtitle =
-                            if (descriptor.hasRgbpx) {
-                                stringResource(Res.string.spec_rgbpx_ports_subtitle)
-                            } else {
-                                notAvailable
-                            },
-                    )
-                    SpecCard(
-                        title = stringResource(Res.string.spec_flow_sensor),
-                        value =
-                            if (descriptor.hasFlowSensor) {
-                                stringResource(Res.string.spec_flow_sensor_supported)
-                            } else {
-                                stringResource(Res.string.spec_flow_sensor_unsupported)
-                            },
-                        subtitle =
-                            if (descriptor.hasFlowSensor) {
-                                stringResource(Res.string.spec_flow_sensor_subtitle)
-                            } else {
-                                notAvailable
-                            },
-                    )
-                    SpecCard(
-                        title = stringResource(Res.string.spec_usb_protocol),
-                        value =
-                            stringResource(
-                                Res.string.spec_usb_protocol_value,
-                                descriptor.productId.toString(16).uppercase(),
-                            ),
-                        subtitle =
-                            stringResource(
-                                Res.string.spec_usb_protocol_subtitle,
-                                descriptor.statusReportLength,
-                                descriptor.ctrlReportLength,
-                            ),
-                    )
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(metrics.spacingMd),
+                        verticalArrangement = Arrangement.spacedBy(metrics.spacingMd),
+                    ) {
+                        SpecCard(
+                            title = stringResource(Res.string.spec_fan_channels),
+                            value = stringResource(Res.string.spec_fan_channels_value, descriptor.fanChannels.size),
+                            subtitle = stringResource(Res.string.spec_fan_channels_subtitle),
+                        )
+                        SpecCard(
+                            title = stringResource(Res.string.spec_temp_probes),
+                            value = stringResource(Res.string.spec_temp_probes_value, descriptor.tempSensors.size),
+                            subtitle = stringResource(Res.string.spec_temp_probes_subtitle),
+                        )
+                        SpecCard(
+                            title = stringResource(Res.string.spec_virtual_sensors),
+                            value = stringResource(Res.string.spec_virtual_sensors_value, descriptor.virtualSensorsCount),
+                            subtitle = stringResource(Res.string.spec_virtual_sensors_subtitle),
+                        )
+                        SpecCard(
+                            title = stringResource(Res.string.spec_rgbpx_ports),
+                            value =
+                                if (descriptor.hasRgbpx) {
+                                    stringResource(Res.string.spec_rgbpx_ports_value, descriptor.rgbpxPortCount)
+                                } else {
+                                    stringResource(Res.string.spec_rgbpx_ports_none)
+                                },
+                            subtitle =
+                                if (descriptor.hasRgbpx) {
+                                    stringResource(Res.string.spec_rgbpx_ports_subtitle)
+                                } else {
+                                    notAvailable
+                                },
+                        )
+                        SpecCard(
+                            title = stringResource(Res.string.spec_flow_sensor),
+                            value =
+                                if (descriptor.hasFlowSensor) {
+                                    stringResource(Res.string.spec_flow_sensor_supported)
+                                } else {
+                                    stringResource(Res.string.spec_flow_sensor_unsupported)
+                                },
+                            subtitle =
+                                if (descriptor.hasFlowSensor) {
+                                    stringResource(Res.string.spec_flow_sensor_subtitle)
+                                } else {
+                                    notAvailable
+                                },
+                        )
+                        SpecCard(
+                            title = stringResource(Res.string.spec_usb_protocol),
+                            value =
+                                stringResource(
+                                    Res.string.spec_usb_protocol_value,
+                                    descriptor.productId.toString(16).uppercase(),
+                                ),
+                            subtitle =
+                                stringResource(
+                                    Res.string.spec_usb_protocol_subtitle,
+                                    descriptor.statusReportLength,
+                                    descriptor.ctrlReportLength,
+                                ),
+                        )
+                    }
                 }
             }
         }
@@ -285,6 +307,7 @@ private fun InfoRow(
     label: String,
     value: String,
 ) {
+    val colors = OpenAquaTheme.colors
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -292,17 +315,17 @@ private fun InfoRow(
     ) {
         Text(
             text = label,
-            color = TextSecondary,
+            color = colors.textSecondary,
             fontSize = 13.sp,
             lineHeight = 18.sp,
         )
         Text(
             text = value,
-            color = TextPrimary,
+            color = colors.textPrimary,
             fontSize = 13.sp,
             lineHeight = 18.sp,
             fontWeight = FontWeight.SemiBold,
-            fontFamily = FontFamily.Monospace,
+            fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
         )
     }
 }
@@ -314,19 +337,21 @@ private fun SpecCard(
     subtitle: String,
     modifier: Modifier = Modifier,
 ) {
+    val colors = OpenAquaTheme.colors
+    val metrics = OpenAquaTheme.metrics
     Column(
         modifier =
             modifier
                 .width(196.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .background(SurfaceContainer)
-                .border(1.dp, BorderOutline, RoundedCornerShape(10.dp))
+                .clip(RoundedCornerShape(metrics.radiusSmall))
+                .background(colors.surfaceContainer)
+                .border(metrics.strokeThin, colors.borderOutline, RoundedCornerShape(metrics.radiusSmall))
                 .padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Text(
             text = title,
-            color = TextMuted,
+            color = colors.textMuted,
             fontSize = 11.sp,
             lineHeight = 14.sp,
             fontWeight = FontWeight.Medium,
@@ -335,7 +360,7 @@ private fun SpecCard(
         )
         Text(
             text = value,
-            color = TextPrimary,
+            color = colors.textPrimary,
             fontSize = 14.sp,
             lineHeight = 18.sp,
             fontWeight = FontWeight.Bold,
@@ -344,10 +369,10 @@ private fun SpecCard(
         )
         Text(
             text = subtitle,
-            color = ElectricCyan,
+            color = colors.primaryBright,
             fontSize = 11.sp,
             lineHeight = 14.sp,
-            fontFamily = FontFamily.Monospace,
+            fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )

@@ -19,18 +19,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
-import io.github.lamba92.openaqua.app.theme.BorderOutline
-import io.github.lamba92.openaqua.app.theme.CoolantTeal
-import io.github.lamba92.openaqua.app.theme.CyanBright
-import io.github.lamba92.openaqua.app.theme.SurfaceContainerLow
-import io.github.lamba92.openaqua.app.theme.TextMuted
+import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
 import io.github.lamba92.openaqua.app.ui.components.ChannelDetailHeader
 import io.github.lamba92.openaqua.app.ui.components.ChannelPageScaffold
+import io.github.lamba92.openaqua.app.ui.components.ChannelSelectionCard
+import io.github.lamba92.openaqua.app.ui.components.ChannelSelectionTileDefaults
 import io.github.lamba92.openaqua.app.ui.components.FeaturePlaceholderBox
 import io.github.lamba92.openaqua.app.ui.components.MetricCard
 import io.github.lamba92.openaqua.app.ui.components.OpenAquaOutlinedButton
 import io.github.lamba92.openaqua.app.ui.components.RenameDialog
-import io.github.lamba92.openaqua.app.ui.components.SquareSelectionButton
+import io.github.lamba92.openaqua.app.ui.components.sensorTemperatureColor
 import open_aqua.app_compose.generated.resources.Res
 import open_aqua.app_compose.generated.resources.action_rename
 import open_aqua.app_compose.generated.resources.ic_edit
@@ -76,36 +74,27 @@ fun SensorsContent(
 ) {
     val selectedSensor = sensors.firstOrNull { it.channel == selectedChannel } ?: sensors.firstOrNull()
     var renamingSensor by remember { mutableStateOf<SensorItem?>(null) }
+    val colors = OpenAquaTheme.colors
+    val metrics = OpenAquaTheme.metrics
 
     ChannelPageScaffold(
         title = stringResource(Res.string.sensors_screen_title),
         subtitle = stringResource(Res.string.sensors_screen_subtitle),
         selectorHeader = stringResource(Res.string.temperature_probes_header),
         modifier = modifier,
-        selectorRow = {
+        selectorContent = {
             sensors.forEach { sensor ->
                 val isSelected = sensor.channel == selectedChannel
                 val temp = sensor.telemetry.tempCelsius
                 val sensorName = sensor.resolveName()
                 val sensorPin = sensor.resolvePinLabel()
-                SquareSelectionButton(
+                SensorSelectionTile(
                     name = sensorName,
+                    pinLabel = sensorPin,
+                    tempCelsius = temp,
                     selected = isSelected,
                     onClick = { onSelectSensor(sensor.channel) },
                     onDoubleClick = onRenameSensor?.let { { renamingSensor = sensor } },
-                    badgeText = sensorPin,
-                    valueText =
-                        temp?.let {
-                            stringResource(Res.string.sensor_temp_short_value, "%.1f".format(it))
-                        } ?: stringResource(Res.string.sensor_temp_short_disconnected),
-                    icon = {
-                        Icon(
-                            painter = painterResource(Res.drawable.ic_sensor),
-                            contentDescription = sensorName,
-                            tint = if (isSelected) CyanBright else (if (temp != null) CoolantTeal else TextMuted),
-                            modifier = Modifier.size(24.dp),
-                        )
-                    },
                 )
             }
         },
@@ -117,11 +106,11 @@ fun SensorsContent(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(SurfaceContainerLow)
-                            .border(1.dp, BorderOutline, RoundedCornerShape(16.dp))
-                            .padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                            .clip(RoundedCornerShape(metrics.radiusLarge))
+                            .background(colors.surfaceLow)
+                            .border(metrics.strokeThin, colors.borderOutline, RoundedCornerShape(metrics.radiusLarge))
+                            .padding(metrics.spacingXl),
+                    verticalArrangement = Arrangement.spacedBy(metrics.spacingLg),
                 ) {
                     ChannelDetailHeader(
                         icon = painterResource(Res.drawable.ic_tune),
@@ -143,8 +132,8 @@ fun SensorsContent(
                     val temp = selectedSensor.telemetry.tempCelsius
                     FlowRow(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(metrics.spacingMd),
+                        verticalArrangement = Arrangement.spacedBy(metrics.spacingMd),
                     ) {
                         SensorMetricCard(
                             label = stringResource(Res.string.metric_live_temperature),
@@ -191,6 +180,55 @@ fun SensorsContent(
             onDismiss = { renamingSensor = null },
         )
     }
+}
+
+@Composable
+fun SensorSelectionTile(
+    name: String,
+    pinLabel: String,
+    tempCelsius: Double?,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    onDoubleClick: (() -> Unit)? = null,
+) {
+    val colors = OpenAquaTheme.colors
+    val metrics = ChannelSelectionTileDefaults.metrics()
+    val isDisconnected = tempCelsius == null
+    val fillFraction =
+        if (isDisconnected) {
+            0f
+        } else {
+            ((tempCelsius - 20.0) / 40.0).toFloat().coerceIn(0f, 1f)
+        }
+
+    val tempColor = sensorTemperatureColor(tempCelsius)
+    val valueText =
+        tempCelsius?.let {
+            stringResource(Res.string.sensor_temp_short_value, "%.1f".format(it))
+        } ?: stringResource(Res.string.sensor_temp_short_disconnected)
+
+    ChannelSelectionCard(
+        name = name,
+        badgeText = pinLabel,
+        valueText = valueText,
+        secondaryValueText = null,
+        selected = selected,
+        onClick = onClick,
+        onDoubleClick = onDoubleClick,
+        fillFraction = fillFraction,
+        fillColor = tempColor,
+        modifier = modifier,
+        metrics = metrics,
+        icon = {
+            Icon(
+                painter = painterResource(Res.drawable.ic_sensor),
+                contentDescription = name,
+                tint = if (selected) colors.primaryBright else (if (!isDisconnected) tempColor else colors.textMuted),
+                modifier = Modifier.size(metrics.iconSize),
+            )
+        },
+    )
 }
 
 @Composable

@@ -2,6 +2,7 @@ package io.github.lamba92.openaqua.app.feature.settings
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,10 +10,19 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -21,28 +31,44 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import io.github.lamba92.openaqua.app.theme.BorderOutline
-import io.github.lamba92.openaqua.app.theme.CyanBright
-import io.github.lamba92.openaqua.app.theme.StatusCritical
-import io.github.lamba92.openaqua.app.theme.SurfaceContainerLow
-import io.github.lamba92.openaqua.app.theme.TextMuted
-import io.github.lamba92.openaqua.app.theme.TextPrimary
-import io.github.lamba92.openaqua.app.theme.TextSecondary
+import io.github.lamba92.openaqua.app.theme.AppFontFamily
+import io.github.lamba92.openaqua.app.theme.AppMetricsScale
+import io.github.lamba92.openaqua.app.theme.FontScaleConstants
+import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
+import io.github.lamba92.openaqua.app.theme.calculateFontScaleFactor
+import io.github.lamba92.openaqua.app.theme.stringResource
+import io.github.lamba92.openaqua.app.theme.toComposeColor
 import io.github.lamba92.openaqua.app.ui.components.ConfirmationDialog
 import io.github.lamba92.openaqua.app.ui.components.OpenAquaOutlinedButton
 import io.github.lamba92.openaqua.app.ui.components.ScreenHeader
 import io.github.lamba92.openaqua.app.ui.components.SectionHeader
+import io.github.lamba92.openaqua.app.ui.components.scrollFadingEdge
+import io.github.lamba92.openaqua.theme.AppColorScheme
+import io.github.lamba92.openaqua.theme.ThemePalette
 import open_aqua.app_compose.generated.resources.Res
+import open_aqua.app_compose.generated.resources.font_preset_extra_large
+import open_aqua.app_compose.generated.resources.font_preset_large
+import open_aqua.app_compose.generated.resources.font_preset_small
+import open_aqua.app_compose.generated.resources.font_preset_standard
 import open_aqua.app_compose.generated.resources.ic_folder_open
 import open_aqua.app_compose.generated.resources.ic_restart_alt
 import open_aqua.app_compose.generated.resources.ic_settings
+import open_aqua.app_compose.generated.resources.ic_tune
 import open_aqua.app_compose.generated.resources.ic_warning
 import open_aqua.app_compose.generated.resources.settings_app_data_title
+import open_aqua.app_compose.generated.resources.settings_appearance_desc
+import open_aqua.app_compose.generated.resources.settings_appearance_title
+import open_aqua.app_compose.generated.resources.settings_color_scheme_desc
+import open_aqua.app_compose.generated.resources.settings_color_scheme_title
+import open_aqua.app_compose.generated.resources.settings_font_family_desc
+import open_aqua.app_compose.generated.resources.settings_font_family_title
+import open_aqua.app_compose.generated.resources.settings_font_scale_desc
+import open_aqua.app_compose.generated.resources.settings_font_scale_title
+import open_aqua.app_compose.generated.resources.settings_metrics_scale_desc
+import open_aqua.app_compose.generated.resources.settings_metrics_scale_title
 import open_aqua.app_compose.generated.resources.settings_open_data_folder_button
 import open_aqua.app_compose.generated.resources.settings_open_data_folder_desc
 import open_aqua.app_compose.generated.resources.settings_open_data_folder_title
@@ -57,6 +83,7 @@ import open_aqua.app_compose.generated.resources.settings_screen_subtitle
 import open_aqua.app_compose.generated.resources.settings_screen_title
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
+import kotlin.math.roundToInt
 
 @Composable
 fun SettingsScreen(
@@ -64,34 +91,83 @@ fun SettingsScreen(
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsState()
+    val colors = OpenAquaTheme.colors
+    val metrics = OpenAquaTheme.metrics
 
     Box(
-        modifier =
-            modifier
-                .fillMaxSize()
-                .padding(24.dp),
+        modifier = modifier.fillMaxSize(),
     ) {
         Column(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(20.dp),
+            modifier = Modifier.fillMaxSize(),
         ) {
-            // Header
-            ScreenHeader(
-                title = stringResource(Res.string.settings_screen_title),
-                subtitle = stringResource(Res.string.settings_screen_subtitle),
-            )
+            // Top-level fixed header
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = metrics.spacingXxl)
+                            .padding(top = metrics.spacingXxl, bottom = metrics.spacingLg),
+                    verticalArrangement = Arrangement.spacedBy(metrics.spacingLg),
+                ) {
+                    ScreenHeader(
+                        title = stringResource(Res.string.settings_screen_title),
+                        subtitle = stringResource(Res.string.settings_screen_subtitle),
+                    )
+                }
 
-            HorizontalDivider(color = BorderOutline)
+                HorizontalDivider(
+                    color = colors.borderOutline,
+                    modifier = Modifier.padding(horizontal = metrics.spacingXxl),
+                )
+            }
 
-            // App data vertical section
-            AppDataSection(
-                dataFolderPath = state.dataFolderPath,
-                onOpenDataFolder = { viewModel.onEvent(SettingsEvent.OpenDataFolder) },
-                onRestoreDefaults = { viewModel.onEvent(SettingsEvent.RequestRestoreDefaults) },
-            )
+            val scrollState = rememberScrollState()
+
+            // Scrolling content with internal padding and top fading edge
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .scrollFadingEdge(
+                            color = colors.background,
+                            scrollState = scrollState,
+                            height = 36.dp,
+                        ),
+            ) {
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .verticalScroll(scrollState)
+                            .padding(horizontal = metrics.spacingXxl)
+                            .padding(top = metrics.spacingLg, bottom = metrics.spacingXxl),
+                    verticalArrangement = Arrangement.spacedBy(metrics.spacingXl),
+                ) {
+                    // Appearance & Scaling section
+                    AppearanceSection(
+                        selectedColorScheme = state.colorScheme,
+                        selectedMetricsScale = state.metricsScale,
+                        selectedFontFamily = state.fontFamily,
+                        selectedFontSp = state.fontSp,
+                        onSelectColorScheme = { viewModel.onEvent(SettingsEvent.SelectColorScheme(it)) },
+                        onSelectMetricsScale = { viewModel.onEvent(SettingsEvent.SelectMetricsScale(it)) },
+                        onSelectFontFamily = { viewModel.onEvent(SettingsEvent.SelectFontFamily(it)) },
+                        onSetFontSp = { viewModel.onEvent(SettingsEvent.SetFontSp(it)) },
+                    )
+
+                    HorizontalDivider(color = colors.borderOutline)
+
+                    // App data vertical section
+                    AppDataSection(
+                        dataFolderPath = state.dataFolderPath,
+                        onOpenDataFolder = { viewModel.onEvent(SettingsEvent.OpenDataFolder) },
+                        onRestoreDefaults = { viewModel.onEvent(SettingsEvent.RequestRestoreDefaults) },
+                    )
+                }
+            }
         }
 
         if (state.showResetConfirmationDialog) {
@@ -109,103 +185,429 @@ fun SettingsScreen(
 }
 
 @Composable
+private fun AppearanceSection(
+    selectedColorScheme: AppColorScheme,
+    selectedMetricsScale: AppMetricsScale,
+    selectedFontFamily: AppFontFamily,
+    selectedFontSp: Int,
+    onSelectColorScheme: (AppColorScheme) -> Unit,
+    onSelectMetricsScale: (AppMetricsScale) -> Unit,
+    onSelectFontFamily: (AppFontFamily) -> Unit,
+    onSetFontSp: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = OpenAquaTheme.colors
+    val metrics = OpenAquaTheme.metrics
+
+    Column(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(metrics.radiusLarge))
+                .background(colors.surfaceLow)
+                .border(metrics.strokeThin, colors.borderOutline, RoundedCornerShape(metrics.radiusLarge))
+                .padding(metrics.spacingXl),
+        verticalArrangement = Arrangement.spacedBy(metrics.spacingLg),
+    ) {
+        SectionHeader(
+            icon = painterResource(Res.drawable.ic_tune),
+            title = stringResource(Res.string.settings_appearance_title),
+        )
+
+        Text(
+            text = stringResource(Res.string.settings_appearance_desc),
+            color = colors.textMuted,
+            fontSize = 12.sp,
+        )
+
+        // Color scheme chooser
+        Column(verticalArrangement = Arrangement.spacedBy(metrics.spacingSm)) {
+            Text(
+                text = stringResource(Res.string.settings_color_scheme_title),
+                color = colors.textPrimary,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = stringResource(Res.string.settings_color_scheme_desc),
+                color = colors.textMuted,
+                fontSize = 12.sp,
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(metrics.spacingSm),
+            ) {
+                AppColorScheme.entries.forEach { scheme ->
+                    val palette = ThemePalette.fromColorScheme(scheme)
+                    val isSelected = scheme == selectedColorScheme
+                    ThemeOptionChip(
+                        text = stringResource(scheme.stringResource),
+                        isSelected = isSelected,
+                        onClick = { onSelectColorScheme(scheme) },
+                        previewColors =
+                            listOf(
+                                palette.primary.toComposeColor(),
+                                palette.secondary.toComposeColor(),
+                                palette.surfaceHigh.toComposeColor(),
+                            ),
+                    )
+                }
+            }
+        }
+
+        HorizontalDivider(color = colors.borderOutline)
+
+        // Interface density chooser
+        Column(verticalArrangement = Arrangement.spacedBy(metrics.spacingSm)) {
+            Text(
+                text = stringResource(Res.string.settings_metrics_scale_title),
+                color = colors.textPrimary,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = stringResource(Res.string.settings_metrics_scale_desc),
+                color = colors.textMuted,
+                fontSize = 12.sp,
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(metrics.spacingSm),
+            ) {
+                AppMetricsScale.entries.forEach { scale ->
+                    val isSelected = scale == selectedMetricsScale
+                    ThemeOptionChip(
+                        text = stringResource(scale.stringResource),
+                        isSelected = isSelected,
+                        onClick = { onSelectMetricsScale(scale) },
+                    )
+                }
+            }
+        }
+
+        HorizontalDivider(color = colors.borderOutline)
+
+        // Font family chooser
+        Column(verticalArrangement = Arrangement.spacedBy(metrics.spacingSm)) {
+            Text(
+                text = stringResource(Res.string.settings_font_family_title),
+                color = colors.textPrimary,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = stringResource(Res.string.settings_font_family_desc),
+                color = colors.textMuted,
+                fontSize = 12.sp,
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(metrics.spacingSm),
+            ) {
+                AppFontFamily.entries.forEach { family ->
+                    val isSelected = family == selectedFontFamily
+                    ThemeOptionChip(
+                        text = stringResource(family.stringResource),
+                        isSelected = isSelected,
+                        onClick = { onSelectFontFamily(family) },
+                    )
+                }
+            }
+        }
+
+        HorizontalDivider(color = colors.borderOutline)
+
+        // Font size / scale in sp chooser
+        FontSizeSection(
+            selectedFontSp = selectedFontSp,
+            onSetFontSp = onSetFontSp,
+        )
+    }
+}
+
+@Composable
+private fun FontSizeSection(
+    selectedFontSp: Int,
+    onSetFontSp: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = OpenAquaTheme.colors
+    val metrics = OpenAquaTheme.metrics
+    val percentage = (calculateFontScaleFactor(selectedFontSp) * 100).roundToInt()
+
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(metrics.spacingSm),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    text = stringResource(Res.string.settings_font_scale_title),
+                    color = colors.textPrimary,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text =
+                        stringResource(
+                            Res.string.settings_font_scale_desc,
+                            FontScaleConstants.MIN_SP,
+                            FontScaleConstants.MAX_SP,
+                        ),
+                    color = colors.textMuted,
+                    fontSize = 12.sp,
+                )
+            }
+
+            Box(
+                modifier =
+                    Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(colors.surfaceHigh)
+                        .border(metrics.strokeThin, colors.primaryBright, RoundedCornerShape(8.dp))
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+            ) {
+                Text(
+                    text = "$selectedFontSp sp ($percentage%)",
+                    color = colors.primaryBright,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
+                )
+            }
+        }
+
+        // Quick presets
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(metrics.spacingSm),
+        ) {
+            val presets =
+                listOf(
+                    11 to Res.string.font_preset_small,
+                    13 to Res.string.font_preset_standard,
+                    15 to Res.string.font_preset_large,
+                    18 to Res.string.font_preset_extra_large,
+                )
+            presets.forEach { (sp, labelRes) ->
+                val isSelected = selectedFontSp == sp
+                ThemeOptionChip(
+                    text = stringResource(labelRes),
+                    isSelected = isSelected,
+                    onClick = { onSetFontSp(sp) },
+                )
+            }
+        }
+
+        // Slider with stepper buttons
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            IconButton(
+                onClick = { onSetFontSp(selectedFontSp - 1) },
+                enabled = selectedFontSp > FontScaleConstants.MIN_SP,
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Remove,
+                    contentDescription = "Decrease font size",
+                    tint = if (selectedFontSp > FontScaleConstants.MIN_SP) colors.primaryBright else colors.textMuted,
+                )
+            }
+
+            Text(
+                text = "${FontScaleConstants.MIN_SP} sp",
+                color = colors.textMuted,
+                fontSize = 11.sp,
+                fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
+            )
+
+            Slider(
+                value = selectedFontSp.toFloat(),
+                onValueChange = { onSetFontSp(it.roundToInt()) },
+                valueRange = FontScaleConstants.MIN_SP.toFloat()..FontScaleConstants.MAX_SP.toFloat(),
+                steps = FontScaleConstants.MAX_SP - FontScaleConstants.MIN_SP - 1,
+                modifier = Modifier.weight(1f),
+                colors =
+                    SliderDefaults.colors(
+                        thumbColor = colors.primaryBright,
+                        activeTrackColor = colors.primary,
+                        inactiveTrackColor = colors.surfaceContainer,
+                        activeTickColor = colors.background,
+                        inactiveTickColor = colors.borderOutline,
+                    ),
+            )
+
+            Text(
+                text = "${FontScaleConstants.MAX_SP} sp",
+                color = colors.textMuted,
+                fontSize = 11.sp,
+                fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
+            )
+
+            IconButton(
+                onClick = { onSetFontSp(selectedFontSp + 1) },
+                enabled = selectedFontSp < FontScaleConstants.MAX_SP,
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Increase font size",
+                    tint = if (selectedFontSp < FontScaleConstants.MAX_SP) colors.primaryBright else colors.textMuted,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ThemeOptionChip(
+    text: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    previewColors: List<Color>? = null,
+) {
+    val colors = OpenAquaTheme.colors
+    val metrics = OpenAquaTheme.metrics
+    val shape = RoundedCornerShape(metrics.radiusSmall)
+    val borderColor = if (isSelected) colors.primaryBright else colors.borderOutline
+    val containerColor = if (isSelected) colors.surfaceHigh else colors.surfaceLowest
+    val textColor = if (isSelected) colors.primaryBright else colors.textSecondary
+
+    Row(
+        modifier =
+            modifier
+                .clip(shape)
+                .background(containerColor)
+                .border(metrics.strokeThin, borderColor, shape)
+                .clickable { onClick() }
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        if (previewColors != null) {
+            Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                previewColors.forEach { color ->
+                    Box(
+                        modifier =
+                            Modifier
+                                .size(10.dp)
+                                .clip(CircleShape)
+                                .background(color),
+                    )
+                }
+            }
+        }
+        Text(
+            text = text,
+            color = textColor,
+            fontSize = 13.sp,
+            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+            fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
+        )
+    }
+}
+
+@Composable
 private fun AppDataSection(
     dataFolderPath: String,
     onOpenDataFolder: () -> Unit,
     onRestoreDefaults: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val colors = OpenAquaTheme.colors
+    val metrics = OpenAquaTheme.metrics
+
     Column(
         modifier =
             modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
-                .background(SurfaceContainerLow)
-                .border(1.dp, BorderOutline, RoundedCornerShape(16.dp))
-                .padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+                .clip(RoundedCornerShape(metrics.radiusLarge))
+                .background(colors.surfaceLow)
+                .border(metrics.strokeThin, colors.borderOutline, RoundedCornerShape(metrics.radiusLarge))
+                .padding(metrics.spacingXl),
+        verticalArrangement = Arrangement.spacedBy(metrics.spacingLg),
     ) {
         SectionHeader(
             icon = painterResource(Res.drawable.ic_settings),
             title = stringResource(Res.string.settings_app_data_title),
         )
 
-        // Open data folder row
-        SettingsActionRow(
-            title = stringResource(Res.string.settings_open_data_folder_title),
-            description = stringResource(Res.string.settings_open_data_folder_desc),
-            buttonText = stringResource(Res.string.settings_open_data_folder_button),
-            buttonIcon = painterResource(Res.drawable.ic_folder_open),
-            onClick = onOpenDataFolder,
-            detailText = dataFolderPath.takeIf { it.isNotEmpty() },
-        )
-
-        HorizontalDivider(color = BorderOutline)
-
-        // Restore defaults row
-        SettingsActionRow(
-            title = stringResource(Res.string.settings_restore_defaults_title),
-            description = stringResource(Res.string.settings_restore_defaults_desc),
-            buttonText = stringResource(Res.string.settings_restore_defaults_button),
-            buttonIcon = painterResource(Res.drawable.ic_restart_alt),
-            onClick = onRestoreDefaults,
-            buttonBorderColor = StatusCritical.copy(alpha = 0.6f),
-            buttonContentColor = StatusCritical,
-            buttonIconTint = StatusCritical,
-        )
-    }
-}
-
-@Composable
-private fun SettingsActionRow(
-    title: String,
-    description: String,
-    buttonText: String,
-    buttonIcon: Painter,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    detailText: String? = null,
-    buttonBorderColor: Color = BorderOutline,
-    buttonContentColor: Color = TextPrimary,
-    buttonIconTint: Color = CyanBright,
-) {
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(
-            modifier = Modifier.weight(1f).padding(end = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+        // Open Data Folder Row
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                text = title,
-                color = TextPrimary,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Text(
-                text = description,
-                color = TextMuted,
-                fontSize = 12.sp,
-            )
-            if (detailText != null) {
+            Column(
+                modifier = Modifier.weight(1f).padding(end = metrics.spacingLg),
+                verticalArrangement = Arrangement.spacedBy(metrics.spacingXs),
+            ) {
                 Text(
-                    text = detailText,
-                    color = TextSecondary,
+                    text = stringResource(Res.string.settings_open_data_folder_title),
+                    color = colors.textPrimary,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = stringResource(Res.string.settings_open_data_folder_desc),
+                    color = colors.textMuted,
+                    fontSize = 12.sp,
+                )
+                Text(
+                    text = dataFolderPath,
+                    color = colors.primary,
                     fontSize = 11.sp,
-                    fontFamily = FontFamily.Monospace,
+                    fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
+                    modifier = Modifier.padding(top = 2.dp),
                 )
             }
+
+            OpenAquaOutlinedButton(
+                text = stringResource(Res.string.settings_open_data_folder_button),
+                icon = painterResource(Res.drawable.ic_folder_open),
+                onClick = onOpenDataFolder,
+            )
         }
 
-        OpenAquaOutlinedButton(
-            text = buttonText,
-            onClick = onClick,
-            icon = buttonIcon,
-            borderColor = buttonBorderColor,
-            contentColor = buttonContentColor,
-            iconTint = buttonIconTint,
-        )
+        HorizontalDivider(color = colors.borderOutline)
+
+        // Restore Defaults Row
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(
+                modifier = Modifier.weight(1f).padding(end = metrics.spacingLg),
+                verticalArrangement = Arrangement.spacedBy(metrics.spacingXs),
+            ) {
+                Text(
+                    text = stringResource(Res.string.settings_restore_defaults_title),
+                    color = colors.textPrimary,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = stringResource(Res.string.settings_restore_defaults_desc),
+                    color = colors.textMuted,
+                    fontSize = 12.sp,
+                )
+            }
+
+            OpenAquaOutlinedButton(
+                text = stringResource(Res.string.settings_restore_defaults_button),
+                icon = painterResource(Res.drawable.ic_restart_alt),
+                borderColor = colors.statusWarning,
+                contentColor = colors.statusWarning,
+                iconTint = colors.statusWarning,
+                onClick = onRestoreDefaults,
+            )
+        }
     }
 }
