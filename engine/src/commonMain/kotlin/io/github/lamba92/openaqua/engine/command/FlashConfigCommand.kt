@@ -7,14 +7,8 @@ import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import io.github.lamba92.openaqua.engine.hardware.HardwareController
 import io.github.lamba92.openaqua.engine.hardware.requireTarget
-import io.github.lamba92.openaqua.model.DeviceType
 import io.github.lamba92.openaqua.model.FlashConfigRequest
-import io.github.lamba92.openaqua.model.FlashD5NextConfig
-import io.github.lamba92.openaqua.model.FlashOctoConfig
-import io.github.lamba92.openaqua.model.FlashQuadroConfig
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.decodeFromJsonElement
 
 private val strictJson =
     Json {
@@ -37,37 +31,7 @@ class FlashConfigCommand(
         val target = controller.requireTarget(device)
         val rawJson = readInputPayload(request, file) ?: error("Must specify either --request or --file")
 
-        val jsonElement = strictJson.parseToJsonElement(rawJson)
-        val hasTopLevelType = jsonElement is JsonObject && jsonElement.containsKey("type")
-
-        val flashRequest: FlashConfigRequest =
-            if (hasTopLevelType) {
-                val parsed = strictJson.decodeFromJsonElement<FlashConfigRequest>(jsonElement)
-                when (target.type) {
-                    DeviceType.OCTO ->
-                        require(parsed is FlashOctoConfig) {
-                            "Expected 'octo' request for device type OCTO, got '${parsed::class.simpleName}'"
-                        }
-                    DeviceType.QUADRO ->
-                        require(parsed is FlashQuadroConfig) {
-                            "Expected 'quadro' request for device type QUADRO, got '${parsed::class.simpleName}'"
-                        }
-                    DeviceType.D5_NEXT ->
-                        require(parsed is FlashD5NextConfig) {
-                            "Expected 'd5next' request for device type D5_NEXT, got '${parsed::class.simpleName}'"
-                        }
-                    else -> error("Unsupported device type: ${target.type}")
-                }
-                parsed
-            } else {
-                when (target.type) {
-                    DeviceType.OCTO -> strictJson.decodeFromJsonElement(FlashOctoConfig.serializer(), jsonElement)
-                    DeviceType.QUADRO -> strictJson.decodeFromJsonElement(FlashQuadroConfig.serializer(), jsonElement)
-                    DeviceType.D5_NEXT -> strictJson.decodeFromJsonElement(FlashD5NextConfig.serializer(), jsonElement)
-                    else -> error("Unsupported device type: ${target.type}")
-                }
-            }
-
+        val flashRequest = strictJson.decodeFromString(FlashConfigRequest.serializer(), rawJson)
         val response = controller.flashConfig(target, flashRequest)
         printSuccessResponse(response, pretty)
     }

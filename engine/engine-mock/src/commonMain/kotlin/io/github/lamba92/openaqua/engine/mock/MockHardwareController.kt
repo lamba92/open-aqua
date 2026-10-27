@@ -2,31 +2,30 @@ package io.github.lamba92.openaqua.engine.mock
 
 import io.github.lamba92.openaqua.engine.hardware.HardwareController
 import io.github.lamba92.openaqua.model.AutoCurveFanConfig
+import io.github.lamba92.openaqua.model.CoolingChannelKind
+import io.github.lamba92.openaqua.model.CoolingChannelTelemetry
 import io.github.lamba92.openaqua.model.CurveFanConfig
 import io.github.lamba92.openaqua.model.CurvePoint
-import io.github.lamba92.openaqua.model.D5NextConfig
-import io.github.lamba92.openaqua.model.D5NextTelemetry
 import io.github.lamba92.openaqua.model.DetectedHardwareDevice
 import io.github.lamba92.openaqua.model.DeviceConfig
+import io.github.lamba92.openaqua.model.DeviceDescriptor
+import io.github.lamba92.openaqua.model.DeviceRegistry
 import io.github.lamba92.openaqua.model.DeviceTelemetry
 import io.github.lamba92.openaqua.model.DeviceType
+import io.github.lamba92.openaqua.model.DisplayTelemetry
 import io.github.lamba92.openaqua.model.FanChannelConfig
-import io.github.lamba92.openaqua.model.FanTelemetry
+import io.github.lamba92.openaqua.model.FeatureState
 import io.github.lamba92.openaqua.model.FixedFanConfig
 import io.github.lamba92.openaqua.model.FlashConfigRequest
-import io.github.lamba92.openaqua.model.FlashD5NextConfig
-import io.github.lamba92.openaqua.model.FlashOctoConfig
-import io.github.lamba92.openaqua.model.FlashQuadroConfig
-import io.github.lamba92.openaqua.model.OctoConfig
-import io.github.lamba92.openaqua.model.OctoTelemetry
-import io.github.lamba92.openaqua.model.QuadroConfig
-import io.github.lamba92.openaqua.model.QuadroTelemetry
 import io.github.lamba92.openaqua.model.RgbpxPortConfig
+import io.github.lamba92.openaqua.model.SensorChannelKind
 import io.github.lamba92.openaqua.model.SensorOffset
 import io.github.lamba92.openaqua.model.SensorTelemetry
 import io.github.lamba92.openaqua.model.TargetTempFanConfig
 import io.github.lamba92.openaqua.model.TwoPointFanConfig
 import io.github.lamba92.openaqua.model.UnconfiguredFanConfig
+import io.github.lamba92.openaqua.model.tempCelsiusOrNull
+import io.github.lamba92.openaqua.model.valueOrNull
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -55,44 +54,14 @@ class MockHardwareController : HardwareController {
                 ?: storage.configs[device.id.value]
                 ?: error("No configuration found for device ${device.alias} (${device.id})")
 
-        val updatedConfig: DeviceConfig =
-            when (request) {
-                is FlashOctoConfig -> {
-                    check(current is OctoConfig) { "Expected OctoConfig for device ${device.alias}, got ${current::class.simpleName}" }
-                    OctoConfig(
-                        fans = current.fans.applyFanUpdates(request.fans),
-                        sensorOffsets = current.sensorOffsets.applyOffsetUpdates(request.sensorOffsets),
-                        rgbpx = current.rgbpx.applyRgbpxUpdates(request.rgbpx),
-                    )
-                }
-
-                is FlashQuadroConfig -> {
-                    check(current is QuadroConfig) { "Expected QuadroConfig for device ${device.alias}, got ${current::class.simpleName}" }
-                    QuadroConfig(
-                        fans = current.fans.applyFanUpdates(request.fans),
-                        sensorOffsets = current.sensorOffsets.applyOffsetUpdates(request.sensorOffsets),
-                        flowPulsesPerLiter = request.flowPulsesPerLiter ?: current.flowPulsesPerLiter,
-                        rgbpx = current.rgbpx.applyRgbpxUpdates(request.rgbpx),
-                    )
-                }
-
-                is FlashD5NextConfig -> {
-                    check(current is D5NextConfig) { "Expected D5NextConfig for device ${device.alias}, got ${current::class.simpleName}" }
-                    val newCoolantOffset = request.coolantOffset
-                    D5NextConfig(
-                        pump = request.pump ?: current.pump,
-                        fan = request.fan ?: current.fan,
-                        coolantOffset =
-                            if (newCoolantOffset != null) {
-                                SensorOffset(0, newCoolantOffset)
-                            } else {
-                                current.coolantOffset
-                            },
-                        display = request.display ?: current.display,
-                        rgbpx = current.rgbpx.applyRgbpxUpdates(request.rgbpx),
-                    )
-                }
-            }
+        val updatedConfig =
+            DeviceConfig(
+                fans = current.fans.applyFanUpdates(request.fans),
+                sensorOffsets = current.sensorOffsets.applyOffsetUpdates(request.sensorOffsets),
+                flowPulsesPerLiter = request.flowPulsesPerLiter?.let { FeatureState.Active(it) } ?: current.flowPulsesPerLiter,
+                display = request.display?.let { FeatureState.Active(it) } ?: current.display,
+                rgbpx = current.rgbpx.applyRgbpxUpdates(request.rgbpx),
+            )
 
         val updatedMap = storage.configs.toMutableMap()
         val key = if (storage.configs.containsKey(device.alias.value)) device.alias.value else device.id.value
@@ -153,127 +122,110 @@ class MockHardwareController : HardwareController {
 
     override fun streamTelemetry(device: DetectedHardwareDevice): Flow<DeviceTelemetry> =
         flow {
+            val descriptor = DeviceRegistry.findByType(device.type)
             while (currentCoroutineContext().isActive) {
                 val config = readConfig(device)
                 val allSensorsStorage = loadMockVirtualSensorsStorage()
                 val virtualSensorsMap =
                     allSensorsStorage[device.alias.value] ?: allSensorsStorage[device.id.value] ?: emptyMap()
 
-                when (device.type) {
-                    DeviceType.OCTO -> {
-                        check(config is OctoConfig)
-                        emit(generateOctoTelemetry(config, virtualSensorsMap))
-                    }
-
-                    DeviceType.QUADRO -> {
-                        check(config is QuadroConfig)
-                        emit(generateQuadroTelemetry(config, virtualSensorsMap))
-                    }
-
-                    DeviceType.D5_NEXT -> {
-                        check(config is D5NextConfig)
-                        emit(generateD5NextTelemetry(config, virtualSensorsMap))
-                    }
-
-                    else -> error("Telemetry simulation for ${device.type} is not implemented")
-                }
+                emit(generateTelemetry(descriptor, config, virtualSensorsMap))
                 delay(1.seconds)
             }
         }
 
-    private fun generateOctoTelemetry(
-        config: OctoConfig,
+    private fun generateTelemetry(
+        descriptor: DeviceDescriptor,
+        config: DeviceConfig,
         virtualSensorsMap: Map<Int, Double?>,
-    ): OctoTelemetry {
+    ): DeviceTelemetry {
         val physicalSensors =
-            listOf(0 to 32.5, 1 to 22.8, 2 to 27.4, 3 to 43.1).map { (ch, baseTemp) ->
-                val offset = config.sensorOffsets.firstOrNull { it.channel == ch }?.offsetCelsius ?: 0.0
-                SensorTelemetry(channel = ch, tempCelsius = round((baseTemp + offset) * 10.0) / 10.0, isVirtual = false)
+            descriptor.tempSensors.map { sensor ->
+                val baseTemp =
+                    when (sensor.channel) {
+                        0 -> if (sensor.kind == SensorChannelKind.INTEGRATED_COOLANT) 28.5 else 32.5
+                        1 -> 22.8
+                        2 -> 27.4
+                        3 -> 43.1
+                        else -> 30.0
+                    }
+                val offset = config.sensorOffsets.firstOrNull { it.channel == sensor.channel }?.offsetCelsius ?: 0.0
+                val totalTemp = round((baseTemp + offset) * 10.0) / 10.0
+                SensorTelemetry.Connected(
+                    channel = sensor.channel,
+                    tempCelsius = totalTemp,
+                    kind = sensor.kind,
+                )
             }
+
         val virtualSensors =
-            (4..19).map { ch ->
-                SensorTelemetry(channel = ch, tempCelsius = virtualSensorsMap[ch], isVirtual = true)
+            (0 until descriptor.virtualSensorsCount).map { i ->
+                val ch = descriptor.tempSensors.size + i
+                val temp = virtualSensorsMap[ch]
+                if (temp != null) {
+                    SensorTelemetry.Connected(
+                        channel = ch,
+                        tempCelsius = temp,
+                        kind = SensorChannelKind.VIRTUAL,
+                    )
+                } else {
+                    SensorTelemetry.Disconnected(
+                        channel = ch,
+                        kind = SensorChannelKind.VIRTUAL,
+                    )
+                }
             }
-        val allSensors = (physicalSensors + virtualSensors).associate { it.channel to it.tempCelsius }
+
+        val allSensors = (physicalSensors + virtualSensors).associate { it.channel to it.tempCelsiusOrNull }
 
         val fans =
-            (0..7).map { ch ->
-                val fanConfig = config.fans.firstOrNull { it.channel == ch }
+            descriptor.fanChannels.map { fan ->
+                val fanConfig = config.fans.firstOrNull { it.channel == fan.channel }
+                val (maxRpm, maxAmps) =
+                    when (fan.kind) {
+                        CoolingChannelKind.PUMP -> 4800 to 1.8
+                        CoolingChannelKind.FAN -> if (fan.channel == 0) 2500 to 0.70 else 1800 to 0.30
+                    }
                 simulateFan(
-                    ch,
-                    fanConfig,
-                    allSensors,
-                    maxRpm = if (ch == 0) 2500 else 1800,
-                    maxAmps = if (ch == 0) 0.70 else 0.30,
+                    channel = fan.channel,
+                    config = fanConfig,
+                    allSensors = allSensors,
+                    maxRpm = maxRpm,
+                    maxAmps = maxAmps,
+                    kind = fan.kind,
                 )
             }
 
         val flowRateDlH =
-            if (fans.any { (it.rpm ?: 0) > 0 }) {
-                val pumpPwm = fans.firstOrNull { it.channel == 0 }?.pwmPercent ?: 50.0
-                round(60.0 + (pumpPwm / 100.0) * 140.0).toInt()
+            if (descriptor.hasFlowSensor && descriptor.flowSensorOffset != null) {
+                val activeFans = fans.filterIsInstance<CoolingChannelTelemetry.Connected>()
+                if (activeFans.any { it.rpm > 0 }) {
+                    val pwm = activeFans.firstOrNull()?.pwmPercent ?: 50.0
+                    FeatureState.Active(round(60.0 + (pwm / 100.0) * 140.0).toInt())
+                } else {
+                    FeatureState.Disconnected
+                }
             } else {
-                null
+                FeatureState.Unsupported
             }
 
-        return OctoTelemetry(fans = fans, sensors = physicalSensors + virtualSensors, flowRateDlH = flowRateDlH)
-    }
-
-    private fun generateQuadroTelemetry(
-        config: QuadroConfig,
-        virtualSensorsMap: Map<Int, Double?>,
-    ): QuadroTelemetry {
-        val physicalSensors =
-            listOf(0 to 29.5, 1 to 24.0, 2 to 26.2, 3 to 31.0).map { (ch, baseTemp) ->
-                val offset = config.sensorOffsets.firstOrNull { it.channel == ch }?.offsetCelsius ?: 0.0
-                SensorTelemetry(channel = ch, tempCelsius = round((baseTemp + offset) * 10.0) / 10.0, isVirtual = false)
-            }
-        val virtualSensors =
-            (4..19).map { ch ->
-                SensorTelemetry(channel = ch, tempCelsius = virtualSensorsMap[ch], isVirtual = true)
-            }
-        val allSensors = (physicalSensors + virtualSensors).associate { it.channel to it.tempCelsius }
-
-        val fans =
-            (0..3).map { ch ->
-                val fanConfig = config.fans.firstOrNull { it.channel == ch }
-                simulateFan(ch, fanConfig, allSensors, maxRpm = 2000, maxAmps = 0.35)
-            }
-
-        val flowRateDlH =
-            if (fans.any { (it.rpm ?: 0) > 0 }) {
-                val fan0Pwm = fans.firstOrNull { it.channel == 0 }?.pwmPercent ?: 50.0
-                round(50.0 + (fan0Pwm / 100.0) * 120.0).toInt()
+        val display =
+            if (descriptor.hasDisplay) {
+                FeatureState.Active(
+                    DisplayTelemetry(
+                        brightnessPercent = config.display.valueOrNull?.brightnessPercent ?: 80,
+                        orientationDegrees = config.display.valueOrNull?.orientationDegrees ?: 0,
+                    ),
+                )
             } else {
-                null
+                FeatureState.Unsupported
             }
 
-        return QuadroTelemetry(fans = fans, sensors = physicalSensors + virtualSensors, flowRateDlH = flowRateDlH)
-    }
-
-    private fun generateD5NextTelemetry(
-        config: D5NextConfig,
-        virtualSensorsMap: Map<Int, Double?>,
-    ): D5NextTelemetry {
-        val baseCoolant = 28.5
-        val coolantOffset = config.coolantOffset.offsetCelsius
-        val coolantTemp = round((baseCoolant + coolantOffset) * 10.0) / 10.0
-
-        val virtualSensors =
-            (1..8).map { ch ->
-                SensorTelemetry(channel = ch, tempCelsius = virtualSensorsMap[ch], isVirtual = true)
-            }
-        val allSensors =
-            (listOf(SensorTelemetry(0, coolantTemp)) + virtualSensors).associate { it.channel to it.tempCelsius }
-
-        val pump = simulateFan(0, config.pump, allSensors, maxRpm = 4800, maxAmps = 1.8)
-        val fan = simulateFan(1, config.fan, allSensors, maxRpm = 2000, maxAmps = 0.5)
-
-        return D5NextTelemetry(
-            pump = pump,
-            fan = fan,
-            coolantTempCelsius = coolantTemp,
-            virtualSensors = virtualSensors,
+        return DeviceTelemetry(
+            fans = fans,
+            sensors = physicalSensors + virtualSensors,
+            flowRateDlH = flowRateDlH,
+            display = display,
         )
     }
 
@@ -283,31 +235,29 @@ class MockHardwareController : HardwareController {
         allSensors: Map<Int, Double?>,
         maxRpm: Int,
         maxAmps: Double,
-    ): FanTelemetry {
+        kind: CoolingChannelKind = CoolingChannelKind.FAN,
+    ): CoolingChannelTelemetry {
         val pwm = calculatePwm(config, allSensors)
         val finalPwm = round(pwm * 10.0) / 10.0
 
         return if (finalPwm == 0.0) {
-            FanTelemetry(
+            CoolingChannelTelemetry.Disconnected(
                 channel = channel,
-                rpm = null,
-                powerWatts = 0.0,
-                voltageVolts = 0.0,
-                currentAmps = 0.0,
-                pwmPercent = 0.0,
+                kind = kind,
             )
         } else {
             val voltage = 12.0
             val rpm = round(maxRpm * (finalPwm / 100.0)).toInt()
             val current = round((maxAmps * (finalPwm / 100.0)) * 1000.0) / 1000.0
             val power = round(voltage * current * 100.0) / 100.0
-            FanTelemetry(
+            CoolingChannelTelemetry.Connected(
                 channel = channel,
                 rpm = rpm,
                 powerWatts = power,
                 voltageVolts = voltage,
                 currentAmps = current,
                 pwmPercent = finalPwm,
+                kind = kind,
             )
         }
     }

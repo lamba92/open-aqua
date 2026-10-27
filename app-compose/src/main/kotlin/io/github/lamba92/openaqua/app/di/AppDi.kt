@@ -5,9 +5,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import io.github.lamba92.openaqua.app.coroutine.CoroutineScopeProvider
 import io.github.lamba92.openaqua.app.coroutine.DefaultCoroutineScopeProvider
-import io.github.lamba92.openaqua.app.feature.device.d5next.D5NextViewModel
-import io.github.lamba92.openaqua.app.feature.device.octo.OctoViewModel
-import io.github.lamba92.openaqua.app.feature.device.quadro.QuadroViewModel
+import io.github.lamba92.openaqua.app.feature.device.DeviceViewModel
 import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavViewModel
 import io.github.lamba92.openaqua.app.feature.settings.SettingsViewModel
 import io.github.lamba92.openaqua.app.repository.AppDataRepository
@@ -32,25 +30,7 @@ fun createAppModule(
     bindSingleton { DeviceNavViewModel(dataCacheService = instance(), scopeProvider = instance()) }
     bindSingleton { SettingsViewModel(appDataRepository = instance(), scopeProvider = instance()) }
     bindMultiton { deviceId: DeviceId ->
-        OctoViewModel(
-            repository = instance(),
-            cacheService = instance(),
-            appDataRepository = instance(),
-            scopeProvider = instance(),
-            deviceId = deviceId,
-        )
-    }
-    bindMultiton { deviceId: DeviceId ->
-        QuadroViewModel(
-            repository = instance(),
-            cacheService = instance(),
-            appDataRepository = instance(),
-            scopeProvider = instance(),
-            deviceId = deviceId,
-        )
-    }
-    bindMultiton { deviceId: DeviceId ->
-        D5NextViewModel(
+        DeviceViewModel(
             repository = instance(),
             cacheService = instance(),
             appDataRepository = instance(),

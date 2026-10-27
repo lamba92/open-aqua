@@ -1,8 +1,10 @@
 package io.github.lamba92.openaqua.app.feature.device.common
 
 import io.github.lamba92.openaqua.app.model.DeviceStoredData
+import io.github.lamba92.openaqua.model.CoolingChannelKind
+import io.github.lamba92.openaqua.model.CoolingChannelTelemetry
 import io.github.lamba92.openaqua.model.FanChannelConfig
-import io.github.lamba92.openaqua.model.FanTelemetry
+import io.github.lamba92.openaqua.model.SensorChannelKind
 import io.github.lamba92.openaqua.model.SensorOffset
 import io.github.lamba92.openaqua.model.SensorTelemetry
 
@@ -15,25 +17,24 @@ enum class CommonDeviceTab {
 data class FanItem(
     val channel: Int,
     val customName: String? = null,
-    val telemetry: FanTelemetry,
+    val telemetry: CoolingChannelTelemetry,
     val config: FanChannelConfig?,
-)
-
-enum class SensorChannelKind {
-    PHYSICAL_NTC,
-    VIRTUAL,
-    INTEGRATED_COOLANT,
+) {
+    val kind: CoolingChannelKind
+        get() = telemetry.kind
 }
 
 data class SensorItem(
     val channel: Int,
     val customName: String? = null,
-    val kind: SensorChannelKind,
     val telemetry: SensorTelemetry,
     val calibrationOffset: Double = 0.0,
-)
+) {
+    val kind: SensorChannelKind
+        get() = telemetry.kind
+}
 
-fun List<FanTelemetry>.toPwmFanItems(
+fun List<CoolingChannelTelemetry>.toPwmFanItems(
     configs: List<FanChannelConfig>,
     storedData: DeviceStoredData = DeviceStoredData(),
 ): List<FanItem> =
@@ -54,8 +55,7 @@ fun List<SensorTelemetry>.toSensorItems(
         SensorItem(
             channel = tel.channel,
             customName = storedData.sensors[tel.channel]?.customName,
-            kind = if (tel.isVirtual) SensorChannelKind.VIRTUAL else SensorChannelKind.PHYSICAL_NTC,
             telemetry = tel,
-            calibrationOffset = offsets.firstOrNull { !tel.isVirtual && it.channel == tel.channel }?.offsetCelsius ?: 0.0,
+            calibrationOffset = offsets.firstOrNull { it.channel == tel.channel }?.offsetCelsius ?: 0.0,
         )
     }

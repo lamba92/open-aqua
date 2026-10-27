@@ -213,80 +213,22 @@ data class RgbpxPortConfig(
 }
 
 @Serializable
-sealed interface DeviceConfig
-
-@Serializable
-@SerialName("octo")
-data class OctoConfig(
-    val fans: List<FanChannelConfig>,
-    val sensorOffsets: List<SensorOffset>,
+data class DeviceConfig(
+    val fans: List<FanChannelConfig> = emptyList(),
+    val sensorOffsets: List<SensorOffset> = emptyList(),
+    val flowPulsesPerLiter: FeatureState<Int> = FeatureState.Unsupported,
+    val display: FeatureState<DisplayConfig> = FeatureState.Unsupported,
     val rgbpx: List<RgbpxPortConfig> = emptyList(),
-) : DeviceConfig
+)
 
 @Serializable
-@SerialName("quadro")
-data class QuadroConfig(
-    val fans: List<FanChannelConfig>,
-    val sensorOffsets: List<SensorOffset>,
-    val flowPulsesPerLiter: Int? = null,
-    val rgbpx: List<RgbpxPortConfig> = emptyList(),
-) : DeviceConfig
-
-@Serializable
-@SerialName("d5next")
-data class D5NextConfig(
-    val pump: FanChannelConfig,
-    val fan: FanChannelConfig,
-    val coolantOffset: SensorOffset,
-    val display: DisplayConfig? = null,
-    val rgbpx: List<RgbpxPortConfig> = emptyList(),
-) : DeviceConfig
-
-@Serializable
-sealed interface FlashConfigRequest
-
-@Serializable
-@SerialName("octo")
-data class FlashOctoConfig(
-    val fans: Map<Int, FanChannelConfig>? = null,
-    val sensorOffsets: Map<Int, Double>? = null,
-    val rgbpx: Map<Int, RgbpxPortConfig>? = null,
-) : FlashConfigRequest {
-    init {
-        fans?.keys?.forEach { require(it in 0..7) { "Invalid fan channel $it for OCTO (must be 0..7)" } }
-        sensorOffsets?.keys?.forEach { require(it in 0..3) { "Invalid sensor channel $it for OCTO (must be 0..3)" } }
-        rgbpx?.keys?.forEach { require(it in 0..1) { "Invalid RGBpx port $it for OCTO (must be 0..1)" } }
-    }
-}
-
-@Serializable
-@SerialName("quadro")
-data class FlashQuadroConfig(
+data class FlashConfigRequest(
     val fans: Map<Int, FanChannelConfig>? = null,
     val sensorOffsets: Map<Int, Double>? = null,
     val flowPulsesPerLiter: Int? = null,
-    val rgbpx: Map<Int, RgbpxPortConfig>? = null,
-) : FlashConfigRequest {
-    init {
-        fans?.keys?.forEach { require(it in 0..3) { "Invalid fan channel $it for QUADRO (must be 0..3)" } }
-        sensorOffsets?.keys?.forEach { require(it in 0..3) { "Invalid sensor channel $it for QUADRO (must be 0..3)" } }
-        rgbpx?.keys?.forEach { require(it == 0) { "Invalid RGBpx port $it for QUADRO (must be 0)" } }
-    }
-}
-
-@Serializable
-@SerialName("d5next")
-data class FlashD5NextConfig(
-    val pump: FanChannelConfig? = null,
-    val fan: FanChannelConfig? = null,
-    val coolantOffset: Double? = null,
     val display: DisplayConfig? = null,
     val rgbpx: Map<Int, RgbpxPortConfig>? = null,
-) : FlashConfigRequest {
-    init {
-        rgbpx?.keys?.forEach { require(it == 0) { "Invalid RGBpx port $it for D5 NEXT (must be 0)" } }
-    }
-}
+)
 
 @Serializable
 data class FeedVirtualSensorsRequest(

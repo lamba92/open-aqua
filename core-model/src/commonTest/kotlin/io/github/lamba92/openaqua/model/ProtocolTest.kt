@@ -1,6 +1,5 @@
 package io.github.lamba92.openaqua.model
 
-import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
@@ -10,38 +9,24 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class ProtocolTest {
-    private val strictJson =
-        Json {
-            ignoreUnknownKeys = false
-        }
-
     @Test
-    fun testFlashOctoConfigValidation() {
-        // Channel 7 is valid
-        val validReq =
-            FlashOctoConfig(
-                fans = mapOf(7 to FixedFanConfig(channel = 7, powerPercent = 100.0)),
-            )
-        assertNotNull(validReq.fans)
+    fun testFeatureState() {
+        val active: FeatureState<Int> = FeatureState.Active(42)
+        assertTrue(active is FeatureState.Active)
+        assertEquals(42, active.value)
+        assertEquals(42, active.valueOrNull)
 
-        // Channel 8 is invalid on Octo (must be 0..7)
-        assertFailsWith<IllegalArgumentException> {
-            FlashOctoConfig(
-                fans = mapOf(8 to FixedFanConfig(channel = 8, powerPercent = 100.0)),
-            )
-        }
+        val disconnected: FeatureState<Int> = FeatureState.Disconnected
+        assertTrue(disconnected is FeatureState.Disconnected)
+        assertEquals(null, disconnected.valueOrNull)
 
-        // Sensor 4 is invalid on Octo (must be 0..3)
-        assertFailsWith<IllegalArgumentException> {
-            FlashOctoConfig(
-                sensorOffsets = mapOf(4 to 1.5),
-            )
-        }
+        val unsupported: FeatureState<Int> = FeatureState.Unsupported
+        assertTrue(unsupported is FeatureState.Unsupported)
+        assertEquals(null, unsupported.valueOrNull)
     }
 
     @Test
     fun testAutoCurveFanConfigValidationAndSerialization() {
-        // Valid auto-curve config
         val valid =
             AutoCurveFanConfig(
                 channel = 1,
@@ -60,7 +45,6 @@ class ProtocolTest {
         assertEquals(45.0, curveConfig.points.last().temp)
         assertEquals(100.0, curveConfig.points.last().pwm)
 
-        // Invalid shape (out of range -10..10)
         assertFailsWith<IllegalArgumentException> {
             AutoCurveFanConfig(
                 channel = 0,
@@ -73,7 +57,6 @@ class ProtocolTest {
             )
         }
 
-        // Invalid temperature range (tMin >= tMax)
         assertFailsWith<IllegalArgumentException> {
             AutoCurveFanConfig(
                 channel = 0,
@@ -85,7 +68,6 @@ class ProtocolTest {
             )
         }
 
-        // Invalid PWM range
         assertFailsWith<IllegalArgumentException> {
             AutoCurveFanConfig(
                 channel = 0,
@@ -97,128 +79,57 @@ class ProtocolTest {
             )
         }
 
-        // Serialization in FlashOctoConfig
         val json = Json { encodeDefaults = true }
         val flashReq =
-            FlashOctoConfig(
+            FlashConfigRequest(
                 fans = mapOf(1 to valid),
+                flowPulsesPerLiter = 450,
+                display = DisplayConfig(brightnessPercent = 80),
             )
         val serialized = json.encodeToString(FlashConfigRequest.serializer(), flashReq)
         assertTrue(serialized.contains(""""type":"auto-curve""""))
         assertTrue(serialized.contains(""""shape":7.0"""))
+        assertTrue(serialized.contains(""""flowPulsesPerLiter":450"""))
+        assertTrue(serialized.contains(""""display":{"brightnessPercent":80,"orientationDegrees":0}"""))
 
         val deserialized = json.decodeFromString(FlashConfigRequest.serializer(), serialized)
-        assertTrue(deserialized is FlashOctoConfig)
         val fan1 = deserialized.fans?.get(1)
         assertTrue(fan1 is AutoCurveFanConfig)
         assertEquals(7.0, fan1.shape)
         assertEquals(30.0, fan1.tMin)
         assertEquals(45.0, fan1.tMax)
+        assertEquals(450, deserialized.flowPulsesPerLiter)
+        assertEquals(80, deserialized.display?.brightnessPercent)
     }
 
     @Test
-    fun testFlashQuadroConfigValidation() {
-        // Channel 3 is valid on Quadro
-        val validReq =
-            FlashQuadroConfig(
-                fans = mapOf(3 to FixedFanConfig(channel = 3, powerPercent = 100.0)),
-            )
-        assertNotNull(validReq.fans)
-
-        // Channel 4 is invalid on Quadro (must be 0..3)
-        assertFailsWith<IllegalArgumentException> {
-            FlashQuadroConfig(
-                fans = mapOf(4 to FixedFanConfig(channel = 4, powerPercent = 100.0)),
-            )
-        }
-    }
-
-    @Test
-    fun testFlashRgbpxValidation() {
-        // Valid OCTO RGBpx ports 0 and 1
-        val validOctoRgb =
-            FlashOctoConfig(
+    fun testRgbpxValidation() {
+        val validRgb =
+            FlashConfigRequest(
                 rgbpx =
                     mapOf(
                         0 to RgbpxPortConfig(port = 0, ledCount = 30, brightnessPercent = 80, mode = RgbEffectMode.STATIC),
                         1 to RgbpxPortConfig(port = 1, ledCount = 60, brightnessPercent = 100, mode = RgbEffectMode.RAINBOW),
                     ),
             )
-        assertNotNull(validOctoRgb.rgbpx)
-        assertEquals(2, validOctoRgb.rgbpx.size)
+        assertNotNull(validRgb.rgbpx)
+        assertEquals(2, validRgb.rgbpx.size)
 
-        // Port 2 is invalid on OCTO (must be 0..1)
-        assertFailsWith<IllegalArgumentException> {
-            FlashOctoConfig(
-                rgbpx = mapOf(2 to RgbpxPortConfig(port = 2, ledCount = 30, brightnessPercent = 80)),
-            )
-        }
-
-        // Valid QUADRO RGBpx port 0
-        val validQuadroRgb =
-            FlashQuadroConfig(
-                rgbpx = mapOf(0 to RgbpxPortConfig(port = 0, ledCount = 45, brightnessPercent = 50)),
-            )
-        assertNotNull(validQuadroRgb.rgbpx)
-
-        // Port 1 is invalid on QUADRO (must be 0)
-        assertFailsWith<IllegalArgumentException> {
-            FlashQuadroConfig(
-                rgbpx = mapOf(1 to RgbpxPortConfig(port = 1, ledCount = 30, brightnessPercent = 80)),
-            )
-        }
-
-        // Valid D5 NEXT RGBpx port 0
-        val validD5Rgb =
-            FlashD5NextConfig(
-                rgbpx = mapOf(0 to RgbpxPortConfig(port = 0, ledCount = 64, brightnessPercent = 90)),
-            )
-        assertNotNull(validD5Rgb.rgbpx)
-
-        // Port 1 is invalid on D5 NEXT (must be 0)
-        assertFailsWith<IllegalArgumentException> {
-            FlashD5NextConfig(
-                rgbpx = mapOf(1 to RgbpxPortConfig(port = 1, ledCount = 30, brightnessPercent = 80)),
-            )
-        }
-
-        // LED count > 90 is invalid
         assertFailsWith<IllegalArgumentException> {
             RgbpxPortConfig(port = 0, ledCount = 91, brightnessPercent = 50)
         }
 
-        // Brightness > 100% is invalid
         assertFailsWith<IllegalArgumentException> {
             RgbpxPortConfig(port = 0, ledCount = 30, brightnessPercent = 101)
         }
 
-        // Color component > 255 is invalid
         assertFailsWith<IllegalArgumentException> {
             RgbColor(r = 256, g = 0, b = 0)
         }
     }
 
     @Test
-    fun testStrictJsonRejectsInvalidDeviceFields() {
-        // Attempting to pass 'display' to FlashOctoConfig should fail during strict deserialization
-        val jsonWithDisplay = """{"display":{"brightnessPercent":80}}"""
-        assertFailsWith<SerializationException> {
-            strictJson.decodeFromString(FlashOctoConfig.serializer(), jsonWithDisplay)
-        }
-
-        // Attempting to pass 'flowPulsesPerLiter' to FlashOctoConfig should fail
-        val jsonWithFlow = """{"flowPulsesPerLiter":150}"""
-        assertFailsWith<SerializationException> {
-            strictJson.decodeFromString(FlashOctoConfig.serializer(), jsonWithFlow)
-        }
-
-        // But flowPulsesPerLiter succeeds on FlashQuadroConfig
-        val quadroParsed = strictJson.decodeFromString(FlashQuadroConfig.serializer(), jsonWithFlow)
-        assertEquals(150, quadroParsed.flowPulsesPerLiter)
-    }
-
-    @Test
-    fun testConfigPolymorphicSerialization() {
+    fun testDeviceConfigSerialization() {
         val json = Json { encodeDefaults = true }
         val fans = List(8) { FixedFanConfig(it, 50.0) }
         val offsets = List(4) { SensorOffset(it, 0.0) }
@@ -233,99 +144,93 @@ class ProtocolTest {
                     primaryColor = RgbColor(255, 128, 0),
                 ),
             )
-        val report: DeviceConfig = OctoConfig(fans, offsets, rgbpx)
+        val config =
+            DeviceConfig(
+                fans = fans,
+                sensorOffsets = offsets,
+                rgbpx = rgbpx,
+                flowPulsesPerLiter = FeatureState.Active(169),
+                display = FeatureState.Unsupported,
+            )
 
-        val serialized = json.encodeToString(DeviceConfig.serializer(), report)
-        assertTrue(serialized.contains(""""type":"octo""""))
+        val serialized = json.encodeToString(DeviceConfig.serializer(), config)
         assertTrue(serialized.contains(""""rgbpx""""))
         assertTrue(serialized.contains(""""primaryColor":{"r":255,"g":128,"b":0}"""))
+        assertTrue(serialized.contains(""""flowPulsesPerLiter":{"type":"active","value":169}"""))
+        assertTrue(serialized.contains(""""display":{"type":"unsupported"}"""))
 
         val deserialized = json.decodeFromString(DeviceConfig.serializer(), serialized)
-        assertTrue(deserialized is OctoConfig)
         assertEquals(8, deserialized.fans.size)
         assertEquals(4, deserialized.sensorOffsets.size)
         assertEquals(1, deserialized.rgbpx.size)
+        assertEquals(FeatureState.Active(169), deserialized.flowPulsesPerLiter)
+        assertEquals(FeatureState.Unsupported, deserialized.display)
         assertEquals(RgbEffectMode.STATIC, deserialized.rgbpx[0].mode)
         assertEquals(RgbColor(255, 128, 0), deserialized.rgbpx[0].primaryColor)
     }
 
     @Test
-    fun testTelemetryPolymorphicSerialization() {
+    fun testDeviceTelemetrySerialization() {
         val json = Json { encodeDefaults = true }
         val fans =
             listOf(
-                FanTelemetry(0, 2000, 5.0, 12.0, 0.4, 50.0),
-                FanTelemetry(1, null, 0.0, 12.0, 0.0, 100.0),
+                CoolingChannelTelemetry.Connected(
+                    channel = 0,
+                    rpm = 2000,
+                    powerWatts = 5.0,
+                    voltageVolts = 12.0,
+                    currentAmps = 0.4,
+                    pwmPercent = 50.0,
+                    kind = CoolingChannelKind.PUMP,
+                ),
+                CoolingChannelTelemetry.Disconnected(
+                    channel = 1,
+                    kind = CoolingChannelKind.FAN,
+                ),
             )
-        val sensors = listOf(SensorTelemetry(0, 25.5))
-        val telemetry: DeviceTelemetry = QuadroTelemetry(fans, sensors, flowRateDlH = 200)
-
-        val serialized = json.encodeToString(DeviceTelemetry.serializer(), telemetry)
-        assertTrue(serialized.contains(""""type":"quadro""""))
-        assertTrue(serialized.contains(""""flowRateDlH":200"""))
-
-        val deserialized = json.decodeFromString(DeviceTelemetry.serializer(), serialized)
-        assertTrue(deserialized is QuadroTelemetry)
-        assertEquals(200, deserialized.flowRateDlH)
-        assertEquals(2, deserialized.fans.size)
-        assertEquals(2000, deserialized.fans[0].rpm)
-        assertEquals(null, deserialized.fans[1].rpm)
-    }
-
-    @Test
-    fun testD5NextTelemetrySerializationWithVirtualSensors() {
-        val json = Json { encodeDefaults = true }
-        val pump = FanTelemetry(0, 3000, 10.0, 12.0, 0.8, 60.0)
-        val fan = FanTelemetry(1, 1000, 2.0, 12.0, 0.16, 40.0)
-        val virtualSensors =
-            listOf(
-                SensorTelemetry(channel = 1, tempCelsius = 35.5, isVirtual = true),
-                SensorTelemetry(channel = 2, tempCelsius = null, isVirtual = true),
-            )
-        val telemetry: DeviceTelemetry =
-            D5NextTelemetry(
-                pump = pump,
-                fan = fan,
-                coolantTempCelsius = 28.4,
-                virtualSensors = virtualSensors,
-            )
-
-        val serialized = json.encodeToString(DeviceTelemetry.serializer(), telemetry)
-        assertTrue(serialized.contains(""""type":"d5next""""))
-        assertTrue(serialized.contains(""""virtualSensors""""))
-
-        val deserialized = json.decodeFromString(DeviceTelemetry.serializer(), serialized)
-        assertTrue(deserialized is D5NextTelemetry)
-        assertEquals(28.4, deserialized.coolantTempCelsius)
-        assertEquals(2, deserialized.virtualSensors.size)
-        assertTrue(deserialized.virtualSensors[0].isVirtual)
-        assertEquals(35.5, deserialized.virtualSensors[0].tempCelsius)
-        assertEquals(null, deserialized.virtualSensors[1].tempCelsius)
-    }
-
-    @Test
-    fun testOctoTelemetrySerializationWithVirtualSensors() {
-        val json = Json { encodeDefaults = true }
         val sensors =
             listOf(
-                SensorTelemetry(0, 30.0, isVirtual = false),
-                SensorTelemetry(4, 42.0, isVirtual = true),
-                SensorTelemetry(5, null, isVirtual = true),
+                SensorTelemetry.Connected(
+                    channel = 0,
+                    tempCelsius = 25.5,
+                    kind = SensorChannelKind.INTEGRATED_COOLANT,
+                ),
+                SensorTelemetry.Disconnected(
+                    channel = 1,
+                    kind = SensorChannelKind.VIRTUAL,
+                ),
             )
-        val telemetry: DeviceTelemetry =
-            OctoTelemetry(
-                fans = emptyList(),
+        val telemetry =
+            DeviceTelemetry(
+                fans = fans,
                 sensors = sensors,
+                flowRateDlH = FeatureState.Active(200),
+                display = FeatureState.Unsupported,
             )
 
         val serialized = json.encodeToString(DeviceTelemetry.serializer(), telemetry)
-        assertTrue(serialized.contains(""""type":"octo""""))
+        assertTrue(serialized.contains(""""flowRateDlH":{"type":"active","value":200}"""))
+        assertTrue(serialized.contains(""""kind":"PUMP""""))
+        assertTrue(serialized.contains(""""kind":"INTEGRATED_COOLANT""""))
 
         val deserialized = json.decodeFromString(DeviceTelemetry.serializer(), serialized)
-        assertTrue(deserialized is OctoTelemetry)
-        assertEquals(3, deserialized.sensors.size)
-        assertEquals(42.0, deserialized.sensors[1].tempCelsius)
-        assertTrue(deserialized.sensors[1].isVirtual)
+        assertEquals(FeatureState.Active(200), deserialized.flowRateDlH)
+        assertEquals(2, deserialized.fans.size)
+        val fan0 = deserialized.fans[0]
+        assertTrue(fan0 is CoolingChannelTelemetry.Connected)
+        assertEquals(2000, fan0.rpm)
+        assertEquals(CoolingChannelKind.PUMP, fan0.kind)
+        val fan1 = deserialized.fans[1]
+        assertTrue(fan1 is CoolingChannelTelemetry.Disconnected)
+        assertEquals(CoolingChannelKind.FAN, fan1.kind)
+
+        val sensor0 = deserialized.sensors[0]
+        assertTrue(sensor0 is SensorTelemetry.Connected)
+        assertEquals(25.5, sensor0.tempCelsius)
+        assertEquals(SensorChannelKind.INTEGRATED_COOLANT, sensor0.kind)
+        val sensor1 = deserialized.sensors[1]
+        assertTrue(sensor1 is SensorTelemetry.Disconnected)
+        assertEquals(SensorChannelKind.VIRTUAL, sensor1.kind)
     }
 
     @Test

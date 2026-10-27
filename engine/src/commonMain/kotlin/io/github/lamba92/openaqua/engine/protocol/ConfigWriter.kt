@@ -4,18 +4,12 @@ import io.github.lamba92.openaqua.engine.util.crc16Usb
 import io.github.lamba92.openaqua.model.AutoCurveFanConfig
 import io.github.lamba92.openaqua.model.CurveFanConfig
 import io.github.lamba92.openaqua.model.CurvePoint
-import io.github.lamba92.openaqua.model.D5NextConfig
 import io.github.lamba92.openaqua.model.DeviceConfig
 import io.github.lamba92.openaqua.model.DeviceDescriptor
 import io.github.lamba92.openaqua.model.FanChannelConfig
+import io.github.lamba92.openaqua.model.FeatureState
 import io.github.lamba92.openaqua.model.FixedFanConfig
 import io.github.lamba92.openaqua.model.FlashConfigRequest
-import io.github.lamba92.openaqua.model.FlashD5NextConfig
-import io.github.lamba92.openaqua.model.FlashOctoConfig
-import io.github.lamba92.openaqua.model.FlashQuadroConfig
-import io.github.lamba92.openaqua.model.OctoConfig
-import io.github.lamba92.openaqua.model.QuadroConfig
-import io.github.lamba92.openaqua.model.SensorOffset
 import io.github.lamba92.openaqua.model.TargetTempFanConfig
 import io.github.lamba92.openaqua.model.TwoPointFanConfig
 import io.github.lamba92.openaqua.model.UnconfiguredFanConfig
@@ -122,83 +116,39 @@ object ConfigWriter {
         report[offsetPos + 1] = (centiCelsius.toInt() and 0xFF).toUByte()
     }
 
-    private fun applyFanAndSensorOffsets(
-        report: UByteArray,
-        descriptor: DeviceDescriptor,
-        fans: Map<Int, FanChannelConfig>?,
-        sensorOffsets: Map<Int, Double>?,
-    ) {
-        fans?.forEach { (channel, config) ->
-            val fan =
-                descriptor.fanChannels.firstOrNull { it.channel == channel }
-                    ?: error("Unknown fan channel $channel for ${descriptor.name}")
-            encodeFanChannelConfig(report, fan.ctrlOffset, config)
-        }
-        if (sensorOffsets != null) {
-            val baseOffset =
-                descriptor.tempCtrlOffset
-                    ?: error("${descriptor.name} does not support temperature offset configuration")
-            sensorOffsets.forEach { (channel, offset) ->
-                descriptor.tempSensors.firstOrNull { it.channel == channel }
-                    ?: error("Unknown sensor channel $channel for ${descriptor.name}")
-                encodeSensorOffset(report, baseOffset, channel, offset)
-            }
-        }
-    }
-
     fun applyFlashConfig(
         report: UByteArray,
         descriptor: DeviceDescriptor,
         request: FlashConfigRequest,
     ) {
-        when (request) {
-            is FlashOctoConfig -> {
-                applyFanAndSensorOffsets(report, descriptor, request.fans, request.sensorOffsets)
-            }
-            is FlashQuadroConfig -> {
-                applyFanAndSensorOffsets(report, descriptor, request.fans, request.sensorOffsets)
-            }
-            is FlashD5NextConfig -> {
-                request.pump?.let { pumpConfig ->
-                    val fan =
-                        descriptor.fanChannels.firstOrNull { it.channel == 0 }
-                            ?: error("Pump channel not found for ${descriptor.name}")
-                    encodeFanChannelConfig(report, fan.ctrlOffset, pumpConfig)
-                }
-                request.fan?.let { fanConfig ->
-                    val fan =
-                        descriptor.fanChannels.firstOrNull { it.channel == 1 }
-                            ?: error("Fan channel not found for ${descriptor.name}")
-                    encodeFanChannelConfig(report, fan.ctrlOffset, fanConfig)
-                }
-                request.coolantOffset?.let { offset ->
-                    val baseOffset =
-                        descriptor.tempCtrlOffset
-                            ?: error("${descriptor.name} does not support temperature offset configuration")
-                    encodeSensorOffset(report, baseOffset, 0, offset)
-                }
+        request.fans?.forEach { (channel, config) ->
+            val fan =
+                descriptor.fanChannels.firstOrNull { it.channel == channel }
+                    ?: error("Unknown fan channel $channel for ${descriptor.name}")
+            encodeFanChannelConfig(report, fan.ctrlOffset, config)
+        }
+        request.sensorOffsets?.let { offsets ->
+            val baseOffset =
+                descriptor.tempCtrlOffset
+                    ?: error("${descriptor.name} does not support temperature offset configuration")
+            offsets.forEach { (channel, offset) ->
+                descriptor.tempSensors.firstOrNull { it.channel == channel }
+                    ?: error("Unknown sensor channel $channel for ${descriptor.name}")
+                encodeSensorOffset(report, baseOffset, channel, offset)
             }
         }
-    }
-
-    private fun verifyFansAndOffsets(
-        expectedFans: Map<Int, FanChannelConfig>?,
-        expectedOffsets: Map<Int, Double>?,
-        actualFans: List<FanChannelConfig>,
-        actualOffsets: List<SensorOffset>,
-    ) {
-        expectedFans?.forEach { (channel, expConfig) ->
-            val actConfig =
-                actualFans.getOrNull(channel)
-                    ?: error("Readback missing fan channel $channel")
-            verifyFanChannelConfig(expected = expConfig, actual = actConfig)
+        val reqPulses = request.flowPulsesPerLiter
+        if (reqPulses != null) {
+            val pulsesCtrlOffset =
+                descriptor.flowPulsesCtrlOffset
+                    ?: error("${descriptor.name} does not support flow sensor calibration")
+            report[pulsesCtrlOffset] = ((reqPulses ushr 8) and 0xFF).toUByte()
+            report[pulsesCtrlOffset + 1] = (reqPulses and 0xFF).toUByte()
         }
-        expectedOffsets?.forEach { (channel, expOffset) ->
-            val actOffset =
-                actualOffsets.firstOrNull { it.channel == channel }?.offsetCelsius
-                    ?: error("Readback missing sensor channel $channel")
-            check(abs(actOffset - expOffset) <= 0.1) {
-                "Verification failed on sensor $channel: expected offset $expOffset°C, read $actOffset°C"
+        val reqDisplay = request.display
+        if (reqDisplay != null) {
+            require(descriptor.hasDisplay) {
+                "${descriptor.name} does not have a display"
             }
         }
     }
@@ -207,34 +157,32 @@ object ConfigWriter {
         expected: FlashConfigRequest,
         actual: DeviceConfig,
     ) {
-        when (expected) {
-            is FlashOctoConfig -> {
-                check(actual is OctoConfig) {
-                    "Verification failed: expected OctoConfig, got ${actual::class.simpleName}"
-                }
-                verifyFansAndOffsets(expected.fans, expected.sensorOffsets, actual.fans, actual.sensorOffsets)
+        expected.fans?.forEach { (channel, expConfig) ->
+            val actConfig =
+                actual.fans.firstOrNull { it.channel == channel }
+                    ?: error("Readback missing fan channel $channel")
+            verifyFanChannelConfig(expected = expConfig, actual = actConfig)
+        }
+        expected.sensorOffsets?.forEach { (channel, expOffset) ->
+            val actOffset =
+                actual.sensorOffsets.firstOrNull { it.channel == channel }?.offsetCelsius
+                    ?: error("Readback missing sensor channel $channel")
+            check(abs(actOffset - expOffset) <= 0.1) {
+                "Verification failed on sensor $channel: expected offset $expOffset°C, read $actOffset°C"
             }
-            is FlashQuadroConfig -> {
-                check(actual is QuadroConfig) {
-                    "Verification failed: expected QuadroConfig, got ${actual::class.simpleName}"
-                }
-                verifyFansAndOffsets(expected.fans, expected.sensorOffsets, actual.fans, actual.sensorOffsets)
+        }
+        val expPulses = expected.flowPulsesPerLiter
+        if (expPulses != null) {
+            val actPulses = actual.flowPulsesPerLiter
+            check(actPulses is FeatureState.Active && actPulses.value == expPulses) {
+                "Verification failed on flowPulsesPerLiter: expected $expPulses, read ${actual.flowPulsesPerLiter}"
             }
-            is FlashD5NextConfig -> {
-                check(actual is D5NextConfig) {
-                    "Verification failed: expected D5NextConfig, got ${actual::class.simpleName}"
-                }
-                expected.pump?.let { expPump ->
-                    verifyFanChannelConfig(expected = expPump, actual = actual.pump)
-                }
-                expected.fan?.let { expFan ->
-                    verifyFanChannelConfig(expected = expFan, actual = actual.fan)
-                }
-                expected.coolantOffset?.let { expOffset ->
-                    check(abs(actual.coolantOffset.offsetCelsius - expOffset) <= 0.1) {
-                        "Verification failed on coolant offset: expected $expOffset°C, read ${actual.coolantOffset.offsetCelsius}°C"
-                    }
-                }
+        }
+        val expDisplay = expected.display
+        if (expDisplay != null) {
+            val actDisplay = actual.display
+            check(actDisplay is FeatureState.Active && actDisplay.value == expDisplay) {
+                "Verification failed on display: expected $expDisplay, read ${actual.display}"
             }
         }
     }

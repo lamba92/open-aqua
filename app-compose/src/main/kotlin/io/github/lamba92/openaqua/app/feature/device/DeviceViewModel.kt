@@ -1,4 +1,4 @@
-package io.github.lamba92.openaqua.app.feature.device.quadro
+package io.github.lamba92.openaqua.app.feature.device
 
 import io.github.lamba92.openaqua.app.coroutine.CoroutineScopeProvider
 import io.github.lamba92.openaqua.app.coroutine.getScope
@@ -19,20 +19,20 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.update
 
-class QuadroViewModel(
+class DeviceViewModel(
     @Suppress("unused") private val repository: OpenAquaEngineApi,
     cacheService: DeviceDataCacheService,
     private val appDataRepository: AppDataRepository,
     scopeProvider: CoroutineScopeProvider,
     private val deviceId: DeviceId,
-) : MVIViewModel<QuadroState, QuadroEvent, QuadroEffect> {
+) : MVIViewModel<DeviceUiState, DeviceUiEvent, DeviceUiEffect> {
     override val viewModelScope: CoroutineScope = scopeProvider.getScope()
 
-    override val state: StateFlow<QuadroState>
-        field = MutableStateFlow<QuadroState>(QuadroState.Loading)
+    override val state: StateFlow<DeviceUiState>
+        field = MutableStateFlow<DeviceUiState>(DeviceUiState.Loading)
 
-    override val effects: SharedFlow<QuadroEffect>
-        field = MutableSharedFlow<QuadroEffect>()
+    override val effects: SharedFlow<DeviceUiEffect>
+        field = MutableSharedFlow<DeviceUiEffect>()
 
     init {
         combine(
@@ -41,45 +41,44 @@ class QuadroViewModel(
         ) { deviceState, storedData ->
             state.update { current ->
                 when (deviceState) {
-                    is DeviceState.Connecting -> QuadroState.Loading
+                    is DeviceState.Connecting -> DeviceUiState.Loading
                     is DeviceState.Error ->
-                        QuadroState.Error(
+                        DeviceUiState.Error(
                             device = deviceState.device,
                             errorType = deviceState.errorType,
                         )
-                    is DeviceState.Quadro if current is QuadroState.Ready ->
+                    is DeviceState.Ready if current is DeviceUiState.Ready ->
                         current.copy(
                             deviceState = deviceState,
                             fans = deviceState.telemetry.fans.toPwmFanItems(deviceState.config.fans, storedData),
                             sensors = deviceState.telemetry.sensors.toSensorItems(deviceState.config.sensorOffsets, storedData),
                         )
-                    is DeviceState.Quadro ->
-                        QuadroState.Ready(
+                    is DeviceState.Ready ->
+                        DeviceUiState.Ready(
                             deviceState = deviceState,
                             fans = deviceState.telemetry.fans.toPwmFanItems(deviceState.config.fans, storedData),
                             selectedFanChannel = 0,
                             sensors = deviceState.telemetry.sensors.toSensorItems(deviceState.config.sensorOffsets, storedData),
                             selectedSensorChannel = 0,
                         )
-                    else -> current
                 }
             }
         }.launchIn(viewModelScope)
     }
 
-    override fun onEvent(event: QuadroEvent) {
+    override fun onEvent(event: DeviceUiEvent) {
         when (event) {
-            is QuadroEvent.SelectFan ->
+            is DeviceUiEvent.SelectFan ->
                 state.update { current ->
-                    if (current is QuadroState.Ready) current.copy(selectedFanChannel = event.channel) else current
+                    if (current is DeviceUiState.Ready) current.copy(selectedFanChannel = event.channel) else current
                 }
-            is QuadroEvent.SelectSensor ->
+            is DeviceUiEvent.SelectSensor ->
                 state.update { current ->
-                    if (current is QuadroState.Ready) current.copy(selectedSensorChannel = event.channel) else current
+                    if (current is DeviceUiState.Ready) current.copy(selectedSensorChannel = event.channel) else current
                 }
-            is QuadroEvent.RenameFan ->
+            is DeviceUiEvent.RenameFan ->
                 appDataRepository.setFanName(deviceId = deviceId, channel = event.channel, name = event.name)
-            is QuadroEvent.RenameSensor ->
+            is DeviceUiEvent.RenameSensor ->
                 appDataRepository.setSensorName(deviceId = deviceId, channel = event.channel, name = event.name)
         }
     }

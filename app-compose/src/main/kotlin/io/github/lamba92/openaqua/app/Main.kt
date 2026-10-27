@@ -33,10 +33,8 @@ import io.github.lamba92.openaqua.app.coroutine.DefaultCoroutineScopeProvider
 import io.github.lamba92.openaqua.app.di.LocalDI
 import io.github.lamba92.openaqua.app.di.createOpenAquaDI
 import io.github.lamba92.openaqua.app.di.rememberInstance
+import io.github.lamba92.openaqua.app.feature.device.DeviceScreen
 import io.github.lamba92.openaqua.app.feature.device.common.CommonDeviceTab
-import io.github.lamba92.openaqua.app.feature.device.d5next.D5NextScreen
-import io.github.lamba92.openaqua.app.feature.device.octo.OctoScreen
-import io.github.lamba92.openaqua.app.feature.device.quadro.QuadroScreen
 import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavEvent
 import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavState
 import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavViewModel
@@ -47,14 +45,12 @@ import io.github.lamba92.openaqua.app.repository.AppDataRepository
 import io.github.lamba92.openaqua.app.theme.AppMetrics
 import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
 import io.github.lamba92.openaqua.app.util.EngineExtractor
-import io.github.lamba92.openaqua.model.DeviceType
 import io.github.lamba92.openaqua.theme.ThemePalette
 import kotlinx.coroutines.runBlocking
 import open_aqua.app_compose.generated.resources.Res
 import open_aqua.app_compose.generated.resources.ic_app_icon
 import open_aqua.app_compose.generated.resources.no_devices_found
 import open_aqua.app_compose.generated.resources.scanning_hardware
-import open_aqua.app_compose.generated.resources.unsupported_device
 import open_aqua.app_compose.generated.resources.window_title
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.painterResource
@@ -165,66 +161,22 @@ private fun DeviceReady(
     navViewModel: DeviceNavViewModel,
 ) {
     val selectedDevice = state.selectedDeviceState.device
-    val onSelectTab = { tab: CommonDeviceTab ->
-        navViewModel.onEvent(DeviceNavEvent.SelectTab(tab))
-    }
 
     DeviceNavigationRailScaffold(
         state = state,
         onEvent = navViewModel::onEvent,
     ) {
-        if (state.isSettingsSelected) {
-            SettingsScreen(
-                viewModel = rememberInstance(),
-            )
-        } else {
-            when (selectedDevice.type) {
-                DeviceType.OCTO ->
-                    OctoScreen(
-                        viewModel = rememberInstance(arg = selectedDevice.id),
-                        selectedTab = state.selectedTab,
-                        onSelectTab = onSelectTab,
-                    )
-                DeviceType.QUADRO ->
-                    QuadroScreen(
-                        viewModel = rememberInstance(arg = selectedDevice.id),
-                        selectedTab = state.selectedTab,
-                        onSelectTab = onSelectTab,
-                    )
-                DeviceType.D5_NEXT ->
-                    D5NextScreen(
-                        viewModel = rememberInstance(arg = selectedDevice.id),
-                        selectedTab = state.selectedTab,
-                        onSelectTab = onSelectTab,
-                    )
-                else -> UnsupportedDevice(selectedDevice.type)
-            }
-        }
-    }
-}
-
-@Composable
-private fun UnsupportedDevice(type: DeviceType) {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(24.dp),
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.Warning,
-                contentDescription = null,
-                tint = OpenAquaTheme.colors.statusWarning,
-                modifier = Modifier.size(48.dp),
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = stringResource(Res.string.unsupported_device, type.name),
-                color = OpenAquaTheme.colors.textPrimary,
-                fontSize = 16.sp,
-            )
+        when {
+            state.isSettingsSelected ->
+                SettingsScreen(
+                    viewModel = rememberInstance(),
+                )
+            else ->
+                DeviceScreen(
+                    viewModel = rememberInstance(arg = selectedDevice.id),
+                    selectedTab = state.selectedTab,
+                    onSelectTab = { navViewModel.onEvent(DeviceNavEvent.SelectTab(it)) },
+                )
         }
     }
 }

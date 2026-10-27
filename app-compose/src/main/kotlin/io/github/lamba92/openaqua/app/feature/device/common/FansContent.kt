@@ -19,6 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.painter.Painter
 import io.github.lamba92.openaqua.app.theme.CoolantTeal
 import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
 import io.github.lamba92.openaqua.app.ui.components.ChannelDetailHeader
@@ -31,8 +32,14 @@ import io.github.lamba92.openaqua.app.ui.components.OpenAquaOutlinedButton
 import io.github.lamba92.openaqua.app.ui.components.RenameDialog
 import io.github.lamba92.openaqua.app.ui.components.VisibilityEmptyState
 import io.github.lamba92.openaqua.app.ui.components.VisibilityFilterChip
+import io.github.lamba92.openaqua.model.CoolingChannelKind
+import io.github.lamba92.openaqua.model.CoolingChannelTelemetry
 import open_aqua.app_compose.generated.resources.Res
 import open_aqua.app_compose.generated.resources.action_rename
+import open_aqua.app_compose.generated.resources.d5_fan_name
+import open_aqua.app_compose.generated.resources.d5_fan_pin
+import open_aqua.app_compose.generated.resources.d5_pump_name
+import open_aqua.app_compose.generated.resources.d5_pump_pin
 import open_aqua.app_compose.generated.resources.fan_channel_name
 import open_aqua.app_compose.generated.resources.fan_channel_pin
 import open_aqua.app_compose.generated.resources.fan_channels_header
@@ -75,7 +82,7 @@ fun FansContent(
     var showAllOverride by remember { mutableStateOf(false) }
 
     val isFanHidden: (FanItem) -> Boolean = { fan ->
-        preferences.hideDisconnectedFans && fan.telemetry.rpm == null
+        preferences.hideDisconnectedFans && fan.telemetry is CoolingChannelTelemetry.Disconnected
     }
 
     val hiddenCount =
@@ -94,6 +101,7 @@ fun FansContent(
 
     val selectedFan = displayedFans.firstOrNull { it.channel == selectedChannel } ?: displayedFans.firstOrNull()
     var renamingFan by remember { mutableStateOf<FanItem?>(null) }
+    val hasPump = remember(fans) { fans.any { it.kind == CoolingChannelKind.PUMP } }
 
     FansPageScaffold(
         modifier = modifier,
@@ -111,12 +119,21 @@ fun FansContent(
             },
         selectorContent = {
             displayedFans.forEach { fan ->
-                val fanNumber = fan.channel + 1
+                val name = fan.customName ?: defaultCoolingName(fan, hasPump)
+                val pinLabel = defaultCoolingPin(fan, hasPump)
+                val icon =
+                    if (fan.kind == CoolingChannelKind.PUMP) {
+                        painterResource(Res.drawable.ic_speed)
+                    } else {
+                        painterResource(Res.drawable.ic_fan)
+                    }
+                val connectedTel = fan.telemetry as? CoolingChannelTelemetry.Connected
                 FanSelectionTile(
-                    name = fan.customName ?: stringResource(Res.string.fan_channel_name, fanNumber),
-                    pinLabel = stringResource(Res.string.fan_channel_pin, fanNumber),
-                    rpm = fan.telemetry.rpm,
-                    pwmPercent = fan.telemetry.pwmPercent,
+                    name = name,
+                    pinLabel = pinLabel,
+                    rpm = connectedTel?.rpm,
+                    pwmPercent = connectedTel?.pwmPercent,
+                    icon = icon,
                     selected = fan.channel == selectedFan?.channel,
                     onClick = { onSelectFan(fan.channel) },
                     onDoubleClick = onRenameFan?.let { { renamingFan = fan } },
@@ -130,10 +147,11 @@ fun FansContent(
                     onShowAll = { showAllOverride = true },
                 )
             } else if (selectedFan != null) {
-                val fanNumber = selectedFan.channel + 1
+                val name = selectedFan.customName ?: defaultCoolingName(selectedFan, hasPump)
+                val pinLabel = defaultCoolingPin(selectedFan, hasPump)
                 FanChannelDetailCard(
-                    name = selectedFan.customName ?: stringResource(Res.string.fan_channel_name, fanNumber),
-                    pinLabel = stringResource(Res.string.fan_channel_pin, fanNumber),
+                    name = name,
+                    pinLabel = pinLabel,
                     fan = selectedFan,
                     onRenameClick = onRenameFan?.let { { renamingFan = selectedFan } },
                 )
@@ -143,8 +161,7 @@ fun FansContent(
 
     val activeRenamingFan = renamingFan
     if (activeRenamingFan != null && onRenameFan != null) {
-        val fanNumber = activeRenamingFan.channel + 1
-        val defaultName = stringResource(Res.string.fan_channel_name, fanNumber)
+        val defaultName = defaultCoolingName(activeRenamingFan, hasPump)
         RenameDialog(
             title = stringResource(Res.string.rename_dialog_title, activeRenamingFan.customName ?: defaultName),
             initialValue = activeRenamingFan.customName ?: "",
@@ -157,6 +174,36 @@ fun FansContent(
         )
     }
 }
+
+@Composable
+private fun defaultCoolingName(
+    fan: FanItem,
+    hasPump: Boolean,
+): String =
+    when (fan.kind) {
+        CoolingChannelKind.PUMP -> stringResource(Res.string.d5_pump_name)
+        CoolingChannelKind.FAN ->
+            if (fan.channel == 1 && hasPump) {
+                stringResource(Res.string.d5_fan_name)
+            } else {
+                stringResource(Res.string.fan_channel_name, fan.channel + 1)
+            }
+    }
+
+@Composable
+private fun defaultCoolingPin(
+    fan: FanItem,
+    hasPump: Boolean,
+): String =
+    when (fan.kind) {
+        CoolingChannelKind.PUMP -> stringResource(Res.string.d5_pump_pin)
+        CoolingChannelKind.FAN ->
+            if (fan.channel == 1 && hasPump) {
+                stringResource(Res.string.d5_fan_pin)
+            } else {
+                stringResource(Res.string.fan_channel_pin, fan.channel + 1)
+            }
+    }
 
 @Composable
 fun FansPageScaffold(
@@ -184,6 +231,7 @@ fun FanSelectionTile(
     selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    icon: Painter = painterResource(Res.drawable.ic_fan),
     pwmPercent: Double? = null,
     onDoubleClick: (() -> Unit)? = null,
 ) {
@@ -223,7 +271,7 @@ fun FanSelectionTile(
         metrics = metrics,
         icon = {
             Icon(
-                painter = painterResource(Res.drawable.ic_fan),
+                painter = icon,
                 contentDescription = name,
                 tint =
                     if (selected) {
@@ -262,7 +310,12 @@ fun FanChannelDetailCard(
         verticalArrangement = Arrangement.spacedBy(metrics.spacingLg),
     ) {
         ChannelDetailHeader(
-            icon = painterResource(Res.drawable.ic_tune),
+            icon =
+                if (fan.kind == CoolingChannelKind.PUMP) {
+                    painterResource(Res.drawable.ic_speed)
+                } else {
+                    painterResource(Res.drawable.ic_tune)
+                },
             title = stringResource(Res.string.fan_settings_title, name),
             subtitle = stringResource(Res.string.fan_hardware_pin, pinLabel),
             trailingContent =
@@ -278,51 +331,42 @@ fun FanChannelDetailCard(
         )
 
         // Live metrics telemetry
-        val tel = fan.telemetry
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(metrics.spacingMd),
             verticalArrangement = Arrangement.spacedBy(metrics.spacingMd),
         ) {
-            FanMetricCard(
-                label = stringResource(Res.string.metric_speed),
-                value =
-                    tel.rpm?.let {
-                        stringResource(Res.string.fan_rpm_value, it)
-                    } ?: stringResource(Res.string.fan_disconnected),
-            )
-            FanMetricCard(
-                label = stringResource(Res.string.metric_pwm_duty),
-                value =
-                    stringResource(
-                        Res.string.fan_pwm_value,
-                        tel.pwmPercent?.let { "%.1f".format(it) } ?: "0.0",
-                    ),
-            )
-            FanMetricCard(
-                label = stringResource(Res.string.metric_voltage),
-                value =
-                    stringResource(
-                        Res.string.fan_voltage_value,
-                        "%.2f".format(tel.voltageVolts),
-                    ),
-            )
-            FanMetricCard(
-                label = stringResource(Res.string.metric_current),
-                value =
-                    stringResource(
-                        Res.string.fan_current_value,
-                        "%.3f".format(tel.currentAmps),
-                    ),
-            )
-            FanMetricCard(
-                label = stringResource(Res.string.metric_power),
-                value =
-                    stringResource(
-                        Res.string.fan_power_value,
-                        "%.2f".format(tel.powerWatts),
-                    ),
-            )
+            when (val tel = fan.telemetry) {
+                is CoolingChannelTelemetry.Connected -> {
+                    FanMetricCard(
+                        label = stringResource(Res.string.metric_speed),
+                        value = stringResource(Res.string.fan_rpm_value, tel.rpm),
+                    )
+                    FanMetricCard(
+                        label = stringResource(Res.string.metric_pwm_duty),
+                        value = stringResource(Res.string.fan_pwm_value, "%.1f".format(tel.pwmPercent)),
+                    )
+                    FanMetricCard(
+                        label = stringResource(Res.string.metric_voltage),
+                        value = stringResource(Res.string.fan_voltage_value, "%.2f".format(tel.voltageVolts)),
+                    )
+                    FanMetricCard(
+                        label = stringResource(Res.string.metric_current),
+                        value = stringResource(Res.string.fan_current_value, "%.3f".format(tel.currentAmps)),
+                    )
+                    FanMetricCard(
+                        label = stringResource(Res.string.metric_power),
+                        value = stringResource(Res.string.fan_power_value, "%.2f".format(tel.powerWatts)),
+                    )
+                }
+
+                is CoolingChannelTelemetry.Disconnected -> {
+                    FanMetricCard(
+                        label = stringResource(Res.string.metric_speed),
+                        value = stringResource(Res.string.fan_disconnected),
+                    )
+                }
+            }
         }
 
         // Iteration Placeholder Container

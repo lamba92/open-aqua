@@ -31,6 +31,9 @@ import io.github.lamba92.openaqua.app.ui.components.RenameDialog
 import io.github.lamba92.openaqua.app.ui.components.VisibilityEmptyState
 import io.github.lamba92.openaqua.app.ui.components.VisibilityFilterChip
 import io.github.lamba92.openaqua.app.ui.components.sensorTemperatureColor
+import io.github.lamba92.openaqua.model.SensorChannelKind
+import io.github.lamba92.openaqua.model.SensorTelemetry
+import io.github.lamba92.openaqua.model.tempCelsiusOrNull
 import open_aqua.app_compose.generated.resources.Res
 import open_aqua.app_compose.generated.resources.action_rename
 import open_aqua.app_compose.generated.resources.ic_edit
@@ -80,8 +83,8 @@ fun SensorsContent(
 
     val isSensorHidden: (SensorItem) -> Boolean = { sensor ->
         when (sensor.kind) {
-            SensorChannelKind.PHYSICAL_NTC -> preferences.hideDisconnectedSensors && sensor.telemetry.tempCelsius == null
-            SensorChannelKind.VIRTUAL -> preferences.hideUnconfiguredVirtualSensors && sensor.telemetry.tempCelsius == null
+            SensorChannelKind.PHYSICAL_NTC -> preferences.hideDisconnectedSensors && sensor.telemetry is SensorTelemetry.Disconnected
+            SensorChannelKind.VIRTUAL -> preferences.hideUnconfiguredVirtualSensors && sensor.telemetry is SensorTelemetry.Disconnected
             SensorChannelKind.INTEGRATED_COOLANT -> false
         }
     }
@@ -131,7 +134,7 @@ fun SensorsContent(
         selectorContent = {
             displayedSensors.forEach { sensor ->
                 val isSelected = sensor.channel == selectedSensor?.channel
-                val temp = sensor.telemetry.tempCelsius
+                val temp = sensor.telemetry.tempCelsiusOrNull
                 val sensorName = sensor.resolveName()
                 val sensorPin = sensor.resolvePinLabel()
                 SensorSelectionTile(
@@ -180,7 +183,7 @@ fun SensorsContent(
                     )
 
                     // Live metrics telemetry
-                    val temp = selectedSensor.telemetry.tempCelsius
+                    val temp = selectedSensor.telemetry.tempCelsiusOrNull
                     FlowRow(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(metrics.spacingMd),

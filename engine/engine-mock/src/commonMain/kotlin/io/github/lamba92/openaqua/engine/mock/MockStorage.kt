@@ -5,7 +5,6 @@ import io.github.lamba92.openaqua.engine.util.readText
 import io.github.lamba92.openaqua.model.AutoCurveFanConfig
 import io.github.lamba92.openaqua.model.CurveFanConfig
 import io.github.lamba92.openaqua.model.CurvePoint
-import io.github.lamba92.openaqua.model.D5NextConfig
 import io.github.lamba92.openaqua.model.DetectedHardwareDevice
 import io.github.lamba92.openaqua.model.DeviceAlias
 import io.github.lamba92.openaqua.model.DeviceConfig
@@ -13,9 +12,8 @@ import io.github.lamba92.openaqua.model.DeviceId
 import io.github.lamba92.openaqua.model.DeviceRegistry
 import io.github.lamba92.openaqua.model.DeviceType
 import io.github.lamba92.openaqua.model.DisplayConfig
+import io.github.lamba92.openaqua.model.FeatureState
 import io.github.lamba92.openaqua.model.FixedFanConfig
-import io.github.lamba92.openaqua.model.OctoConfig
-import io.github.lamba92.openaqua.model.QuadroConfig
 import io.github.lamba92.openaqua.model.RgbEffectMode
 import io.github.lamba92.openaqua.model.RgbpxPortConfig
 import io.github.lamba92.openaqua.model.SensorOffset
@@ -53,8 +51,8 @@ private fun defaultCurvePoints(): List<CurvePoint> =
         shape = 0.0,
     ).toCurveFanConfig().points
 
-fun defaultOctoConfig(): OctoConfig =
-    OctoConfig(
+fun defaultOctoConfig(): DeviceConfig =
+    DeviceConfig(
         fans =
             listOf(
                 CurveFanConfig(channel = 0, sensorIndex = 0, points = defaultCurvePoints()),
@@ -73,6 +71,8 @@ fun defaultOctoConfig(): OctoConfig =
                 SensorOffset(channel = 2, offsetCelsius = 0.0),
                 SensorOffset(channel = 3, offsetCelsius = 0.5),
             ),
+        flowPulsesPerLiter = FeatureState.Disconnected,
+        display = FeatureState.Unsupported,
         rgbpx =
             listOf(
                 RgbpxPortConfig(port = 0, enabled = true, ledCount = 30, brightnessPercent = 100, mode = RgbEffectMode.STATIC),
@@ -80,8 +80,8 @@ fun defaultOctoConfig(): OctoConfig =
             ),
     )
 
-fun defaultQuadroConfig(): QuadroConfig =
-    QuadroConfig(
+fun defaultQuadroConfig(): DeviceConfig =
+    DeviceConfig(
         fans =
             listOf(
                 CurveFanConfig(channel = 0, sensorIndex = 0, points = defaultCurvePoints()),
@@ -96,19 +96,27 @@ fun defaultQuadroConfig(): QuadroConfig =
                 SensorOffset(channel = 2, offsetCelsius = 0.0),
                 SensorOffset(channel = 3, offsetCelsius = 0.0),
             ),
-        flowPulsesPerLiter = 169,
+        flowPulsesPerLiter = FeatureState.Active(169),
+        display = FeatureState.Unsupported,
         rgbpx =
             listOf(
                 RgbpxPortConfig(port = 0, enabled = true, ledCount = 30, brightnessPercent = 100, mode = RgbEffectMode.STATIC),
             ),
     )
 
-fun defaultD5NextConfig(): D5NextConfig =
-    D5NextConfig(
-        pump = FixedFanConfig(channel = 0, powerPercent = 60.0),
-        fan = CurveFanConfig(channel = 1, sensorIndex = 0, points = defaultCurvePoints()),
-        coolantOffset = SensorOffset(channel = 0, offsetCelsius = 0.0),
-        display = DisplayConfig(brightnessPercent = 80, orientationDegrees = 0),
+fun defaultD5NextConfig(): DeviceConfig =
+    DeviceConfig(
+        fans =
+            listOf(
+                FixedFanConfig(channel = 0, powerPercent = 60.0),
+                CurveFanConfig(channel = 1, sensorIndex = 0, points = defaultCurvePoints()),
+            ),
+        sensorOffsets =
+            listOf(
+                SensorOffset(channel = 0, offsetCelsius = 0.0),
+            ),
+        flowPulsesPerLiter = FeatureState.Unsupported,
+        display = FeatureState.Active(DisplayConfig(brightnessPercent = 80, orientationDegrees = 0)),
         rgbpx =
             listOf(
                 RgbpxPortConfig(port = 0, enabled = true, ledCount = 15, brightnessPercent = 100, mode = RgbEffectMode.STATIC),

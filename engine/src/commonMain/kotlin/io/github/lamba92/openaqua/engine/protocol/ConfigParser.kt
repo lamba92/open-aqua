@@ -2,15 +2,12 @@ package io.github.lamba92.openaqua.engine.protocol
 
 import io.github.lamba92.openaqua.model.CurveFanConfig
 import io.github.lamba92.openaqua.model.CurvePoint
-import io.github.lamba92.openaqua.model.D5NextConfig
 import io.github.lamba92.openaqua.model.DetectedHardwareDevice
 import io.github.lamba92.openaqua.model.DeviceConfig
 import io.github.lamba92.openaqua.model.DeviceDescriptor
-import io.github.lamba92.openaqua.model.DeviceType
 import io.github.lamba92.openaqua.model.FanChannelConfig
+import io.github.lamba92.openaqua.model.FeatureState
 import io.github.lamba92.openaqua.model.FixedFanConfig
-import io.github.lamba92.openaqua.model.OctoConfig
-import io.github.lamba92.openaqua.model.QuadroConfig
 import io.github.lamba92.openaqua.model.RgbEffectMode
 import io.github.lamba92.openaqua.model.RgbpxPortConfig
 import io.github.lamba92.openaqua.model.SensorOffset
@@ -153,36 +150,22 @@ object ConfigParser {
         device: DetectedHardwareDevice,
         descriptor: DeviceDescriptor,
         report: UByteArray,
-    ): DeviceConfig =
-        when (device.type) {
-            DeviceType.OCTO -> {
-                OctoConfig(
-                    fans = parseFans(report, descriptor),
-                    sensorOffsets = parseOffsets(report, descriptor),
-                    rgbpx = defaultRgbpxPorts(descriptor),
-                )
+    ): DeviceConfig {
+        val pulsesOffset = descriptor.flowPulsesCtrlOffset
+        val flowPulses =
+            if (descriptor.hasFlowSensor && pulsesOffset != null) {
+                val rawPulses = ((report[pulsesOffset].toInt() and 0xFF shl 8) or (report[pulsesOffset + 1].toInt() and 0xFF))
+                if (rawPulses > 0) FeatureState.Active(rawPulses) else FeatureState.Disconnected
+            } else {
+                FeatureState.Unsupported
             }
-            DeviceType.QUADRO -> {
-                QuadroConfig(
-                    fans = parseFans(report, descriptor),
-                    sensorOffsets = parseOffsets(report, descriptor),
-                    flowPulsesPerLiter = null,
-                    rgbpx = defaultRgbpxPorts(descriptor),
-                )
-            }
-            DeviceType.D5_NEXT -> {
-                val pump = parseFanChannelConfig(report, descriptor.fanChannels[0].ctrlOffset, 0)
-                val fan = parseFanChannelConfig(report, descriptor.fanChannels[1].ctrlOffset, 1)
-                val baseOffset = descriptor.tempCtrlOffset ?: error("No tempCtrlOffset for ${device.name}")
-                val offset = SensorOffset(0, parseSensorOffset(report, baseOffset, 0))
-                D5NextConfig(
-                    pump = pump,
-                    fan = fan,
-                    coolantOffset = offset,
-                    display = null,
-                    rgbpx = defaultRgbpxPorts(descriptor),
-                )
-            }
-            else -> error("Unsupported device type for config parsing: ${device.type}")
-        }
+
+        return DeviceConfig(
+            fans = parseFans(report, descriptor),
+            sensorOffsets = parseOffsets(report, descriptor),
+            flowPulsesPerLiter = flowPulses,
+            display = if (descriptor.hasDisplay) FeatureState.Disconnected else FeatureState.Unsupported,
+            rgbpx = defaultRgbpxPorts(descriptor),
+        )
+    }
 }

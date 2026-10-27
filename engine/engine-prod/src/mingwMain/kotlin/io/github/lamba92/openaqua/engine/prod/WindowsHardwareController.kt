@@ -14,9 +14,6 @@ import io.github.lamba92.openaqua.model.DeviceRegistry
 import io.github.lamba92.openaqua.model.DeviceTelemetry
 import io.github.lamba92.openaqua.model.DeviceType
 import io.github.lamba92.openaqua.model.FlashConfigRequest
-import io.github.lamba92.openaqua.model.FlashD5NextConfig
-import io.github.lamba92.openaqua.model.FlashOctoConfig
-import io.github.lamba92.openaqua.model.FlashQuadroConfig
 import kotlinx.cinterop.CPointerVar
 import kotlinx.cinterop.UByteVar
 import kotlinx.cinterop.UIntVar
@@ -264,7 +261,7 @@ class WindowsHardwareController : HardwareController {
             DeviceRegistry.ALL.firstOrNull { it.type == device.type }
                 ?: error("Unsupported device type: ${device.type}")
 
-        validateRequestMatchesDevice(device.type, request)
+        validateRequestMatchesDevice(descriptor, request)
 
         val node = getScannedNode(device)
         val report = readFeatureReport(node.devicePath, 0x03u, descriptor.ctrlReportLength)
@@ -314,23 +311,33 @@ class WindowsHardwareController : HardwareController {
 }
 
 private fun validateRequestMatchesDevice(
-    type: DeviceType,
+    descriptor: DeviceDescriptor,
     request: FlashConfigRequest,
 ) {
-    when (type) {
-        DeviceType.OCTO ->
-            check(request is FlashOctoConfig) {
-                "Expected FlashOctoConfig for device type OCTO, got ${request::class.simpleName}"
-            }
-        DeviceType.QUADRO ->
-            check(request is FlashQuadroConfig) {
-                "Expected FlashQuadroConfig for device type QUADRO, got ${request::class.simpleName}"
-            }
-        DeviceType.D5_NEXT ->
-            check(request is FlashD5NextConfig) {
-                "Expected FlashD5NextConfig for device type D5_NEXT, got ${request::class.simpleName}"
-            }
-        else -> error("Unsupported device type: $type")
+    request.fans?.keys?.forEach { ch ->
+        require(descriptor.fanChannels.any { it.channel == ch }) {
+            "Invalid fan channel $ch for ${descriptor.name}"
+        }
+    }
+    request.sensorOffsets?.keys?.forEach { ch ->
+        require(descriptor.tempSensors.any { it.channel == ch }) {
+            "Invalid sensor channel $ch for ${descriptor.name}"
+        }
+    }
+    request.rgbpx?.keys?.forEach { port ->
+        require(descriptor.hasRgbpx && port in 0 until descriptor.rgbpxPortCount) {
+            "Invalid RGBpx port $port for ${descriptor.name}"
+        }
+    }
+    if (request.flowPulsesPerLiter != null) {
+        require(descriptor.hasFlowSensor && descriptor.flowPulsesCtrlOffset != null) {
+            "Device ${descriptor.name} does not support flow sensor calibration"
+        }
+    }
+    if (request.display != null) {
+        require(descriptor.hasDisplay) {
+            "Device ${descriptor.name} does not support display configuration"
+        }
     }
 }
 

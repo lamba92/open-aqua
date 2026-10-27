@@ -1,4 +1,4 @@
-package io.github.lamba92.openaqua.app.feature.device.quadro
+package io.github.lamba92.openaqua.app.feature.device
 
 import io.github.lamba92.openaqua.app.feature.device.common.FanItem
 import io.github.lamba92.openaqua.app.feature.device.common.SensorItem
@@ -6,41 +6,41 @@ import io.github.lamba92.openaqua.app.repository.DeviceErrorType
 import io.github.lamba92.openaqua.app.repository.DeviceState
 import io.github.lamba92.openaqua.model.DetectedHardwareDevice
 
-sealed interface QuadroState {
-    data object Loading : QuadroState
+sealed interface DeviceUiState {
+    data object Loading : DeviceUiState
 
     data class Error(
         val device: DetectedHardwareDevice,
         val errorType: DeviceErrorType,
-    ) : QuadroState
+    ) : DeviceUiState
 
     data class Ready(
-        val deviceState: DeviceState.Quadro,
+        val deviceState: DeviceState.Ready,
         val fans: List<FanItem>,
-        val selectedFanChannel: Int = 0,
+        val selectedFanChannel: Int,
         val sensors: List<SensorItem>,
-        val selectedSensorChannel: Int = 0,
-    ) : QuadroState
+        val selectedSensorChannel: Int,
+    ) : DeviceUiState
 }
 
-sealed interface QuadroEvent {
+sealed interface DeviceUiEvent {
     data class SelectFan(
         val channel: Int,
-    ) : QuadroEvent
+    ) : DeviceUiEvent
 
     data class SelectSensor(
         val channel: Int,
-    ) : QuadroEvent
+    ) : DeviceUiEvent
 
     data class RenameFan(
         val channel: Int,
         val name: String?,
-    ) : QuadroEvent
+    ) : DeviceUiEvent
 
     data class RenameSensor(
         val channel: Int,
         val name: String?,
-    ) : QuadroEvent
+    ) : DeviceUiEvent
 }
 
-sealed interface QuadroEffect
+sealed interface DeviceUiEffect

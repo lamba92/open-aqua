@@ -5,19 +5,12 @@ import io.github.lamba92.openaqua.app.coroutine.getScope
 import io.github.lamba92.openaqua.app.util.combineByKey
 import io.github.lamba92.openaqua.app.util.every
 import io.github.lamba92.openaqua.app.util.throttleLatest
-import io.github.lamba92.openaqua.model.D5NextConfig
-import io.github.lamba92.openaqua.model.D5NextTelemetry
 import io.github.lamba92.openaqua.model.DetectedHardwareDevice
 import io.github.lamba92.openaqua.model.DeviceConfig
 import io.github.lamba92.openaqua.model.DeviceDescriptor
 import io.github.lamba92.openaqua.model.DeviceId
 import io.github.lamba92.openaqua.model.DeviceRegistry
 import io.github.lamba92.openaqua.model.DeviceTelemetry
-import io.github.lamba92.openaqua.model.DeviceType
-import io.github.lamba92.openaqua.model.OctoConfig
-import io.github.lamba92.openaqua.model.OctoTelemetry
-import io.github.lamba92.openaqua.model.QuadroConfig
-import io.github.lamba92.openaqua.model.QuadroTelemetry
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
@@ -89,7 +82,12 @@ class DeviceDataCacheService(
             every(pollingIntervals.deviceConfig) { openAquaEngineApi.getDeviceConfig(id) },
             openAquaEngineApi.getTelemetryStream(id),
         ) { config, telemetry ->
-            mapDeviceToState(descriptor, telemetry, config)
+            DeviceState.Ready(
+                device = this@getStateFlow,
+                descriptor = descriptor,
+                telemetry = telemetry,
+                config = config,
+            )
         }.onStart { emit(DeviceState.Connecting(this@getStateFlow, descriptor)) }
             .catch { cause ->
                 System.err.println("[DeviceDataCacheService] Error reading device '$id' ($name): ${cause.message}")
@@ -105,39 +103,6 @@ private fun Throwable.toDeviceErrorType(): DeviceErrorType =
         is SerializationException -> DeviceErrorType.ProtocolMismatch
         is IOException -> DeviceErrorType.IoFailure
         else -> DeviceErrorType.Unknown
-    }
-
-private fun DetectedHardwareDevice.mapDeviceToState(
-    descriptor: DeviceDescriptor,
-    telemetry: DeviceTelemetry,
-    config: DeviceConfig,
-): DeviceState.Ready =
-    when (type) {
-        DeviceType.D5_NEXT if telemetry is D5NextTelemetry && config is D5NextConfig ->
-            DeviceState.D5Next(
-                device = this,
-                descriptor = descriptor,
-                telemetry = telemetry,
-                config = config,
-            )
-
-        DeviceType.QUADRO if telemetry is QuadroTelemetry && config is QuadroConfig ->
-            DeviceState.Quadro(
-                device = this,
-                descriptor = descriptor,
-                telemetry = telemetry,
-                config = config,
-            )
-
-        DeviceType.OCTO if telemetry is OctoTelemetry && config is OctoConfig ->
-            DeviceState.Octo(
-                device = this,
-                descriptor = descriptor,
-                telemetry = telemetry,
-                config = config,
-            )
-
-        else -> error("Unknown device type '$type' with telemetry type '${telemetry::class.simpleName}' and config type '${config::class.simpleName}'")
     }
 
 sealed interface DeviceErrorType {
@@ -165,29 +130,10 @@ sealed interface DeviceState {
         val errorType: DeviceErrorType,
     ) : DeviceState
 
-    sealed interface Ready : DeviceState {
-        val telemetry: DeviceTelemetry
-        val config: DeviceConfig
-    }
-
-    data class D5Next(
+    data class Ready(
         override val device: DetectedHardwareDevice,
         override val descriptor: DeviceDescriptor,
-        override val telemetry: D5NextTelemetry,
-        override val config: D5NextConfig,
-    ) : Ready
-
-    data class Quadro(
-        override val device: DetectedHardwareDevice,
-        override val descriptor: DeviceDescriptor,
-        override val telemetry: QuadroTelemetry,
-        override val config: QuadroConfig,
-    ) : Ready
-
-    data class Octo(
-        override val device: DetectedHardwareDevice,
-        override val descriptor: DeviceDescriptor,
-        override val telemetry: OctoTelemetry,
-        override val config: OctoConfig,
-    ) : Ready
+        val telemetry: DeviceTelemetry,
+        val config: DeviceConfig,
+    ) : DeviceState
 }
