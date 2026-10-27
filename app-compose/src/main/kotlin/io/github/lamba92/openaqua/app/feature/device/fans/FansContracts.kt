@@ -1,7 +1,6 @@
 package io.github.lamba92.openaqua.app.feature.device.fans
 
 import io.github.lamba92.openaqua.app.feature.device.common.FanItem
-import io.github.lamba92.openaqua.app.feature.device.common.FanUiItem
 import io.github.lamba92.openaqua.app.feature.device.common.SensorItem
 import io.github.lamba92.openaqua.model.AutoCurveFanConfig
 import io.github.lamba92.openaqua.model.CurveFanConfig
@@ -166,7 +165,7 @@ sealed interface FansUiState {
     data object Loading : FansUiState
 
     data class Ready(
-        val fans: List<FanUiItem>,
+        val fans: List<FanItem>,
         val selectedFanChannel: Int,
         val sensors: List<SensorItem>,
         val fanDrafts: Map<Int, FanDraft> = emptyMap(),
@@ -174,24 +173,20 @@ sealed interface FansUiState {
         val renamingChannel: Int? = null,
         val hideDisconnectedFans: Boolean = false,
         val hideDisconnectedSensors: Boolean = false,
-        val hideUnconfiguredVirtualSensors: Boolean = false,
     ) : FansUiState {
-        val rawFans: List<FanItem>
-            get() = fans.map { it.fan }
-
         val renamingFan: FanItem?
-            get() = renamingChannel?.let { ch -> rawFans.firstOrNull { it.channel == ch } }
+            get() = renamingChannel?.let { ch -> fans.firstOrNull { it.channel == ch } }
 
         fun isFanModified(fan: FanItem): Boolean {
             val draft = fanDrafts[fan.channel] ?: return false
-            return draft.toFanChannelConfig(rawFans, fanDrafts) != fan.config
+            return draft.toFanChannelConfig(fans, fanDrafts) != fan.config
         }
 
         val pendingFans: List<Pair<FanItem, FanChannelConfig>>
             get() =
-                rawFans.mapNotNull { fan ->
+                fans.mapNotNull { fan ->
                     val draft = fanDrafts[fan.channel] ?: return@mapNotNull null
-                    val target = draft.toFanChannelConfig(rawFans, fanDrafts)
+                    val target = draft.toFanChannelConfig(fans, fanDrafts)
                     if (target != fan.config) fan to target else null
                 }
     }
@@ -220,9 +215,15 @@ sealed interface FansUiEvent {
     data object DismissFlashDialog : FansUiEvent
 
     data object ConfirmFlash : FansUiEvent
+
+    data object ToggleHideDisconnectedFans : FansUiEvent
+
+    data object ToggleHideDisconnectedSensors : FansUiEvent
 }
 
 sealed interface CurveStudioEvent : FansUiEvent {
+    data object ToggleHideDisconnectedSensors : CurveStudioEvent
+
     data class ChangeMode(
         val mode: CurveMode,
     ) : CurveStudioEvent

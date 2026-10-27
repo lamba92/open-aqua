@@ -38,6 +38,7 @@ class SettingsViewModel(
                         fontSp = ready.data.fontSp,
                         fontFamily = ready.data.fontFamily,
                         hideDisconnectedFans = ready.data.hideDisconnectedFans,
+                        hideDisconnectedSensorsInFans = ready.data.hideDisconnectedSensorsInFans,
                         hideDisconnectedSensors = ready.data.hideDisconnectedSensors,
                         hideUnconfiguredVirtualSensors = ready.data.hideUnconfiguredVirtualSensors,
                     )
@@ -59,6 +60,8 @@ class SettingsViewModel(
             is SettingsEvent.SetFontSp -> appDataRepository.setFontSp(event.sp)
             is SettingsEvent.SelectFontFamily -> appDataRepository.setFontFamily(event.family)
             is SettingsEvent.ToggleHideDisconnectedFans -> appDataRepository.setHideDisconnectedFans(event.hide)
+            is SettingsEvent.ToggleHideDisconnectedSensorsInFans ->
+                appDataRepository.setHideDisconnectedSensorsInFans(event.hide)
             is SettingsEvent.ToggleHideDisconnectedSensors -> appDataRepository.setHideDisconnectedSensors(event.hide)
             is SettingsEvent.ToggleHideUnconfiguredVirtualSensors ->
                 appDataRepository.setHideUnconfiguredVirtualSensors(event.hide)

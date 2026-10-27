@@ -19,7 +19,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -32,7 +31,6 @@ import androidx.compose.ui.unit.sp
 import io.github.lamba92.openaqua.app.di.rememberInstance
 import io.github.lamba92.openaqua.app.feature.device.common.DeviceLoadingContent
 import io.github.lamba92.openaqua.app.feature.device.common.FanItem
-import io.github.lamba92.openaqua.app.feature.device.common.FanUiItem
 import io.github.lamba92.openaqua.app.feature.device.common.SensorItem
 import io.github.lamba92.openaqua.app.theme.BrandPureWhite
 import io.github.lamba92.openaqua.app.theme.CoolantTeal
@@ -110,56 +108,53 @@ fun FansContent(
     modifier: Modifier = Modifier,
     scrollState: ScrollState = rememberScrollState(),
 ) {
-    var showAllOverride by remember { mutableStateOf(false) }
-
     val isFanHidden =
-        remember<(FanUiItem) -> Boolean>(state.hideDisconnectedFans) {
-            { item -> state.hideDisconnectedFans && item.canHidden }
+        remember<(FanItem) -> Boolean>(state.hideDisconnectedFans) {
+            { item -> state.hideDisconnectedFans && item.telemetry is CoolingChannelTelemetry.Disconnected }
         }
 
     val hiddenCount =
-        remember(state.fans, state.hideDisconnectedFans) {
-            state.fans.count(isFanHidden)
+        remember(state.fans) {
+            state.fans.count { it.telemetry is CoolingChannelTelemetry.Disconnected }
         }
 
     val displayedFans =
-        remember(state.fans, showAllOverride, state.hideDisconnectedFans) {
-            if (showAllOverride || !state.hideDisconnectedFans) {
-                state.fans
-            } else {
+        remember(state.fans, state.hideDisconnectedFans) {
+            if (state.hideDisconnectedFans) {
                 state.fans.filterNot(isFanHidden)
+            } else {
+                state.fans
             }
         }
 
     val selectedFan =
-        displayedFans.firstOrNull { it.fan.channel == state.selectedFanChannel }?.fan
-            ?: displayedFans.firstOrNull()?.fan
-            ?: state.rawFans.firstOrNull()
+        displayedFans.firstOrNull { it.channel == state.selectedFanChannel }
+            ?: displayedFans.firstOrNull()
+            ?: state.fans.firstOrNull()
 
-    val hasPump = remember(state.fans) { state.rawFans.any { it.kind == CoolingChannelKind.PUMP } }
+    val hasPump = remember(state.fans) { state.fans.any { it.telemetry.kind == CoolingChannelKind.PUMP } }
 
     FansPageScaffold(
         modifier = modifier,
         scrollState = scrollState,
         selectorHeaderTrailing =
-            if (hiddenCount > 0 || showAllOverride) {
+            if (hiddenCount > 0) {
                 {
                     VisibilityFilterChip(
                         hiddenCount = hiddenCount,
-                        showingAll = showAllOverride,
-                        onClick = { showAllOverride = !showAllOverride },
+                        showingAll = !state.hideDisconnectedFans,
+                        onClick = { onEvent(FansUiEvent.ToggleHideDisconnectedFans) },
                     )
                 }
             } else {
                 null
             },
         selectorContent = {
-            displayedFans.forEach { fanUiItem ->
-                val fan = fanUiItem.fan
+            displayedFans.forEach { fan ->
                 val name = fan.customName ?: defaultCoolingName(fan, hasPump)
                 val pinLabel = defaultCoolingPin(fan, hasPump)
                 val icon =
-                    if (fan.kind == CoolingChannelKind.PUMP) {
+                    if (fan.telemetry.kind == CoolingChannelKind.PUMP) {
                         painterResource(Res.drawable.ic_speed)
                     } else {
                         painterResource(Res.drawable.ic_fan)
@@ -183,7 +178,7 @@ fun FansContent(
             if (displayedFans.isEmpty()) {
                 VisibilityEmptyState(
                     message = stringResource(Res.string.visibility_no_fans_visible),
-                    onShowAll = { showAllOverride = true },
+                    onShowAll = { onEvent(FansUiEvent.ToggleHideDisconnectedFans) },
                 )
             } else if (selectedFan != null) {
                 val name = selectedFan.customName ?: defaultCoolingName(selectedFan, hasPump)
@@ -200,12 +195,11 @@ fun FansContent(
                     pinLabel = pinLabel,
                     fan = selectedFan,
                     draft = draft,
-                    allFans = state.rawFans,
+                    allFans = state.fans,
                     sensors = state.sensors,
                     isModified = isModified,
                     pendingFansCount = state.pendingFans.size,
                     hideDisconnectedSensors = state.hideDisconnectedSensors,
-                    hideUnconfiguredVirtualSensors = state.hideUnconfiguredVirtualSensors,
                     onCurveStudioEvent = onEvent,
                     onDiscard = { onEvent(FansUiEvent.DiscardFanDraft) },
                     onRequestFlash = { onEvent(FansUiEvent.RequestFlash) },
@@ -274,7 +268,7 @@ private fun defaultCoolingName(
     fan: FanItem,
     hasPump: Boolean,
 ): String =
-    when (fan.kind) {
+    when (fan.telemetry.kind) {
         CoolingChannelKind.PUMP -> stringResource(Res.string.d5_pump_name)
         CoolingChannelKind.FAN ->
             if (fan.channel == 1 && hasPump) {
@@ -289,7 +283,7 @@ private fun defaultCoolingPin(
     fan: FanItem,
     hasPump: Boolean,
 ): String =
-    when (fan.kind) {
+    when (fan.telemetry.kind) {
         CoolingChannelKind.PUMP -> stringResource(Res.string.d5_pump_pin)
         CoolingChannelKind.FAN ->
             if (fan.channel == 1 && hasPump) {
@@ -401,7 +395,6 @@ fun FanChannelDetailCard(
     onRequestFlash: () -> Unit,
     modifier: Modifier = Modifier,
     hideDisconnectedSensors: Boolean = false,
-    hideUnconfiguredVirtualSensors: Boolean = false,
     onRenameClick: (() -> Unit)? = null,
 ) {
     val colors = OpenAquaTheme.colors
@@ -419,7 +412,7 @@ fun FanChannelDetailCard(
     ) {
         ChannelDetailHeader(
             icon =
-                if (fan.kind == CoolingChannelKind.PUMP) {
+                if (fan.telemetry.kind == CoolingChannelKind.PUMP) {
                     painterResource(Res.drawable.ic_speed)
                 } else {
                     painterResource(Res.drawable.ic_tune)
@@ -510,7 +503,6 @@ fun FanChannelDetailCard(
             sensors = sensors,
             onEvent = onCurveStudioEvent,
             hideDisconnectedSensors = hideDisconnectedSensors,
-            hideUnconfiguredVirtualSensors = hideUnconfiguredVirtualSensors,
         )
     }
 }
@@ -572,7 +564,7 @@ private fun PendingFanDiffCard(
 
     val fanName =
         fan.customName
-            ?: when (fan.kind) {
+            ?: when (fan.telemetry.kind) {
                 CoolingChannelKind.PUMP -> stringResource(Res.string.d5_pump_name)
                 CoolingChannelKind.FAN ->
                     if (fan.channel == 1) {
@@ -583,7 +575,7 @@ private fun PendingFanDiffCard(
             }
 
     val icon =
-        if (fan.kind == CoolingChannelKind.PUMP) {
+        if (fan.telemetry.kind == CoolingChannelKind.PUMP) {
             painterResource(Res.drawable.ic_speed)
         } else {
             painterResource(Res.drawable.ic_fan)
@@ -650,7 +642,7 @@ private fun PendingFanDiffCard(
 @Composable
 private fun sensorName(sensor: SensorItem): String =
     sensor.customName
-        ?: when (sensor.kind) {
+        ?: when (sensor.telemetry.kind) {
             SensorChannelKind.INTEGRATED_COOLANT -> stringResource(Res.string.sensor_coolant_name)
             SensorChannelKind.VIRTUAL -> stringResource(Res.string.sensor_virtual_name, sensor.channel + 1)
             else -> stringResource(Res.string.sensor_channel_name, sensor.channel + 1)

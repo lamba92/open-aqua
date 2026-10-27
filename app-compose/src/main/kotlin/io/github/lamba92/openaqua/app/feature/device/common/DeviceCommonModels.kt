@@ -1,7 +1,6 @@
 package io.github.lamba92.openaqua.app.feature.device.common
 
 import io.github.lamba92.openaqua.app.model.DeviceStoredData
-import io.github.lamba92.openaqua.model.CoolingChannelKind
 import io.github.lamba92.openaqua.model.CoolingChannelTelemetry
 import io.github.lamba92.openaqua.model.FanChannelConfig
 import io.github.lamba92.openaqua.model.SensorChannelKind
@@ -19,17 +18,6 @@ data class FanItem(
     val customName: String? = null,
     val telemetry: CoolingChannelTelemetry,
     val config: FanChannelConfig,
-) {
-    val kind: CoolingChannelKind
-        get() = telemetry.kind
-
-    val canHidden: Boolean
-        get() = telemetry is CoolingChannelTelemetry.Disconnected
-}
-
-data class FanUiItem(
-    val fan: FanItem,
-    val canHidden: Boolean = fan.canHidden,
 )
 
 data class SensorItem(
@@ -37,23 +25,15 @@ data class SensorItem(
     val customName: String? = null,
     val telemetry: SensorTelemetry,
     val calibrationOffset: Double = 0.0,
-) {
-    val kind: SensorChannelKind
-        get() = telemetry.kind
-
-    val canHidden: Boolean
-        get() =
-            when (kind) {
-                SensorChannelKind.INTEGRATED_COOLANT -> false
-                SensorChannelKind.PHYSICAL_NTC, SensorChannelKind.VIRTUAL ->
-                    telemetry is SensorTelemetry.Disconnected
-            }
-}
-
-data class SensorUiItem(
-    val sensor: SensorItem,
-    val canHidden: Boolean = sensor.canHidden,
 )
+
+val SensorItem.canBeHidden: Boolean
+    get() =
+        when (telemetry.kind) {
+            SensorChannelKind.INTEGRATED_COOLANT -> false
+            SensorChannelKind.PHYSICAL_NTC, SensorChannelKind.VIRTUAL ->
+                telemetry is SensorTelemetry.Disconnected
+        }
 
 fun List<CoolingChannelTelemetry>.toPwmFanItems(
     configs: List<FanChannelConfig>,

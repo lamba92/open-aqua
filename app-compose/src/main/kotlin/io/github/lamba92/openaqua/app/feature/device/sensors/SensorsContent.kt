@@ -16,15 +16,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import io.github.lamba92.openaqua.app.di.rememberInstance
 import io.github.lamba92.openaqua.app.feature.device.common.DeviceLoadingContent
 import io.github.lamba92.openaqua.app.feature.device.common.SensorItem
+import io.github.lamba92.openaqua.app.feature.device.common.canBeHidden
 import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
 import io.github.lamba92.openaqua.app.ui.components.ChannelDetailHeader
 import io.github.lamba92.openaqua.app.ui.components.ChannelPageScaffold
@@ -39,7 +38,6 @@ import io.github.lamba92.openaqua.app.ui.components.VisibilityFilterChip
 import io.github.lamba92.openaqua.app.ui.components.sensorTemperatureColor
 import io.github.lamba92.openaqua.model.DeviceId
 import io.github.lamba92.openaqua.model.SensorChannelKind
-import io.github.lamba92.openaqua.model.SensorTelemetry
 import io.github.lamba92.openaqua.model.tempCelsiusOrNull
 import open_aqua.app_compose.generated.resources.Res
 import open_aqua.app_compose.generated.resources.action_rename
@@ -79,48 +77,46 @@ import org.jetbrains.compose.resources.stringResource
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SensorsContent(
-    sensors: List<SensorItem>,
-    selectedChannel: Int,
-    onSelectSensor: (Int) -> Unit,
+    state: SensorsUiState.Ready,
+    onEvent: (SensorsUiEvent) -> Unit,
     modifier: Modifier = Modifier,
     scrollState: ScrollState = rememberScrollState(),
-    onRenameSensor: ((channel: Int, name: String?) -> Unit)? = null,
 ) {
-    val preferences = OpenAquaTheme.preferences
-    var showAllOverride by remember { mutableStateOf(false) }
-
     val isSensorHidden: (SensorItem) -> Boolean = { sensor ->
-        when (sensor.kind) {
-            SensorChannelKind.PHYSICAL_NTC -> preferences.hideDisconnectedSensors && sensor.telemetry is SensorTelemetry.Disconnected
-            SensorChannelKind.VIRTUAL -> preferences.hideUnconfiguredVirtualSensors && sensor.telemetry is SensorTelemetry.Disconnected
+        when (sensor.telemetry.kind) {
+            SensorChannelKind.PHYSICAL_NTC -> state.hideDisconnectedSensors && sensor.canBeHidden
+            SensorChannelKind.VIRTUAL -> state.hideUnconfiguredVirtualSensors && sensor.canBeHidden
             SensorChannelKind.INTEGRATED_COOLANT -> false
         }
     }
 
-    val hiddenCount =
-        remember(sensors, preferences.hideDisconnectedSensors, preferences.hideUnconfiguredVirtualSensors) {
-            sensors.count(isSensorHidden)
+    val canBeHiddenCount =
+        remember(state.sensors) {
+            state.sensors.count { it.canBeHidden }
+        }
+
+    val actuallyHiddenCount =
+        remember(state.sensors, state.hideDisconnectedSensors, state.hideUnconfiguredVirtualSensors) {
+            state.sensors.count(isSensorHidden)
         }
 
     val displayedSensors =
         remember(
-            sensors,
-            showAllOverride,
-            preferences.hideDisconnectedSensors,
-            preferences.hideUnconfiguredVirtualSensors,
+            state.sensors,
+            state.hideDisconnectedSensors,
+            state.hideUnconfiguredVirtualSensors,
         ) {
-            if (showAllOverride) {
-                sensors
-            } else {
-                sensors.filterNot(isSensorHidden)
-            }
+            state.sensors.filterNot(isSensorHidden)
         }
 
     val selectedSensor =
-        displayedSensors.firstOrNull { it.channel == selectedChannel } ?: displayedSensors.firstOrNull()
-    var renamingSensor by remember { mutableStateOf<SensorItem?>(null) }
+        displayedSensors.firstOrNull { it.channel == state.selectedSensorChannel }
+            ?: displayedSensors.firstOrNull()
+            ?: state.sensors.firstOrNull()
+
     val colors = OpenAquaTheme.colors
     val metrics = OpenAquaTheme.metrics
+    val isShowingAll = !state.hideDisconnectedSensors && !state.hideUnconfiguredVirtualSensors
 
     ChannelPageScaffold(
         title = stringResource(Res.string.sensors_screen_title),
@@ -129,12 +125,12 @@ fun SensorsContent(
         modifier = modifier,
         scrollState = scrollState,
         selectorHeaderTrailing =
-            if (hiddenCount > 0 || showAllOverride) {
+            if (canBeHiddenCount > 0) {
                 {
                     VisibilityFilterChip(
-                        hiddenCount = hiddenCount,
-                        showingAll = showAllOverride,
-                        onClick = { showAllOverride = !showAllOverride },
+                        hiddenCount = if (isShowingAll) canBeHiddenCount else actuallyHiddenCount,
+                        showingAll = isShowingAll,
+                        onClick = { onEvent(SensorsUiEvent.ToggleShowAllSensors) },
                     )
                 }
             } else {
@@ -151,8 +147,8 @@ fun SensorsContent(
                     pinLabel = sensorPin,
                     tempCelsius = temp,
                     selected = isSelected,
-                    onClick = { onSelectSensor(sensor.channel) },
-                    onDoubleClick = onRenameSensor?.let { { renamingSensor = sensor } },
+                    onClick = { onEvent(SensorsUiEvent.SelectSensor(sensor.channel)) },
+                    onDoubleClick = { onEvent(SensorsUiEvent.StartRenamingSensor(sensor.channel)) },
                 )
             }
         },
@@ -160,7 +156,7 @@ fun SensorsContent(
             if (displayedSensors.isEmpty()) {
                 VisibilityEmptyState(
                     message = stringResource(Res.string.visibility_no_sensors_visible),
-                    onShowAll = { showAllOverride = true },
+                    onShowAll = { onEvent(SensorsUiEvent.ToggleShowAllSensors) },
                 )
             } else if (selectedSensor != null) {
                 val selectedSensorName = selectedSensor.resolveName()
@@ -179,16 +175,13 @@ fun SensorsContent(
                         icon = painterResource(Res.drawable.ic_tune),
                         title = stringResource(Res.string.sensor_settings_title, selectedSensorName),
                         subtitle = stringResource(Res.string.sensor_hardware_channel, selectedSensorPin),
-                        trailingContent =
-                            onRenameSensor?.let {
-                                {
-                                    OpenAquaOutlinedButton(
-                                        text = stringResource(Res.string.action_rename),
-                                        icon = painterResource(Res.drawable.ic_edit),
-                                        onClick = { renamingSensor = selectedSensor },
-                                    )
-                                }
-                            },
+                        trailingContent = {
+                            OpenAquaOutlinedButton(
+                                text = stringResource(Res.string.action_rename),
+                                icon = painterResource(Res.drawable.ic_edit),
+                                onClick = { onEvent(SensorsUiEvent.StartRenamingSensor(selectedSensor.channel)) },
+                            )
+                        },
                     )
 
                     // Live metrics telemetry
@@ -230,17 +223,16 @@ fun SensorsContent(
         },
     )
 
-    val activeRenamingSensor = renamingSensor
-    if (activeRenamingSensor != null && onRenameSensor != null) {
+    val activeRenamingSensor = state.renamingSensor
+    if (activeRenamingSensor != null) {
         RenameDialog(
             title = stringResource(Res.string.rename_dialog_title, activeRenamingSensor.resolveName()),
             initialValue = activeRenamingSensor.customName ?: "",
             icon = painterResource(Res.drawable.ic_edit),
             onConfirm = { newName ->
-                onRenameSensor(activeRenamingSensor.channel, newName)
-                renamingSensor = null
+                onEvent(SensorsUiEvent.RenameSensor(activeRenamingSensor.channel, newName))
             },
-            onDismiss = { renamingSensor = null },
+            onDismiss = { onEvent(SensorsUiEvent.DismissRenameDialog) },
         )
     }
 }
@@ -296,7 +288,7 @@ fun SensorSelectionTile(
 
 @Composable
 private fun SensorItem.resolveName(): String =
-    customName ?: when (kind) {
+    customName ?: when (telemetry.kind) {
         SensorChannelKind.PHYSICAL_NTC -> stringResource(Res.string.sensor_channel_name, channel + 1)
         SensorChannelKind.VIRTUAL -> stringResource(Res.string.sensor_virtual_name, channel + 1)
         SensorChannelKind.INTEGRATED_COOLANT -> stringResource(Res.string.sensor_coolant_name)
@@ -304,7 +296,7 @@ private fun SensorItem.resolveName(): String =
 
 @Composable
 private fun SensorItem.resolvePinLabel(): String =
-    when (kind) {
+    when (telemetry.kind) {
         SensorChannelKind.PHYSICAL_NTC -> stringResource(Res.string.sensor_channel_pin, channel + 1)
         SensorChannelKind.VIRTUAL -> stringResource(Res.string.sensor_virtual_pin, channel + 1)
         SensorChannelKind.INTEGRATED_COOLANT -> stringResource(Res.string.sensor_coolant_pin)
@@ -312,7 +304,7 @@ private fun SensorItem.resolvePinLabel(): String =
 
 @Composable
 private fun SensorItem.resolveProbeType(): String =
-    when (kind) {
+    when (telemetry.kind) {
         SensorChannelKind.PHYSICAL_NTC -> stringResource(Res.string.sensor_probe_ntc)
         SensorChannelKind.VIRTUAL -> stringResource(Res.string.sensor_probe_virtual)
         SensorChannelKind.INTEGRATED_COOLANT -> stringResource(Res.string.sensor_probe_integrated)
@@ -355,12 +347,8 @@ fun SensorsTabContent(
         SensorsUiState.Loading -> DeviceLoadingContent(modifier)
         is SensorsUiState.Ready -> {
             SensorsContent(
-                sensors = s.sensors,
-                selectedChannel = s.selectedSensorChannel,
-                onSelectSensor = { viewModel.onEvent(SensorsUiEvent.SelectSensor(it)) },
-                onRenameSensor = { channel, name ->
-                    viewModel.onEvent(SensorsUiEvent.RenameSensor(channel = channel, name = name))
-                },
+                state = s,
+                onEvent = viewModel::onEvent,
                 modifier = modifier,
                 scrollState = scrollState,
             )

@@ -114,6 +114,10 @@ class AppDataRepository(
         update { it.copy(hideDisconnectedFans = hide) }
     }
 
+    fun setHideDisconnectedSensorsInFans(hide: Boolean) {
+        update { it.copy(hideDisconnectedSensorsInFans = hide) }
+    }
+
     fun setHideDisconnectedSensors(hide: Boolean) {
         update { it.copy(hideDisconnectedSensors = hide) }
     }

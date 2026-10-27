@@ -187,6 +187,8 @@
     <string name="settings_channel_visibility_desc">Choose whether to show or hide disconnected ports and unconfigured sensor slots across device views</string>
     <string name="settings_hide_disconnected_fans_title">Hide disconnected fans</string>
     <string name="settings_hide_disconnected_fans_desc">Hide PWM channels that have no fan connected or are reporting disconnected status</string>
+    <string name="settings_hide_disconnected_sensors_in_fans_title">Hide disconnected sensors in fan curves</string>
+    <string name="settings_hide_disconnected_sensors_in_fans_desc">Hide disconnected temperature probes and unconfigured virtual sensors in the curve source selector</string>
     <string name="settings_hide_disconnected_sensors_title">Hide disconnected temperature probes</string>
     <string name="settings_hide_disconnected_sensors_desc">Hide physical 10k NTC thermistor channels that have no probe plugged in</string>
     <string name="settings_hide_unconfigured_virtual_sensors_title">Hide unconfigured virtual sensors</string>

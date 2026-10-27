@@ -78,6 +78,8 @@ import open_aqua.app_compose.generated.resources.settings_font_scale_title
 import open_aqua.app_compose.generated.resources.settings_hide_disconnected_fans_desc
 import open_aqua.app_compose.generated.resources.settings_hide_disconnected_fans_title
 import open_aqua.app_compose.generated.resources.settings_hide_disconnected_sensors_desc
+import open_aqua.app_compose.generated.resources.settings_hide_disconnected_sensors_in_fans_desc
+import open_aqua.app_compose.generated.resources.settings_hide_disconnected_sensors_in_fans_title
 import open_aqua.app_compose.generated.resources.settings_hide_disconnected_sensors_title
 import open_aqua.app_compose.generated.resources.settings_hide_unconfigured_virtual_sensors_desc
 import open_aqua.app_compose.generated.resources.settings_hide_unconfigured_virtual_sensors_title
@@ -177,10 +179,14 @@ fun SettingsScreen(
                     // Channel Visibility section
                     ChannelVisibilitySection(
                         hideDisconnectedFans = state.hideDisconnectedFans,
+                        hideDisconnectedSensorsInFans = state.hideDisconnectedSensorsInFans,
                         hideDisconnectedSensors = state.hideDisconnectedSensors,
                         hideUnconfiguredVirtualSensors = state.hideUnconfiguredVirtualSensors,
                         onToggleHideDisconnectedFans = {
                             viewModel.onEvent(SettingsEvent.ToggleHideDisconnectedFans(it))
+                        },
+                        onToggleHideDisconnectedSensorsInFans = {
+                            viewModel.onEvent(SettingsEvent.ToggleHideDisconnectedSensorsInFans(it))
                         },
                         onToggleHideDisconnectedSensors = {
                             viewModel.onEvent(SettingsEvent.ToggleHideDisconnectedSensors(it))
@@ -369,9 +375,11 @@ private fun AppearanceSection(
 @Composable
 private fun ChannelVisibilitySection(
     hideDisconnectedFans: Boolean,
+    hideDisconnectedSensorsInFans: Boolean,
     hideDisconnectedSensors: Boolean,
     hideUnconfiguredVirtualSensors: Boolean,
     onToggleHideDisconnectedFans: (Boolean) -> Unit,
+    onToggleHideDisconnectedSensorsInFans: (Boolean) -> Unit,
     onToggleHideDisconnectedSensors: (Boolean) -> Unit,
     onToggleHideUnconfiguredVirtualSensors: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
@@ -405,6 +413,15 @@ private fun ChannelVisibilitySection(
             description = stringResource(Res.string.settings_hide_disconnected_fans_desc),
             checked = hideDisconnectedFans,
             onCheckedChange = onToggleHideDisconnectedFans,
+        )
+
+        HorizontalDivider(color = colors.borderOutline)
+
+        SettingToggleRow(
+            title = stringResource(Res.string.settings_hide_disconnected_sensors_in_fans_title),
+            description = stringResource(Res.string.settings_hide_disconnected_sensors_in_fans_desc),
+            checked = hideDisconnectedSensorsInFans,
+            onCheckedChange = onToggleHideDisconnectedSensorsInFans,
         )
 
         HorizontalDivider(color = colors.borderOutline)

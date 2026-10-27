@@ -8,7 +8,13 @@ sealed interface SensorsUiState {
     data class Ready(
         val sensors: List<SensorItem>,
         val selectedSensorChannel: Int,
-    ) : SensorsUiState
+        val renamingChannel: Int? = null,
+        val hideDisconnectedSensors: Boolean = false,
+        val hideUnconfiguredVirtualSensors: Boolean = false,
+    ) : SensorsUiState {
+        val renamingSensor: SensorItem?
+            get() = renamingChannel?.let { ch -> sensors.firstOrNull { it.channel == ch } }
+    }
 }
 
 sealed interface SensorsUiEvent {
@@ -20,6 +26,14 @@ sealed interface SensorsUiEvent {
         val channel: Int,
         val name: String?,
     ) : SensorsUiEvent
+
+    data class StartRenamingSensor(
+        val channel: Int,
+    ) : SensorsUiEvent
+
+    data object DismissRenameDialog : SensorsUiEvent
+
+    data object ToggleShowAllSensors : SensorsUiEvent
 }
 
 sealed interface SensorsUiEffect

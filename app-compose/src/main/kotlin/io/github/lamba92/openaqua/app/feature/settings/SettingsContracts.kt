@@ -13,6 +13,7 @@ data class SettingsState(
     val fontSp: Int = FontScaleConstants.DEFAULT_SP,
     val fontFamily: AppFontFamily = AppFontFamily.JETBRAINS_MONO,
     val hideDisconnectedFans: Boolean = false,
+    val hideDisconnectedSensorsInFans: Boolean = false,
     val hideDisconnectedSensors: Boolean = false,
     val hideUnconfiguredVirtualSensors: Boolean = false,
 )
@@ -43,6 +44,10 @@ sealed interface SettingsEvent {
     ) : SettingsEvent
 
     data class ToggleHideDisconnectedFans(
+        val hide: Boolean,
+    ) : SettingsEvent
+
+    data class ToggleHideDisconnectedSensorsInFans(
         val hide: Boolean,
     ) : SettingsEvent
 

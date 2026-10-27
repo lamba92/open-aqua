@@ -2,7 +2,6 @@ package io.github.lamba92.openaqua.app.feature.device.fans
 
 import io.github.lamba92.openaqua.app.coroutine.CoroutineScopeProvider
 import io.github.lamba92.openaqua.app.coroutine.getScope
-import io.github.lamba92.openaqua.app.feature.device.common.FanUiItem
 import io.github.lamba92.openaqua.app.feature.device.common.toPwmFanItems
 import io.github.lamba92.openaqua.app.feature.device.common.toSensorItems
 import io.github.lamba92.openaqua.app.model.DeviceStoredData
@@ -44,7 +43,6 @@ class FansViewModel(
         val storedData: DeviceStoredData,
         val hideDisconnectedFans: Boolean,
         val hideDisconnectedSensors: Boolean,
-        val hideUnconfiguredVirtualSensors: Boolean,
     )
 
     init {
@@ -55,8 +53,7 @@ class FansViewModel(
                     CombinedPreferences(
                         storedData = ready.data.devices[deviceId] ?: DeviceStoredData(),
                         hideDisconnectedFans = ready.data.hideDisconnectedFans,
-                        hideDisconnectedSensors = ready.data.hideDisconnectedSensors,
-                        hideUnconfiguredVirtualSensors = ready.data.hideUnconfiguredVirtualSensors,
+                        hideDisconnectedSensors = ready.data.hideDisconnectedSensorsInFans,
                     )
                 }.distinctUntilChanged()
 
@@ -68,27 +65,24 @@ class FansViewModel(
                 when (deviceState) {
                     is DeviceState.Connecting, is DeviceState.Error -> FansUiState.Loading
                     is DeviceState.Ready -> {
-                        val rawFans = deviceState.telemetry.fans.toPwmFanItems(deviceState.config.fans, preferences.storedData)
-                        val fanUiItems = rawFans.map { FanUiItem(fan = it, canHidden = it.canHidden) }
+                        val fans = deviceState.telemetry.fans.toPwmFanItems(deviceState.config.fans, preferences.storedData)
                         val sensors = deviceState.telemetry.sensors.toSensorItems(deviceState.config.sensorOffsets, preferences.storedData)
 
                         if (current is FansUiState.Ready) {
                             current.copy(
-                                fans = fanUiItems,
+                                fans = fans,
                                 sensors = sensors,
                                 hideDisconnectedFans = preferences.hideDisconnectedFans,
                                 hideDisconnectedSensors = preferences.hideDisconnectedSensors,
-                                hideUnconfiguredVirtualSensors = preferences.hideUnconfiguredVirtualSensors,
                             )
                         } else {
                             FansUiState.Ready(
-                                fans = fanUiItems,
+                                fans = fans,
                                 selectedFanChannel = 0,
                                 sensors = sensors,
                                 fanDrafts = emptyMap(),
                                 hideDisconnectedFans = preferences.hideDisconnectedFans,
                                 hideDisconnectedSensors = preferences.hideDisconnectedSensors,
-                                hideUnconfiguredVirtualSensors = preferences.hideUnconfiguredVirtualSensors,
                             )
                         }
                     }
@@ -119,6 +113,18 @@ class FansViewModel(
                 state.update { current ->
                     if (current is FansUiState.Ready) current.copy(renamingChannel = null) else current
                 }
+            }
+
+            FansUiEvent.ToggleHideDisconnectedFans -> {
+                val currentHide = (state.value as? FansUiState.Ready)?.hideDisconnectedFans ?: false
+                appDataRepository.setHideDisconnectedFans(!currentHide)
+            }
+
+            FansUiEvent.ToggleHideDisconnectedSensors,
+            CurveStudioEvent.ToggleHideDisconnectedSensors,
+            -> {
+                val currentHide = (state.value as? FansUiState.Ready)?.hideDisconnectedSensors ?: false
+                appDataRepository.setHideDisconnectedSensorsInFans(!currentHide)
             }
 
             is CurveStudioEvent ->
@@ -266,7 +272,7 @@ class FansViewModel(
         state.update { current ->
             if (current is FansUiState.Ready) {
                 val channel = current.selectedFanChannel
-                val fan = current.rawFans.firstOrNull { it.channel == channel }
+                val fan = current.fans.firstOrNull { it.channel == channel }
                 val defaultSensor = current.sensors.firstOrNull()?.channel ?: 0
                 val existing =
                     current.fanDrafts[channel] ?: fan?.config.toInitialDraft(

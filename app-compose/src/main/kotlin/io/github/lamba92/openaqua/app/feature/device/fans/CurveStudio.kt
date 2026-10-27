@@ -52,6 +52,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.lamba92.openaqua.app.feature.device.common.FanItem
 import io.github.lamba92.openaqua.app.feature.device.common.SensorItem
+import io.github.lamba92.openaqua.app.feature.device.common.canBeHidden
 import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
 import io.github.lamba92.openaqua.app.ui.components.VisibilityFilterChip
 import io.github.lamba92.openaqua.model.AutoCurveFanConfig
@@ -110,7 +111,6 @@ fun CurveStudio(
     onEvent: (CurveStudioEvent) -> Unit,
     modifier: Modifier = Modifier,
     hideDisconnectedSensors: Boolean = false,
-    hideUnconfiguredVirtualSensors: Boolean = false,
 ) {
     val colors = OpenAquaTheme.colors
     val metrics = OpenAquaTheme.metrics
@@ -232,7 +232,7 @@ fun CurveStudio(
                     onShapeChange = { onEvent(CurveStudioEvent.ChangeShape(it)) },
                     graphContent = visualizerGraph,
                     hideDisconnectedSensors = hideDisconnectedSensors,
-                    hideUnconfiguredVirtualSensors = hideUnconfiguredVirtualSensors,
+                    onToggleHideSensors = { onEvent(CurveStudioEvent.ToggleHideDisconnectedSensors) },
                 )
             }
             is FanDraft.TargetTemp -> {
@@ -244,7 +244,7 @@ fun CurveStudio(
                     onTargetTempChange = { onEvent(CurveStudioEvent.ChangeTargetTemp(it)) },
                     graphContent = visualizerGraph,
                     hideDisconnectedSensors = hideDisconnectedSensors,
-                    hideUnconfiguredVirtualSensors = hideUnconfiguredVirtualSensors,
+                    onToggleHideSensors = { onEvent(CurveStudioEvent.ToggleHideDisconnectedSensors) },
                 )
             }
             is FanDraft.Copy -> {
@@ -364,6 +364,7 @@ private fun AutoCurveModeControls(
     sensors: List<SensorItem>,
     selectedSensorIndex: Int,
     onSelectSensor: (Int) -> Unit,
+    onToggleHideSensors: () -> Unit,
     tMin: Double,
     tMax: Double,
     pMin: Double,
@@ -377,7 +378,6 @@ private fun AutoCurveModeControls(
     graphContent: @Composable () -> Unit,
     modifier: Modifier = Modifier,
     hideDisconnectedSensors: Boolean = false,
-    hideUnconfiguredVirtualSensors: Boolean = false,
 ) {
     val colors = OpenAquaTheme.colors
     val metrics = OpenAquaTheme.metrics
@@ -410,8 +410,8 @@ private fun AutoCurveModeControls(
                 sensors = sensors,
                 selectedIndex = selectedSensorIndex,
                 onSelectSensor = onSelectSensor,
+                onToggleHideSensors = onToggleHideSensors,
                 hideDisconnectedSensors = hideDisconnectedSensors,
-                hideUnconfiguredVirtualSensors = hideUnconfiguredVirtualSensors,
             )
         }
 
@@ -504,12 +504,12 @@ private fun TargetTempModeControls(
     sensors: List<SensorItem>,
     selectedSensorIndex: Int,
     onSelectSensor: (Int) -> Unit,
+    onToggleHideSensors: () -> Unit,
     targetTemp: Double,
     onTargetTempChange: (Double) -> Unit,
     graphContent: @Composable () -> Unit,
     modifier: Modifier = Modifier,
     hideDisconnectedSensors: Boolean = false,
-    hideUnconfiguredVirtualSensors: Boolean = false,
 ) {
     val colors = OpenAquaTheme.colors
     val metrics = OpenAquaTheme.metrics
@@ -542,8 +542,8 @@ private fun TargetTempModeControls(
                 sensors = sensors,
                 selectedIndex = selectedSensorIndex,
                 onSelectSensor = onSelectSensor,
+                onToggleHideSensors = onToggleHideSensors,
                 hideDisconnectedSensors = hideDisconnectedSensors,
-                hideUnconfiguredVirtualSensors = hideUnconfiguredVirtualSensors,
             )
         }
 
@@ -567,39 +567,28 @@ private fun SensorDropdown(
     sensors: List<SensorItem>,
     selectedIndex: Int,
     onSelectSensor: (Int) -> Unit,
+    onToggleHideSensors: () -> Unit,
     modifier: Modifier = Modifier,
     hideDisconnectedSensors: Boolean = false,
-    hideUnconfiguredVirtualSensors: Boolean = false,
 ) {
     val colors = OpenAquaTheme.colors
     val metrics = OpenAquaTheme.metrics
-    var showAllOverride by remember { mutableStateOf(false) }
-
-    val isSensorHidden: (SensorItem) -> Boolean = { sensor ->
-        when (sensor.kind) {
-            SensorChannelKind.PHYSICAL_NTC -> hideDisconnectedSensors && sensor.canHidden
-            SensorChannelKind.VIRTUAL -> hideUnconfiguredVirtualSensors && sensor.canHidden
-            SensorChannelKind.INTEGRATED_COOLANT -> false
-        }
-    }
 
     val hiddenCount =
-        remember(sensors, hideDisconnectedSensors, hideUnconfiguredVirtualSensors) {
-            sensors.count(isSensorHidden)
+        remember(sensors) {
+            sensors.count { it.canBeHidden }
         }
 
     val displayedSensors =
         remember(
             sensors,
-            showAllOverride,
             hideDisconnectedSensors,
-            hideUnconfiguredVirtualSensors,
             selectedIndex,
         ) {
-            if (showAllOverride) {
+            if (!hideDisconnectedSensors) {
                 sensors
             } else {
-                sensors.filter { !isSensorHidden(it) || it.channel == selectedIndex }
+                sensors.filter { !it.canBeHidden || it.channel == selectedIndex }
             }
         }
 
@@ -618,11 +607,11 @@ private fun SensorDropdown(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(metrics.spacingSm),
     ) {
-        if (hiddenCount > 0 || showAllOverride) {
+        if (hiddenCount > 0) {
             VisibilityFilterChip(
                 hiddenCount = hiddenCount,
-                showingAll = showAllOverride,
-                onClick = { showAllOverride = !showAllOverride },
+                showingAll = !hideDisconnectedSensors,
+                onClick = onToggleHideSensors,
             )
         }
 
@@ -1222,7 +1211,7 @@ private fun evaluatePointsAt(
 private fun sensorDisplayName(sensor: SensorItem): String {
     val base =
         sensor.customName
-            ?: when (sensor.kind) {
+            ?: when (sensor.telemetry.kind) {
                 SensorChannelKind.INTEGRATED_COOLANT -> stringResource(Res.string.sensor_coolant_name)
                 SensorChannelKind.VIRTUAL -> stringResource(Res.string.sensor_virtual_name, sensor.channel + 1)
                 else -> stringResource(Res.string.sensor_channel_name, sensor.channel + 1)
@@ -1239,7 +1228,7 @@ private fun sensorDisplayName(sensor: SensorItem): String {
 private fun fanDisplayName(fan: FanItem): String {
     val base =
         fan.customName
-            ?: when (fan.kind) {
+            ?: when (fan.telemetry.kind) {
                 CoolingChannelKind.PUMP -> stringResource(Res.string.d5_pump_name)
                 CoolingChannelKind.FAN ->
                     if (fan.channel == 1) {
