@@ -2,6 +2,7 @@ package io.github.lamba92.openaqua.app.repository
 
 import io.github.lamba92.openaqua.app.coroutine.CoroutineScopeProvider
 import io.github.lamba92.openaqua.app.coroutine.getScope
+import io.github.lamba92.openaqua.app.model.AppLanguage
 import io.github.lamba92.openaqua.app.model.AppStoredData
 import io.github.lamba92.openaqua.app.model.DeviceStoredData
 import io.github.lamba92.openaqua.app.model.FanStoredData
@@ -108,6 +109,10 @@ class AppDataRepository(
 
     fun setFontFamily(fontFamily: AppFontFamily) {
         update { it.copy(fontFamily = fontFamily) }
+    }
+
+    fun setLanguage(language: AppLanguage) {
+        update { it.copy(language = language) }
     }
 
     fun setHideDisconnectedFans(hide: Boolean) {

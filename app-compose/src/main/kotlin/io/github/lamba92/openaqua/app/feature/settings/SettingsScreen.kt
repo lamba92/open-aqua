@@ -18,7 +18,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -30,7 +33,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,6 +44,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import io.github.lamba92.openaqua.app.model.AppLanguage
+import io.github.lamba92.openaqua.app.model.stringResource
 import io.github.lamba92.openaqua.app.theme.AppFontFamily
 import io.github.lamba92.openaqua.app.theme.AppMetricsScale
 import io.github.lamba92.openaqua.app.theme.FontScaleConstants
@@ -83,6 +91,8 @@ import open_aqua.app_compose.generated.resources.settings_hide_disconnected_sens
 import open_aqua.app_compose.generated.resources.settings_hide_disconnected_sensors_title
 import open_aqua.app_compose.generated.resources.settings_hide_unconfigured_virtual_sensors_desc
 import open_aqua.app_compose.generated.resources.settings_hide_unconfigured_virtual_sensors_title
+import open_aqua.app_compose.generated.resources.settings_language_desc
+import open_aqua.app_compose.generated.resources.settings_language_title
 import open_aqua.app_compose.generated.resources.settings_metrics_scale_desc
 import open_aqua.app_compose.generated.resources.settings_metrics_scale_title
 import open_aqua.app_compose.generated.resources.settings_open_data_folder_button
@@ -168,10 +178,12 @@ fun SettingsScreen(
                         selectedMetricsScale = state.metricsScale,
                         selectedFontFamily = state.fontFamily,
                         selectedFontSp = state.fontSp,
+                        selectedLanguage = state.language,
                         onSelectColorScheme = { viewModel.onEvent(SettingsEvent.SelectColorScheme(it)) },
                         onSelectMetricsScale = { viewModel.onEvent(SettingsEvent.SelectMetricsScale(it)) },
                         onSelectFontFamily = { viewModel.onEvent(SettingsEvent.SelectFontFamily(it)) },
                         onSetFontSp = { viewModel.onEvent(SettingsEvent.SetFontSp(it)) },
+                        onSelectLanguage = { viewModel.onEvent(SettingsEvent.SelectLanguage(it)) },
                     )
 
                     HorizontalDivider(color = colors.borderOutline)
@@ -237,10 +249,12 @@ private fun AppearanceSection(
     selectedMetricsScale: AppMetricsScale,
     selectedFontFamily: AppFontFamily,
     selectedFontSp: Int,
+    selectedLanguage: AppLanguage,
     onSelectColorScheme: (AppColorScheme) -> Unit,
     onSelectMetricsScale: (AppMetricsScale) -> Unit,
     onSelectFontFamily: (AppFontFamily) -> Unit,
     onSetFontSp: (Int) -> Unit,
+    onSelectLanguage: (AppLanguage) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = OpenAquaTheme.colors
@@ -369,6 +383,100 @@ private fun AppearanceSection(
             selectedFontSp = selectedFontSp,
             onSetFontSp = onSetFontSp,
         )
+
+        HorizontalDivider(color = colors.borderOutline)
+
+        // Language selector row
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    text = stringResource(Res.string.settings_language_title),
+                    color = colors.textPrimary,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = stringResource(Res.string.settings_language_desc),
+                    color = colors.textMuted,
+                    fontSize = 12.sp,
+                )
+            }
+
+            LanguageDropdown(
+                selectedLanguage = selectedLanguage,
+                onSelectLanguage = onSelectLanguage,
+            )
+        }
+    }
+}
+
+@Composable
+private fun LanguageDropdown(
+    selectedLanguage: AppLanguage,
+    onSelectLanguage: (AppLanguage) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val colors = OpenAquaTheme.colors
+    val metrics = OpenAquaTheme.metrics
+
+    Box(modifier = modifier) {
+        Row(
+            modifier =
+                Modifier
+                    .clip(RoundedCornerShape(metrics.radiusSmall))
+                    .background(colors.surfaceLowest)
+                    .border(metrics.strokeThin, colors.borderOutline, RoundedCornerShape(metrics.radiusSmall))
+                    .clickable { expanded = true }
+                    .padding(horizontal = 14.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = stringResource(selectedLanguage.stringResource),
+                color = colors.textPrimary,
+                fontSize = 13.sp,
+                fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
+            )
+            Icon(
+                imageVector = Icons.Default.ArrowDropDown,
+                contentDescription = null,
+                tint = colors.textMuted,
+                modifier = Modifier.size(18.dp),
+            )
+        }
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier =
+                Modifier
+                    .background(colors.surfaceHigh)
+                    .border(metrics.strokeThin, colors.borderOutline),
+        ) {
+            AppLanguage.entries.forEach { lang ->
+                val isSelected = lang == selectedLanguage
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = stringResource(lang.stringResource),
+                            color = if (isSelected) colors.primaryBright else colors.textPrimary,
+                            fontSize = 13.sp,
+                            fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                        )
+                    },
+                    onClick = {
+                        onSelectLanguage(lang)
+                        expanded = false
+                    },
+                )
+            }
+        }
     }
 }
 

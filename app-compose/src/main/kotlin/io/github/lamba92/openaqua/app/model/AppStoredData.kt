@@ -13,6 +13,7 @@ data class AppStoredData(
     val metricsScale: AppMetricsScale = AppMetricsScale.STANDARD,
     val fontSp: Int = FontScaleConstants.DEFAULT_SP,
     val fontFamily: AppFontFamily = AppFontFamily.JETBRAINS_MONO,
+    val language: AppLanguage = AppLanguage.SYSTEM,
     val hideDisconnectedFans: Boolean = false,
     val hideDisconnectedSensorsInFans: Boolean = false,
     val hideDisconnectedSensors: Boolean = false,

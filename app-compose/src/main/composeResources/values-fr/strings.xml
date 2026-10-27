@@ -1,0 +1,226 @@
+<resources>
+    <string name="app_name">OpenAqua</string>
+    <string name="window_title">OpenAqua - Poste de télémétrie hydraulique</string>
+    <string name="scanning_hardware">Recherche du matériel Aquacomputer...</string>
+    <string name="retry_scan">Réessayer</string>
+    <string name="no_devices_found">Aucun appareil Aquacomputer détecté</string>
+    <string name="unsupported_device">Appareil non pris en charge : %1$s</string>
+    <string name="device_error_timeout">Délai de communication avec l'appareil dépassé</string>
+    <string name="device_error_io">Échec de communication USB HID</string>
+    <string name="device_error_protocol">Réponse de protocole inattendue de l'appareil</string>
+    <string name="device_error_generic">Échec de la lecture de la télémétrie de l'appareil</string>
+    <string name="refresh_devices">Actualiser les appareils</string>
+    <string name="refresh_telemetry">Actualiser la télémétrie</string>
+    
+    <!-- Navigation Components -->
+    <string name="nav_device_info">Infos appareil</string>
+    <string name="nav_fans">Ventilateurs</string>
+    <string name="nav_sensors">Capteurs</string>
+    <string name="nav_settings">Paramètres</string>
+
+    <!-- Device Info Screen -->
+    <string name="device_telemetry_identity_subtitle">Télémétrie matérielle &amp; identité de l'appareil</string>
+    <string name="usb_hid_connected">USB HID Connecté</string>
+    <string name="device_identification_title">Identification de l'appareil (commande devices)</string>
+    <string name="info_device_name">Nom de l'appareil</string>
+    <string name="info_hardware_alias">Alias matériel</string>
+    <string name="info_serial_number">Numéro de série</string>
+    <string name="info_unique_id">Identifiant unique</string>
+    <string name="info_firmware_version">Version du micrologiciel</string>
+    <string name="info_device_architecture">Architecture de l'appareil</string>
+    <string name="info_not_available">N/D</string>
+    <string name="info_unknown">Inconnu</string>
+    <string name="info_firmware_version_value">v%1$d</string>
+    <string name="hardware_descriptors_title">Descripteurs matériels &amp; spécifications</string>
+    <string name="spec_fan_channels">Canaux de ventilateur</string>
+    <string name="spec_fan_channels_value">%1$d canaux PWM</string>
+    <string name="spec_fan_channels_subtitle">4 broches 12V 2A / canal</string>
+    <string name="spec_temp_probes">Sondes de température</string>
+    <string name="spec_temp_probes_value">%1$d NTC physiques</string>
+    <string name="spec_temp_probes_subtitle">Entrées thermistance 10k</string>
+    <string name="spec_virtual_sensors">Capteurs virtuels</string>
+    <string name="spec_virtual_sensors_value">%1$d emplacements logiciels</string>
+    <string name="spec_virtual_sensors_subtitle">Flux de télémétrie hôte</string>
+    <string name="spec_rgbpx_ports">Ports RGBpx</string>
+    <string name="spec_rgbpx_ports_value">%1$d adressables</string>
+    <string name="spec_rgbpx_ports_none">Aucun</string>
+    <string name="spec_rgbpx_ports_subtitle">Jusqu'à 90 LED/port</string>
+    <string name="spec_flow_sensor">Capteur de débit</string>
+    <string name="spec_flow_sensor_supported">Pris en charge</string>
+    <string name="spec_flow_sensor_unsupported">Non pris en charge</string>
+    <string name="spec_flow_sensor_subtitle">Entrée impulsion / débit</string>
+    <string name="spec_usb_protocol">Protocole USB</string>
+    <string name="spec_usb_protocol_value">0x0C70 : 0x%1$s</string>
+    <string name="spec_usb_protocol_subtitle">Rapports : %1$dB / %2$dB</string>
+
+    <!-- Fans Screen -->
+    <string name="fans_screen_title">Ventilateurs &amp; Canaux PWM</string>
+    <string name="fans_screen_subtitle">Sélectionnez un canal pour configurer les profils de vitesse et la télémétrie</string>
+    <string name="fan_channels_header">CANAUX DE VENTILATEUR</string>
+    <string name="fan_channel_name">Ventilateur %1$d</string>
+    <string name="fan_channel_pin">CANAL PWM %1$d</string>
+    <string name="d5_pump_name">Pompe D5</string>
+    <string name="d5_pump_pin">POMPE</string>
+    <string name="d5_fan_name">Ventilateur</string>
+    <string name="d5_fan_pin">VENTILATEUR PWM</string>
+    <string name="fan_settings_title">Paramètres de %1$s</string>
+    <string name="fan_settings_title_suffix">Paramètres</string>
+    <string name="fan_hardware_pin">Broche matérielle : %1$s</string>
+    <string name="fan_rpm_value">%1$d tr/min</string>
+    <string name="fan_rpm_short_disconnected">-- tr/min</string>
+    <string name="fan_disconnected">Déconnecté</string>
+    <string name="fan_pwm_value">%1$s%</string>
+    <string name="fan_voltage_value">%1$s V</string>
+    <string name="fan_current_value">%1$s A</string>
+    <string name="fan_power_value">%1$s W</string>
+    <string name="metric_speed">Vitesse</string>
+    <string name="metric_pwm_duty">Rapport cyclique PWM</string>
+    <string name="metric_voltage">Tension</string>
+    <string name="metric_current">Courant</string>
+    <string name="metric_power">Puissance</string>
+    <string name="fan_curve_studio_title">Configuration de canal &amp; Studio de courbes</string>
+    <string name="fan_curve_studio_desc">Courbes personnalisées à 16 points, calculs progressifs automatiques et flash EEPROM seront disponibles ici.</string>
+
+    <!-- Fan Curve Studio -->
+    <string name="curve_studio_title">Studio de courbes &amp; profil</string>
+    <string name="fan_mode_fixed">PWM fixe</string>
+    <string name="fan_mode_auto_curve">Courbe automatique</string>
+    <string name="fan_mode_target_temp">Température cible</string>
+    <string name="fan_mode_copy_fan">Copier un ventilateur</string>
+    <string name="curve_target_temp">Température cible (Consigne)</string>
+    <string name="curve_target_temp_desc">Le matériel régule la vitesse de manière autonome pour maintenir cette température</string>
+    <string name="curve_legend_target">Cible : %1$s°C</string>
+    <string name="curve_fixed_power">Rapport cyclique fixe</string>
+    <string name="curve_fixed_power_desc">Rapport cyclique constant sans liaison à un capteur de température</string>
+    <string name="curve_sensor_source">Capteur de température</string>
+    <string name="curve_sensor_not_selected">Sélectionner un capteur de température</string>
+    <string name="curve_temp_min">Température minimale (Tmin)</string>
+    <string name="curve_temp_max">Température maximale (Tmax)</string>
+    <string name="curve_pwm_min">PWM minimal (Pmin)</string>
+    <string name="curve_pwm_max">PWM maximal (Pmax)</string>
+    <string name="curve_shape">Profil de la courbe</string>
+    <string name="curve_shape_linear">Linéaire (0.0)</string>
+    <string name="curve_shape_progressive">Progressif (+%1$s)</string>
+    <string name="curve_shape_digressive">Dégressif (%1$s)</string>
+    <string name="curve_copy_source">Copier depuis le canal</string>
+    <string name="curve_copy_no_channels">Aucun autre canal disponible</string>
+    <string name="curve_legend_current">Actuel (Matériel)</string>
+    <string name="curve_legend_destination">Destination (Brouillon)</string>
+    <string name="curve_legend_live_operating_point">Point de fonctionnement : %1$s°C → %2$s%</string>
+    <string name="curve_action_apply">Appliquer &amp; Flasher</string>
+    <string name="curve_action_flash_all">Flasher les modifications (%1$d)</string>
+    <string name="curve_action_discard">Abandonner</string>
+    <string name="curve_action_flashing">Flashage de l'EEPROM...</string>
+    <string name="curve_unsaved_changes">Modifications non enregistrées</string>
+    <string name="curve_synced_hardware">Synchronisé avec le matériel</string>
+
+    <!-- Flash Confirmation Dialog -->
+    <string name="flash_dialog_title">Flasher la configuration matérielle</string>
+    <string name="flash_dialog_desc">Les canaux de ventilateur suivants seront enregistrés et flashés dans l'EEPROM de l'appareil :</string>
+    <string name="flash_dialog_cancel_btn">Annuler</string>
+    <string name="flash_dialog_confirm_btn">Flasher l'EEPROM</string>
+
+    <!-- Sensors Screen -->
+    <string name="sensors_screen_title">Capteurs de température</string>
+    <string name="sensors_screen_subtitle">Entrées thermistance NTC et emplacements logiciels virtuels</string>
+    <string name="temperature_probes_header">SONDES DE TEMPÉRATURE</string>
+    <string name="sensor_channel_name">Capteur %1$d</string>
+    <string name="sensor_channel_pin">T%1$d</string>
+    <string name="sensor_virtual_name">Virtuel %1$d</string>
+    <string name="sensor_virtual_pin">VS%1$d</string>
+    <string name="sensor_coolant_name">Liquide</string>
+    <string name="sensor_coolant_pin">LIQUIDE</string>
+    <string name="sensor_settings_title">Paramètres de %1$s</string>
+    <string name="sensor_settings_title_suffix">Paramètres</string>
+    <string name="sensor_hardware_channel">Canal matériel : %1$s</string>
+    <string name="sensor_temp_short_value">%1$s°C</string>
+    <string name="sensor_temp_short_disconnected">--.-°C</string>
+    <string name="sensor_temp_long_value">%1$s °C</string>
+    <string name="sensor_temp_disconnected">Déconnecté</string>
+    <string name="sensor_probe_virtual">Emplacement virtuel</string>
+    <string name="sensor_probe_ntc">NTC 10k Ω</string>
+    <string name="sensor_probe_integrated">Sonde intégrée</string>
+    <string name="sensor_offset_value">%1$s °C</string>
+    <string name="metric_live_temperature">Température en direct</string>
+    <string name="metric_probe_type">Type de sonde</string>
+    <string name="metric_offset_calibration">Étalonnage du décalage</string>
+    <string name="sensor_calibration_title">Étalonnage des capteurs &amp; Flux virtuels</string>
+    <string name="sensor_calibration_desc">Curseurs de décalage NTC, streaming de température virtuelle et liaison aux courbes seront disponibles ici.</string>
+
+    <!-- Renaming -->
+    <string name="action_rename">Renommer</string>
+    <string name="rename_dialog_title">Renommer %1$s</string>
+    <string name="rename_dialog_save">Enregistrer</string>
+    <string name="rename_dialog_cancel">Annuler</string>
+    <string name="rename_dialog_label">Nom personnalisé</string>
+    <string name="rename_dialog_placeholder">Entrez un nom ou laissez vide pour la valeur par défaut</string>
+
+    <!-- Settings Screen -->
+    <string name="settings_screen_title">Paramètres</string>
+    <string name="settings_screen_subtitle">Préférences de l'application et gestion du stockage local</string>
+    <string name="settings_appearance_title">Apparence &amp; Mise à l'échelle</string>
+    <string name="settings_appearance_desc">Personnaliser les thèmes de couleurs, la densité, la typographie et la taille de police</string>
+    <string name="settings_color_scheme_title">Jeu de couleurs</string>
+    <string name="settings_color_scheme_desc">Sélectionner une palette de thème pour l'interface</string>
+    <string name="color_scheme_hydro_dark">Hydro Dark (Par défaut)</string>
+    <string name="color_scheme_high_contrast_dark">Contraste élevé foncé</string>
+    <string name="color_scheme_midnight_navy">Bleu nuit</string>
+    <string name="color_scheme_solar_amber">Ambre solaire</string>
+    <string name="settings_metrics_scale_title">Densité de l'interface</string>
+    <string name="settings_metrics_scale_desc">Ajuster la taille des composants, des boutons et des marges</string>
+    <string name="metrics_scale_compact">Compacte</string>
+    <string name="metrics_scale_standard">Standard (Par défaut)</string>
+    <string name="metrics_scale_comfortable">Confortable</string>
+    <string name="settings_font_scale_title">Taille de police</string>
+    <string name="settings_font_scale_desc">Spécifier la taille du texte en sp (min %1$d sp, max %2$d sp)</string>
+    <string name="font_preset_small">Petite (11 sp)</string>
+    <string name="font_preset_standard">Standard (13 sp)</string>
+    <string name="font_preset_large">Grande (15 sp)</string>
+    <string name="font_preset_extra_large">Très grande (18 sp)</string>
+    <string name="settings_font_family_title">Police d'écriture</string>
+    <string name="settings_font_family_desc">Sélectionner la typographie pour les métriques, la télémétrie et les libellés</string>
+    <string name="font_family_jetbrains_mono">JetBrains Mono (Recommandé)</string>
+    <string name="font_family_system_default">Par défaut du système</string>
+
+    <!-- Language Settings -->
+    <string name="settings_language_title">Langue</string>
+    <string name="settings_language_desc">Sélectionner la langue d'affichage de l'interface</string>
+    <string name="language_system_default">Par défaut du système</string>
+    <string name="language_english">Anglais (English)</string>
+    <string name="language_german">Allemand (Deutsch)</string>
+    <string name="language_french">Français</string>
+    <string name="language_italian">Italien (Italiano)</string>
+    <string name="language_spanish">Espagnol (Español)</string>
+
+    <!-- Channel Visibility Settings -->
+    <string name="settings_channel_visibility_title">Visibilité des canaux</string>
+    <string name="settings_channel_visibility_desc">Afficher ou masquer les ports déconnectés et les capteurs non configurés</string>
+    <string name="settings_hide_disconnected_fans_title">Masquer les ventilateurs déconnectés</string>
+    <string name="settings_hide_disconnected_fans_desc">Masquer les canaux PWM sans ventilateur connecté ou signalant une déconnexion</string>
+    <string name="settings_hide_disconnected_sensors_in_fans_title">Masquer les capteurs déconnectés dans les courbes</string>
+    <string name="settings_hide_disconnected_sensors_in_fans_desc">Masquer les sondes déconnectées et les capteurs virtuels non configurés dans le sélecteur de courbe</string>
+    <string name="settings_hide_disconnected_sensors_title">Masquer les sondes de température déconnectées</string>
+    <string name="settings_hide_disconnected_sensors_desc">Masquer les canaux physiques NTC 10k sans sonde branchée</string>
+    <string name="settings_hide_unconfigured_virtual_sensors_title">Masquer les capteurs virtuels non configurés</string>
+    <string name="settings_hide_unconfigured_virtual_sensors_desc">Masquer les emplacements logiciels virtuels n'ayant pas reçu de télémétrie de l'hôte</string>
+
+    <!-- Visibility Filter In-Screen Controls -->
+    <string name="visibility_filter_hidden_count">%1$d masqué(s)</string>
+    <string name="visibility_filter_hide_inactive">Masquer inactifs</string>
+    <string name="visibility_no_fans_visible">Tous les ventilateurs sont actuellement déconnectés et masqués par les filtres de visibilité</string>
+    <string name="visibility_no_sensors_visible">Tous les capteurs sont actuellement inactifs et masqués par les filtres de visibilité</string>
+    <string name="visibility_show_all_action">Afficher tous les canaux</string>
+
+    <!-- App Data Section -->
+    <string name="settings_app_data_title">Données de l'application</string>
+    <string name="settings_open_data_folder_title">Ouvrir le dossier de données</string>
+    <string name="settings_open_data_folder_desc">Ouvrir le dossier où sont stockés les paramètres locaux d'OpenAqua (noms personnalisés, etc.)</string>
+    <string name="settings_open_data_folder_button">Ouvrir le dossier</string>
+    <string name="settings_restore_defaults_title">Restaurer les paramètres par défaut</string>
+    <string name="settings_restore_defaults_desc">Réinitialiser les paramètres locaux d'OpenAqua. Les données et configurations stockées sur vos appareils matériels NE seront PAS modifiées.</string>
+    <string name="settings_restore_defaults_button">Restaurer les paramètres par défaut</string>
+    <string name="settings_reset_dialog_title">Restaurer les données par défaut ?</string>
+    <string name="settings_reset_dialog_message">Cette action réinitialisera uniquement les paramètres locaux d'OpenAqua. Les données et configurations stockées sur vos appareils matériels NE seront PAS modifiées.</string>
+    <string name="settings_reset_dialog_cancel">NE PAS réinitialiser</string>
+    <string name="settings_reset_dialog_confirm">Réinitialiser les données</string>
+</resources>

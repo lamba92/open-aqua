@@ -1,5 +1,6 @@
 package io.github.lamba92.openaqua.app.feature.settings
 
+import io.github.lamba92.openaqua.app.model.AppLanguage
 import io.github.lamba92.openaqua.app.theme.AppFontFamily
 import io.github.lamba92.openaqua.app.theme.AppMetricsScale
 import io.github.lamba92.openaqua.app.theme.FontScaleConstants
@@ -12,6 +13,7 @@ data class SettingsState(
     val metricsScale: AppMetricsScale = AppMetricsScale.STANDARD,
     val fontSp: Int = FontScaleConstants.DEFAULT_SP,
     val fontFamily: AppFontFamily = AppFontFamily.JETBRAINS_MONO,
+    val language: AppLanguage = AppLanguage.SYSTEM,
     val hideDisconnectedFans: Boolean = false,
     val hideDisconnectedSensorsInFans: Boolean = false,
     val hideDisconnectedSensors: Boolean = false,
@@ -41,6 +43,10 @@ sealed interface SettingsEvent {
 
     data class SelectFontFamily(
         val family: AppFontFamily,
+    ) : SettingsEvent
+
+    data class SelectLanguage(
+        val language: AppLanguage,
     ) : SettingsEvent
 
     data class ToggleHideDisconnectedFans(

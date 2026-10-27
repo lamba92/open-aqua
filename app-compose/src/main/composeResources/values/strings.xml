@@ -182,6 +182,16 @@
     <string name="font_family_jetbrains_mono">JetBrains Mono (Recommended)</string>
     <string name="font_family_system_default">System Default</string>
 
+    <!-- Language Settings -->
+    <string name="settings_language_title">Language</string>
+    <string name="settings_language_desc">Select interface display language</string>
+    <string name="language_system_default">System Default</string>
+    <string name="language_english">English</string>
+    <string name="language_german">German (Deutsch)</string>
+    <string name="language_french">French (Français)</string>
+    <string name="language_italian">Italian (Italiano)</string>
+    <string name="language_spanish">Spanish (Español)</string>
+
     <!-- Channel Visibility Settings -->
     <string name="settings_channel_visibility_title">Channel Visibility</string>
     <string name="settings_channel_visibility_desc">Choose whether to show or hide disconnected ports and unconfigured sensor slots across device views</string>

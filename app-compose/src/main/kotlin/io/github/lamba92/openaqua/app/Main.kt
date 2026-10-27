@@ -39,7 +39,9 @@ import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavState
 import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavViewModel
 import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavigationRailScaffold
 import io.github.lamba92.openaqua.app.feature.settings.SettingsScreen
+import io.github.lamba92.openaqua.app.i18n.AppLocaleProvider
 import io.github.lamba92.openaqua.app.model.AppStoredData
+import io.github.lamba92.openaqua.app.model.locale
 import io.github.lamba92.openaqua.app.repository.AppDataRepository
 import io.github.lamba92.openaqua.app.theme.AppMetrics
 import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
@@ -54,6 +56,7 @@ import open_aqua.app_compose.generated.resources.window_title
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
+import org.kodein.di.instance
 import java.awt.Taskbar
 import javax.imageio.ImageIO
 
@@ -61,6 +64,7 @@ fun main() {
     val enginePath = runBlocking { EngineExtractor.extract() }
     val scopeProvider = DefaultCoroutineScopeProvider()
     val di = createOpenAquaDI(enginePath, scopeProvider)
+    val appDataRepository by di.instance<AppDataRepository>()
 
     configureTaskbarIcon()
 
@@ -78,26 +82,33 @@ fun main() {
                 }.build()
         }
 
-        Window(
-            onCloseRequest = {
-                scopeProvider.cancelAll()
-                exitApplication()
-            },
-            state = windowState,
-            title = stringResource(Res.string.window_title),
-            icon = painterResource(Res.drawable.ic_app_icon),
-        ) {
-            CompositionLocalProvider(LocalDI provides di) {
-                OpenAquaThemedApp()
+        val appDataState by appDataRepository.state.collectAsState()
+        val storedData =
+            when (val state = appDataState) {
+                AppDataRepository.State.Loading -> return@application
+                is AppDataRepository.State.Ready -> state.data
+            }
+
+        AppLocaleProvider(storedData.language.locale) {
+            Window(
+                onCloseRequest = {
+                    scopeProvider.cancelAll()
+                    exitApplication()
+                },
+                state = windowState,
+                title = stringResource(Res.string.window_title),
+                icon = painterResource(Res.drawable.ic_app_icon),
+            ) {
+                CompositionLocalProvider(LocalDI provides di) {
+                    OpenAquaThemedApp(storedData)
+                }
             }
         }
     }
 }
 
 @Composable
-private fun OpenAquaThemedApp(appDataRepository: AppDataRepository = rememberInstance()) {
-    val appDataState by appDataRepository.state.collectAsState()
-    val storedData = (appDataState as? AppDataRepository.State.Ready)?.data ?: AppStoredData()
+private fun OpenAquaThemedApp(storedData: AppStoredData) {
     val palette =
         remember(storedData.colorScheme) {
             ThemePalette.fromColorScheme(storedData.colorScheme)

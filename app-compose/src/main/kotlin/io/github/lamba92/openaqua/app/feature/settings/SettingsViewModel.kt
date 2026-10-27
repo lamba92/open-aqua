@@ -37,6 +37,7 @@ class SettingsViewModel(
                         metricsScale = ready.data.metricsScale,
                         fontSp = ready.data.fontSp,
                         fontFamily = ready.data.fontFamily,
+                        language = ready.data.language,
                         hideDisconnectedFans = ready.data.hideDisconnectedFans,
                         hideDisconnectedSensorsInFans = ready.data.hideDisconnectedSensorsInFans,
                         hideDisconnectedSensors = ready.data.hideDisconnectedSensors,
@@ -59,6 +60,7 @@ class SettingsViewModel(
             is SettingsEvent.SelectMetricsScale -> appDataRepository.setMetricsScale(event.scale)
             is SettingsEvent.SetFontSp -> appDataRepository.setFontSp(event.sp)
             is SettingsEvent.SelectFontFamily -> appDataRepository.setFontFamily(event.family)
+            is SettingsEvent.SelectLanguage -> appDataRepository.setLanguage(event.language)
             is SettingsEvent.ToggleHideDisconnectedFans -> appDataRepository.setHideDisconnectedFans(event.hide)
             is SettingsEvent.ToggleHideDisconnectedSensorsInFans ->
                 appDataRepository.setHideDisconnectedSensorsInFans(event.hide)
