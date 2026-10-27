@@ -186,6 +186,15 @@ fun CurveStudio(
 
         HorizontalDivider(color = colors.borderOutline.copy(alpha = 0.5f))
 
+        val visualizerGraph = @Composable {
+            CurveVisualizerGraph(
+                currentConfig = fan.config,
+                draftConfig = draftConfig,
+                liveTemp = liveTemp,
+                modifier = Modifier.fillMaxWidth().height(260.dp),
+            )
+        }
+
         // Mode Controls
         when (draft) {
             is FanDraft.Fixed -> {
@@ -193,6 +202,7 @@ fun CurveStudio(
                     powerPercent = draft.powerPercent,
                     onPowerChange = { onEvent(CurveStudioEvent.ChangeFixedPwm(it)) },
                 )
+                visualizerGraph()
             }
             is FanDraft.AutoCurve -> {
                 AutoCurveModeControls(
@@ -209,6 +219,7 @@ fun CurveStudio(
                     onPMinChange = { onEvent(CurveStudioEvent.ChangePMin(it)) },
                     onPMaxChange = { onEvent(CurveStudioEvent.ChangePMax(it)) },
                     onShapeChange = { onEvent(CurveStudioEvent.ChangeShape(it)) },
+                    graphContent = visualizerGraph,
                 )
             }
             is FanDraft.Copy -> {
@@ -217,16 +228,9 @@ fun CurveStudio(
                     selectedSourceChannel = draft.sourceChannel,
                     onSelectSourceChannel = { onEvent(CurveStudioEvent.ChangeCopySource(it)) },
                 )
+                visualizerGraph()
             }
         }
-
-        // Visualizer Canvas Graph
-        CurveVisualizerGraph(
-            currentConfig = fan.config,
-            draftConfig = draftConfig,
-            liveTemp = liveTemp,
-            modifier = Modifier.fillMaxWidth().height(260.dp),
-        )
     }
 }
 
@@ -345,6 +349,7 @@ private fun AutoCurveModeControls(
     onPMinChange: (Double) -> Unit,
     onPMaxChange: (Double) -> Unit,
     onShapeChange: (Double) -> Unit,
+    graphContent: @Composable () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = OpenAquaTheme.colors
@@ -380,6 +385,8 @@ private fun AutoCurveModeControls(
                 onSelectSensor = onSelectSensor,
             )
         }
+
+        graphContent()
 
         HorizontalDivider(color = colors.borderOutline.copy(alpha = 0.3f))
 
