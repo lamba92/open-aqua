@@ -1,6 +1,7 @@
 package io.github.lamba92.openaqua.app.feature.device.fans
 
 import io.github.lamba92.openaqua.app.feature.device.common.FanItem
+import io.github.lamba92.openaqua.app.feature.device.common.FanUiItem
 import io.github.lamba92.openaqua.app.feature.device.common.SensorItem
 import io.github.lamba92.openaqua.model.AutoCurveFanConfig
 import io.github.lamba92.openaqua.model.CurveFanConfig
@@ -165,22 +166,32 @@ sealed interface FansUiState {
     data object Loading : FansUiState
 
     data class Ready(
-        val fans: List<FanItem>,
+        val fans: List<FanUiItem>,
         val selectedFanChannel: Int,
         val sensors: List<SensorItem>,
         val fanDrafts: Map<Int, FanDraft> = emptyMap(),
         val flashDialogState: FlashDialogState = FlashDialogState.NotShown,
+        val renamingChannel: Int? = null,
+        val hideDisconnectedFans: Boolean = false,
+        val hideDisconnectedSensors: Boolean = false,
+        val hideUnconfiguredVirtualSensors: Boolean = false,
     ) : FansUiState {
+        val rawFans: List<FanItem>
+            get() = fans.map { it.fan }
+
+        val renamingFan: FanItem?
+            get() = renamingChannel?.let { ch -> rawFans.firstOrNull { it.channel == ch } }
+
         fun isFanModified(fan: FanItem): Boolean {
             val draft = fanDrafts[fan.channel] ?: return false
-            return draft.toFanChannelConfig(fans, fanDrafts) != fan.config
+            return draft.toFanChannelConfig(rawFans, fanDrafts) != fan.config
         }
 
         val pendingFans: List<Pair<FanItem, FanChannelConfig>>
             get() =
-                fans.mapNotNull { fan ->
+                rawFans.mapNotNull { fan ->
                     val draft = fanDrafts[fan.channel] ?: return@mapNotNull null
-                    val target = draft.toFanChannelConfig(fans, fanDrafts)
+                    val target = draft.toFanChannelConfig(rawFans, fanDrafts)
                     if (target != fan.config) fan to target else null
                 }
     }
@@ -195,6 +206,12 @@ sealed interface FansUiEvent {
         val channel: Int,
         val name: String?,
     ) : FansUiEvent
+
+    data class StartRenamingFan(
+        val channel: Int,
+    ) : FansUiEvent
+
+    data object DismissRenameDialog : FansUiEvent
 
     data object DiscardFanDraft : FansUiEvent
 

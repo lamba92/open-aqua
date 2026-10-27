@@ -2,8 +2,10 @@ package io.github.lamba92.openaqua.app.feature.device.fans
 
 import io.github.lamba92.openaqua.app.coroutine.CoroutineScopeProvider
 import io.github.lamba92.openaqua.app.coroutine.getScope
+import io.github.lamba92.openaqua.app.feature.device.common.FanUiItem
 import io.github.lamba92.openaqua.app.feature.device.common.toPwmFanItems
 import io.github.lamba92.openaqua.app.feature.device.common.toSensorItems
+import io.github.lamba92.openaqua.app.model.DeviceStoredData
 import io.github.lamba92.openaqua.app.mvi.MVIViewModel
 import io.github.lamba92.openaqua.app.repository.AppDataRepository
 import io.github.lamba92.openaqua.app.repository.DeviceDataCacheService
@@ -16,8 +18,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -35,29 +40,55 @@ class FansViewModel(
     override val effects: SharedFlow<FansUiEffect>
         field = MutableSharedFlow<FansUiEffect>()
 
+    private data class CombinedPreferences(
+        val storedData: DeviceStoredData,
+        val hideDisconnectedFans: Boolean,
+        val hideDisconnectedSensors: Boolean,
+        val hideUnconfiguredVirtualSensors: Boolean,
+    )
+
     init {
+        val preferencesFlow =
+            appDataRepository.state
+                .filterIsInstance<AppDataRepository.State.Ready>()
+                .map { ready ->
+                    CombinedPreferences(
+                        storedData = ready.data.devices[deviceId] ?: DeviceStoredData(),
+                        hideDisconnectedFans = ready.data.hideDisconnectedFans,
+                        hideDisconnectedSensors = ready.data.hideDisconnectedSensors,
+                        hideUnconfiguredVirtualSensors = ready.data.hideUnconfiguredVirtualSensors,
+                    )
+                }.distinctUntilChanged()
+
         combine(
             cacheService.getDeviceStateFlow(deviceId),
-            appDataRepository.getDeviceDataFlow(deviceId),
-        ) { deviceState, storedData ->
+            preferencesFlow,
+        ) { deviceState, preferences ->
             state.update { current ->
                 when (deviceState) {
                     is DeviceState.Connecting, is DeviceState.Error -> FansUiState.Loading
                     is DeviceState.Ready -> {
-                        val fans = deviceState.telemetry.fans.toPwmFanItems(deviceState.config.fans, storedData)
-                        val sensors = deviceState.telemetry.sensors.toSensorItems(deviceState.config.sensorOffsets, storedData)
+                        val rawFans = deviceState.telemetry.fans.toPwmFanItems(deviceState.config.fans, preferences.storedData)
+                        val fanUiItems = rawFans.map { FanUiItem(fan = it, canHidden = it.canHidden) }
+                        val sensors = deviceState.telemetry.sensors.toSensorItems(deviceState.config.sensorOffsets, preferences.storedData)
 
                         if (current is FansUiState.Ready) {
                             current.copy(
-                                fans = fans,
+                                fans = fanUiItems,
                                 sensors = sensors,
+                                hideDisconnectedFans = preferences.hideDisconnectedFans,
+                                hideDisconnectedSensors = preferences.hideDisconnectedSensors,
+                                hideUnconfiguredVirtualSensors = preferences.hideUnconfiguredVirtualSensors,
                             )
                         } else {
                             FansUiState.Ready(
-                                fans = fans,
+                                fans = fanUiItems,
                                 selectedFanChannel = 0,
                                 sensors = sensors,
                                 fanDrafts = emptyMap(),
+                                hideDisconnectedFans = preferences.hideDisconnectedFans,
+                                hideDisconnectedSensors = preferences.hideDisconnectedSensors,
+                                hideUnconfiguredVirtualSensors = preferences.hideUnconfiguredVirtualSensors,
                             )
                         }
                     }
@@ -73,8 +104,22 @@ class FansViewModel(
                     if (current is FansUiState.Ready) current.copy(selectedFanChannel = event.channel) else current
                 }
 
-            is FansUiEvent.RenameFan ->
+            is FansUiEvent.StartRenamingFan ->
+                state.update { current ->
+                    if (current is FansUiState.Ready) current.copy(renamingChannel = event.channel) else current
+                }
+
+            is FansUiEvent.DismissRenameDialog ->
+                state.update { current ->
+                    if (current is FansUiState.Ready) current.copy(renamingChannel = null) else current
+                }
+
+            is FansUiEvent.RenameFan -> {
                 appDataRepository.setFanName(deviceId = deviceId, channel = event.channel, name = event.name)
+                state.update { current ->
+                    if (current is FansUiState.Ready) current.copy(renamingChannel = null) else current
+                }
+            }
 
             is CurveStudioEvent ->
                 updateSelectedFanDraft { currentDraft, channel ->
@@ -221,7 +266,7 @@ class FansViewModel(
         state.update { current ->
             if (current is FansUiState.Ready) {
                 val channel = current.selectedFanChannel
-                val fan = current.fans.firstOrNull { it.channel == channel }
+                val fan = current.rawFans.firstOrNull { it.channel == channel }
                 val defaultSensor = current.sensors.firstOrNull()?.channel ?: 0
                 val existing =
                     current.fanDrafts[channel] ?: fan?.config.toInitialDraft(

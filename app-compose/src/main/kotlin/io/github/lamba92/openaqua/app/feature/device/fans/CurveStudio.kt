@@ -53,6 +53,7 @@ import androidx.compose.ui.unit.sp
 import io.github.lamba92.openaqua.app.feature.device.common.FanItem
 import io.github.lamba92.openaqua.app.feature.device.common.SensorItem
 import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
+import io.github.lamba92.openaqua.app.ui.components.VisibilityFilterChip
 import io.github.lamba92.openaqua.model.AutoCurveFanConfig
 import io.github.lamba92.openaqua.model.CoolingChannelKind
 import io.github.lamba92.openaqua.model.CurveFanConfig
@@ -108,6 +109,8 @@ fun CurveStudio(
     sensors: List<SensorItem>,
     onEvent: (CurveStudioEvent) -> Unit,
     modifier: Modifier = Modifier,
+    hideDisconnectedSensors: Boolean = false,
+    hideUnconfiguredVirtualSensors: Boolean = false,
 ) {
     val colors = OpenAquaTheme.colors
     val metrics = OpenAquaTheme.metrics
@@ -228,6 +231,8 @@ fun CurveStudio(
                     onPMaxChange = { onEvent(CurveStudioEvent.ChangePMax(it)) },
                     onShapeChange = { onEvent(CurveStudioEvent.ChangeShape(it)) },
                     graphContent = visualizerGraph,
+                    hideDisconnectedSensors = hideDisconnectedSensors,
+                    hideUnconfiguredVirtualSensors = hideUnconfiguredVirtualSensors,
                 )
             }
             is FanDraft.TargetTemp -> {
@@ -238,6 +243,8 @@ fun CurveStudio(
                     targetTemp = draft.targetTempCelsius,
                     onTargetTempChange = { onEvent(CurveStudioEvent.ChangeTargetTemp(it)) },
                     graphContent = visualizerGraph,
+                    hideDisconnectedSensors = hideDisconnectedSensors,
+                    hideUnconfiguredVirtualSensors = hideUnconfiguredVirtualSensors,
                 )
             }
             is FanDraft.Copy -> {
@@ -369,6 +376,8 @@ private fun AutoCurveModeControls(
     onShapeChange: (Double) -> Unit,
     graphContent: @Composable () -> Unit,
     modifier: Modifier = Modifier,
+    hideDisconnectedSensors: Boolean = false,
+    hideUnconfiguredVirtualSensors: Boolean = false,
 ) {
     val colors = OpenAquaTheme.colors
     val metrics = OpenAquaTheme.metrics
@@ -401,6 +410,8 @@ private fun AutoCurveModeControls(
                 sensors = sensors,
                 selectedIndex = selectedSensorIndex,
                 onSelectSensor = onSelectSensor,
+                hideDisconnectedSensors = hideDisconnectedSensors,
+                hideUnconfiguredVirtualSensors = hideUnconfiguredVirtualSensors,
             )
         }
 
@@ -497,6 +508,8 @@ private fun TargetTempModeControls(
     onTargetTempChange: (Double) -> Unit,
     graphContent: @Composable () -> Unit,
     modifier: Modifier = Modifier,
+    hideDisconnectedSensors: Boolean = false,
+    hideUnconfiguredVirtualSensors: Boolean = false,
 ) {
     val colors = OpenAquaTheme.colors
     val metrics = OpenAquaTheme.metrics
@@ -529,6 +542,8 @@ private fun TargetTempModeControls(
                 sensors = sensors,
                 selectedIndex = selectedSensorIndex,
                 onSelectSensor = onSelectSensor,
+                hideDisconnectedSensors = hideDisconnectedSensors,
+                hideUnconfiguredVirtualSensors = hideUnconfiguredVirtualSensors,
             )
         }
 
@@ -553,9 +568,41 @@ private fun SensorDropdown(
     selectedIndex: Int,
     onSelectSensor: (Int) -> Unit,
     modifier: Modifier = Modifier,
+    hideDisconnectedSensors: Boolean = false,
+    hideUnconfiguredVirtualSensors: Boolean = false,
 ) {
     val colors = OpenAquaTheme.colors
     val metrics = OpenAquaTheme.metrics
+    var showAllOverride by remember { mutableStateOf(false) }
+
+    val isSensorHidden: (SensorItem) -> Boolean = { sensor ->
+        when (sensor.kind) {
+            SensorChannelKind.PHYSICAL_NTC -> hideDisconnectedSensors && sensor.canHidden
+            SensorChannelKind.VIRTUAL -> hideUnconfiguredVirtualSensors && sensor.canHidden
+            SensorChannelKind.INTEGRATED_COOLANT -> false
+        }
+    }
+
+    val hiddenCount =
+        remember(sensors, hideDisconnectedSensors, hideUnconfiguredVirtualSensors) {
+            sensors.count(isSensorHidden)
+        }
+
+    val displayedSensors =
+        remember(
+            sensors,
+            showAllOverride,
+            hideDisconnectedSensors,
+            hideUnconfiguredVirtualSensors,
+            selectedIndex,
+        ) {
+            if (showAllOverride) {
+                sensors
+            } else {
+                sensors.filter { !isSensorHidden(it) || it.channel == selectedIndex }
+            }
+        }
+
     var expanded by remember { mutableStateOf(false) }
 
     val currentSensor = sensors.firstOrNull { it.channel == selectedIndex }
@@ -566,57 +613,71 @@ private fun SensorDropdown(
             stringResource(Res.string.curve_sensor_not_selected)
         }
 
-    Box(modifier = modifier) {
-        Row(
-            modifier =
-                Modifier
-                    .clip(RoundedCornerShape(metrics.radiusSmall))
-                    .background(colors.surfaceLowest)
-                    .border(metrics.strokeThin, colors.borderOutline, RoundedCornerShape(metrics.radiusSmall))
-                    .clickable { expanded = true }
-                    .padding(horizontal = 12.dp, vertical = 7.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            Text(
-                text = displayLabel,
-                color = colors.textPrimary,
-                fontSize = 12.sp,
-                fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
-            )
-            Icon(
-                imageVector = Icons.Default.ArrowDropDown,
-                contentDescription = null,
-                tint = colors.textMuted,
-                modifier = Modifier.size(18.dp),
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(metrics.spacingSm),
+    ) {
+        if (hiddenCount > 0 || showAllOverride) {
+            VisibilityFilterChip(
+                hiddenCount = hiddenCount,
+                showingAll = showAllOverride,
+                onClick = { showAllOverride = !showAllOverride },
             )
         }
 
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-            modifier =
-                Modifier
-                    .background(colors.surfaceHigh)
-                    .border(metrics.strokeThin, colors.borderOutline),
-        ) {
-            sensors.forEach { sensor ->
-                val isSelected = sensor.channel == selectedIndex
-                DropdownMenuItem(
-                    text = {
-                        Text(
-                            text = sensorDisplayName(sensor),
-                            color = if (isSelected) colors.primaryBright else colors.textPrimary,
-                            fontSize = 12.sp,
-                            fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                        )
-                    },
-                    onClick = {
-                        onSelectSensor(sensor.channel)
-                        expanded = false
-                    },
+        Box {
+            Row(
+                modifier =
+                    Modifier
+                        .clip(RoundedCornerShape(metrics.radiusSmall))
+                        .background(colors.surfaceLowest)
+                        .border(metrics.strokeThin, colors.borderOutline, RoundedCornerShape(metrics.radiusSmall))
+                        .clickable { expanded = true }
+                        .padding(horizontal = 12.dp, vertical = 7.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Text(
+                    text = displayLabel,
+                    color = colors.textPrimary,
+                    fontSize = 12.sp,
+                    fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
                 )
+                Icon(
+                    imageVector = Icons.Default.ArrowDropDown,
+                    contentDescription = null,
+                    tint = colors.textMuted,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
+
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+                modifier =
+                    Modifier
+                        .background(colors.surfaceHigh)
+                        .border(metrics.strokeThin, colors.borderOutline),
+            ) {
+                displayedSensors.forEach { sensor ->
+                    val isSelected = sensor.channel == selectedIndex
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                text = sensorDisplayName(sensor),
+                                color = if (isSelected) colors.primaryBright else colors.textPrimary,
+                                fontSize = 12.sp,
+                                fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                            )
+                        },
+                        onClick = {
+                            onSelectSensor(sensor.channel)
+                            expanded = false
+                        },
+                    )
+                }
             }
         }
     }

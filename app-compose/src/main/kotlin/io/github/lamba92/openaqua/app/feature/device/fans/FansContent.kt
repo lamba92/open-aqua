@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.sp
 import io.github.lamba92.openaqua.app.di.rememberInstance
 import io.github.lamba92.openaqua.app.feature.device.common.DeviceLoadingContent
 import io.github.lamba92.openaqua.app.feature.device.common.FanItem
+import io.github.lamba92.openaqua.app.feature.device.common.FanUiItem
 import io.github.lamba92.openaqua.app.feature.device.common.SensorItem
 import io.github.lamba92.openaqua.app.theme.BrandPureWhite
 import io.github.lamba92.openaqua.app.theme.CoolantTeal
@@ -104,44 +105,38 @@ import kotlin.math.roundToInt
 
 @Composable
 fun FansContent(
-    fans: List<FanItem>,
-    sensors: List<SensorItem>,
-    selectedChannel: Int,
-    fanDrafts: Map<Int, FanDraft>,
-    isFanModified: (FanItem) -> Boolean,
-    pendingFansCount: Int,
-    onSelectFan: (Int) -> Unit,
-    onCurveStudioEvent: (CurveStudioEvent) -> Unit,
-    onDiscardDraft: () -> Unit,
-    onRequestFlash: () -> Unit,
+    state: FansUiState.Ready,
+    onEvent: (FansUiEvent) -> Unit,
     modifier: Modifier = Modifier,
     scrollState: ScrollState = rememberScrollState(),
-    onRenameFan: ((channel: Int, name: String?) -> Unit)? = null,
 ) {
-    val preferences = OpenAquaTheme.preferences
     var showAllOverride by remember { mutableStateOf(false) }
 
-    val isFanHidden: (FanItem) -> Boolean = { fan ->
-        preferences.hideDisconnectedFans && fan.telemetry is CoolingChannelTelemetry.Disconnected
-    }
+    val isFanHidden =
+        remember<(FanUiItem) -> Boolean>(state.hideDisconnectedFans) {
+            { item -> state.hideDisconnectedFans && item.canHidden }
+        }
 
     val hiddenCount =
-        remember(fans, preferences.hideDisconnectedFans) {
-            fans.count(isFanHidden)
+        remember(state.fans, state.hideDisconnectedFans) {
+            state.fans.count(isFanHidden)
         }
 
     val displayedFans =
-        remember(fans, showAllOverride, preferences.hideDisconnectedFans) {
-            if (showAllOverride || !preferences.hideDisconnectedFans) {
-                fans
+        remember(state.fans, showAllOverride, state.hideDisconnectedFans) {
+            if (showAllOverride || !state.hideDisconnectedFans) {
+                state.fans
             } else {
-                fans.filterNot(isFanHidden)
+                state.fans.filterNot(isFanHidden)
             }
         }
 
-    val selectedFan = displayedFans.firstOrNull { it.channel == selectedChannel } ?: displayedFans.firstOrNull()
-    var renamingFan by remember { mutableStateOf<FanItem?>(null) }
-    val hasPump = remember(fans) { fans.any { it.kind == CoolingChannelKind.PUMP } }
+    val selectedFan =
+        displayedFans.firstOrNull { it.fan.channel == state.selectedFanChannel }?.fan
+            ?: displayedFans.firstOrNull()?.fan
+            ?: state.rawFans.firstOrNull()
+
+    val hasPump = remember(state.fans) { state.rawFans.any { it.kind == CoolingChannelKind.PUMP } }
 
     FansPageScaffold(
         modifier = modifier,
@@ -159,7 +154,8 @@ fun FansContent(
                 null
             },
         selectorContent = {
-            displayedFans.forEach { fan ->
+            displayedFans.forEach { fanUiItem ->
+                val fan = fanUiItem.fan
                 val name = fan.customName ?: defaultCoolingName(fan, hasPump)
                 val pinLabel = defaultCoolingPin(fan, hasPump)
                 val icon =
@@ -169,7 +165,7 @@ fun FansContent(
                         painterResource(Res.drawable.ic_fan)
                     }
                 val connectedTel = fan.telemetry as? CoolingChannelTelemetry.Connected
-                val hasPending = isFanModified(fan)
+                val hasPending = state.isFanModified(fan)
                 FanSelectionTile(
                     name = name,
                     pinLabel = pinLabel,
@@ -178,8 +174,8 @@ fun FansContent(
                     icon = icon,
                     selected = fan.channel == selectedFan?.channel,
                     hasPendingChanges = hasPending,
-                    onClick = { onSelectFan(fan.channel) },
-                    onDoubleClick = onRenameFan?.let { { renamingFan = fan } },
+                    onClick = { onEvent(FansUiEvent.SelectFan(fan.channel)) },
+                    onDoubleClick = { onEvent(FansUiEvent.StartRenamingFan(fan.channel)) },
                 )
             }
         },
@@ -193,42 +189,82 @@ fun FansContent(
                 val name = selectedFan.customName ?: defaultCoolingName(selectedFan, hasPump)
                 val pinLabel = defaultCoolingPin(selectedFan, hasPump)
                 val draft =
-                    fanDrafts[selectedFan.channel] ?: selectedFan.config.toInitialDraft(
+                    state.fanDrafts[selectedFan.channel] ?: selectedFan.config.toInitialDraft(
                         channel = selectedFan.channel,
-                        defaultSensorIndex = sensors.firstOrNull()?.channel ?: 0,
+                        defaultSensorIndex = state.sensors.firstOrNull()?.channel ?: 0,
                     )
-                val isModified = isFanModified(selectedFan)
+                val isModified = state.isFanModified(selectedFan)
 
                 FanChannelDetailCard(
                     name = name,
                     pinLabel = pinLabel,
                     fan = selectedFan,
                     draft = draft,
-                    allFans = fans,
-                    sensors = sensors,
+                    allFans = state.rawFans,
+                    sensors = state.sensors,
                     isModified = isModified,
-                    pendingFansCount = pendingFansCount,
-                    onCurveStudioEvent = onCurveStudioEvent,
-                    onDiscard = onDiscardDraft,
-                    onRequestFlash = onRequestFlash,
-                    onRenameClick = onRenameFan?.let { { renamingFan = selectedFan } },
+                    pendingFansCount = state.pendingFans.size,
+                    hideDisconnectedSensors = state.hideDisconnectedSensors,
+                    hideUnconfiguredVirtualSensors = state.hideUnconfiguredVirtualSensors,
+                    onCurveStudioEvent = onEvent,
+                    onDiscard = { onEvent(FansUiEvent.DiscardFanDraft) },
+                    onRequestFlash = { onEvent(FansUiEvent.RequestFlash) },
+                    onRenameClick = { onEvent(FansUiEvent.StartRenamingFan(selectedFan.channel)) },
                 )
             }
         },
     )
 
-    val activeRenamingFan = renamingFan
-    if (activeRenamingFan != null && onRenameFan != null) {
+    val activeRenamingFan = state.renamingFan
+    if (activeRenamingFan != null) {
         val defaultName = defaultCoolingName(activeRenamingFan, hasPump)
         RenameDialog(
             title = stringResource(Res.string.rename_dialog_title, activeRenamingFan.customName ?: defaultName),
             initialValue = activeRenamingFan.customName ?: "",
             icon = painterResource(Res.drawable.ic_edit),
             onConfirm = { newName ->
-                onRenameFan(activeRenamingFan.channel, newName)
-                renamingFan = null
+                onEvent(FansUiEvent.RenameFan(activeRenamingFan.channel, newName))
             },
-            onDismiss = { renamingFan = null },
+            onDismiss = { onEvent(FansUiEvent.DismissRenameDialog) },
+        )
+    }
+
+    if (state.flashDialogState !is FlashDialogState.NotShown) {
+        val isFlashing = state.flashDialogState is FlashDialogState.Flashing
+        val colors = OpenAquaTheme.colors
+
+        ConfirmationDialog(
+            title = stringResource(Res.string.flash_dialog_title),
+            confirmText = stringResource(Res.string.flash_dialog_confirm_btn),
+            dismissText = stringResource(Res.string.flash_dialog_cancel_btn),
+            isLoading = isFlashing,
+            loadingText = stringResource(Res.string.curve_action_flashing),
+            confirmContainerColor = colors.primary,
+            confirmContentColor = BrandPureWhite,
+            dismissContainerColor = colors.surfaceHigh,
+            dismissContentColor = colors.textPrimary,
+            onConfirm = { onEvent(FansUiEvent.ConfirmFlash) },
+            onDismiss = { onEvent(FansUiEvent.DismissFlashDialog) },
+            width = 480.dp,
+            content = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Text(
+                        text = stringResource(Res.string.flash_dialog_desc),
+                        color = colors.textSecondary,
+                        fontSize = 13.sp,
+                    )
+                    state.pendingFans.forEach { (fan, targetConfig) ->
+                        PendingFanDiffCard(
+                            fan = fan,
+                            targetConfig = targetConfig,
+                            sensors = state.sensors,
+                        )
+                    }
+                }
+            },
         )
     }
 }
@@ -364,6 +400,8 @@ fun FanChannelDetailCard(
     onDiscard: () -> Unit,
     onRequestFlash: () -> Unit,
     modifier: Modifier = Modifier,
+    hideDisconnectedSensors: Boolean = false,
+    hideUnconfiguredVirtualSensors: Boolean = false,
     onRenameClick: (() -> Unit)? = null,
 ) {
     val colors = OpenAquaTheme.colors
@@ -471,6 +509,8 @@ fun FanChannelDetailCard(
             allFans = allFans,
             sensors = sensors,
             onEvent = onCurveStudioEvent,
+            hideDisconnectedSensors = hideDisconnectedSensors,
+            hideUnconfiguredVirtualSensors = hideUnconfiguredVirtualSensors,
         )
     }
 }
@@ -511,61 +551,11 @@ fun FansTabContent(
         FansUiState.Loading -> DeviceLoadingContent(modifier)
         is FansUiState.Ready -> {
             FansContent(
-                fans = s.fans,
-                sensors = s.sensors,
-                selectedChannel = s.selectedFanChannel,
-                fanDrafts = s.fanDrafts,
-                isFanModified = { s.isFanModified(it) },
-                pendingFansCount = s.pendingFans.size,
-                onSelectFan = { viewModel.onEvent(FansUiEvent.SelectFan(it)) },
-                onRenameFan = { channel, name ->
-                    viewModel.onEvent(FansUiEvent.RenameFan(channel = channel, name = name))
-                },
-                onCurveStudioEvent = { viewModel.onEvent(it) },
-                onDiscardDraft = { viewModel.onEvent(FansUiEvent.DiscardFanDraft) },
-                onRequestFlash = { viewModel.onEvent(FansUiEvent.RequestFlash) },
+                state = s,
+                onEvent = viewModel::onEvent,
                 modifier = modifier,
                 scrollState = scrollState,
             )
-
-            if (s.flashDialogState !is FlashDialogState.NotShown) {
-                val isFlashing = s.flashDialogState is FlashDialogState.Flashing
-                val colors = OpenAquaTheme.colors
-
-                ConfirmationDialog(
-                    title = stringResource(Res.string.flash_dialog_title),
-                    confirmText = stringResource(Res.string.flash_dialog_confirm_btn),
-                    dismissText = stringResource(Res.string.flash_dialog_cancel_btn),
-                    isLoading = isFlashing,
-                    loadingText = stringResource(Res.string.curve_action_flashing),
-                    confirmContainerColor = colors.primary,
-                    confirmContentColor = BrandPureWhite,
-                    dismissContainerColor = colors.surfaceHigh,
-                    dismissContentColor = colors.textPrimary,
-                    onConfirm = { viewModel.onEvent(FansUiEvent.ConfirmFlash) },
-                    onDismiss = { viewModel.onEvent(FansUiEvent.DismissFlashDialog) },
-                    width = 480.dp,
-                    content = {
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalArrangement = Arrangement.spacedBy(10.dp),
-                        ) {
-                            Text(
-                                text = stringResource(Res.string.flash_dialog_desc),
-                                color = colors.textSecondary,
-                                fontSize = 13.sp,
-                            )
-                            s.pendingFans.forEach { (fan, targetConfig) ->
-                                PendingFanDiffCard(
-                                    fan = fan,
-                                    targetConfig = targetConfig,
-                                    sensors = s.sensors,
-                                )
-                            }
-                        }
-                    },
-                )
-            }
         }
     }
 }
