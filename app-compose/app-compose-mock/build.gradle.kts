@@ -5,6 +5,7 @@ plugins {
     id(libs.plugins.kotlin.serialization)
     id(libs.plugins.kotlin.compose)
     id(libs.plugins.compose.multiplatform)
+    id(libs.plugins.compose.hot.reload)
     id(libs.plugins.ktlint)
     id("openaqua.engine.consumer")
 }

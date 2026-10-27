@@ -15,6 +15,7 @@ dependencies {
     implementation(pluginMarker(libs.plugins.kotlin.serialization))
     implementation(pluginMarker(libs.plugins.kotlin.compose))
     implementation(pluginMarker(libs.plugins.compose.multiplatform))
+    implementation(pluginMarker(libs.plugins.compose.hot.reload))
     implementation(pluginMarker(libs.plugins.ktlint))
     implementation("org.tukaani:xz:1.10")
 }
