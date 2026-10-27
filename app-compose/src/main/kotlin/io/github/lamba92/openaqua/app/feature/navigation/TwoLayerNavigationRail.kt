@@ -65,7 +65,6 @@ fun DeviceNavigationRailScaffold(
     metrics: NavigationRailMetrics = NavigationRailDefaults.metrics(),
     content: @Composable () -> Unit,
 ) {
-    val selectedDevice = state.selectedDeviceState.device
     val railItemColors =
         NavigationRailItemDefaults.colors(
             selectedIconColor = colors.itemSelectedIcon,
@@ -116,7 +115,9 @@ fun DeviceNavigationRailScaffold(
             ) {
                 state.devices.forEach { deviceState ->
                     val device = deviceState.device
-                    val isSelected = !state.isSettingsSelected && device.id == selectedDevice.id
+                    val isSelected =
+                        state.selectedItem is DeviceNavState.Ready.SelectedItem.Device &&
+                            state.selectedItem.deviceId == device.id
                     val statusColor =
                         when (deviceState) {
                             is DeviceState.Connecting -> ElectricCyan
@@ -169,7 +170,7 @@ fun DeviceNavigationRailScaffold(
                 val settingsLabel = stringResource(Res.string.nav_settings)
                 NavigationRailItem(
                     modifier = Modifier.fillMaxWidth(),
-                    selected = state.isSettingsSelected,
+                    selected = state.selectedItem is DeviceNavState.Ready.SelectedItem.Settings,
                     onClick = { onEvent(DeviceNavEvent.SelectSettings) },
                     icon = {
                         Icon(

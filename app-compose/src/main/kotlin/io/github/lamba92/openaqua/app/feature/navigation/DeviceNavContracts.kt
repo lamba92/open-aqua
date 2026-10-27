@@ -11,12 +11,16 @@ sealed interface DeviceNavState {
 
     data class Ready(
         val devices: List<DeviceState>,
-        val selectedDeviceId: DeviceId,
-        val selectedTab: CommonDeviceTab = CommonDeviceTab.DEVICE_INFO,
-        val isSettingsSelected: Boolean = false,
+        val selectedItem: SelectedItem,
     ) : DeviceNavState {
-        val selectedDeviceState: DeviceState
-            get() = devices.firstOrNull { it.device.id == selectedDeviceId } ?: devices.first()
+        sealed interface SelectedItem {
+            data class Device(
+                val deviceId: DeviceId,
+                val selectedTab: CommonDeviceTab = CommonDeviceTab.DEVICE_INFO,
+            ) : SelectedItem
+
+            data object Settings : SelectedItem
+        }
     }
 }
 

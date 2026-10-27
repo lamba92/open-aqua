@@ -34,7 +34,6 @@ import io.github.lamba92.openaqua.app.di.LocalDI
 import io.github.lamba92.openaqua.app.di.createOpenAquaDI
 import io.github.lamba92.openaqua.app.di.rememberInstance
 import io.github.lamba92.openaqua.app.feature.device.DeviceScreen
-import io.github.lamba92.openaqua.app.feature.device.common.CommonDeviceTab
 import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavEvent
 import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavState
 import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavViewModel
@@ -160,21 +159,19 @@ private fun DeviceReady(
     state: DeviceNavState.Ready,
     navViewModel: DeviceNavViewModel,
 ) {
-    val selectedDevice = state.selectedDeviceState.device
-
     DeviceNavigationRailScaffold(
         state = state,
         onEvent = navViewModel::onEvent,
     ) {
-        when {
-            state.isSettingsSelected ->
+        when (val item = state.selectedItem) {
+            DeviceNavState.Ready.SelectedItem.Settings ->
                 SettingsScreen(
                     viewModel = rememberInstance(),
                 )
-            else ->
+            is DeviceNavState.Ready.SelectedItem.Device ->
                 DeviceScreen(
-                    viewModel = rememberInstance(arg = selectedDevice.id),
-                    selectedTab = state.selectedTab,
+                    viewModel = rememberInstance(arg = item.deviceId),
+                    selectedTab = item.selectedTab,
                     onSelectTab = { navViewModel.onEvent(DeviceNavEvent.SelectTab(it)) },
                 )
         }
