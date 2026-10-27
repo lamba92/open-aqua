@@ -1,5 +1,6 @@
 package io.github.lamba92.openaqua.app.feature.device.fans
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -113,6 +115,7 @@ fun FansContent(
     onDiscardDraft: () -> Unit,
     onRequestFlash: () -> Unit,
     modifier: Modifier = Modifier,
+    scrollState: ScrollState = rememberScrollState(),
     onRenameFan: ((channel: Int, name: String?) -> Unit)? = null,
 ) {
     val preferences = OpenAquaTheme.preferences
@@ -142,6 +145,7 @@ fun FansContent(
 
     FansPageScaffold(
         modifier = modifier,
+        scrollState = scrollState,
         selectorHeaderTrailing =
             if (hiddenCount > 0 || showAllOverride) {
                 {
@@ -263,6 +267,7 @@ private fun defaultCoolingPin(
 fun FansPageScaffold(
     detailContent: @Composable () -> Unit,
     modifier: Modifier = Modifier,
+    scrollState: ScrollState = rememberScrollState(),
     selectorHeaderTrailing: (@Composable RowScope.() -> Unit)? = null,
     selectorContent: @Composable () -> Unit,
 ) {
@@ -273,6 +278,7 @@ fun FansPageScaffold(
         selectorHeaderTrailing = selectorHeaderTrailing,
         selectorContent = selectorContent,
         detailContent = detailContent,
+        scrollState = scrollState,
         modifier = modifier,
     )
 }
@@ -486,15 +492,18 @@ private fun FanMetricCard(
 fun FansTabContent(
     deviceId: DeviceId,
     modifier: Modifier = Modifier,
+    scrollState: ScrollState = rememberScrollState(),
 ) = FansTabContent(
     viewModel = rememberInstance(arg = deviceId),
     modifier = modifier,
+    scrollState = scrollState,
 )
 
 @Composable
 fun FansTabContent(
     viewModel: FansViewModel,
     modifier: Modifier = Modifier,
+    scrollState: ScrollState = rememberScrollState(),
 ) {
     val state by viewModel.state.collectAsState()
 
@@ -516,6 +525,7 @@ fun FansTabContent(
                 onDiscardDraft = { viewModel.onEvent(FansUiEvent.DiscardFanDraft) },
                 onRequestFlash = { viewModel.onEvent(FansUiEvent.RequestFlash) },
                 modifier = modifier,
+                scrollState = scrollState,
             )
 
             if (s.flashDialogState !is FlashDialogState.NotShown) {

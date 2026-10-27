@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
@@ -214,12 +215,12 @@ fun ChannelPageScaffold(
     selectorHeader: String,
     detailContent: @Composable () -> Unit,
     modifier: Modifier = Modifier,
+    scrollState: ScrollState = rememberScrollState(),
     selectorHeaderTrailing: (@Composable RowScope.() -> Unit)? = null,
     selectorContent: @Composable () -> Unit,
 ) {
     val colors = OpenAquaTheme.colors
     val metrics = OpenAquaTheme.metrics
-    val verticalScrollState = rememberScrollState()
 
     Column(
         modifier = modifier.fillMaxSize(),
@@ -253,7 +254,7 @@ fun ChannelPageScaffold(
                     .fillMaxSize()
                     .scrollFadingEdge(
                         color = colors.background,
-                        scrollState = verticalScrollState,
+                        scrollState = scrollState,
                         height = 36.dp,
                     ),
         ) {
@@ -261,7 +262,7 @@ fun ChannelPageScaffold(
                 modifier =
                     Modifier
                         .fillMaxSize()
-                        .verticalScroll(verticalScrollState)
+                        .verticalScroll(scrollState)
                         .padding(top = metrics.spacingLg, bottom = metrics.spacingXxl),
                 verticalArrangement = Arrangement.spacedBy(metrics.spacingXl),
             ) {
@@ -310,6 +311,15 @@ fun ChannelPageScaffold(
                     detailContent()
                 }
             }
+
+            OpenAquaVerticalScrollbar(
+                scrollState = scrollState,
+                modifier =
+                    Modifier
+                        .align(Alignment.CenterEnd)
+                        .fillMaxHeight()
+                        .padding(vertical = 4.dp),
+            )
         }
     }
 }

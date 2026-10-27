@@ -1,5 +1,6 @@
 package io.github.lamba92.openaqua.app.feature.device.sensors
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
@@ -81,6 +83,7 @@ fun SensorsContent(
     selectedChannel: Int,
     onSelectSensor: (Int) -> Unit,
     modifier: Modifier = Modifier,
+    scrollState: ScrollState = rememberScrollState(),
     onRenameSensor: ((channel: Int, name: String?) -> Unit)? = null,
 ) {
     val preferences = OpenAquaTheme.preferences
@@ -124,6 +127,7 @@ fun SensorsContent(
         subtitle = stringResource(Res.string.sensors_screen_subtitle),
         selectorHeader = stringResource(Res.string.temperature_probes_header),
         modifier = modifier,
+        scrollState = scrollState,
         selectorHeaderTrailing =
             if (hiddenCount > 0 || showAllOverride) {
                 {
@@ -332,15 +336,18 @@ private fun SensorMetricCard(
 fun SensorsTabContent(
     deviceId: DeviceId,
     modifier: Modifier = Modifier,
+    scrollState: ScrollState = rememberScrollState(),
 ) = SensorsTabContent(
     viewModel = rememberInstance(arg = deviceId),
     modifier = modifier,
+    scrollState = scrollState,
 )
 
 @Composable
 fun SensorsTabContent(
     viewModel: SensorsViewModel,
     modifier: Modifier = Modifier,
+    scrollState: ScrollState = rememberScrollState(),
 ) {
     val state by viewModel.state.collectAsState()
 
@@ -355,6 +362,7 @@ fun SensorsTabContent(
                     viewModel.onEvent(SensorsUiEvent.RenameSensor(channel = channel, name = name))
                 },
                 modifier = modifier,
+                scrollState = scrollState,
             )
         }
     }

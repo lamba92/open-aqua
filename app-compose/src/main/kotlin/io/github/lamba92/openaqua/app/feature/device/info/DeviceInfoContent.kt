@@ -1,5 +1,6 @@
 package io.github.lamba92.openaqua.app.feature.device.info
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -33,6 +34,7 @@ import androidx.compose.ui.unit.sp
 import io.github.lamba92.openaqua.app.repository.DeviceState
 import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
 import io.github.lamba92.openaqua.app.ui.components.DeviceIllustration
+import io.github.lamba92.openaqua.app.ui.components.OpenAquaVerticalScrollbar
 import io.github.lamba92.openaqua.app.ui.components.ScreenHeader
 import io.github.lamba92.openaqua.app.ui.components.SectionHeader
 import io.github.lamba92.openaqua.app.ui.components.scrollFadingEdge
@@ -80,6 +82,7 @@ import org.jetbrains.compose.resources.stringResource
 fun DeviceInfoContent(
     deviceState: DeviceState.Ready,
     modifier: Modifier = Modifier,
+    scrollState: ScrollState = rememberScrollState(),
 ) {
     val device = deviceState.device
     val descriptor = deviceState.descriptor
@@ -140,8 +143,6 @@ fun DeviceInfoContent(
                 modifier = Modifier.padding(horizontal = metrics.spacingXxl),
             )
         }
-
-        val scrollState = rememberScrollState()
 
         // Scrolling content with internal padding and top fading edge
         Box(
@@ -298,6 +299,15 @@ fun DeviceInfoContent(
                     }
                 }
             }
+
+            OpenAquaVerticalScrollbar(
+                scrollState = scrollState,
+                modifier =
+                    Modifier
+                        .align(Alignment.CenterEnd)
+                        .fillMaxHeight()
+                        .padding(vertical = 4.dp),
+            )
         }
     }
 }

@@ -1,5 +1,8 @@
 package io.github.lamba92.openaqua.app.theme
 
+import androidx.compose.foundation.LocalScrollbarStyle
+import androidx.compose.foundation.ScrollbarStyle
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
@@ -10,6 +13,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.dp
 import io.github.lamba92.openaqua.app.model.AppStoredData
 import io.github.lamba92.openaqua.theme.AppColorScheme
 import io.github.lamba92.openaqua.theme.ThemePalette
@@ -159,6 +163,18 @@ fun OpenAquaTheme(
             )
         }
 
+    val scrollbarStyle =
+        remember(appColors) {
+            ScrollbarStyle(
+                minimalHeight = 28.dp,
+                thickness = 8.dp,
+                shape = RoundedCornerShape(4.dp),
+                hoverDurationMillis = 200,
+                unhoverColor = appColors.borderOutline.copy(alpha = 0.5f),
+                hoverColor = appColors.primaryBright.copy(alpha = 0.85f),
+            )
+        }
+
     CompositionLocalProvider(
         LocalAppPreferences provides preferences,
         LocalDensity provides scaledDensity,
@@ -181,6 +197,7 @@ fun OpenAquaTheme(
         LocalFeaturePlaceholderBoxColors provides appColors.featurePlaceholderBox,
         LocalNavigationRailMetrics provides metrics.navigationRail,
         LocalNavigationRailColors provides appColors.navigationRail,
+        LocalScrollbarStyle provides scrollbarStyle,
     ) {
         MaterialTheme(
             colorScheme = materialColorScheme,
