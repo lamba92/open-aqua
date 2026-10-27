@@ -6,6 +6,8 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import io.github.lamba92.openaqua.app.coroutine.CoroutineScopeProvider
 import io.github.lamba92.openaqua.app.coroutine.DefaultCoroutineScopeProvider
 import io.github.lamba92.openaqua.app.feature.device.DeviceViewModel
+import io.github.lamba92.openaqua.app.feature.device.fans.FansViewModel
+import io.github.lamba92.openaqua.app.feature.device.sensors.SensorsViewModel
 import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavViewModel
 import io.github.lamba92.openaqua.app.feature.settings.SettingsViewModel
 import io.github.lamba92.openaqua.app.repository.AppDataRepository
@@ -31,7 +33,21 @@ fun createAppModule(
     bindSingleton { SettingsViewModel(appDataRepository = instance(), scopeProvider = instance()) }
     bindMultiton { deviceId: DeviceId ->
         DeviceViewModel(
-            repository = instance(),
+            cacheService = instance(),
+            scopeProvider = instance(),
+            deviceId = deviceId,
+        )
+    }
+    bindMultiton { deviceId: DeviceId ->
+        FansViewModel(
+            cacheService = instance(),
+            appDataRepository = instance(),
+            scopeProvider = instance(),
+            deviceId = deviceId,
+        )
+    }
+    bindMultiton { deviceId: DeviceId ->
+        SensorsViewModel(
             cacheService = instance(),
             appDataRepository = instance(),
             scopeProvider = instance(),

@@ -1,4 +1,4 @@
-package io.github.lamba92.openaqua.app.feature.device.common
+package io.github.lamba92.openaqua.app.feature.device.sensors
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -19,6 +20,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import io.github.lamba92.openaqua.app.di.rememberInstance
+import io.github.lamba92.openaqua.app.feature.device.common.DeviceLoadingContent
+import io.github.lamba92.openaqua.app.feature.device.common.SensorItem
 import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
 import io.github.lamba92.openaqua.app.ui.components.ChannelDetailHeader
 import io.github.lamba92.openaqua.app.ui.components.ChannelPageScaffold
@@ -31,6 +35,7 @@ import io.github.lamba92.openaqua.app.ui.components.RenameDialog
 import io.github.lamba92.openaqua.app.ui.components.VisibilityEmptyState
 import io.github.lamba92.openaqua.app.ui.components.VisibilityFilterChip
 import io.github.lamba92.openaqua.app.ui.components.sensorTemperatureColor
+import io.github.lamba92.openaqua.model.DeviceId
 import io.github.lamba92.openaqua.model.SensorChannelKind
 import io.github.lamba92.openaqua.model.SensorTelemetry
 import io.github.lamba92.openaqua.model.tempCelsiusOrNull
@@ -321,4 +326,36 @@ private fun SensorMetricCard(
         width = 160.dp,
         modifier = modifier,
     )
+}
+
+@Composable
+fun SensorsTabContent(
+    deviceId: DeviceId,
+    modifier: Modifier = Modifier,
+) = SensorsTabContent(
+    viewModel = rememberInstance(arg = deviceId),
+    modifier = modifier,
+)
+
+@Composable
+fun SensorsTabContent(
+    viewModel: SensorsViewModel,
+    modifier: Modifier = Modifier,
+) {
+    val state by viewModel.state.collectAsState()
+
+    when (val s = state) {
+        SensorsUiState.Loading -> DeviceLoadingContent(modifier)
+        is SensorsUiState.Ready -> {
+            SensorsContent(
+                sensors = s.sensors,
+                selectedChannel = s.selectedSensorChannel,
+                onSelectSensor = { viewModel.onEvent(SensorsUiEvent.SelectSensor(it)) },
+                onRenameSensor = { channel, name ->
+                    viewModel.onEvent(SensorsUiEvent.RenameSensor(channel = channel, name = name))
+                },
+                modifier = modifier,
+            )
+        }
+    }
 }

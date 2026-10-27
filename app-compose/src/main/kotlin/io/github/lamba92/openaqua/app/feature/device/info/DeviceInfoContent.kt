@@ -1,4 +1,4 @@
-package io.github.lamba92.openaqua.app.feature.device.common
+package io.github.lamba92.openaqua.app.feature.device.info
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border

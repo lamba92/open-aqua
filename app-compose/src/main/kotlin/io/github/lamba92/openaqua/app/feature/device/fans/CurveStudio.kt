@@ -1,4 +1,4 @@
-package io.github.lamba92.openaqua.app.feature.device.common
+package io.github.lamba92.openaqua.app.feature.device.fans
 
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -50,10 +50,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import io.github.lamba92.openaqua.app.feature.device.CurveMode
-import io.github.lamba92.openaqua.app.feature.device.CurveStudioEvent
-import io.github.lamba92.openaqua.app.feature.device.FanDraft
-import io.github.lamba92.openaqua.app.feature.device.toFanChannelConfig
+import io.github.lamba92.openaqua.app.feature.device.common.FanItem
+import io.github.lamba92.openaqua.app.feature.device.common.SensorItem
 import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
 import io.github.lamba92.openaqua.model.AutoCurveFanConfig
 import io.github.lamba92.openaqua.model.CoolingChannelKind

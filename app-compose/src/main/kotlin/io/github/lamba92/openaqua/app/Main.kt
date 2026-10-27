@@ -170,7 +170,7 @@ private fun DeviceReady(
                 )
             is DeviceNavState.Ready.SelectedItem.Device ->
                 DeviceScreen(
-                    viewModel = rememberInstance(arg = item.deviceId),
+                    deviceId = item.deviceId,
                     selectedTab = item.selectedTab,
                     onSelectTab = { navViewModel.onEvent(DeviceNavEvent.SelectTab(it)) },
                 )

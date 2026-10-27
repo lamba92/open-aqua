@@ -11,7 +11,6 @@ import io.github.lamba92.openaqua.model.DeviceDescriptor
 import io.github.lamba92.openaqua.model.DeviceId
 import io.github.lamba92.openaqua.model.DeviceRegistry
 import io.github.lamba92.openaqua.model.DeviceTelemetry
-import io.github.lamba92.openaqua.model.FlashConfigRequest
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
@@ -32,7 +31,7 @@ class DeviceDataCacheService(
     private val openAquaEngineApi: OpenAquaEngineApi,
     coroutineScopeProvider: CoroutineScopeProvider,
     pollingIntervals: PollingIntervals = PollingIntervals.DEFAULT,
-) {
+) : OpenAquaDeviceFlasher by openAquaEngineApi {
     data class PollingIntervals(
         val deviceConfig: Duration = 2.seconds,
         val telemetry: Duration = 1.seconds,
@@ -76,11 +75,6 @@ class DeviceDataCacheService(
     fun getReadyDeviceStateFlow(deviceId: DeviceId): Flow<DeviceState.Ready> =
         getDeviceStateFlow(deviceId)
             .filterIsInstance<DeviceState.Ready>()
-
-    suspend fun flashConfig(
-        deviceId: DeviceId,
-        config: FlashConfigRequest,
-    ): DeviceConfig = openAquaEngineApi.flashConfig(deviceId, config)
 
     private fun DetectedHardwareDevice.getStateFlow(pollingIntervals: PollingIntervals): Flow<DeviceState> {
         val descriptor = DeviceRegistry.findByType(type)

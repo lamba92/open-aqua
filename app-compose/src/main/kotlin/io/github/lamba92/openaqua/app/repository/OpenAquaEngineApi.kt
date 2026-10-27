@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalSerializationApi::class)
-
 package io.github.lamba92.openaqua.app.repository
 
 import io.github.lamba92.openaqua.model.DescriptorsResponse
@@ -22,7 +20,6 @@ import kotlinx.coroutines.withTimeout
 import kotlinx.io.asSource
 import kotlinx.io.buffered
 import kotlinx.io.readLineStrict
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import java.nio.file.Path
 import kotlin.io.path.absolutePathString
@@ -31,7 +28,7 @@ import kotlin.time.Duration.Companion.seconds
 
 class OpenAquaEngineApi(
     private val enginePath: Path,
-) {
+) : OpenAquaDeviceFlasher {
     private val json: Json =
         Json {
             ignoreUnknownKeys = true
@@ -65,7 +62,7 @@ class OpenAquaEngineApi(
 
     suspend fun getDeviceConfig(deviceId: DeviceId): DeviceConfig = executeAndDecodeWithTimeout("config", "read", "--device=${deviceId.value}")
 
-    suspend fun flashConfig(
+    override suspend fun flashConfig(
         deviceId: DeviceId,
         config: FlashConfigRequest,
     ): DeviceConfig =
