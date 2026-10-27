@@ -81,6 +81,41 @@
     <string name="fan_curve_studio_title">Fan Channel Configuration &amp; Curve Studio</string>
     <string name="fan_curve_studio_desc">16-point custom fan curves, auto-curve progressive math, and EEPROM flash controls will be iterated here next.</string>
 
+    <!-- Fan Curve Studio -->
+    <string name="curve_studio_title">Curve Studio &amp; Profile</string>
+    <string name="fan_mode_fixed">Fixed PWM</string>
+    <string name="fan_mode_auto_curve">Auto Curve</string>
+    <string name="fan_mode_copy_fan">Copy Fan</string>
+    <string name="curve_fixed_power">Fixed Duty Cycle</string>
+    <string name="curve_fixed_power_desc">Constant PWM duty cycle without temperature sensor binding</string>
+    <string name="curve_sensor_source">Temperature Sensor</string>
+    <string name="curve_sensor_not_selected">Select a temperature sensor</string>
+    <string name="curve_temp_min">Minimum Temperature (Tmin)</string>
+    <string name="curve_temp_max">Maximum Temperature (Tmax)</string>
+    <string name="curve_pwm_min">Minimum PWM (Pmin)</string>
+    <string name="curve_pwm_max">Maximum PWM (Pmax)</string>
+    <string name="curve_shape">Curve Response Shape</string>
+    <string name="curve_shape_linear">Linear (0.0)</string>
+    <string name="curve_shape_progressive">Progressive (+%1$s)</string>
+    <string name="curve_shape_digressive">Digressive (%1$s)</string>
+    <string name="curve_copy_source">Copy From Channel</string>
+    <string name="curve_copy_no_channels">No other channels available</string>
+    <string name="curve_legend_current">Current (Hardware)</string>
+    <string name="curve_legend_destination">Destination (Draft)</string>
+    <string name="curve_legend_live_operating_point">Operating Point: %1$s°C → %2$s%</string>
+    <string name="curve_action_apply">Apply &amp; Flash</string>
+    <string name="curve_action_flash_all">Flash Changes (%1$d)</string>
+    <string name="curve_action_discard">Discard</string>
+    <string name="curve_action_flashing">Flashing EEPROM...</string>
+    <string name="curve_unsaved_changes">Unsaved Changes</string>
+    <string name="curve_synced_hardware">Synchronized with Hardware</string>
+
+    <!-- Flash Confirmation Dialog -->
+    <string name="flash_dialog_title">Flash Hardware Configuration</string>
+    <string name="flash_dialog_desc">The following fan channel(s) will be committed and flashed to device EEPROM:</string>
+    <string name="flash_dialog_cancel_btn">Cancel</string>
+    <string name="flash_dialog_confirm_btn">Flash EEPROM</string>
+
     <!-- Sensors Screen -->
     <string name="sensors_screen_title">Temperature Sensors</string>
     <string name="sensors_screen_subtitle">NTC thermistor inputs and virtual software sensor slots</string>

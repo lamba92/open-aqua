@@ -50,7 +50,7 @@ class DeviceNavViewModel(
                     val newTab =
                         when (val currentItem = currentState.selectedItem) {
                             is DeviceNavState.Ready.SelectedItem.Device if currentItem.deviceId == deviceId
-                                -> currentItem.selectedTab
+                            -> currentItem.selectedTab
 
                             else -> CommonDeviceTab.DEVICE_INFO
                         }

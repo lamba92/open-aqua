@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -17,17 +18,21 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.painter.Painter
+import io.github.lamba92.openaqua.app.feature.device.CurveStudioEvent
+import io.github.lamba92.openaqua.app.feature.device.FanDraft
+import io.github.lamba92.openaqua.app.feature.device.toInitialDraft
 import io.github.lamba92.openaqua.app.theme.CoolantTeal
 import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
 import io.github.lamba92.openaqua.app.ui.components.ChannelDetailHeader
 import io.github.lamba92.openaqua.app.ui.components.ChannelPageScaffold
 import io.github.lamba92.openaqua.app.ui.components.ChannelSelectionCard
 import io.github.lamba92.openaqua.app.ui.components.ChannelSelectionTileDefaults
-import io.github.lamba92.openaqua.app.ui.components.FeaturePlaceholderBox
 import io.github.lamba92.openaqua.app.ui.components.MetricCard
+import io.github.lamba92.openaqua.app.ui.components.OpenAquaButton
 import io.github.lamba92.openaqua.app.ui.components.OpenAquaOutlinedButton
 import io.github.lamba92.openaqua.app.ui.components.RenameDialog
 import io.github.lamba92.openaqua.app.ui.components.VisibilityEmptyState
@@ -36,6 +41,9 @@ import io.github.lamba92.openaqua.model.CoolingChannelKind
 import io.github.lamba92.openaqua.model.CoolingChannelTelemetry
 import open_aqua.app_compose.generated.resources.Res
 import open_aqua.app_compose.generated.resources.action_rename
+import open_aqua.app_compose.generated.resources.curve_action_apply
+import open_aqua.app_compose.generated.resources.curve_action_discard
+import open_aqua.app_compose.generated.resources.curve_action_flash_all
 import open_aqua.app_compose.generated.resources.d5_fan_name
 import open_aqua.app_compose.generated.resources.d5_fan_pin
 import open_aqua.app_compose.generated.resources.d5_pump_name
@@ -44,8 +52,6 @@ import open_aqua.app_compose.generated.resources.fan_channel_name
 import open_aqua.app_compose.generated.resources.fan_channel_pin
 import open_aqua.app_compose.generated.resources.fan_channels_header
 import open_aqua.app_compose.generated.resources.fan_current_value
-import open_aqua.app_compose.generated.resources.fan_curve_studio_desc
-import open_aqua.app_compose.generated.resources.fan_curve_studio_title
 import open_aqua.app_compose.generated.resources.fan_disconnected
 import open_aqua.app_compose.generated.resources.fan_hardware_pin
 import open_aqua.app_compose.generated.resources.fan_power_value
@@ -73,8 +79,15 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 fun FansContent(
     fans: List<FanItem>,
+    sensors: List<SensorItem>,
     selectedChannel: Int,
+    fanDrafts: Map<Int, FanDraft>,
+    isFanModified: (FanItem) -> Boolean,
+    pendingFansCount: Int,
     onSelectFan: (Int) -> Unit,
+    onCurveStudioEvent: (CurveStudioEvent) -> Unit,
+    onDiscardDraft: () -> Unit,
+    onRequestFlash: () -> Unit,
     modifier: Modifier = Modifier,
     onRenameFan: ((channel: Int, name: String?) -> Unit)? = null,
 ) {
@@ -128,6 +141,7 @@ fun FansContent(
                         painterResource(Res.drawable.ic_fan)
                     }
                 val connectedTel = fan.telemetry as? CoolingChannelTelemetry.Connected
+                val hasPending = isFanModified(fan)
                 FanSelectionTile(
                     name = name,
                     pinLabel = pinLabel,
@@ -135,6 +149,7 @@ fun FansContent(
                     pwmPercent = connectedTel?.pwmPercent,
                     icon = icon,
                     selected = fan.channel == selectedFan?.channel,
+                    hasPendingChanges = hasPending,
                     onClick = { onSelectFan(fan.channel) },
                     onDoubleClick = onRenameFan?.let { { renamingFan = fan } },
                 )
@@ -149,10 +164,25 @@ fun FansContent(
             } else if (selectedFan != null) {
                 val name = selectedFan.customName ?: defaultCoolingName(selectedFan, hasPump)
                 val pinLabel = defaultCoolingPin(selectedFan, hasPump)
+                val draft =
+                    fanDrafts[selectedFan.channel] ?: selectedFan.config.toInitialDraft(
+                        channel = selectedFan.channel,
+                        defaultSensorIndex = sensors.firstOrNull()?.channel ?: 0,
+                    )
+                val isModified = isFanModified(selectedFan)
+
                 FanChannelDetailCard(
                     name = name,
                     pinLabel = pinLabel,
                     fan = selectedFan,
+                    draft = draft,
+                    allFans = fans,
+                    sensors = sensors,
+                    isModified = isModified,
+                    pendingFansCount = pendingFansCount,
+                    onCurveStudioEvent = onCurveStudioEvent,
+                    onDiscard = onDiscardDraft,
+                    onRequestFlash = onRequestFlash,
                     onRenameClick = onRenameFan?.let { { renamingFan = selectedFan } },
                 )
             }
@@ -232,7 +262,8 @@ fun FanSelectionTile(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     icon: Painter = painterResource(Res.drawable.ic_fan),
-    pwmPercent: Double? = null,
+    pwmPercent: Double?,
+    hasPendingChanges: Boolean = false,
     onDoubleClick: (() -> Unit)? = null,
 ) {
     val colors = OpenAquaTheme.colors
@@ -263,6 +294,7 @@ fun FanSelectionTile(
         valueText = valueText,
         secondaryValueText = secondaryValueText,
         selected = selected,
+        hasPendingChanges = hasPendingChanges,
         onClick = onClick,
         onDoubleClick = onDoubleClick,
         fillFraction = fillFraction,
@@ -293,6 +325,14 @@ fun FanChannelDetailCard(
     name: String,
     pinLabel: String,
     fan: FanItem,
+    draft: FanDraft,
+    allFans: List<FanItem>,
+    sensors: List<SensorItem>,
+    isModified: Boolean,
+    pendingFansCount: Int,
+    onCurveStudioEvent: (CurveStudioEvent) -> Unit,
+    onDiscard: () -> Unit,
+    onRequestFlash: () -> Unit,
     modifier: Modifier = Modifier,
     onRenameClick: (() -> Unit)? = null,
 ) {
@@ -318,16 +358,41 @@ fun FanChannelDetailCard(
                 },
             title = stringResource(Res.string.fan_settings_title, name),
             subtitle = stringResource(Res.string.fan_hardware_pin, pinLabel),
-            trailingContent =
-                onRenameClick?.let {
-                    {
+            trailingContent = {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(metrics.spacingSm),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (isModified) {
+                        OpenAquaOutlinedButton(
+                            text = stringResource(Res.string.curve_action_discard),
+                            onClick = onDiscard,
+                        )
+                    }
+
+                    if (pendingFansCount > 0) {
+                        val flashLabel =
+                            if (pendingFansCount > 1) {
+                                stringResource(Res.string.curve_action_flash_all, pendingFansCount)
+                            } else {
+                                stringResource(Res.string.curve_action_apply)
+                            }
+
+                        OpenAquaButton(
+                            text = flashLabel,
+                            onClick = onRequestFlash,
+                        )
+                    }
+
+                    if (onRenameClick != null) {
                         OpenAquaOutlinedButton(
                             text = stringResource(Res.string.action_rename),
                             icon = painterResource(Res.drawable.ic_edit),
-                            onClick = it,
+                            onClick = onRenameClick,
                         )
                     }
-                },
+                }
+            },
         )
 
         // Live metrics telemetry
@@ -369,11 +434,13 @@ fun FanChannelDetailCard(
             }
         }
 
-        // Iteration Placeholder Container
-        FeaturePlaceholderBox(
-            icon = painterResource(Res.drawable.ic_speed),
-            title = stringResource(Res.string.fan_curve_studio_title),
-            description = stringResource(Res.string.fan_curve_studio_desc),
+        // Curve Studio
+        CurveStudio(
+            fan = fan,
+            draft = draft,
+            allFans = allFans,
+            sensors = sensors,
+            onEvent = onCurveStudioEvent,
         )
     }
 }

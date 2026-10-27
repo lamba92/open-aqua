@@ -18,7 +18,7 @@ data class FanItem(
     val channel: Int,
     val customName: String? = null,
     val telemetry: CoolingChannelTelemetry,
-    val config: FanChannelConfig?,
+    val config: FanChannelConfig,
 ) {
     val kind: CoolingChannelKind
         get() = telemetry.kind
@@ -43,7 +43,7 @@ fun List<CoolingChannelTelemetry>.toPwmFanItems(
             channel = tel.channel,
             customName = storedData.fans[tel.channel]?.customName,
             telemetry = tel,
-            config = configs.firstOrNull { it.channel == tel.channel },
+            config = configs.firstOrNull { it.channel == tel.channel } ?: error("No config for channel ${tel.channel}"),
         )
     }
 

@@ -12,9 +12,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -101,6 +103,7 @@ fun ChannelSelectionCard(
     modifier: Modifier = Modifier,
     badgeText: String? = null,
     secondaryValueText: String? = null,
+    hasPendingChanges: Boolean = false,
     onDoubleClick: (() -> Unit)? = null,
     fillFraction: Float = 0f,
     fillColor: Color = OpenAquaTheme.colors.primary,
@@ -117,138 +120,157 @@ fun ChannelSelectionCard(
             }
         }
     var lastClickTime by remember { mutableStateOf(0L) }
+    val dotSize = 16.dp
+    val dotRadius = dotSize / 2
 
     Box(
-        modifier =
-            modifier
-                .width(metrics.width)
-                .height(metrics.height)
-                .clip(RoundedCornerShape(metrics.cornerRadius))
-                .background(if (selected) colors.selectedContainer else colors.unselectedContainer)
-                .drawBehind {
-                    val clampedFraction = fillFraction.coerceIn(0f, 1f)
-                    if (clampedFraction > 0f) {
-                        val fillWidth = size.width * clampedFraction
-                        // Soft, diffused ("soffused") gauge fill
-                        drawRect(
-                            brush =
-                                Brush.horizontalGradient(
-                                    colors =
-                                        listOf(
-                                            fillColor.copy(alpha = 0.22f),
-                                            fillColor.copy(alpha = 0.12f),
-                                        ),
-                                    startX = 0f,
-                                    endX = fillWidth,
-                                ),
-                            topLeft = Offset.Zero,
-                            size = Size(fillWidth, size.height),
+        modifier = modifier,
+        contentAlignment = Alignment.TopStart,
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .width(metrics.width)
+                    .height(metrics.height)
+                    .clip(RoundedCornerShape(metrics.cornerRadius))
+                    .background(if (selected) colors.selectedContainer else colors.unselectedContainer)
+                    .drawBehind {
+                        val clampedFraction = fillFraction.coerceIn(0f, 1f)
+                        if (clampedFraction > 0f) {
+                            val fillWidth = size.width * clampedFraction
+                            // Soft, diffused ("soffused") gauge fill
+                            drawRect(
+                                brush =
+                                    Brush.horizontalGradient(
+                                        colors =
+                                            listOf(
+                                                fillColor.copy(alpha = 0.22f),
+                                                fillColor.copy(alpha = 0.12f),
+                                            ),
+                                        startX = 0f,
+                                        endX = fillWidth,
+                                    ),
+                                topLeft = Offset.Zero,
+                                size = Size(fillWidth, size.height),
+                            )
+                            // Leading edge highlight line
+                            drawLine(
+                                color = fillColor.copy(alpha = 0.55f),
+                                start = Offset(fillWidth, 0f),
+                                end = Offset(fillWidth, size.height),
+                                strokeWidth = 2.dp.toPx(),
+                            )
+                        }
+                    }.border(
+                        border =
+                            if (selected) {
+                                BorderStroke(metrics.selectedBorderWidth, colors.selectedBorder)
+                            } else {
+                                BorderStroke(metrics.unselectedBorderWidth, colors.unselectedBorder)
+                            },
+                        shape = RoundedCornerShape(metrics.cornerRadius),
+                    ).clickable {
+                        onClick()
+                        if (onDoubleClick != null) {
+                            val now = System.currentTimeMillis()
+                            if (now - lastClickTime <= doubleClickInterval) {
+                                lastClickTime = 0L
+                                onDoubleClick()
+                            } else {
+                                lastClickTime = now
+                            }
+                        }
+                    }.padding(horizontal = metrics.padding, vertical = 10.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxSize(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                // Icon on the left
+                Box(
+                    modifier = Modifier.size(metrics.iconSize),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    icon()
+                }
+
+                // Title on top, Value below it
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = name,
+                            color = if (selected) colors.selectedLabel else colors.unselectedLabel,
+                            fontSize = metrics.titleTextSize,
+                            lineHeight = metrics.titleLineHeight,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false),
                         )
-                        // Leading edge highlight line
-                        drawLine(
-                            color = fillColor.copy(alpha = 0.55f),
-                            start = Offset(fillWidth, 0f),
-                            end = Offset(fillWidth, size.height),
-                            strokeWidth = 2.dp.toPx(),
-                        )
-                    }
-                }.border(
-                    border =
-                        if (selected) {
-                            BorderStroke(metrics.selectedBorderWidth, colors.selectedBorder)
-                        } else {
-                            BorderStroke(metrics.unselectedBorderWidth, colors.unselectedBorder)
-                        },
-                    shape = RoundedCornerShape(metrics.cornerRadius),
-                ).clickable {
-                    onClick()
-                    if (onDoubleClick != null) {
-                        val now = System.currentTimeMillis()
-                        if (now - lastClickTime <= doubleClickInterval) {
-                            lastClickTime = 0L
-                            onDoubleClick()
-                        } else {
-                            lastClickTime = now
+                        if (badgeText != null) {
+                            Text(
+                                text = badgeText,
+                                color = if (selected) colors.selectedBadge else colors.unselectedBadge,
+                                fontSize = metrics.badgeTextSize,
+                                lineHeight = metrics.badgeLineHeight,
+                                fontWeight = FontWeight.Medium,
+                                fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
+                                maxLines = 1,
+                            )
                         }
                     }
-                }.padding(horizontal = metrics.padding, vertical = 10.dp),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxSize(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            // Icon on the left
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.Bottom,
+                    ) {
+                        Text(
+                            text = valueText,
+                            color = if (selected) colors.selectedValue else colors.unselectedValue,
+                            fontSize = metrics.valueTextSize,
+                            lineHeight = metrics.valueLineHeight,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        if (secondaryValueText != null) {
+                            Text(
+                                text = secondaryValueText,
+                                color = if (selected) colors.selectedBadge else colors.unselectedBadge,
+                                fontSize = metrics.badgeTextSize,
+                                lineHeight = metrics.badgeLineHeight,
+                                fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // Red dot centered on the top-left vertex/corner of the card rectangle
+        if (hasPendingChanges) {
             Box(
-                modifier = Modifier.size(metrics.iconSize),
-                contentAlignment = Alignment.Center,
-            ) {
-                icon()
-            }
-
-            // Title on top, Value below it
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.Center,
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = name,
-                        color = if (selected) colors.selectedLabel else colors.unselectedLabel,
-                        fontSize = metrics.titleTextSize,
-                        lineHeight = metrics.titleLineHeight,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f, fill = false),
-                    )
-                    if (badgeText != null) {
-                        Text(
-                            text = badgeText,
-                            color = if (selected) colors.selectedBadge else colors.unselectedBadge,
-                            fontSize = metrics.badgeTextSize,
-                            lineHeight = metrics.badgeLineHeight,
-                            fontWeight = FontWeight.Medium,
-                            fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
-                            maxLines = 1,
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Bottom,
-                ) {
-                    Text(
-                        text = valueText,
-                        color = if (selected) colors.selectedValue else colors.unselectedValue,
-                        fontSize = metrics.valueTextSize,
-                        lineHeight = metrics.valueLineHeight,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    if (secondaryValueText != null) {
-                        Text(
-                            text = secondaryValueText,
-                            color = if (selected) colors.selectedBadge else colors.unselectedBadge,
-                            fontSize = metrics.badgeTextSize,
-                            lineHeight = metrics.badgeLineHeight,
-                            fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
-                            fontWeight = FontWeight.Medium,
-                            maxLines = 1,
-                        )
-                    }
-                }
-            }
+                modifier =
+                    Modifier
+                        .offset(x = -dotRadius, y = -dotRadius)
+                        .size(dotSize)
+                        .clip(CircleShape)
+                        .background(OpenAquaTheme.colors.statusCritical),
+            )
         }
     }
 }
