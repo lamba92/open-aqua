@@ -19,21 +19,37 @@ data class AppStoredData(
     val hideDisconnectedSensors: Boolean = false,
     val hideUnconfiguredVirtualSensors: Boolean = false,
     val devices: Map<DeviceId, DeviceStoredData> = emptyMap(),
-)
+) {
+    companion object {
+        val DEFAULT = AppStoredData()
+    }
+}
 
 @Serializable
 data class DeviceStoredData(
     val customName: String? = null,
     val fans: Map<Int, FanStoredData> = emptyMap(),
     val sensors: Map<Int, SensorStoredData> = emptyMap(),
-)
+) {
+    companion object {
+        val DEFAULT = DeviceStoredData()
+    }
+}
 
 @Serializable
 data class FanStoredData(
     val customName: String? = null,
-)
+) {
+    companion object {
+        val DEFAULT = FanStoredData()
+    }
+}
 
 @Serializable
 data class SensorStoredData(
     val customName: String? = null,
-)
+) {
+    companion object {
+        val DEFAULT = SensorStoredData()
+    }
+}

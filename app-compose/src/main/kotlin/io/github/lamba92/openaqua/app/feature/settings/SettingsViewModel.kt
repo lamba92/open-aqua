@@ -56,11 +56,21 @@ class SettingsViewModel(
                 appDataRepository.resetToDefaults()
                 state.update { it.copy(showResetConfirmationDialog = false) }
             }
-            is SettingsEvent.SelectColorScheme -> appDataRepository.setColorScheme(event.scheme)
-            is SettingsEvent.SelectMetricsScale -> appDataRepository.setMetricsScale(event.scale)
-            is SettingsEvent.SetFontSp -> appDataRepository.setFontSp(event.sp)
-            is SettingsEvent.SelectFontFamily -> appDataRepository.setFontFamily(event.family)
-            is SettingsEvent.SelectLanguage -> appDataRepository.setLanguage(event.language)
+            is SettingsEvent.SelectColorScheme -> {
+                appDataRepository.update { it.copy(colorScheme = event.scheme) }
+            }
+            is SettingsEvent.SelectMetricsScale -> {
+                appDataRepository.update { it.copy(metricsScale = event.scale) }
+            }
+            is SettingsEvent.SetFontSp -> {
+                appDataRepository.update { it.copy(fontSp = event.sp) }
+            }
+            is SettingsEvent.SelectFontFamily -> {
+                appDataRepository.update { it.copy(fontFamily = event.family) }
+            }
+            is SettingsEvent.SelectLanguage -> {
+                appDataRepository.update { it.copy(language = event.language) }
+            }
             is SettingsEvent.ToggleHideDisconnectedFans -> appDataRepository.setHideDisconnectedFans(event.hide)
             is SettingsEvent.ToggleHideDisconnectedSensorsInFans ->
                 appDataRepository.setHideDisconnectedSensorsInFans(event.hide)

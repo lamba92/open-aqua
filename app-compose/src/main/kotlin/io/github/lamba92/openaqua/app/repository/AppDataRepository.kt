@@ -2,17 +2,12 @@ package io.github.lamba92.openaqua.app.repository
 
 import io.github.lamba92.openaqua.app.coroutine.CoroutineScopeProvider
 import io.github.lamba92.openaqua.app.coroutine.getScope
-import io.github.lamba92.openaqua.app.model.AppLanguage
 import io.github.lamba92.openaqua.app.model.AppStoredData
 import io.github.lamba92.openaqua.app.model.DeviceStoredData
 import io.github.lamba92.openaqua.app.model.FanStoredData
 import io.github.lamba92.openaqua.app.model.SensorStoredData
-import io.github.lamba92.openaqua.app.theme.AppFontFamily
-import io.github.lamba92.openaqua.app.theme.AppMetricsScale
 import io.github.lamba92.openaqua.model.DeviceId
-import io.github.lamba92.openaqua.theme.AppColorScheme
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collect
@@ -76,12 +71,6 @@ class AppDataRepository(
         }
     }
 
-    fun getDeviceDataFlow(deviceId: DeviceId): Flow<DeviceStoredData> =
-        state
-            .filterIsInstance<State.Ready>()
-            .map { it.data.devices[deviceId] ?: DeviceStoredData() }
-            .distinctUntilChanged()
-
     fun update(transform: (AppStoredData) -> AppStoredData) {
         state.update { current ->
             when (current) {
@@ -92,27 +81,7 @@ class AppDataRepository(
     }
 
     fun resetToDefaults() {
-        update { AppStoredData() }
-    }
-
-    fun setColorScheme(colorScheme: AppColorScheme) {
-        update { it.copy(colorScheme = colorScheme) }
-    }
-
-    fun setMetricsScale(metricsScale: AppMetricsScale) {
-        update { it.copy(metricsScale = metricsScale) }
-    }
-
-    fun setFontSp(fontSp: Int) {
-        update { it.copy(fontSp = fontSp) }
-    }
-
-    fun setFontFamily(fontFamily: AppFontFamily) {
-        update { it.copy(fontFamily = fontFamily) }
-    }
-
-    fun setLanguage(language: AppLanguage) {
-        update { it.copy(language = language) }
+        update { AppStoredData.DEFAULT }
     }
 
     fun setHideDisconnectedFans(hide: Boolean) {
@@ -155,13 +124,11 @@ class AppDataRepository(
         transform: (DeviceStoredData) -> DeviceStoredData,
     ) {
         update { current ->
-            val currentDevice = current.devices[deviceId] ?: DeviceStoredData()
-            val updatedDevice = transform(currentDevice)
+            val currentDevice = current.devices[deviceId] ?: DeviceStoredData.DEFAULT
             val updatedDevices =
-                if (updatedDevice == DeviceStoredData()) {
-                    current.devices - deviceId
-                } else {
-                    current.devices + (deviceId to updatedDevice)
+                when (val updatedDevice = transform(currentDevice)) {
+                    DeviceStoredData.DEFAULT -> current.devices - deviceId
+                    else -> current.devices + (deviceId to updatedDevice)
                 }
             current.copy(devices = updatedDevices)
         }
@@ -184,13 +151,11 @@ class AppDataRepository(
     ) {
         val normalized = name?.trim()?.takeIf { it.isNotEmpty() }
         updateDevice(deviceId) { device ->
-            val currentFan = device.fans[channel] ?: FanStoredData()
-            val updatedFan = currentFan.copy(customName = normalized)
+            val currentFan = device.fans[channel] ?: FanStoredData.DEFAULT
             val updatedFans =
-                if (updatedFan == FanStoredData()) {
-                    device.fans - channel
-                } else {
-                    device.fans + (channel to updatedFan)
+                when (val updatedFan = currentFan.copy(customName = normalized)) {
+                    FanStoredData.DEFAULT -> device.fans - channel
+                    else -> device.fans + (channel to updatedFan)
                 }
             device.copy(fans = updatedFans)
         }
@@ -203,29 +168,26 @@ class AppDataRepository(
     ) {
         val normalized = name?.trim()?.takeIf { it.isNotEmpty() }
         updateDevice(deviceId) { device ->
-            val currentSensor = device.sensors[channel] ?: SensorStoredData()
-            val updatedSensor = currentSensor.copy(customName = normalized)
+            val currentSensor = device.sensors[channel] ?: SensorStoredData.DEFAULT
             val updatedSensors =
-                if (updatedSensor == SensorStoredData()) {
-                    device.sensors - channel
-                } else {
-                    device.sensors + (channel to updatedSensor)
+                when (val updatedSensor = currentSensor.copy(customName = normalized)) {
+                    SensorStoredData.DEFAULT -> device.sensors - channel
+                    else -> device.sensors + (channel to updatedSensor)
                 }
             device.copy(sensors = updatedSensors)
         }
     }
 
     private fun loadFromDisk(): AppStoredData =
-        if (!storagePath.exists()) {
-            AppStoredData()
-        } else {
-            json.decodeFromString<AppStoredData>(storagePath.readText())
+        when {
+            !storagePath.exists() -> AppStoredData()
+            else -> json.decodeFromString<AppStoredData>(storagePath.readText())
         }
 
     private fun saveToDisk(storedData: AppStoredData) {
         storagePath.parent?.createDirectories()
         val tmpPath = storagePath.resolveSibling("${storagePath.fileName}.tmp")
-        val encoded = json.encodeToString(AppStoredData.serializer(), storedData)
+        val encoded = json.encodeToString(storedData)
         tmpPath.writeText(encoded)
         try {
             Files.move(
