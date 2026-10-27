@@ -87,6 +87,9 @@ class FansViewModel(
                                 CurveMode.AUTO_CURVE ->
                                     currentDraft as? FanDraft.AutoCurve ?: FanDraft.AutoCurve(channel)
 
+                                CurveMode.TARGET_TEMP ->
+                                    currentDraft as? FanDraft.TargetTemp ?: FanDraft.TargetTemp(channel)
+
                                 CurveMode.COPY_FAN ->
                                     currentDraft as? FanDraft.Copy ?: FanDraft.Copy(channel)
                             }
@@ -99,7 +102,18 @@ class FansViewModel(
                             }
 
                         is CurveStudioEvent.ChangeSensorIndex ->
-                            if (currentDraft is FanDraft.AutoCurve) currentDraft.copy(sensorIndex = event.sensorIndex) else currentDraft
+                            when (currentDraft) {
+                                is FanDraft.AutoCurve -> currentDraft.copy(sensorIndex = event.sensorIndex)
+                                is FanDraft.TargetTemp -> currentDraft.copy(sensorIndex = event.sensorIndex)
+                                else -> currentDraft
+                            }
+
+                        is CurveStudioEvent.ChangeTargetTemp ->
+                            if (currentDraft is FanDraft.TargetTemp) {
+                                currentDraft.copy(targetTempCelsius = event.targetTemp)
+                            } else {
+                                currentDraft
+                            }
 
                         is CurveStudioEvent.ChangeTMin ->
                             if (currentDraft is FanDraft.AutoCurve) {

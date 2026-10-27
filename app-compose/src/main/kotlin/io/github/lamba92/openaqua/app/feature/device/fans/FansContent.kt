@@ -53,6 +53,7 @@ import io.github.lamba92.openaqua.model.DeviceId
 import io.github.lamba92.openaqua.model.FanChannelConfig
 import io.github.lamba92.openaqua.model.FixedFanConfig
 import io.github.lamba92.openaqua.model.SensorChannelKind
+import io.github.lamba92.openaqua.model.TargetTempFanConfig
 import open_aqua.app_compose.generated.resources.Res
 import open_aqua.app_compose.generated.resources.action_rename
 import open_aqua.app_compose.generated.resources.curve_action_apply
@@ -602,6 +603,12 @@ private fun PendingFanDiffCard(
                     sensors.firstOrNull { it.channel == targetConfig.sensorIndex }?.let { sensorName(it) }
                         ?: "Sensor ${targetConfig.sensorIndex + 1}"
                 "Custom Curve • $sensorName • 16 points"
+            }
+            is TargetTempFanConfig -> {
+                val sensorName =
+                    sensors.firstOrNull { it.channel == targetConfig.sensorIndex }?.let { sensorName(it) }
+                        ?: "Sensor ${targetConfig.sensorIndex + 1}"
+                "Target Temp • $sensorName • ${"%.1f".format(targetConfig.targetTempCelsius)}°C"
             }
             else -> "Custom Config"
         }

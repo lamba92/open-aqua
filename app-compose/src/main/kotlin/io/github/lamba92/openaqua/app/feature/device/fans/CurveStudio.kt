@@ -60,6 +60,7 @@ import io.github.lamba92.openaqua.model.CurvePoint
 import io.github.lamba92.openaqua.model.FanChannelConfig
 import io.github.lamba92.openaqua.model.FixedFanConfig
 import io.github.lamba92.openaqua.model.SensorChannelKind
+import io.github.lamba92.openaqua.model.TargetTempFanConfig
 import io.github.lamba92.openaqua.model.tempCelsiusOrNull
 import open_aqua.app_compose.generated.resources.Res
 import open_aqua.app_compose.generated.resources.curve_copy_no_channels
@@ -69,6 +70,7 @@ import open_aqua.app_compose.generated.resources.curve_fixed_power_desc
 import open_aqua.app_compose.generated.resources.curve_legend_current
 import open_aqua.app_compose.generated.resources.curve_legend_destination
 import open_aqua.app_compose.generated.resources.curve_legend_live_operating_point
+import open_aqua.app_compose.generated.resources.curve_legend_target
 import open_aqua.app_compose.generated.resources.curve_pwm_max
 import open_aqua.app_compose.generated.resources.curve_pwm_min
 import open_aqua.app_compose.generated.resources.curve_sensor_not_selected
@@ -78,6 +80,8 @@ import open_aqua.app_compose.generated.resources.curve_shape_digressive
 import open_aqua.app_compose.generated.resources.curve_shape_linear
 import open_aqua.app_compose.generated.resources.curve_shape_progressive
 import open_aqua.app_compose.generated.resources.curve_studio_title
+import open_aqua.app_compose.generated.resources.curve_target_temp
+import open_aqua.app_compose.generated.resources.curve_target_temp_desc
 import open_aqua.app_compose.generated.resources.curve_temp_max
 import open_aqua.app_compose.generated.resources.curve_temp_min
 import open_aqua.app_compose.generated.resources.d5_fan_name
@@ -86,6 +90,7 @@ import open_aqua.app_compose.generated.resources.fan_channel_name
 import open_aqua.app_compose.generated.resources.fan_mode_auto_curve
 import open_aqua.app_compose.generated.resources.fan_mode_copy_fan
 import open_aqua.app_compose.generated.resources.fan_mode_fixed
+import open_aqua.app_compose.generated.resources.fan_mode_target_temp
 import open_aqua.app_compose.generated.resources.ic_tune
 import open_aqua.app_compose.generated.resources.sensor_channel_name
 import open_aqua.app_compose.generated.resources.sensor_coolant_name
@@ -114,11 +119,13 @@ fun CurveStudio(
         remember(sensors, draft, draftConfig) {
             when (draft) {
                 is FanDraft.AutoCurve -> sensors.firstOrNull { it.channel == draft.sensorIndex }
+                is FanDraft.TargetTemp -> sensors.firstOrNull { it.channel == draft.sensorIndex }
                 is FanDraft.Copy -> {
                     val sensorIdx =
                         when (draftConfig) {
                             is AutoCurveFanConfig -> draftConfig.sensorIndex
                             is CurveFanConfig -> draftConfig.sensorIndex
+                            is TargetTempFanConfig -> draftConfig.sensorIndex
                             else -> null
                         }
                     sensors.firstOrNull { it.channel == sensorIdx }
@@ -173,6 +180,7 @@ fun CurveStudio(
                         when (mode) {
                             CurveMode.FIXED -> stringResource(Res.string.fan_mode_fixed)
                             CurveMode.AUTO_CURVE -> stringResource(Res.string.fan_mode_auto_curve)
+                            CurveMode.TARGET_TEMP -> stringResource(Res.string.fan_mode_target_temp)
                             CurveMode.COPY_FAN -> stringResource(Res.string.fan_mode_copy_fan)
                         }
                     CurveModePill(
@@ -219,6 +227,16 @@ fun CurveStudio(
                     onPMinChange = { onEvent(CurveStudioEvent.ChangePMin(it)) },
                     onPMaxChange = { onEvent(CurveStudioEvent.ChangePMax(it)) },
                     onShapeChange = { onEvent(CurveStudioEvent.ChangeShape(it)) },
+                    graphContent = visualizerGraph,
+                )
+            }
+            is FanDraft.TargetTemp -> {
+                TargetTempModeControls(
+                    sensors = sensors,
+                    selectedSensorIndex = draft.sensorIndex,
+                    onSelectSensor = { onEvent(CurveStudioEvent.ChangeSensorIndex(it)) },
+                    targetTemp = draft.targetTempCelsius,
+                    onTargetTempChange = { onEvent(CurveStudioEvent.ChangeTargetTemp(it)) },
                     graphContent = visualizerGraph,
                 )
             }
@@ -466,6 +484,65 @@ private fun AutoCurveModeControls(
             valueRange = -5f..5f,
             steps = 99,
             onValueChange = { onShapeChange((it * 10).roundToInt() / 10.0) },
+        )
+    }
+}
+
+@Composable
+private fun TargetTempModeControls(
+    sensors: List<SensorItem>,
+    selectedSensorIndex: Int,
+    onSelectSensor: (Int) -> Unit,
+    targetTemp: Double,
+    onTargetTempChange: (Double) -> Unit,
+    graphContent: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = OpenAquaTheme.colors
+    val metrics = OpenAquaTheme.metrics
+
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(metrics.spacingMd),
+    ) {
+        // Sensor Selector Dropdown Row
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    text = stringResource(Res.string.curve_sensor_source),
+                    color = colors.textPrimary,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = stringResource(Res.string.curve_target_temp_desc),
+                    color = colors.textMuted,
+                    fontSize = 11.sp,
+                )
+            }
+
+            SensorDropdown(
+                sensors = sensors,
+                selectedIndex = selectedSensorIndex,
+                onSelectSensor = onSelectSensor,
+            )
+        }
+
+        graphContent()
+
+        HorizontalDivider(color = colors.borderOutline.copy(alpha = 0.3f))
+
+        CurveParamSlider(
+            label = stringResource(Res.string.curve_target_temp),
+            valueText = "${"%.1f".format(targetTemp)}°C",
+            value = targetTemp.toFloat(),
+            valueRange = 20f..65f,
+            steps = 89,
+            onValueChange = { onTargetTempChange(((it * 2).roundToInt() / 2.0)) },
         )
     }
 }
@@ -794,7 +871,12 @@ private fun CurveVisualizerGraph(
                                 .background(colors.primaryBright),
                     )
                     Text(
-                        text = stringResource(Res.string.curve_legend_destination),
+                        text =
+                            if (draftConfig is TargetTempFanConfig) {
+                                stringResource(Res.string.curve_legend_target, "%.1f".format(draftConfig.targetTempCelsius))
+                            } else {
+                                stringResource(Res.string.curve_legend_destination)
+                            },
                         color = colors.primaryBright,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
@@ -974,6 +1056,21 @@ private fun CurveVisualizerGraph(
                 }
             }
 
+            // Target Temperature Setpoint Marker Line
+            if (draftConfig is TargetTempFanConfig) {
+                val targetT = draftConfig.targetTempCelsius
+                if (targetT in 10.0..80.0) {
+                    val tx = tempToX(targetT)
+                    drawLine(
+                        color = colors.primaryBright,
+                        start = Offset(tx, plotTop),
+                        end = Offset(tx, plotBottom),
+                        strokeWidth = 2.dp.toPx(),
+                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 4.dp.toPx()), 0f),
+                    )
+                }
+            }
+
             // 6. Draw Live Operating Point Marker (vertical dashed line + pulsating dot)
             if (liveTemp != null && liveTemp in 10.0..80.0) {
                 val lx = tempToX(liveTemp)
@@ -1031,6 +1128,10 @@ private fun evaluatePwmAt(
             evaluatePointsAt(points, temp)
         }
         is CurveFanConfig -> evaluatePointsAt(config.points, temp)
+        is TargetTempFanConfig -> {
+            val diff = temp - config.targetTempCelsius
+            (50.0 + diff * 15.0).coerceIn(0.0, 100.0)
+        }
         else -> 0.0
     }.coerceIn(0.0, 100.0)
 

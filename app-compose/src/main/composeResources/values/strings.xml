@@ -85,7 +85,11 @@
     <string name="curve_studio_title">Curve Studio &amp; Profile</string>
     <string name="fan_mode_fixed">Fixed PWM</string>
     <string name="fan_mode_auto_curve">Auto Curve</string>
+    <string name="fan_mode_target_temp">Target Temp</string>
     <string name="fan_mode_copy_fan">Copy Fan</string>
+    <string name="curve_target_temp">Target Temperature (Setpoint)</string>
+    <string name="curve_target_temp_desc">Hardware autonomously regulates fan speed to hold this temperature</string>
+    <string name="curve_legend_target">Target: %1$s°C</string>
     <string name="curve_fixed_power">Fixed Duty Cycle</string>
     <string name="curve_fixed_power_desc">Constant PWM duty cycle without temperature sensor binding</string>
     <string name="curve_sensor_source">Temperature Sensor</string>

@@ -6,10 +6,12 @@ import io.github.lamba92.openaqua.model.AutoCurveFanConfig
 import io.github.lamba92.openaqua.model.CurveFanConfig
 import io.github.lamba92.openaqua.model.FanChannelConfig
 import io.github.lamba92.openaqua.model.FixedFanConfig
+import io.github.lamba92.openaqua.model.TargetTempFanConfig
 
 enum class CurveMode {
     FIXED,
     AUTO_CURVE,
+    TARGET_TEMP,
     COPY_FAN,
 }
 
@@ -44,6 +46,14 @@ sealed interface FanDraft {
         override val mode: CurveMode get() = CurveMode.AUTO_CURVE
     }
 
+    data class TargetTemp(
+        override val channel: Int,
+        val sensorIndex: Int = 0,
+        val targetTempCelsius: Double = 35.0,
+    ) : FanDraft {
+        override val mode: CurveMode get() = CurveMode.TARGET_TEMP
+    }
+
     data class Copy(
         override val channel: Int,
         val sourceChannel: Int = 0,
@@ -74,6 +84,13 @@ fun FanDraft.toFanChannelConfig(
                 shape = shape,
             )
 
+        is FanDraft.TargetTemp ->
+            TargetTempFanConfig(
+                channel = channel,
+                sensorIndex = sensorIndex,
+                targetTempCelsius = targetTempCelsius,
+            )
+
         is FanDraft.Copy -> {
             val sourceDraft = allDrafts[sourceChannel]
             val sourceConfig =
@@ -86,6 +103,7 @@ fun FanDraft.toFanChannelConfig(
                 is FixedFanConfig -> sourceConfig.copy(channel = channel)
                 is AutoCurveFanConfig -> sourceConfig.copy(channel = channel)
                 is CurveFanConfig -> sourceConfig.copy(channel = channel)
+                is TargetTempFanConfig -> sourceConfig.copy(channel = channel)
                 else -> FixedFanConfig(channel = channel, powerPercent = 50.0)
             }
         }
@@ -122,6 +140,13 @@ fun FanChannelConfig?.toInitialDraft(
                 pMin = points.firstOrNull()?.pwm ?: 25.0,
                 pMax = points.lastOrNull()?.pwm ?: 100.0,
                 shape = 0.0,
+            )
+
+        is TargetTempFanConfig ->
+            FanDraft.TargetTemp(
+                channel = channel,
+                sensorIndex = sensorIndex,
+                targetTempCelsius = targetTempCelsius,
             )
 
         else ->
@@ -215,6 +240,10 @@ sealed interface CurveStudioEvent : FansUiEvent {
 
     data class ChangeCopySource(
         val sourceChannel: Int,
+    ) : CurveStudioEvent
+
+    data class ChangeTargetTemp(
+        val targetTemp: Double,
     ) : CurveStudioEvent
 }
 
