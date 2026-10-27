@@ -22,7 +22,15 @@ data class FanItem(
 ) {
     val kind: CoolingChannelKind
         get() = telemetry.kind
+
+    val canHidden: Boolean
+        get() = telemetry is CoolingChannelTelemetry.Disconnected
 }
+
+data class FanUiItem(
+    val fan: FanItem,
+    val canHidden: Boolean = fan.canHidden,
+)
 
 data class SensorItem(
     val channel: Int,
@@ -32,7 +40,20 @@ data class SensorItem(
 ) {
     val kind: SensorChannelKind
         get() = telemetry.kind
+
+    val canHidden: Boolean
+        get() =
+            when (kind) {
+                SensorChannelKind.INTEGRATED_COOLANT -> false
+                SensorChannelKind.PHYSICAL_NTC, SensorChannelKind.VIRTUAL ->
+                    telemetry is SensorTelemetry.Disconnected
+            }
 }
+
+data class SensorUiItem(
+    val sensor: SensorItem,
+    val canHidden: Boolean = sensor.canHidden,
+)
 
 fun List<CoolingChannelTelemetry>.toPwmFanItems(
     configs: List<FanChannelConfig>,
