@@ -1,10 +1,10 @@
-package io.github.lamba92.openaqua.engine.host.linux.command
+package io.github.lamba92.openaqua.engine.host.command
 
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
-import io.github.lamba92.openaqua.engine.host.linux.hardware.HostHardwareController
+import io.github.lamba92.openaqua.engine.host.hardware.HostHardwareController
 
 class InfoCommand(
     private val controller: HostHardwareController,

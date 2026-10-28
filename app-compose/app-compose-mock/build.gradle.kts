@@ -25,6 +25,7 @@ dependencies {
     implementation(projects.appCompose)
     implementation(getCurrentPlatformComposeRuntime())
     engineBinaries(projects.engine.engineDevice.engineDeviceMock)
+    engineBinaries(projects.engine.engineHost.engineHostMock)
 }
 
 fun getCurrentPlatformComposeRuntime() =

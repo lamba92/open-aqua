@@ -1,5 +1,6 @@
 package io.github.lamba92.openaqua.engine.host.linux.hardware
 
+import io.github.lamba92.openaqua.engine.host.hardware.HostHardwareController
 import io.github.lamba92.openaqua.model.every
 import io.github.lamba92.openaqua.model.host.HostDevice
 import io.github.lamba92.openaqua.model.host.HostDeviceId

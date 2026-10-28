@@ -30,6 +30,8 @@ include(
     ":engine:engine-device",
     ":engine:engine-device:engine-device-mock",
     ":engine:engine-device:engine-device-prod",
+    ":engine:engine-host",
     ":engine:engine-host:engine-host-linux",
+    ":engine:engine-host:engine-host-mock",
     ":engine:engine-host:engine-host-windows",
 )

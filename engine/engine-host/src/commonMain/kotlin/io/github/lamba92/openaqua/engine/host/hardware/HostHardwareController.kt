@@ -1,4 +1,4 @@
-package io.github.lamba92.openaqua.engine.host.linux.hardware
+package io.github.lamba92.openaqua.engine.host.hardware
 
 import io.github.lamba92.openaqua.model.host.HostInfo
 import io.github.lamba92.openaqua.model.host.HostTelemetry

@@ -1,4 +1,4 @@
-package io.github.lamba92.openaqua.engine.host.linux.command
+package io.github.lamba92.openaqua.engine.host.command
 
 import io.github.lamba92.openaqua.model.EngineResponse
 import kotlinx.serialization.encodeToString

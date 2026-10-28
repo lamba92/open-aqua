@@ -1,13 +1,13 @@
-package io.github.lamba92.openaqua.engine.host.linux
+package io.github.lamba92.openaqua.engine.host
 
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.CliktError
 import com.github.ajalt.clikt.core.CoreCliktCommand
 import com.github.ajalt.clikt.core.parse
 import com.github.ajalt.clikt.core.subcommands
-import io.github.lamba92.openaqua.engine.host.linux.command.OpenAquaHostEngineCommand
-import io.github.lamba92.openaqua.engine.host.linux.command.printErrorResponse
-import io.github.lamba92.openaqua.engine.host.linux.di.hostEngineModule
+import io.github.lamba92.openaqua.engine.host.command.OpenAquaHostEngineCommand
+import io.github.lamba92.openaqua.engine.host.command.printErrorResponse
+import io.github.lamba92.openaqua.engine.host.di.hostEngineCoreModule
 import org.kodein.di.DI
 import org.kodein.di.instance
 
@@ -26,7 +26,7 @@ fun runOpenAquaHostEngine(
 ) {
     val di =
         DI {
-            import(hostEngineModule)
+            import(hostEngineCoreModule)
             init()
         }
     val rootCommand by di.instance<OpenAquaHostEngineCommand>()
