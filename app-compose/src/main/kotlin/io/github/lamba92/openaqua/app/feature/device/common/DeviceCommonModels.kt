@@ -1,11 +1,11 @@
 package io.github.lamba92.openaqua.app.feature.device.common
 
 import io.github.lamba92.openaqua.app.model.DeviceStoredData
-import io.github.lamba92.openaqua.model.CoolingChannelTelemetry
-import io.github.lamba92.openaqua.model.FanChannelConfig
-import io.github.lamba92.openaqua.model.SensorChannelKind
-import io.github.lamba92.openaqua.model.SensorOffset
-import io.github.lamba92.openaqua.model.SensorTelemetry
+import io.github.lamba92.openaqua.model.device.CoolingChannelTelemetry
+import io.github.lamba92.openaqua.model.device.FanChannelConfig
+import io.github.lamba92.openaqua.model.device.SensorChannelKind
+import io.github.lamba92.openaqua.model.device.SensorOffset
+import io.github.lamba92.openaqua.model.device.SensorTelemetry
 
 enum class CommonDeviceTab {
     DEVICE_INFO,

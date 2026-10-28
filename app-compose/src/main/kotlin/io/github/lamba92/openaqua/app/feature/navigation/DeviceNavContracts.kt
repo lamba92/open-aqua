@@ -2,7 +2,7 @@ package io.github.lamba92.openaqua.app.feature.navigation
 
 import io.github.lamba92.openaqua.app.feature.device.common.CommonDeviceTab
 import io.github.lamba92.openaqua.app.repository.DeviceState
-import io.github.lamba92.openaqua.model.DeviceId
+import io.github.lamba92.openaqua.model.device.DeviceId
 
 sealed interface DeviceNavState {
     data object Loading : DeviceNavState

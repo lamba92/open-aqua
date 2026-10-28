@@ -1,5 +1,6 @@
-package io.github.lamba92.openaqua.model
+package io.github.lamba92.openaqua.model.device
 
+import io.github.lamba92.openaqua.model.FeatureState
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlin.jvm.JvmInline
@@ -34,21 +35,6 @@ value class DeviceAlias(
     companion object {
         fun from(string: String): DeviceAlias = DeviceAlias(string.trim())
     }
-}
-
-@Serializable
-sealed interface EngineResponse<T> {
-    @Serializable
-    @SerialName("error")
-    data class Error(
-        val message: String,
-    ) : EngineResponse<Nothing>
-
-    @Serializable
-    @SerialName("success")
-    data class Success<T>(
-        val value: T,
-    ) : EngineResponse<T>
 }
 
 @Serializable

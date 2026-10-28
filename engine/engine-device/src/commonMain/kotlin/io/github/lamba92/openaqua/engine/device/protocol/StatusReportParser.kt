@@ -1,13 +1,13 @@
 package io.github.lamba92.openaqua.engine.device.protocol
 
-import io.github.lamba92.openaqua.model.CoolingChannelKind
-import io.github.lamba92.openaqua.model.CoolingChannelTelemetry
-import io.github.lamba92.openaqua.model.DetectedHardwareDevice
-import io.github.lamba92.openaqua.model.DeviceRegistry
-import io.github.lamba92.openaqua.model.DeviceTelemetry
 import io.github.lamba92.openaqua.model.FeatureState
-import io.github.lamba92.openaqua.model.SensorChannelKind
-import io.github.lamba92.openaqua.model.SensorTelemetry
+import io.github.lamba92.openaqua.model.device.CoolingChannelKind
+import io.github.lamba92.openaqua.model.device.CoolingChannelTelemetry
+import io.github.lamba92.openaqua.model.device.DetectedHardwareDevice
+import io.github.lamba92.openaqua.model.device.DeviceRegistry
+import io.github.lamba92.openaqua.model.device.DeviceTelemetry
+import io.github.lamba92.openaqua.model.device.SensorChannelKind
+import io.github.lamba92.openaqua.model.device.SensorTelemetry
 import kotlin.math.round
 
 object StatusReportParser {

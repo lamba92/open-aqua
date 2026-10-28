@@ -1,6 +1,6 @@
 package io.github.lamba92.openaqua.engine.device.protocol
 
-import io.github.lamba92.openaqua.model.DeviceDescriptor
+import io.github.lamba92.openaqua.model.device.DeviceDescriptor
 import kotlin.math.roundToInt
 
 object VirtualSensorsWriter {

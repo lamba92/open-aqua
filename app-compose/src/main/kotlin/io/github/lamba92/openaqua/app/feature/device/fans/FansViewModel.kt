@@ -9,8 +9,8 @@ import io.github.lamba92.openaqua.app.mvi.MVIViewModel
 import io.github.lamba92.openaqua.app.repository.AppDataRepository
 import io.github.lamba92.openaqua.app.repository.DeviceDataCacheService
 import io.github.lamba92.openaqua.app.repository.DeviceState
-import io.github.lamba92.openaqua.model.DeviceId
-import io.github.lamba92.openaqua.model.FlashConfigRequest
+import io.github.lamba92.openaqua.model.device.DeviceId
+import io.github.lamba92.openaqua.model.device.FlashConfigRequest
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow

@@ -1,19 +1,19 @@
 package io.github.lamba92.openaqua.engine.device.protocol
 
-import io.github.lamba92.openaqua.model.CurveFanConfig
-import io.github.lamba92.openaqua.model.CurvePoint
-import io.github.lamba92.openaqua.model.DetectedHardwareDevice
-import io.github.lamba92.openaqua.model.DeviceConfig
-import io.github.lamba92.openaqua.model.DeviceDescriptor
-import io.github.lamba92.openaqua.model.FanChannelConfig
 import io.github.lamba92.openaqua.model.FeatureState
-import io.github.lamba92.openaqua.model.FixedFanConfig
-import io.github.lamba92.openaqua.model.RgbEffectMode
-import io.github.lamba92.openaqua.model.RgbpxPortConfig
-import io.github.lamba92.openaqua.model.SensorOffset
-import io.github.lamba92.openaqua.model.TargetTempFanConfig
-import io.github.lamba92.openaqua.model.TwoPointFanConfig
-import io.github.lamba92.openaqua.model.UnconfiguredFanConfig
+import io.github.lamba92.openaqua.model.device.CurveFanConfig
+import io.github.lamba92.openaqua.model.device.CurvePoint
+import io.github.lamba92.openaqua.model.device.DetectedHardwareDevice
+import io.github.lamba92.openaqua.model.device.DeviceConfig
+import io.github.lamba92.openaqua.model.device.DeviceDescriptor
+import io.github.lamba92.openaqua.model.device.FanChannelConfig
+import io.github.lamba92.openaqua.model.device.FixedFanConfig
+import io.github.lamba92.openaqua.model.device.RgbEffectMode
+import io.github.lamba92.openaqua.model.device.RgbpxPortConfig
+import io.github.lamba92.openaqua.model.device.SensorOffset
+import io.github.lamba92.openaqua.model.device.TargetTempFanConfig
+import io.github.lamba92.openaqua.model.device.TwoPointFanConfig
+import io.github.lamba92.openaqua.model.device.UnconfiguredFanConfig
 import kotlin.math.round
 
 object ConfigParser {

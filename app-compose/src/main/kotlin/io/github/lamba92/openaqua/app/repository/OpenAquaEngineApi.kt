@@ -1,13 +1,13 @@
 package io.github.lamba92.openaqua.app.repository
 
-import io.github.lamba92.openaqua.model.DescriptorsResponse
-import io.github.lamba92.openaqua.model.DeviceConfig
-import io.github.lamba92.openaqua.model.DeviceId
-import io.github.lamba92.openaqua.model.DeviceTelemetry
-import io.github.lamba92.openaqua.model.DevicesResponse
 import io.github.lamba92.openaqua.model.EngineResponse
-import io.github.lamba92.openaqua.model.FeedVirtualSensorsRequest
-import io.github.lamba92.openaqua.model.FlashConfigRequest
+import io.github.lamba92.openaqua.model.device.DescriptorsResponse
+import io.github.lamba92.openaqua.model.device.DeviceConfig
+import io.github.lamba92.openaqua.model.device.DeviceId
+import io.github.lamba92.openaqua.model.device.DeviceTelemetry
+import io.github.lamba92.openaqua.model.device.DevicesResponse
+import io.github.lamba92.openaqua.model.device.FeedVirtualSensorsRequest
+import io.github.lamba92.openaqua.model.device.FlashConfigRequest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow

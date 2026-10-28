@@ -1,4 +1,4 @@
-package io.github.lamba92.openaqua.model
+package io.github.lamba92.openaqua.model.device
 
 import kotlinx.serialization.Serializable
 

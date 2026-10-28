@@ -6,7 +6,7 @@ import io.github.lamba92.openaqua.app.model.AppStoredData
 import io.github.lamba92.openaqua.app.model.DeviceStoredData
 import io.github.lamba92.openaqua.app.model.FanStoredData
 import io.github.lamba92.openaqua.app.model.SensorStoredData
-import io.github.lamba92.openaqua.model.DeviceId
+import io.github.lamba92.openaqua.model.device.DeviceId
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

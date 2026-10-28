@@ -1,5 +1,6 @@
-package io.github.lamba92.openaqua.model
+package io.github.lamba92.openaqua.model.device
 
+import io.github.lamba92.openaqua.model.FeatureState
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 

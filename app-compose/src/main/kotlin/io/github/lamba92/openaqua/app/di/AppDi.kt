@@ -13,7 +13,7 @@ import io.github.lamba92.openaqua.app.feature.settings.SettingsViewModel
 import io.github.lamba92.openaqua.app.repository.AppDataRepository
 import io.github.lamba92.openaqua.app.repository.DeviceDataCacheService
 import io.github.lamba92.openaqua.app.repository.OpenAquaEngineApi
-import io.github.lamba92.openaqua.model.DeviceId
+import io.github.lamba92.openaqua.model.device.DeviceId
 import org.kodein.di.DI
 import org.kodein.di.bindMultiton
 import org.kodein.di.bindSingleton

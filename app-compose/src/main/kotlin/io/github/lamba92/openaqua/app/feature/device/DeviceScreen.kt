@@ -15,7 +15,7 @@ import io.github.lamba92.openaqua.app.feature.device.common.DeviceLoadingContent
 import io.github.lamba92.openaqua.app.feature.device.fans.FansTabContent
 import io.github.lamba92.openaqua.app.feature.device.info.DeviceInfoContent
 import io.github.lamba92.openaqua.app.feature.device.sensors.SensorsTabContent
-import io.github.lamba92.openaqua.model.DeviceId
+import io.github.lamba92.openaqua.model.device.DeviceId
 
 @Composable
 fun DeviceScreen(

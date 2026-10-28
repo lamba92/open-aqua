@@ -5,7 +5,7 @@ import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import io.github.lamba92.openaqua.engine.device.hardware.HardwareController
-import io.github.lamba92.openaqua.model.DevicesResponse
+import io.github.lamba92.openaqua.model.device.DevicesResponse
 
 class DevicesCommand(
     private val controller: HardwareController,

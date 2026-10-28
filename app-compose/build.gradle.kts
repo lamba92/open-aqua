@@ -23,7 +23,7 @@ ktlint {
 }
 
 dependencies {
-    implementation(projects.coreModel)
+    implementation(projects.coreModel.coreModelDevice)
     api(projects.coreTheme)
     implementation(getCurrentPlatformComposeRuntime())
     implementation(libs.compose.material3)

@@ -2,7 +2,7 @@ package io.github.lamba92.openaqua.app.feature.device
 
 import io.github.lamba92.openaqua.app.repository.DeviceErrorType
 import io.github.lamba92.openaqua.app.repository.DeviceState
-import io.github.lamba92.openaqua.model.DetectedHardwareDevice
+import io.github.lamba92.openaqua.model.device.DetectedHardwareDevice
 
 sealed interface DeviceUiState {
     data object Loading : DeviceUiState

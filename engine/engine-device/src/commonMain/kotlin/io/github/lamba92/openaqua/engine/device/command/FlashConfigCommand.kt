@@ -7,7 +7,7 @@ import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import io.github.lamba92.openaqua.engine.device.hardware.HardwareController
 import io.github.lamba92.openaqua.engine.device.hardware.requireTarget
-import io.github.lamba92.openaqua.model.FlashConfigRequest
+import io.github.lamba92.openaqua.model.device.FlashConfigRequest
 import kotlinx.serialization.json.Json
 
 private val strictJson =

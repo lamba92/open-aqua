@@ -43,7 +43,7 @@ import io.github.lamba92.openaqua.app.theme.SurfaceContainerHigh
 import io.github.lamba92.openaqua.app.theme.SurfaceContainerLow
 import io.github.lamba92.openaqua.app.theme.TextPrimary
 import io.github.lamba92.openaqua.app.theme.TextSecondary
-import io.github.lamba92.openaqua.model.DetectedHardwareDevice
+import io.github.lamba92.openaqua.model.device.DetectedHardwareDevice
 import open_aqua.app_compose.generated.resources.Res
 import open_aqua.app_compose.generated.resources.device_error_generic
 import open_aqua.app_compose.generated.resources.device_error_io

@@ -2,11 +2,11 @@ package io.github.lamba92.openaqua.app.feature.device.fans
 
 import io.github.lamba92.openaqua.app.feature.device.common.FanItem
 import io.github.lamba92.openaqua.app.feature.device.common.SensorItem
-import io.github.lamba92.openaqua.model.AutoCurveFanConfig
-import io.github.lamba92.openaqua.model.CurveFanConfig
-import io.github.lamba92.openaqua.model.FanChannelConfig
-import io.github.lamba92.openaqua.model.FixedFanConfig
-import io.github.lamba92.openaqua.model.TargetTempFanConfig
+import io.github.lamba92.openaqua.model.device.AutoCurveFanConfig
+import io.github.lamba92.openaqua.model.device.CurveFanConfig
+import io.github.lamba92.openaqua.model.device.FanChannelConfig
+import io.github.lamba92.openaqua.model.device.FixedFanConfig
+import io.github.lamba92.openaqua.model.device.TargetTempFanConfig
 
 enum class CurveMode {
     FIXED,

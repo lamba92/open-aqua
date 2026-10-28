@@ -18,12 +18,15 @@ dependencyResolutionManagement {
     }
 }
 
-include(":core-model")
-include(":core-theme")
-include(":engine:engine-device")
-include(":engine:engine-device:engine-device-mock")
-include(":engine:engine-device:engine-device-prod")
-include(":app-compose")
-include(":app-compose:app-compose-prod")
-include(":app-compose:app-compose-mock")
-include(":assets")
+include(
+    ":app-compose",
+    ":app-compose:app-compose-mock",
+    ":app-compose:app-compose-prod",
+    ":assets",
+    ":core-model",
+    ":core-model:core-model-device",
+    ":core-theme",
+    ":engine:engine-device",
+    ":engine:engine-device:engine-device-mock",
+    ":engine:engine-device:engine-device-prod"
+)

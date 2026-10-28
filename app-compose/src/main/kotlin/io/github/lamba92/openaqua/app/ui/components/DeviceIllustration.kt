@@ -27,7 +27,7 @@ import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
 import io.github.lamba92.openaqua.app.theme.StatusNominal
 import io.github.lamba92.openaqua.app.theme.SurfaceContainerHigh
 import io.github.lamba92.openaqua.app.theme.SurfaceContainerLowest
-import io.github.lamba92.openaqua.model.DeviceType
+import io.github.lamba92.openaqua.model.device.DeviceType
 
 @Composable
 fun DeviceIllustration(

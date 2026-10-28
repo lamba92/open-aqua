@@ -1,9 +1,9 @@
 package io.github.lamba92.openaqua.engine.device.hardware
 
-import io.github.lamba92.openaqua.model.DetectedHardwareDevice
-import io.github.lamba92.openaqua.model.DeviceConfig
-import io.github.lamba92.openaqua.model.DeviceTelemetry
-import io.github.lamba92.openaqua.model.FlashConfigRequest
+import io.github.lamba92.openaqua.model.device.DetectedHardwareDevice
+import io.github.lamba92.openaqua.model.device.DeviceConfig
+import io.github.lamba92.openaqua.model.device.DeviceTelemetry
+import io.github.lamba92.openaqua.model.device.FlashConfigRequest
 import kotlinx.coroutines.flow.Flow
 
 interface HardwareController {

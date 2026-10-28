@@ -36,9 +36,9 @@ import io.github.lamba92.openaqua.app.ui.components.RenameDialog
 import io.github.lamba92.openaqua.app.ui.components.VisibilityEmptyState
 import io.github.lamba92.openaqua.app.ui.components.VisibilityFilterChip
 import io.github.lamba92.openaqua.app.ui.components.sensorTemperatureColor
-import io.github.lamba92.openaqua.model.DeviceId
-import io.github.lamba92.openaqua.model.SensorChannelKind
-import io.github.lamba92.openaqua.model.tempCelsiusOrNull
+import io.github.lamba92.openaqua.model.device.DeviceId
+import io.github.lamba92.openaqua.model.device.SensorChannelKind
+import io.github.lamba92.openaqua.model.device.tempCelsiusOrNull
 import open_aqua.app_compose.generated.resources.Res
 import open_aqua.app_compose.generated.resources.action_rename
 import open_aqua.app_compose.generated.resources.ic_edit
