@@ -13,7 +13,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -22,12 +21,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
@@ -47,6 +49,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -84,6 +87,8 @@ import open_aqua.app_compose.generated.resources.curve_shape_progressive
 import open_aqua.app_compose.generated.resources.curve_studio_title
 import open_aqua.app_compose.generated.resources.curve_target_temp
 import open_aqua.app_compose.generated.resources.curve_target_temp_desc
+import open_aqua.app_compose.generated.resources.curve_target_temp_explanation
+import open_aqua.app_compose.generated.resources.curve_target_temp_range_error
 import open_aqua.app_compose.generated.resources.curve_temp_max
 import open_aqua.app_compose.generated.resources.curve_temp_min
 import open_aqua.app_compose.generated.resources.d5_fan_name
@@ -242,7 +247,6 @@ fun CurveStudio(
                     onSelectSensor = { onEvent(CurveStudioEvent.ChangeSensorIndex(it)) },
                     targetTemp = draft.targetTempCelsius,
                     onTargetTempChange = { onEvent(CurveStudioEvent.ChangeTargetTemp(it)) },
-                    graphContent = visualizerGraph,
                     hideDisconnectedSensors = hideDisconnectedSensors,
                     onToggleHideSensors = { onEvent(CurveStudioEvent.ToggleHideDisconnectedSensors) },
                 )
@@ -358,7 +362,6 @@ private fun FixedModeControls(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun AutoCurveModeControls(
     sensors: List<SensorItem>,
@@ -507,17 +510,43 @@ private fun TargetTempModeControls(
     onToggleHideSensors: () -> Unit,
     targetTemp: Double,
     onTargetTempChange: (Double) -> Unit,
-    graphContent: @Composable () -> Unit,
     modifier: Modifier = Modifier,
     hideDisconnectedSensors: Boolean = false,
 ) {
     val colors = OpenAquaTheme.colors
     val metrics = OpenAquaTheme.metrics
 
+    val minTemp = 20.0
+    val maxTemp = 50.0
+
+    var textInput by remember(targetTemp) { mutableStateOf(if (targetTemp % 1.0 == 0.0) targetTemp.toInt().toString() else targetTemp.toString()) }
+    val parsedValue = textInput.toDoubleOrNull()
+    val isOutOfRange = parsedValue != null && (parsedValue !in minTemp..maxTemp)
+    val isInvalidFormat = textInput.isNotBlank() && parsedValue == null
+    val hasError = isOutOfRange || isInvalidFormat
+
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(metrics.spacingMd),
     ) {
+        // Explanation Card
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(metrics.radiusSmall))
+                    .background(colors.surfaceLowest)
+                    .border(metrics.strokeThin, colors.borderOutline, RoundedCornerShape(metrics.radiusSmall))
+                    .padding(14.dp),
+        ) {
+            Text(
+                text = stringResource(Res.string.curve_target_temp_explanation),
+                color = colors.textSecondary,
+                fontSize = 12.sp,
+                lineHeight = 18.sp,
+            )
+        }
+
         // Sensor Selector Dropdown Row
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -547,18 +576,88 @@ private fun TargetTempModeControls(
             )
         }
 
-        graphContent()
-
         HorizontalDivider(color = colors.borderOutline.copy(alpha = 0.3f))
 
-        CurveParamSlider(
-            label = stringResource(Res.string.curve_target_temp),
-            valueText = "${"%.1f".format(targetTemp)}°C",
-            value = targetTemp.toFloat(),
-            valueRange = 20f..65f,
-            steps = 89,
-            onValueChange = { onTargetTempChange(((it * 2).roundToInt() / 2.0)) },
-        )
+        // Target Temperature Input Row
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Text(
+                    text = stringResource(Res.string.curve_target_temp),
+                    color = colors.textPrimary,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = "${minTemp.toInt()}°C - ${maxTemp.toInt()}°C",
+                    color = colors.textMuted,
+                    fontSize = 11.sp,
+                )
+            }
+
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                OutlinedTextField(
+                    value = textInput,
+                    onValueChange = { input ->
+                        val sanitized = input.replace(',', '.').filter { it.isDigit() || it == '.' }
+                        if (sanitized.count { it == '.' } <= 1) {
+                            textInput = sanitized
+                            val parsed = sanitized.toDoubleOrNull()
+                            if (parsed != null && parsed in minTemp..maxTemp) {
+                                onTargetTempChange(parsed)
+                            }
+                        }
+                    },
+                    modifier = Modifier.width(130.dp),
+                    singleLine = true,
+                    isError = hasError,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    suffix = {
+                        Text(
+                            text = "°C",
+                            color = colors.textMuted,
+                            fontSize = 13.sp,
+                            fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
+                        )
+                    },
+                    shape = RoundedCornerShape(metrics.radiusSmall),
+                    colors =
+                        OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = colors.primaryBright,
+                            unfocusedBorderColor = colors.borderOutline,
+                            errorBorderColor = colors.statusCritical,
+                            focusedTextColor = colors.textPrimary,
+                            unfocusedTextColor = colors.textPrimary,
+                            errorTextColor = colors.statusCritical,
+                            cursorColor = colors.primaryBright,
+                            focusedContainerColor = colors.surfaceLowest,
+                            unfocusedContainerColor = colors.surfaceLowest,
+                        ),
+                )
+
+                if (hasError) {
+                    Text(
+                        text =
+                            stringResource(
+                                Res.string.curve_target_temp_range_error,
+                                minTemp.toInt().toString(),
+                                maxTemp.toInt().toString(),
+                            ),
+                        color = colors.statusCritical,
+                        fontSize = 11.sp,
+                    )
+                }
+            }
+        }
     }
 }
 

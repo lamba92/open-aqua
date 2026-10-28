@@ -223,4 +223,6 @@
     <string name="settings_reset_dialog_message">Questo ripristinerà solo le impostazioni locali di OpenAqua come i nomi personalizzati. I dati e le configurazioni sui dispositivi hardware NON verranno modificati.</string>
     <string name="settings_reset_dialog_cancel">NON ripristinare</string>
     <string name="settings_reset_dialog_confirm">Ripristina dati</string>
+    <string name="curve_target_temp_range_error">La temperatura target deve essere compresa tra %1°C e %2°C</string>
+    <string name="curve_target_temp_explanation">Il dispositivo esegue un regolatore PID autonomo ad anello chiuso direttamente sul proprio microcontrollore. La velocità della ventola viene continuamente regolata per stabilizzare il sensore selezionato su questo setpoint target senza richiedere software o punti curva.</string>
 </resources>

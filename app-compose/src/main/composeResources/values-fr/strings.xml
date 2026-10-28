@@ -223,4 +223,6 @@
     <string name="settings_reset_dialog_message">Cette action réinitialisera uniquement les paramètres locaux d'OpenAqua. Les données et configurations stockées sur vos appareils matériels NE seront PAS modifiées.</string>
     <string name="settings_reset_dialog_cancel">NE PAS réinitialiser</string>
     <string name="settings_reset_dialog_confirm">Réinitialiser les données</string>
+    <string name="curve_target_temp_range_error">La température cible doit être comprise entre %1°C et %2°C</string>
+    <string name="curve_target_temp_explanation">L'appareil exécute un régulateur PID autonome en boucle fermée directement sur son microcontrôleur. La vitesse du ventilateur est ajustée en continu pour stabiliser le capteur sélectionné à cette consigne sans nécessiter de logiciel ou de points de courbe.</string>
 </resources>

@@ -223,4 +223,6 @@
     <string name="settings_reset_dialog_message">Dadurch werden nur lokale OpenAqua-Einstellungen auf die Standardwerte zurückgesetzt. Auf Ihren Hardwaregeräten gespeicherte Daten und Konfigurationen werden NICHT geändert.</string>
     <string name="settings_reset_dialog_cancel">NICHT zurücksetzen</string>
     <string name="settings_reset_dialog_confirm">Daten zurücksetzen</string>
+    <string name="curve_target_temp_range_error">Solltemperatur muss zwischen %1°C und %2°C liegen</string>
+    <string name="curve_target_temp_explanation">Das Gerät führt einen autonomen geschlossenen PID-Regelkreis direkt auf seinem Mikrocontroller aus. Die Lüfterdrehzahl wird kontinuierlich angepasst, um den gewählten Sensor auf diesem Sollwert zu stabilisieren, ohne dass Software oder Kurvenpunkte erforderlich sind.</string>
 </resources>
