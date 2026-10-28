@@ -40,7 +40,7 @@ public static class Program
         catch (Exception ex)
         {
             var err = new EngineErrorResponse(ex.Message);
-            Console.WriteLine(JsonSerializer.Serialize(err));
+            Console.WriteLine(JsonSerializer.Serialize(err, HostJsonContext.Default.EngineErrorResponse));
             return 1;
         }
     }
@@ -63,7 +63,7 @@ public static class Program
     private static int PrintUnknownCommand(string cmd)
     {
         var err = new EngineErrorResponse($"Unknown command '{cmd}'. Run with --help for usage.");
-        Console.WriteLine(JsonSerializer.Serialize(err));
+        Console.WriteLine(JsonSerializer.Serialize(err, HostJsonContext.Default.EngineErrorResponse));
         return 1;
     }
 }

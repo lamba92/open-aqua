@@ -12,7 +12,7 @@ public record EngineErrorResponse(
     [property: JsonPropertyName("type")] string Type = "error"
 );
 
-[JsonConverter(typeof(JsonStringEnumConverter))]
+[JsonConverter(typeof(JsonStringEnumConverter<HostDeviceType>))]
 public enum HostDeviceType
 {
     CPU,
@@ -57,3 +57,28 @@ public record Disconnected(
 public record HostTelemetry(
     [property: JsonPropertyName("sensors")] IReadOnlyList<HostSensorTelemetry> Sensors
 );
+
+[JsonSourceGenerationOptions(
+    WriteIndented = false,
+    GenerationMode = JsonSourceGenerationMode.Default)]
+[JsonSerializable(typeof(EngineSuccessResponse<HostInfo>))]
+[JsonSerializable(typeof(EngineSuccessResponse<HostTelemetry>))]
+[JsonSerializable(typeof(EngineErrorResponse))]
+[JsonSerializable(typeof(HostInfo))]
+[JsonSerializable(typeof(HostTelemetry))]
+[JsonSerializable(typeof(HostDevice))]
+[JsonSerializable(typeof(HostSensorDescriptor))]
+[JsonSerializable(typeof(HostSensorTelemetry))]
+[JsonSerializable(typeof(Connected))]
+[JsonSerializable(typeof(Disconnected))]
+public partial class HostJsonContext : JsonSerializerContext
+{
+}
+
+[JsonSourceGenerationOptions(
+    WriteIndented = true,
+    GenerationMode = JsonSourceGenerationMode.Default)]
+[JsonSerializable(typeof(EngineSuccessResponse<HostInfo>))]
+public partial class PrettyHostJsonContext : JsonSerializerContext
+{
+}

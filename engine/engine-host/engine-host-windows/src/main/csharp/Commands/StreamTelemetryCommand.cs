@@ -6,8 +6,6 @@ namespace OpenAqua.Engine.Host.Windows.Commands;
 
 public static class StreamTelemetryCommand
 {
-    private static readonly JsonSerializerOptions CompactOptions = new() { WriteIndented = false };
-
     public static async Task<int> ExecuteAsync(
         IHostHardwareController controller,
         TimeSpan pollingInterval,
@@ -16,7 +14,7 @@ public static class StreamTelemetryCommand
         await foreach (var telemetry in controller.GetTelemetryStream(pollingInterval, cancellationToken))
         {
             var response = new EngineSuccessResponse<HostTelemetry>(telemetry);
-            var json = JsonSerializer.Serialize(response, CompactOptions);
+            var json = JsonSerializer.Serialize(response, HostJsonContext.Default.EngineSuccessResponseHostTelemetry);
             Console.WriteLine(json);
         }
         return 0;

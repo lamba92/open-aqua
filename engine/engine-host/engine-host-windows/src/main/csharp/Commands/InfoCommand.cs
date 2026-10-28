@@ -6,14 +6,13 @@ namespace OpenAqua.Engine.Host.Windows.Commands;
 
 public static class InfoCommand
 {
-    private static readonly JsonSerializerOptions PrettyOptions = new() { WriteIndented = true };
-    private static readonly JsonSerializerOptions CompactOptions = new() { WriteIndented = false };
-
     public static int Execute(IHostHardwareController controller, bool pretty)
     {
         var info = controller.GetHostInfo();
         var response = new EngineSuccessResponse<HostInfo>(info);
-        var json = JsonSerializer.Serialize(response, pretty ? PrettyOptions : CompactOptions);
+        var json = pretty
+            ? JsonSerializer.Serialize(response, PrettyHostJsonContext.Default.EngineSuccessResponseHostInfo)
+            : JsonSerializer.Serialize(response, HostJsonContext.Default.EngineSuccessResponseHostInfo);
         Console.WriteLine(json);
         return 0;
     }
