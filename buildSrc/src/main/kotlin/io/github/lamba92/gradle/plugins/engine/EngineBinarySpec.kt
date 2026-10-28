@@ -20,17 +20,23 @@ abstract class EngineBinarySpec @Inject constructor(
     abstract val arch: Property<Arch>
     abstract val binaryFile: RegularFileProperty
     abstract val canonicalName: Property<String>
+    abstract val binaryPrefix: Property<String>
 
     init {
-        val matched = SupportedTargets.values().firstOrNull { it.name.equals(name, ignoreCase = true) }
+        val matched =
+            SupportedTargets
+                .values()
+                .firstOrNull { it.name.equals(name, ignoreCase = true) }
         if (matched != null) {
             os.convention(matched.os)
             arch.convention(matched.arch)
         }
         canonicalName.convention(
-            os.flatMap { o ->
-                arch.map { a ->
-                    canonicalBinaryName(o, a)
+            binaryPrefix.flatMap { prefix ->
+                os.flatMap { o ->
+                    arch.map { a ->
+                        canonicalBinaryName(o, a, prefix)
+                    }
                 }
             },
         )

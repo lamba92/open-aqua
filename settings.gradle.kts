@@ -25,8 +25,10 @@ include(
     ":assets",
     ":core-model",
     ":core-model:core-model-device",
+    ":core-model:core-model-host",
     ":core-theme",
     ":engine:engine-device",
     ":engine:engine-device:engine-device-mock",
-    ":engine:engine-device:engine-device-prod"
+    ":engine:engine-device:engine-device-prod",
+    ":engine:engine-host:engine-host-linux",
 )

@@ -2,7 +2,7 @@ package io.github.lamba92.gradle.plugins.engine
 
 import org.jetbrains.kotlin.konan.target.KonanTarget
 
-fun KonanTarget.toCanonicalBinaryName(): String {
+fun KonanTarget.toCanonicalBinaryName(prefix: String): String {
     val (os, arch) = toOsAndArch()
-    return canonicalBinaryName(os, arch)
+    return canonicalBinaryName(os, arch, prefix)
 }

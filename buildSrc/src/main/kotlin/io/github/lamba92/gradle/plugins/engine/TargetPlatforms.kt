@@ -54,7 +54,8 @@ val ARCH_ATTRIBUTE: Attribute<Arch> = Attribute.of("io.github.lamba92.openaqua.a
 fun canonicalBinaryName(
     os: Os,
     arch: Arch,
-): String = "open-aqua-device-engine-${os.name.lowercase()}-${arch.name.lowercase()}${os.executableExtension}"
+    prefix: String,
+): String = "$prefix-${os.name.lowercase()}-${arch.name.lowercase()}${os.executableExtension}"
 
 fun KonanTarget.toOsAndArch(): Pair<Os, Arch> {
     val os =

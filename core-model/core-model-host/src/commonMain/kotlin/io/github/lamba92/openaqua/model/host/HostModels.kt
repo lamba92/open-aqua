@@ -1,0 +1,93 @@
+package io.github.lamba92.openaqua.model.host
+
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlin.jvm.JvmInline
+
+@Serializable
+@JvmInline
+value class HostDeviceId(
+    val value: String,
+) {
+    init {
+        require(value.isNotBlank()) { "HostDeviceId cannot be blank" }
+    }
+
+    override fun toString(): String = value
+
+    companion object {
+        fun from(string: String): HostDeviceId = HostDeviceId(string.trim())
+    }
+}
+
+@Serializable
+@JvmInline
+value class HostSensorId(
+    val value: String,
+) {
+    init {
+        require(value.isNotBlank()) { "HostSensorId cannot be blank" }
+    }
+
+    override fun toString(): String = value
+
+    companion object {
+        fun from(string: String): HostSensorId = HostSensorId(string.trim())
+    }
+}
+
+@Serializable
+enum class HostDeviceType {
+    CPU,
+    MOTHERBOARD,
+    GPU,
+    STORAGE,
+    OTHER,
+}
+
+@Serializable
+data class HostSensorDescriptor(
+    val id: HostSensorId,
+    val name: String,
+)
+
+@Serializable
+data class HostDevice(
+    val id: HostDeviceId,
+    val name: String,
+    val type: HostDeviceType,
+    val sensors: List<HostSensorDescriptor>,
+)
+
+@Serializable
+@SerialName("host-info")
+data class HostInfo(
+    val devices: List<HostDevice>,
+)
+
+@Serializable
+sealed interface HostSensorTelemetry {
+    val id: HostSensorId
+
+    @Serializable
+    @SerialName("connected")
+    data class Connected(
+        override val id: HostSensorId,
+        val tempCelsius: Double,
+    ) : HostSensorTelemetry
+
+    @Serializable
+    @SerialName("disconnected")
+    data class Disconnected(
+        override val id: HostSensorId,
+    ) : HostSensorTelemetry
+}
+
+val HostSensorTelemetry.tempCelsiusOrNull: Double?
+    get() = (this as? HostSensorTelemetry.Connected)?.tempCelsius
+
+@Serializable
+@SerialName("host-telemetry")
+data class HostTelemetry(
+    val sensors: List<HostSensorTelemetry>,
+)

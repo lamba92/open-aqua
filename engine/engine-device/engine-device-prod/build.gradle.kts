@@ -77,18 +77,21 @@ kotlin {
 
 engineBinaries {
     register("linuxX64") {
+        binaryPrefix = "open-aqua-device-engine"
         fromUpx(
             kotlin.linuxX64().binaries.getExecutable("release"),
             tasks.named<UpxTask>("compressReleaseExecutableLinuxX64"),
         )
     }
     register("linuxArm64") {
+        binaryPrefix = "open-aqua-device-engine"
         fromUpx(
             kotlin.linuxArm64().binaries.getExecutable("release"),
             tasks.named<UpxTask>("compressReleaseExecutableLinuxArm64"),
         )
     }
     register("mingwX64") {
+        binaryPrefix = "open-aqua-device-engine"
         fromUpx(
             kotlin.mingwX64().binaries.getExecutable("release"),
             tasks.named<UpxTask>("compressReleaseExecutableMingwX64"),

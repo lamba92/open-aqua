@@ -1,6 +1,5 @@
 package io.github.lamba92.openaqua.app.util
 
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -8,34 +7,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.conflate
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.transform
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.time.Duration
-
-fun CoroutineScope.every(
-    interval: Duration,
-    action: suspend () -> Unit,
-): Job =
-    launch {
-        while (true) {
-            action()
-            delay(interval)
-        }
-    }
-
-fun <T> every(
-    interval: Duration,
-    action: suspend () -> T,
-) = flow {
-    while (true) {
-        emit(action())
-        delay(interval)
-    }
-}
 
 /**
  * Rate-limits emissions from this [Flow] so that downstream collectors receive at most one
@@ -50,8 +24,7 @@ fun <T> every(
  *    immediately with zero initial delay (unlike [kotlinx.coroutines.flow.sample]), followed by
  *    a suspension of [period] before the next conflated value is pulled.
  *
- * ### Timeline Example (`period = 1.seconds`)
- * ```text
+ * ### Timeline Example (`period = 1.seconds`)\n * ```text
  * Time (s)   : 0.0   0.2   0.5   0.8   1.0   1.4   1.9   2.0
  * Upstream   : ─A─────B─────C─────D───────────E─────F─────────>
  * Buffer     : [A]   [B ->  C ->  D]         [E ->  F]
@@ -98,81 +71,100 @@ fun <T> Flow<T>.throttleLatest(period: Duration): Flow<T> =
  * ### Example 1: Hardware Device Telemetry Multiplexing
  * ```kotlin
  * val deviceStates: Flow<List<DeviceState>> =
- *     pollConnectedDevices() // Flow<List<DetectedHardwareDevice>>
+ *     detectedDevicesFlow
  *         .combineByKey(
- *             keySelector = { device -> device.id },
- *             itemFlow = { device ->
- *                 // Opens a long-running USB telemetry stream for this specific device.
- *                 // Plugging in a second device won't restart the first device's stream!
- *                 device.observeTelemetryAndConfig()
+ *             keySelector = { it.id },
+ *             itemFlow = { descriptor ->
+ *                 deviceEngineApi.streamTelemetry(descriptor.id)
+ *                     .map { telemetry -> DeviceState.Connected(descriptor, telemetry) }
+ *                     .catch { e -> emit(DeviceState.Error(descriptor, e.message ?: "Unknown error")) }
+ *                     .onStart { emit(DeviceState.Connecting(descriptor)) }
  *             }
  *         )
  * ```
  *
- * ### Example 2: Timeline of Emissions
- * ```text
- * Upstream List : ──[A]──────────────[A, B]─────────────────[B]──────>
- * Child Flow A  : ────a1────a2──────────a3────────a4─(cancelled)
- * Child Flow B  : ─────────────────────────b1────────b2────────b3────>
- *
- * Output List   : ────[a1]──[a2]───────────[a3, b1]──[a4, b2]──[b2]──[b3]─>
+ * ### Example 2: Dynamic Chat Room Presence Tracking
+ * ```kotlin
+ * val userCards: Flow<List<UserCard>> =
+ *     activeUserIdsFlow
+ *         .combineByKey(
+ *             keySelector = { it },
+ *             itemFlow = { userId ->
+ *                 presenceService.observeUserPresence(userId)
+ *                     .map { presence -> UserCard(userId, presence.status, presence.avatarUrl) }
+ *             }
+ *         )
  * ```
- * *(Note: When `[A, B]` arrives, emission pauses until `B` produces its first value `b1`,
- * while `A` continues running in place and updates to `a3`.)*
  *
- * @param T The element type of the upstream list.
- * @param K The unique key type used to identify and diff elements across upstream emissions.
- * @param R The emission type of each per-item child flow.
- * @param keySelector Extracts a unique, stable key [K] from an item [T].
- * @param itemFlow Factory creating the cold or hot [Flow] for a newly discovered item [T].
- * @return A [Flow] emitting the combined [List] of latest [R] values in the order of the most recent upstream list.
+ * @param T The type of items in the upstream list.
+ * @param K The stable, unique identifier type for each item. Must implement proper equality and hash code.
+ * @param R The output type produced for each item by [itemFlow].
+ * @param keySelector Extracts the unique key [K] from an item [T].
+ * @param itemFlow Creates the reactive [Flow] of [R] for an item [T]. Called exactly once per unique key.
+ * @return A [Flow] emitting the updated list of [R] preserving upstream order whenever any child flow emits.
  */
 fun <T, K, R> Flow<List<T>>.combineByKey(
     keySelector: (T) -> K,
     itemFlow: (T) -> Flow<R>,
 ): Flow<List<R>> =
     channelFlow {
-        val activeJobs = mutableMapOf<K, Job>()
-        val latestValues = MutableStateFlow<Map<K, R>>(emptyMap())
-        val currentOrder = MutableStateFlow<List<K>?>(null)
+        class ChildFlowEntry(
+            val item: T,
+            val job: Job,
+            val stateFlow: MutableStateFlow<R?>,
+        )
 
-        // 1. Upstream collector: diffs keys and starts/cancels ONLY added/removed devices
-        launch {
-            distinctUntilChanged().collect { items ->
-                val newKeys = items.map(keySelector)
-                val newKeySet = newKeys.toSet()
+        val activeChildren = mutableMapOf<K, ChildFlowEntry>()
+        val latestListLock = Any()
+        var currentItems: List<T> = emptyList()
 
-                // Cancel removed devices
-                val removedKeys = activeJobs.keys - newKeySet
-                for (key in removedKeys) {
-                    activeJobs.remove(key)?.cancel()
-                }
-                latestValues.update { it - removedKeys }
-
-                // Launch flows ONLY for newly added devices (existing ones keep running!)
-                for (item in items) {
-                    val key = keySelector(item)
-                    if (key !in activeJobs) {
-                        activeJobs[key] =
-                            launch {
-                                itemFlow(item).collect { value ->
-                                    latestValues.update { it + (key to value) }
-                                }
-                            }
+        fun updateDownstreamEmission() {
+            val snapshot =
+                synchronized(latestListLock) {
+                    currentItems.mapNotNull { item ->
+                        val key = keySelector(item)
+                        activeChildren[key]?.stateFlow?.value
                     }
                 }
-
-                currentOrder.value = newKeys
+            if (snapshot.size == currentItems.size) {
+                trySend(snapshot)
             }
         }
 
-        // 2. Emit the combined list in order whenever all active keys have emitted at least once
-        combine(currentOrder.filterNotNull(), latestValues) { keys, valuesMap ->
-            when {
-                keys.isEmpty() -> emptyList()
-                keys.all { it in valuesMap } -> keys.map { valuesMap.getValue(it) }
-                else -> null // Still waiting for initial emission from a newly connected device
+        collect { newItems ->
+            val newKeys = newItems.map(keySelector).toSet()
+
+            synchronized(latestListLock) {
+                currentItems = newItems
+
+                val iterator = activeChildren.iterator()
+                while (iterator.hasNext()) {
+                    val (key, entry) = iterator.next()
+                    if (key !in newKeys) {
+                        entry.job.cancel()
+                        iterator.remove()
+                    }
+                }
+
+                for (item in newItems) {
+                    val key = keySelector(item)
+                    if (key !in activeChildren) {
+                        val stateFlow = MutableStateFlow<R?>(null)
+                        val job =
+                            launch {
+                                itemFlow(item).collect { value ->
+                                    stateFlow.value = value
+                                }
+                            }
+                        activeChildren[key] = ChildFlowEntry(item, job, stateFlow)
+                    }
+                }
             }
-        }.filterNotNull()
-            .collect { send(it) }
+
+            if (newItems.isEmpty()) {
+                trySend(emptyList())
+            } else {
+                updateDownstreamEmission()
+            }
+        }
     }

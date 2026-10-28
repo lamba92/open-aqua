@@ -25,8 +25,8 @@ ktlint {
 
 engineBinaries {
     if (Os.current() == Os.MACOS) {
-        os.set(Os.LINUX)
-        arch.set(Arch.X64)
+        os = Os.LINUX
+        arch = Arch.X64
     }
 }
 
@@ -55,13 +55,13 @@ compose.desktop {
             packageVersion = "1.0.0"
 
             linux {
-                iconFile.set(rootProject.file("assets/generated/icon-512.png"))
+                iconFile = rootProject.file("assets/generated/icon-512.png")
             }
             windows {
-                iconFile.set(rootProject.file("assets/generated/favicon.ico"))
+                iconFile = rootProject.file("assets/generated/favicon.ico")
             }
             macOS {
-                iconFile.set(rootProject.file("assets/generated/icon.icns"))
+                iconFile = rootProject.file("assets/generated/icon.icns")
             }
         }
     }
