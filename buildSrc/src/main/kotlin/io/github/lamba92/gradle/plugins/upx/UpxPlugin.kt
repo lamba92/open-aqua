@@ -140,6 +140,17 @@ class UpxPlugin : Plugin<Project> {
                     additionalOptionsProperty,
                 )
 
+            tasks.withType<UpxTask>().configureEach {
+                upxExecutableFile.convention(upxExecutable)
+                upxVersion.convention(extension.version)
+                strip.convention(extension.strip)
+                lzma.convention(extension.lzma)
+                bruteLevel.convention(extension.bruteLevel)
+                compressionLevel.convention(extension.compressionLevel)
+                stripExecutable.convention(extension.stripExecutable)
+                additionalOptions.convention(extension.additionalOptions)
+            }
+
             val compress =
                 tasks.maybeRegister("compress") {
                     group = "upx"
@@ -169,15 +180,7 @@ class UpxPlugin : Plugin<Project> {
                             tasks.register<UpxTask>("compress$taskSuffix") {
                                 dependsOn(linkTaskProvider)
                                 inputExecutable.fileProvider(linkTaskProvider.flatMap { it.outputFile })
-                                upxExecutableFile = upxExecutable
-                                upxVersion.convention(extension.version)
 
-                                strip.convention(extension.strip)
-                                lzma.convention(extension.lzma)
-                                bruteLevel.convention(extension.bruteLevel)
-                                compressionLevel.convention(extension.compressionLevel)
-                                stripExecutable.convention(extension.stripExecutable)
-                                additionalOptions.convention(extension.additionalOptions)
 
                                 val isWindows = konanTarget.family == Family.MINGW
                                 val binaryExtension = if (isWindows) ".exe" else ""

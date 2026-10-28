@@ -35,8 +35,6 @@ val publishWindowsExecutable by tasks.registering(Exec::class) {
 }
 
 val compressReleaseExecutableWindowsX64 by tasks.registering(UpxTask::class) {
-    upxExecutableFile = upx.upxExecutableProvider
-    bruteLevel.convention(upx.bruteLevel)
     inputExecutable = publishWindowsExecutable.map { executablePath.get() }
     outputExecutable = layout.buildDirectory.file("upx/windowsX64/open-aqua-host-engine.exe")
     strip = false
