@@ -24,6 +24,15 @@ Thumbs.db
 hs_err_pid*
 replay_pid*
 
+# .NET / C#
+bin/
+**/bin/
+obj/
+**/obj/
+.vs/
+*.user
+*.suo
+
 # Local configs & logs
 local.properties
 *.log
