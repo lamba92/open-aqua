@@ -19,30 +19,43 @@ import platform.posix.dlclose
 import platform.posix.dlopen
 import platform.posix.dlsym
 
+sealed interface NvidiaCapability {
+    object NotAvailable : NvidiaCapability
+
+    interface Available : NvidiaCapability {
+        fun getGpus(): List<NvidiaGpu>
+
+        fun getGpuTemperature(gpuIndex: Int): Double?
+    }
+
+    companion object {
+        fun get() = Nvml.loadOrNull() ?: NotAvailable
+    }
+}
+
+data class NvidiaGpu(
+    val index: Int,
+    val name: String,
+)
+
 /**
  * NVIDIA Management Library (NVML) wrapper for querying NVIDIA GPU devices and sensors.
  */
-class Nvml private constructor(
+private class Nvml private constructor(
     private val libraryHandle: COpaquePointer,
     private val nvmlShutdown: CPointer<CFunction<() -> Int>>,
     private val nvmlDeviceGetCount: CPointer<CFunction<(CPointer<UIntVar>) -> Int>>,
     private val nvmlDeviceGetHandleByIndex: CPointer<CFunction<(UInt, CPointer<COpaquePointerVar>) -> Int>>,
     private val nvmlDeviceGetName: CPointer<CFunction<(COpaquePointer, CPointer<ByteVar>, UInt) -> Int>>,
     private val nvmlDeviceGetTemperature: CPointer<CFunction<(COpaquePointer, UInt, CPointer<UIntVar>) -> Int>>,
-) {
-    data class Gpu(
-        val index: Int,
-        val name: String,
-        val temperatureCelsius: Double?,
-    )
-
-    fun getGpus(): List<Gpu> =
+) : NvidiaCapability.Available {
+    override fun getGpus(): List<NvidiaGpu> =
         memScoped {
             val countVar = alloc<UIntVar>()
             if (nvmlDeviceGetCount(countVar.ptr) != 0) return emptyList()
 
             val count = countVar.value.toInt()
-            val gpus = mutableListOf<Gpu>()
+            val gpus = mutableListOf<NvidiaGpu>()
 
             for (i in 0 until count) {
                 val devHandle = alloc<COpaquePointerVar>()
@@ -56,25 +69,17 @@ class Nvml private constructor(
                         else -> "NVIDIA GPU $i"
                     }
 
-                val tempVar = alloc<UIntVar>()
-                val temp =
-                    when (nvmlDeviceGetTemperature(dev, NVML_TEMPERATURE_GPU, tempVar.ptr)) {
-                        0 -> tempVar.value.toDouble()
-                        else -> null
-                    }
-
                 gpus.add(
-                    Gpu(
+                    NvidiaGpu(
                         index = i,
                         name = gpuName,
-                        temperatureCelsius = temp,
                     ),
                 )
             }
             gpus
         }
 
-    fun getGpuTemperature(gpuIndex: Int): Double? =
+    override fun getGpuTemperature(gpuIndex: Int): Double? =
         memScoped {
             val devHandle = alloc<COpaquePointerVar>()
             if (nvmlDeviceGetHandleByIndex(gpuIndex.toUInt(), devHandle.ptr) != 0) return null
@@ -95,9 +100,7 @@ class Nvml private constructor(
     companion object {
         private const val NVML_TEMPERATURE_GPU: UInt = 0u
 
-        val INSTANCE: Nvml? by lazy { loadOrNull() }
-
-        private fun loadOrNull(): Nvml? {
+        internal fun loadOrNull(): Nvml? {
             val libraryNames = listOf("libnvidia-ml.so.1", "libnvidia-ml.so")
             var handle: COpaquePointer? = null
             for (lib in libraryNames) {
@@ -122,18 +125,27 @@ class Nvml private constructor(
                     return null
                 }
             val nvmlDeviceGetHandleByIndex =
-                dlsym(handle, "nvmlDeviceGetHandleByIndex_v2")?.reinterpret<CFunction<(UInt, CPointer<COpaquePointerVar>) -> Int>>()
+                dlsym(
+                    handle,
+                    "nvmlDeviceGetHandleByIndex_v2",
+                )?.reinterpret<CFunction<(UInt, CPointer<COpaquePointerVar>) -> Int>>()
                     ?: run {
                         dlclose(handle)
                         return null
                     }
             val nvmlDeviceGetName =
-                dlsym(handle, "nvmlDeviceGetName")?.reinterpret<CFunction<(COpaquePointer, CPointer<ByteVar>, UInt) -> Int>>() ?: run {
+                dlsym(
+                    handle,
+                    "nvmlDeviceGetName",
+                )?.reinterpret<CFunction<(COpaquePointer, CPointer<ByteVar>, UInt) -> Int>>() ?: run {
                     dlclose(handle)
                     return null
                 }
             val nvmlDeviceGetTemperature =
-                dlsym(handle, "nvmlDeviceGetTemperature")?.reinterpret<CFunction<(COpaquePointer, UInt, CPointer<UIntVar>) -> Int>>()
+                dlsym(
+                    handle,
+                    "nvmlDeviceGetTemperature",
+                )?.reinterpret<CFunction<(COpaquePointer, UInt, CPointer<UIntVar>) -> Int>>()
                     ?: run {
                         dlclose(handle)
                         return null

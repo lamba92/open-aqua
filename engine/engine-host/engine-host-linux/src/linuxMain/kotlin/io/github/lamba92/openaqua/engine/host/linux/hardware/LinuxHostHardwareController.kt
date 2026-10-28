@@ -11,7 +11,6 @@ import io.github.lamba92.openaqua.model.host.HostSensorId
 import io.github.lamba92.openaqua.model.host.HostSensorTelemetry
 import io.github.lamba92.openaqua.model.host.HostTelemetry
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.onCompletion
 import kotlinx.io.buffered
 import kotlinx.io.files.FileSystem
 import kotlinx.io.files.Path
@@ -19,7 +18,9 @@ import kotlinx.io.files.SystemFileSystem
 import kotlinx.io.readString
 import kotlin.time.Duration
 
-class LinuxHostHardwareController : HostHardwareController {
+class LinuxHostHardwareController(
+    private val nvidiaCapability: NvidiaCapability,
+) : HostHardwareController {
     private val hwmonBasePath = Path("/sys/class/hwmon")
 
     private val cpuHwmonNames = setOf("k10temp", "zenpower", "coretemp", "cpu_thermal")
@@ -77,43 +78,43 @@ class LinuxHostHardwareController : HostHardwareController {
             }
         }
 
-        // 2. Scan NVIDIA GPUs via NVML
-        Nvml.INSTANCE?.let { nvmlInstance ->
-            for ((index, name) in nvmlInstance.getGpus()) {
-                val sensorId = HostSensorId("nvidia$index:temp")
-                val sensorDesc =
-                    HostSensorDescriptor(
-                        id = sensorId,
-                        name = "GPU Core",
-                    )
-                devices.add(
-                    HostDevice(
-                        id = HostDeviceId("nvidia$index"),
-                        name = name,
-                        type = HostDeviceType.GPU,
-                        sensors = listOf(sensorDesc),
-                    ),
-                )
+        val gpus =
+            when (nvidiaCapability) {
+                is NvidiaCapability.Available ->
+                    nvidiaCapability
+                        .getGpus()
+                        .map { (index, name) ->
+                            HostDevice(
+                                id = HostDeviceId("nvidia$index"),
+                                name = name,
+                                type = HostDeviceType.GPU,
+                                sensors =
+                                    listOf(
+                                        HostSensorDescriptor(
+                                            id = HostSensorId("nvidia$index:temp"),
+                                            name = "GPU Core",
+                                        ),
+                                    ),
+                            )
+                        }
+                NvidiaCapability.NotAvailable -> emptyList()
             }
-        }
-
-        return HostInfo(devices = devices)
+        devices.addAll(gpus)
+        return HostInfo(devices = devices.toList())
     }
 
     override fun getTelemetryFlow(pollingInterval: Duration): Flow<HostTelemetry> {
         val info = getHostInfo()
         return every(pollingInterval) {
-            info.getTelemetry(Nvml.INSTANCE)
-        }.onCompletion {
-            Nvml.INSTANCE?.close()
+            info.getTelemetry(nvidiaCapability)
         }
     }
 }
 
-private fun HostInfo.getTelemetry(nvml: Nvml?): HostTelemetry {
+private fun HostInfo.getTelemetry(nvidiaCapability: NvidiaCapability): HostTelemetry {
     val sensorReadings =
         devices.flatMap { it.sensors }.map { sensor ->
-            when (val temp = readSensor(sensor.id, nvml)) {
+            when (val temp = readSensor(sensor.id, nvidiaCapability)) {
                 null -> HostSensorTelemetry.Disconnected(id = sensor.id)
                 else -> HostSensorTelemetry.Connected(id = sensor.id, tempCelsius = temp)
             }
@@ -123,7 +124,7 @@ private fun HostInfo.getTelemetry(nvml: Nvml?): HostTelemetry {
 
 private fun readSensor(
     id: HostSensorId,
-    nvml: Nvml?,
+    nvidiaCapability: NvidiaCapability,
 ): Double? =
     when {
         id.value.startsWith("hwmon") -> {
@@ -134,13 +135,13 @@ private fun readSensor(
             }
         }
 
-        id.value.startsWith("nvidia") && nvml != null ->
+        id.value.startsWith("nvidia") && nvidiaCapability is NvidiaCapability.Available ->
             id
                 .value
                 .removePrefix("nvidia")
                 .substringBefore(":")
                 .toIntOrNull()
-                ?.let { index -> nvml.getGpuTemperature(index) }
+                ?.let { index -> nvidiaCapability.getGpuTemperature(index) }
 
         else -> null
     }
