@@ -12,7 +12,7 @@ import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavViewModel
 import io.github.lamba92.openaqua.app.feature.settings.SettingsViewModel
 import io.github.lamba92.openaqua.app.repository.AppDataRepository
 import io.github.lamba92.openaqua.app.repository.DeviceDataCacheService
-import io.github.lamba92.openaqua.app.repository.OpenAquaEngineApi
+import io.github.lamba92.openaqua.app.repository.OpenAquaDeviceEngineApi
 import io.github.lamba92.openaqua.model.device.DeviceId
 import org.kodein.di.DI
 import org.kodein.di.bindMultiton
@@ -26,9 +26,9 @@ fun createAppModule(
     scopeProvider: CoroutineScopeProvider = DefaultCoroutineScopeProvider(),
 ) = DI.Module("appModule") {
     bindSingleton<CoroutineScopeProvider> { scopeProvider }
-    bindSingleton<OpenAquaEngineApi> { OpenAquaEngineApi(enginePath = enginePath) }
+    bindSingleton<OpenAquaDeviceEngineApi> { OpenAquaDeviceEngineApi(enginePath = enginePath) }
     bindSingleton { AppDataRepository(coroutineScopeProvider = instance()) }
-    bindSingleton { DeviceDataCacheService(openAquaEngineApi = instance(), coroutineScopeProvider = instance()) }
+    bindSingleton { DeviceDataCacheService(openAquaDeviceEngineApi = instance(), coroutineScopeProvider = instance()) }
     bindSingleton { DeviceNavViewModel(dataCacheService = instance(), scopeProvider = instance()) }
     bindSingleton { SettingsViewModel(appDataRepository = instance(), scopeProvider = instance()) }
     bindMultiton { deviceId: DeviceId ->

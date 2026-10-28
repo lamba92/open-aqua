@@ -28,10 +28,10 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 class DeviceDataCacheService(
-    private val openAquaEngineApi: OpenAquaEngineApi,
+    private val openAquaDeviceEngineApi: OpenAquaDeviceEngineApi,
     coroutineScopeProvider: CoroutineScopeProvider,
     pollingIntervals: PollingIntervals = PollingIntervals.DEFAULT,
-) : OpenAquaDeviceFlasher by openAquaEngineApi {
+) : OpenAquaDeviceFlasher by openAquaDeviceEngineApi {
     data class PollingIntervals(
         val deviceConfig: Duration = 2.seconds,
         val telemetry: Duration = 1.seconds,
@@ -55,7 +55,7 @@ class DeviceDataCacheService(
     private val coroutineScope = coroutineScopeProvider.getScope()
 
     val state: StateFlow<State> =
-        every(pollingIntervals.deviceConfig) { openAquaEngineApi.listDevices().devices }
+        every(pollingIntervals.deviceConfig) { openAquaDeviceEngineApi.listDevices().devices }
             .combineByKey(
                 keySelector = { it.id },
                 itemFlow = { device -> device.getStateFlow(pollingIntervals) },
@@ -79,8 +79,8 @@ class DeviceDataCacheService(
     private fun DetectedHardwareDevice.getStateFlow(pollingIntervals: PollingIntervals): Flow<DeviceState> {
         val descriptor = DeviceRegistry.findByType(type)
         return combine<DeviceConfig, DeviceTelemetry, DeviceState>(
-            every(pollingIntervals.deviceConfig) { openAquaEngineApi.getDeviceConfig(id) },
-            openAquaEngineApi.getTelemetryStream(id),
+            every(pollingIntervals.deviceConfig) { openAquaDeviceEngineApi.getDeviceConfig(id) },
+            openAquaDeviceEngineApi.getTelemetryStream(id),
         ) { config, telemetry ->
             DeviceState.Ready(
                 device = this@getStateFlow,

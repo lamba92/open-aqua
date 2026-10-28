@@ -26,7 +26,7 @@ import kotlin.io.path.absolutePathString
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
-class OpenAquaEngineApi(
+class OpenAquaDeviceEngineApi(
     private val enginePath: Path,
 ) : OpenAquaDeviceFlasher {
     private val json: Json =
