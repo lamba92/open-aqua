@@ -1,0 +1,22 @@
+package io.github.lamba92.openaqua.engine.device.command
+
+import com.github.ajalt.clikt.core.CliktCommand
+import com.github.ajalt.clikt.core.Context
+import com.github.ajalt.clikt.parameters.options.flag
+import com.github.ajalt.clikt.parameters.options.option
+import com.github.ajalt.clikt.parameters.options.required
+import io.github.lamba92.openaqua.engine.device.hardware.HardwareController
+import io.github.lamba92.openaqua.engine.device.hardware.requireTarget
+
+class ReadConfigCommand(
+    private val controller: HardwareController,
+) : CliktCommand(
+        name = "read",
+    ) {
+    override fun help(context: Context): String = "Read hardware configuration"
+
+    private val device by option("--device", help = "Device ID or alias (e.g. octo-1)").required()
+    private val pretty by option("--pretty", help = "Pretty-print JSON output").flag(default = false)
+
+    override fun run() = printSuccessResponse(controller.readConfig(controller.requireTarget(device)), pretty)
+}

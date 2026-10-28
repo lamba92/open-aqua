@@ -24,7 +24,7 @@ ktlint {
 dependencies {
     implementation(projects.appCompose)
     implementation(getCurrentPlatformComposeRuntime())
-    engineBinaries(projects.engine.engineMock)
+    engineBinaries(projects.engine.engineDevice.engineDeviceMock)
 }
 
 fun getCurrentPlatformComposeRuntime() =

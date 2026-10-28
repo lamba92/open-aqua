@@ -17,18 +17,18 @@ object EngineExtractor {
 
         val resourceFileName =
             when {
-                isLinux && isX64 -> "open-aqua-engine-linux-x64"
-                isLinux && isArm64 -> "open-aqua-engine-linux-arm64"
-                isWindows && isX64 -> "open-aqua-engine-windows-x64.exe"
-                isMac && isArm64 -> "open-aqua-engine-macos-arm64"
-                isMac && isX64 -> "open-aqua-engine-macos-x64"
+                isLinux && isX64 -> "open-aqua-device-engine-linux-x64"
+                isLinux && isArm64 -> "open-aqua-device-engine-linux-arm64"
+                isWindows && isX64 -> "open-aqua-device-engine-windows-x64.exe"
+                isMac && isArm64 -> "open-aqua-device-engine-macos-arm64"
+                isMac && isX64 -> "open-aqua-device-engine-macos-x64"
                 else -> error("Unsupported operating system or architecture: os=$os, arch=$arch")
             }
 
-        val tempDir = createTempDirectory("open-aqua-engine")
+        val tempDir = createTempDirectory("open-aqua-device-engine")
         tempDir.toFile().deleteOnExit()
 
-        val binaryName = if (isWindows) "open-aqua-engine.exe" else "open-aqua-engine"
+        val binaryName = if (isWindows) "open-aqua-device-engine.exe" else "open-aqua-device-engine"
         val targetExecutable = tempDir.resolve(binaryName)
         targetExecutable.toFile().deleteOnExit()
 

@@ -55,13 +55,13 @@ echo Checking OCTO USB Device presence in Windows PnP...
 powershell -Command "Get-PnpDevice | Where-Object { $_.InstanceId -like '*0C70*' } | Select-Object Status, Class, FriendlyName, InstanceId"
 
 echo.
-if exist "engine\engine-prod\build\bin\mingwX64\debugTest\test.exe" (
+if exist "engine\engine-device\engine-device-prod\build\bin\mingwX64\debugTest\test.exe" (
     echo Found pre-compiled native test binary. Running test.exe directly...
-    "engine\engine-prod\build\bin\mingwX64\debugTest\test.exe"
+    "engine\engine-device\engine-device-prod\build\bin\mingwX64\debugTest\test.exe"
     set TEST_RESULT=!ERRORLEVEL!
 ) else (
     echo Running OCTO hardware tests via Gradle...
-    call gradlew.bat :engine:engine-prod:mingwX64Test -Ptest.hardware=true -Dorg.gradle.jvmargs="-Xmx2g"
+    call gradlew.bat :engine:engine-device:engine-device-prod:mingwX64Test -Ptest.hardware=true -Dorg.gradle.jvmargs="-Xmx2g"
     set TEST_RESULT=!ERRORLEVEL!
 )
 

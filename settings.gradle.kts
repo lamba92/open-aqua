@@ -20,9 +20,9 @@ dependencyResolutionManagement {
 
 include(":core-model")
 include(":core-theme")
-include(":engine")
-include(":engine:engine-mock")
-include(":engine:engine-prod")
+include(":engine:engine-device")
+include(":engine:engine-device:engine-device-mock")
+include(":engine:engine-device:engine-device-prod")
 include(":app-compose")
 include(":app-compose:app-compose-prod")
 include(":app-compose:app-compose-mock")

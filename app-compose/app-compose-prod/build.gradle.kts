@@ -33,7 +33,7 @@ engineBinaries {
 dependencies {
     implementation(projects.appCompose)
     implementation(getCurrentPlatformComposeRuntime())
-    engineBinaries(projects.engine.engineProd)
+    engineBinaries(projects.engine.engineDevice.engineDeviceProd)
 }
 
 fun getCurrentPlatformComposeRuntime() =

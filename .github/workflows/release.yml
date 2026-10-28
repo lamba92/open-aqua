@@ -22,14 +22,14 @@ jobs:
         include:
           - os: ubuntu-latest
             os_name: Linux
-            task: :engine:engine-prod:compressReleaseExecutableLinuxX64
-            binary_path: engine/engine-prod/build/bin/upx/linuxX64/release/engine-prod
-            asset_name: open-aqua-engine-linux-x64
+            task: :engine:engine-device:engine-device-prod:compressReleaseExecutableLinuxX64
+            binary_path: engine/engine-device/engine-device-prod/build/bin/upx/linuxX64/release/open-aqua-device-engine
+            asset_name: open-aqua-device-engine-linux-x64
           - os: windows-latest
             os_name: Windows
-            task: :engine:engine-prod:compressReleaseExecutableMingwX64
-            binary_path: engine/engine-prod/build/bin/upx/mingwX64/release/engine-prod.exe
-            asset_name: open-aqua-engine-windows-x64.exe
+            task: :engine:engine-device:engine-device-prod:compressReleaseExecutableMingwX64
+            binary_path: engine/engine-device/engine-device-prod/build/bin/upx/mingwX64/release/open-aqua-device-engine.exe
+            asset_name: open-aqua-device-engine-windows-x64.exe
     runs-on: ${{ matrix.os }}
     defaults:
       run:
