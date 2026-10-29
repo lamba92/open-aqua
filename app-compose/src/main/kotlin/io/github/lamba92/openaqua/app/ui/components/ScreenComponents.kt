@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -557,6 +558,8 @@ fun MetricCard(
             color = colors.label,
             fontSize = metrics.labelTextSize,
             lineHeight = metrics.labelLineHeight,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
         Text(
             text = value,
@@ -565,6 +568,8 @@ fun MetricCard(
             lineHeight = metrics.valueLineHeight,
             fontWeight = FontWeight.Bold,
             fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }

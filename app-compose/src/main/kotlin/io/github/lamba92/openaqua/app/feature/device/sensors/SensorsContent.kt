@@ -19,7 +19,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.unit.dp
 import io.github.lamba92.openaqua.app.di.rememberInstance
 import io.github.lamba92.openaqua.app.feature.device.common.DeviceLoadingContent
 import io.github.lamba92.openaqua.app.feature.device.common.SensorItem
@@ -319,7 +318,6 @@ private fun SensorMetricCard(
     MetricCard(
         label = label,
         value = value,
-        width = 160.dp,
         modifier = modifier,
     )
 }

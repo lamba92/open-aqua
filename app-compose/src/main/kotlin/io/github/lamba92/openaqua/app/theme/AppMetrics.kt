@@ -32,7 +32,7 @@ data class ChannelSelectionTileMetrics(
 typealias SquareSelectionButtonMetrics = ChannelSelectionTileMetrics
 
 data class MetricCardMetrics(
-    val width: Dp = 120.dp,
+    val width: Dp = 220.dp,
     val cornerRadius: Dp = 10.dp,
     val padding: Dp = 10.dp,
     val verticalSpacing: Dp = 4.dp,
@@ -163,8 +163,8 @@ data class AppMetrics(
                     ),
                 metricCard =
                     MetricCardMetrics(
-                        width = 110.dp,
-                        padding = 8.dp,
+                        width = 180.dp,
+                        padding = 10.dp,
                     ),
                 navigationRail =
                     NavigationRailMetrics(
@@ -233,8 +233,8 @@ data class AppMetrics(
                     ),
                 metricCard =
                     MetricCardMetrics(
-                        width = 136.dp,
-                        padding = 12.dp,
+                        width = 250.dp,
+                        padding = 14.dp,
                         verticalSpacing = 6.dp,
                     ),
                 sectionHeader =
