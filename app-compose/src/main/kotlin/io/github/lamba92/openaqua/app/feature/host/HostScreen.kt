@@ -59,9 +59,9 @@ import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
 import io.github.lamba92.openaqua.app.ui.components.OpenAquaDropdownHeader
 import io.github.lamba92.openaqua.app.ui.components.OpenAquaDropdownMenu
 import io.github.lamba92.openaqua.app.ui.components.OpenAquaDropdownMenuItem
-import io.github.lamba92.openaqua.app.ui.components.OpenAquaDropdownSubmenuItem
 import io.github.lamba92.openaqua.app.ui.components.OpenAquaVerticalScrollbar
 import io.github.lamba92.openaqua.app.ui.components.ScreenHeader
+import io.github.lamba92.openaqua.app.ui.components.gaugeProgress
 import io.github.lamba92.openaqua.app.ui.components.scrollFadingEdge
 import io.github.lamba92.openaqua.model.host.HostDevice
 import io.github.lamba92.openaqua.model.host.HostDeviceType
@@ -81,7 +81,6 @@ import open_aqua.app_compose.generated.resources.host_status_error
 import open_aqua.app_compose.generated.resources.host_telemetry_subtitle
 import open_aqua.app_compose.generated.resources.host_telemetry_title
 import open_aqua.app_compose.generated.resources.sensor_options
-import open_aqua.app_compose.generated.resources.sensor_settings_menu_title
 import open_aqua.app_compose.generated.resources.sensor_temp_disconnected
 import open_aqua.app_compose.generated.resources.sensor_temp_short_value
 import open_aqua.app_compose.generated.resources.sensor_type_die
@@ -438,7 +437,7 @@ private fun HostDeviceCard(
             Text(
                 text = device.id.value,
                 color = colors.textMuted,
-                fontSize = 11.sp,
+                fontSize = 13.sp,
                 fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
             )
         }
@@ -447,7 +446,7 @@ private fun HostDeviceCard(
             Text(
                 text = stringResource(Res.string.host_no_sensors),
                 color = colors.textMuted,
-                fontSize = 12.sp,
+                fontSize = 14.sp,
             )
         } else {
             FlowRow(
@@ -482,85 +481,80 @@ private fun HostSensorTile(
 ) {
     val colors = OpenAquaTheme.colors
     val metrics = OpenAquaTheme.metrics
-
     val tempColor = targetType.color(tempCelsius)
+    val isDisconnected = tempCelsius == null
+    val fillFraction = targetType.progressFraction(tempCelsius)
     val tempText =
         tempCelsius?.let {
             stringResource(Res.string.sensor_temp_short_value, "%.1f".format(it))
         } ?: stringResource(Res.string.sensor_temp_disconnected)
 
-    val fillFraction = targetType.progressFraction(tempCelsius)
+    var menuExpanded by remember { mutableStateOf(false) }
 
-    Column(
+    Box(
         modifier =
             modifier
-                .width(180.dp)
-                .clip(RoundedCornerShape(metrics.radiusSmall))
+                .width(280.dp)
+                .height(100.dp)
+                .clip(RoundedCornerShape(metrics.radiusMedium))
                 .background(colors.surfaceHigh)
-                .border(metrics.strokeThin, colors.borderOutline, RoundedCornerShape(metrics.radiusSmall))
-                .padding(10.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+                .gaugeProgress(
+                    fraction = fillFraction,
+                    color = tempColor,
+                    leadingEdgeAlpha = 0.65f,
+                ).border(
+                    metrics.strokeThin,
+                    colors.borderOutline,
+                    RoundedCornerShape(metrics.radiusMedium),
+                ).padding(horizontal = 14.dp, vertical = 12.dp),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Top,
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.SpaceBetween,
         ) {
-            Text(
-                text = sensor.name,
-                color = colors.textSecondary,
-                fontSize = 12.sp,
-                lineHeight = 15.sp,
-                fontWeight = FontWeight.Medium,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f),
-            )
+            // Top row: Sensor Name (flexible, up to 2 lines) + 3-dots kebab menu
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top,
+            ) {
+                Text(
+                    text = sensor.name,
+                    color = colors.textPrimary,
+                    fontSize = 15.sp,
+                    lineHeight = 19.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f).padding(end = 6.dp),
+                )
 
-            var menuExpanded by remember { mutableStateOf(false) }
-            var subMenuExpanded by remember { mutableStateOf(false) }
-            Spacer(modifier = Modifier.width(4.dp))
-            Box {
-                Box(
-                    modifier =
-                        Modifier
-                            .size(28.dp)
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(if (menuExpanded) colors.surfaceContainer else Color.Transparent)
-                            .clickable {
-                                menuExpanded = true
-                                subMenuExpanded = false
-                            },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.MoreVert,
-                        contentDescription = stringResource(Res.string.sensor_options),
-                        tint = if (menuExpanded) colors.primaryBright else colors.textSecondary,
-                        modifier = Modifier.size(18.dp),
-                    )
-                }
-
-                OpenAquaDropdownMenu(
-                    expanded = menuExpanded,
-                    onDismissRequest = {
-                        menuExpanded = false
-                        subMenuExpanded = false
-                    },
-                ) {
-                    OpenAquaDropdownHeader(
-                        text = stringResource(Res.string.sensor_settings_menu_title),
-                    )
-
-                    OpenAquaDropdownSubmenuItem(
-                        text = stringResource(Res.string.sensor_type_set),
-                        expanded = subMenuExpanded,
-                        onExpandedChange = { subMenuExpanded = it },
-                        onDismissRequest = {
-                            subMenuExpanded = false
-                            menuExpanded = false
-                        },
+                // 3-dots button (kebab menu)
+                Box {
+                    Box(
+                        modifier =
+                            Modifier
+                                .size(24.dp)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(if (menuExpanded) colors.surfaceContainer else Color.Transparent)
+                                .clickable { menuExpanded = true },
+                        contentAlignment = Alignment.Center,
                     ) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = stringResource(Res.string.sensor_options),
+                            tint = if (menuExpanded) colors.primaryBright else colors.textMuted,
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
+
+                    OpenAquaDropdownMenu(
+                        expanded = menuExpanded,
+                        onDismissRequest = { menuExpanded = false },
+                    ) {
+                        OpenAquaDropdownHeader(
+                            text = stringResource(Res.string.sensor_type_set),
+                        )
                         SensorTargetType.entries.forEach { type ->
                             val isSelected = type == targetType
                             OpenAquaDropdownMenuItem(
@@ -571,7 +565,7 @@ private fun HostSensorTile(
                                                 SensorTargetType.DIE -> stringResource(Res.string.sensor_type_die)
                                                 SensorTargetType.WATER -> stringResource(Res.string.sensor_type_water)
                                             },
-                                        fontSize = 13.sp,
+                                        fontSize = 15.sp,
                                         color = if (isSelected) colors.primaryBright else colors.textPrimary,
                                         fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
                                     )
@@ -590,7 +584,6 @@ private fun HostSensorTile(
                                 },
                                 onClick = {
                                     onSetTargetType(type)
-                                    subMenuExpanded = false
                                     menuExpanded = false
                                 },
                                 isSelected = isSelected,
@@ -599,43 +592,33 @@ private fun HostSensorTile(
                     }
                 }
             }
-        }
 
-        Text(
-            text = tempText,
-            color = if (tempCelsius != null) tempColor else colors.textMuted,
-            fontSize = 18.sp,
-            lineHeight = 22.sp,
-            fontWeight = FontWeight.Bold,
-            fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
-        )
+            // Bottom row: Temperature Reading + Sensor ID
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Bottom,
+            ) {
+                Text(
+                    text = tempText,
+                    color = if (!isDisconnected) tempColor else colors.textMuted,
+                    fontSize = 19.sp,
+                    lineHeight = 23.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
 
-        Text(
-            text = sensor.id.value.substringAfter(":"),
-            color = colors.textMuted,
-            fontSize = 10.sp,
-            lineHeight = 13.sp,
-            fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-        )
-
-// Mini temperature bar
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .height(3.dp)
-                    .clip(RoundedCornerShape(1.5.dp))
-                    .background(colors.surfaceContainer),
-        ) {
-            if (fillFraction > 0f) {
-                Box(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth(fillFraction)
-                            .fillMaxHeight()
-                            .background(tempColor),
+                Text(
+                    text = sensor.id.value.substringAfter(":"),
+                    color = colors.textMuted,
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp,
+                    fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(start = 8.dp),
                 )
             }
         }
