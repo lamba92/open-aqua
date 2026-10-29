@@ -90,8 +90,9 @@ fun DeviceDrawerScaffold(
                             .padding(horizontal = 12.dp, vertical = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
+                    val displayName = device.name.removePrefix("Aquacomputer").trim()
                     Text(
-                        text = device.name,
+                        text = displayName,
                         color = TextPrimary,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
