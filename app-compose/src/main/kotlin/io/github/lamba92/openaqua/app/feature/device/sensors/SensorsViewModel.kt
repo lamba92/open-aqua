@@ -54,13 +54,13 @@ class SensorsViewModel(
                 }.distinctUntilChanged()
 
         combine(
-            cacheService.getDeviceStateFlow(deviceId),
+            cacheService.getAquaDeviceStateFlow(deviceId),
             preferencesFlow,
         ) { deviceState, preferences ->
             state.update { current ->
                 when (deviceState) {
-                    is DeviceState.Connecting, is DeviceState.Error -> SensorsUiState.Loading
-                    is DeviceState.Ready -> {
+                    is DeviceState.Aqua.Connecting, is DeviceState.Aqua.Error -> SensorsUiState.Loading
+                    is DeviceState.Aqua.Ready -> {
                         val sensors = deviceState.telemetry.sensors.toSensorItems(deviceState.config.sensorOffsets, preferences.storedData)
 
                         if (current is SensorsUiState.Ready) {

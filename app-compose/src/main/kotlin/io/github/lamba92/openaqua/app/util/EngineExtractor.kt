@@ -4,8 +4,13 @@ import java.nio.file.Path
 import kotlin.io.path.createTempDirectory
 import kotlin.io.path.writeBytes
 
+data class ExtractedEngines(
+    val deviceEngine: Path,
+    val hostEngine: Path,
+)
+
 object EngineExtractor {
-    suspend fun extract(): Path {
+    suspend fun extract(): ExtractedEngines {
         val os = System.getProperty("os.name").lowercase()
         val arch = System.getProperty("os.arch").lowercase()
 
@@ -15,20 +20,35 @@ object EngineExtractor {
         val isX64 = arch == "x86_64" || arch == "amd64" || arch == "x64"
         val isArm64 = arch == "aarch64" || arch == "arm64"
 
-        val resourceFileName =
+        val targetSuffix =
             when {
-                isLinux && isX64 -> "open-aqua-device-engine-linux-x64"
-                isLinux && isArm64 -> "open-aqua-device-engine-linux-arm64"
-                isWindows && isX64 -> "open-aqua-device-engine-windows-x64.exe"
-                isMac && isArm64 -> "open-aqua-device-engine-macos-arm64"
-                isMac && isX64 -> "open-aqua-device-engine-macos-x64"
+                isLinux && isX64 -> "linux-x64"
+                isLinux && isArm64 -> "linux-arm64"
+                isWindows && isX64 -> "windows-x64.exe"
+                isMac && isArm64 -> "macos-arm64"
+                isMac && isX64 -> "macos-x64"
                 else -> error("Unsupported operating system or architecture: os=$os, arch=$arch")
             }
 
-        val tempDir = createTempDirectory("open-aqua-device-engine")
+        val deviceBinary = extractBinary("open-aqua-device-engine", isWindows, targetSuffix)
+        val hostBinary = extractBinary("open-aqua-host-engine", isWindows, targetSuffix)
+
+        return ExtractedEngines(
+            deviceEngine = deviceBinary,
+            hostEngine = hostBinary,
+        )
+    }
+
+    private fun extractBinary(
+        prefix: String,
+        isWindows: Boolean,
+        targetSuffix: String,
+    ): Path {
+        val resourceFileName = "$prefix-$targetSuffix"
+        val tempDir = createTempDirectory(prefix)
         tempDir.toFile().deleteOnExit()
 
-        val binaryName = if (isWindows) "open-aqua-device-engine.exe" else "open-aqua-device-engine"
+        val binaryName = if (isWindows) "$prefix.exe" else prefix
         val targetExecutable = tempDir.resolve(binaryName)
         targetExecutable.toFile().deleteOnExit()
 

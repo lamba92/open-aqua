@@ -13,6 +13,7 @@ import io.github.lamba92.openaqua.app.feature.settings.SettingsViewModel
 import io.github.lamba92.openaqua.app.repository.AppDataRepository
 import io.github.lamba92.openaqua.app.repository.DeviceDataCacheService
 import io.github.lamba92.openaqua.app.repository.OpenAquaDeviceEngineApi
+import io.github.lamba92.openaqua.app.repository.OpenAquaHostEngineApi
 import io.github.lamba92.openaqua.model.device.DeviceId
 import org.kodein.di.DI
 import org.kodein.di.bindMultiton
@@ -22,13 +23,21 @@ import org.kodein.di.instance
 import java.nio.file.Path
 
 fun createAppModule(
-    enginePath: Path,
+    deviceEnginePath: Path,
+    hostEnginePath: Path,
     scopeProvider: CoroutineScopeProvider = DefaultCoroutineScopeProvider(),
 ) = DI.Module("appModule") {
     bindSingleton<CoroutineScopeProvider> { scopeProvider }
-    bindSingleton<OpenAquaDeviceEngineApi> { OpenAquaDeviceEngineApi(enginePath = enginePath) }
+    bindSingleton<OpenAquaDeviceEngineApi> { OpenAquaDeviceEngineApi(enginePath = deviceEnginePath) }
+    bindSingleton<OpenAquaHostEngineApi> { OpenAquaHostEngineApi(enginePath = hostEnginePath) }
     bindSingleton { AppDataRepository(coroutineScopeProvider = instance()) }
-    bindSingleton { DeviceDataCacheService(openAquaDeviceEngineApi = instance(), coroutineScopeProvider = instance()) }
+    bindSingleton {
+        DeviceDataCacheService(
+            openAquaDeviceEngineApi = instance(),
+            openAquaHostEngineApi = instance(),
+            coroutineScopeProvider = instance(),
+        )
+    }
     bindSingleton { DeviceNavViewModel(dataCacheService = instance(), scopeProvider = instance()) }
     bindSingleton { SettingsViewModel(appDataRepository = instance(), scopeProvider = instance()) }
     bindMultiton { deviceId: DeviceId ->
@@ -57,11 +66,12 @@ fun createAppModule(
 }
 
 fun createOpenAquaDI(
-    enginePath: Path,
+    deviceEnginePath: Path,
+    hostEnginePath: Path,
     scopeProvider: CoroutineScopeProvider = DefaultCoroutineScopeProvider(),
 ): DI =
     DI {
-        import(createAppModule(enginePath, scopeProvider))
+        import(createAppModule(deviceEnginePath, hostEnginePath, scopeProvider))
     }
 
 val LocalDI = staticCompositionLocalOf<DI> { error("No DI container provided") }

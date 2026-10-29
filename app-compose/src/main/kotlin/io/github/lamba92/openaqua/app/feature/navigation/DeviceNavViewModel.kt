@@ -23,59 +23,61 @@ class DeviceNavViewModel(
     override val viewModelScope: CoroutineScope = scopeProvider.getScope()
 
     override val state: StateFlow<DeviceNavState>
-        field = MutableStateFlow<DeviceNavState>(DeviceNavState.Loading)
+        field = MutableStateFlow(DeviceNavState())
 
     override val effects: SharedFlow<DeviceNavEffect>
-        field = MutableSharedFlow<DeviceNavEffect>()
+        field = MutableSharedFlow()
 
     init {
         dataCacheService.state
-            .onEach { cacheState ->
-                state.update { currentState -> currentState.updateWith(cacheState) }
+            .onEach { deviceStates ->
+                state.update { currentState ->
+                    currentState.copy(
+                        host = deviceStates.filterIsInstance<DeviceState.Host>().firstOrNull() ?: DeviceState.Host.Loading,
+                        devices = deviceStates.filterIsInstance<DeviceState.Aqua>(),
+                        selectedItem = currentState.selectedItem?.revalidate(deviceStates.filterIsInstance<DeviceState.Aqua>()),
+                    )
+                }
             }.launchIn(viewModelScope)
     }
 
     override fun onEvent(event: DeviceNavEvent) {
         when (event) {
+            DeviceNavEvent.SelectHost -> selectHost()
             is DeviceNavEvent.SelectDevice -> selectDevice(event.deviceId)
             is DeviceNavEvent.SelectTab -> selectTab(event.tab)
             DeviceNavEvent.SelectSettings -> selectSettings()
         }
     }
 
+    private fun selectHost() {
+        state.update { currentState ->
+            currentState.copy(selectedItem = DeviceNavState.SelectedItem.Host)
+        }
+    }
+
     private fun selectDevice(deviceId: DeviceId) {
         state.update { currentState ->
-            when (currentState) {
-                is DeviceNavState.Ready -> {
-                    val newTab =
-                        when (val currentItem = currentState.selectedItem) {
-                            is DeviceNavState.Ready.SelectedItem.Device if currentItem.deviceId == deviceId
-                            -> currentItem.selectedTab
-
-                            else -> CommonDeviceTab.DEVICE_INFO
-                        }
-                    currentState.copy(
-                        selectedItem =
-                            DeviceNavState.Ready.SelectedItem.Device(
-                                deviceId = deviceId,
-                                selectedTab = newTab,
-                            ),
-                    )
-                }
-                else -> currentState
-            }
+            currentState.copy(
+                selectedItem =
+                    DeviceNavState.SelectedItem.Device(
+                        deviceId = deviceId,
+                        selectedTab =
+                            when (val currentSelectedItem = currentState.selectedItem) {
+                                is DeviceNavState.SelectedItem.Device if currentSelectedItem.deviceId == deviceId ->
+                                    currentSelectedItem.selectedTab
+                                else -> CommonDeviceTab.DEVICE_INFO
+                            },
+                    ),
+            )
         }
     }
 
     private fun selectTab(tab: CommonDeviceTab) {
         state.update { currentState ->
-            when (currentState) {
-                is DeviceNavState.Ready ->
-                    when (val currentItem = currentState.selectedItem) {
-                        is DeviceNavState.Ready.SelectedItem.Device ->
-                            currentState.copy(selectedItem = currentItem.copy(selectedTab = tab))
-                        else -> currentState
-                    }
+            when (val currentItem = currentState.selectedItem) {
+                is DeviceNavState.SelectedItem.Device ->
+                    currentState.copy(selectedItem = currentItem.copy(selectedTab = tab))
                 else -> currentState
             }
         }
@@ -83,51 +85,22 @@ class DeviceNavViewModel(
 
     private fun selectSettings() {
         state.update { currentState ->
-            when (currentState) {
-                is DeviceNavState.Ready ->
-                    currentState.copy(
-                        selectedItem = DeviceNavState.Ready.SelectedItem.Settings,
-                    )
-                else -> currentState
-            }
+            currentState.copy(
+                selectedItem = DeviceNavState.SelectedItem.Settings,
+            )
         }
     }
 }
 
-private fun DeviceNavState.updateWith(cacheState: DeviceDataCacheService.State): DeviceNavState =
-    when (cacheState) {
-        DeviceDataCacheService.State.Loading -> DeviceNavState.Loading
-        DeviceDataCacheService.State.NoDevices -> DeviceNavState.NoDevices
-        is DeviceDataCacheService.State.Ready -> updateWith(cacheState.deviceStates)
-    }
-
-private fun DeviceNavState.updateWith(devices: List<DeviceState>): DeviceNavState.Ready =
+private fun DeviceNavState.SelectedItem.revalidate(aquaDevices: List<DeviceState.Aqua>): DeviceNavState.SelectedItem? =
     when (this) {
-        is DeviceNavState.Ready ->
-            copy(
-                devices = devices,
-                selectedItem = selectedItem.revalidate(devices),
-            )
-        else ->
-            DeviceNavState.Ready(
-                devices = devices,
-                selectedItem =
-                    DeviceNavState.Ready.SelectedItem.Device(
-                        deviceId = devices.first().device.id,
-                    ),
-            )
-    }
-
-private fun DeviceNavState.Ready.SelectedItem.revalidate(devices: List<DeviceState>): DeviceNavState.Ready.SelectedItem =
-    when (this) {
-        is DeviceNavState.Ready.SelectedItem.Device -> {
-            val validDeviceId =
-                if (devices.any { it.device.id == deviceId }) {
-                    deviceId
-                } else {
-                    devices.first().device.id
-                }
-            copy(deviceId = validDeviceId)
+        is DeviceNavState.SelectedItem.Device -> {
+            when {
+                aquaDevices.any { it.device.id == deviceId } -> this
+                else -> null
+            }
         }
-        DeviceNavState.Ready.SelectedItem.Settings -> this
+        DeviceNavState.SelectedItem.Host,
+        DeviceNavState.SelectedItem.Settings,
+        -> this
     }

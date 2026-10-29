@@ -11,6 +11,10 @@ import io.github.lamba92.openaqua.model.device.DeviceId
 import io.github.lamba92.openaqua.model.device.DeviceRegistry
 import io.github.lamba92.openaqua.model.device.DeviceTelemetry
 import io.github.lamba92.openaqua.model.every
+import io.github.lamba92.openaqua.model.host.HostInfo
+import io.github.lamba92.openaqua.model.host.HostSensorId
+import io.github.lamba92.openaqua.model.host.HostSensorTelemetry
+import io.github.lamba92.openaqua.model.host.HostTelemetry
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
@@ -18,6 +22,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.onStart
@@ -29,6 +34,7 @@ import kotlin.time.Duration.Companion.seconds
 
 class DeviceDataCacheService(
     private val openAquaDeviceEngineApi: OpenAquaDeviceEngineApi,
+    private val openAquaHostEngineApi: OpenAquaHostEngineApi,
     coroutineScopeProvider: CoroutineScopeProvider,
     pollingIntervals: PollingIntervals = PollingIntervals.DEFAULT,
 ) : OpenAquaDeviceFlasher by openAquaDeviceEngineApi {
@@ -41,58 +47,102 @@ class DeviceDataCacheService(
         }
     }
 
-    sealed interface State {
-        data object Loading : State
-
-        @JvmInline
-        value class Ready(
-            val deviceStates: List<DeviceState>,
-        ) : State
-
-        data object NoDevices : State
-    }
-
     private val coroutineScope = coroutineScopeProvider.getScope()
 
-    val state: StateFlow<State> =
-        every(pollingIntervals.deviceConfig) { openAquaDeviceEngineApi.listDevices().devices }
-            .combineByKey(
-                keySelector = { it.id },
-                itemFlow = { device -> device.getStateFlow(pollingIntervals) },
-            ).map { if (it.isEmpty()) State.NoDevices else State.Ready(it) }
-            .throttleLatest(pollingIntervals.telemetry)
+    private fun getHostFlow(): Flow<DeviceState.Host> =
+        flow {
+            val info = openAquaHostEngineApi.getHostInfo()
+            emit(DeviceState.Host.Connecting(info))
+            openAquaHostEngineApi
+                .getTelemetryStream()
+                .map { telemetry ->
+                    DeviceState.Host.Ready(info = info, telemetry = telemetry)
+                }.catch { cause ->
+                    System.err.println("[DeviceDataCacheService] Host engine telemetry stream error: ${cause.message}")
+                    cause.printStackTrace()
+                    emit(
+                        DeviceState.Host.Error(
+                            info = info,
+                            errorType = cause.toDeviceErrorType(),
+                            message = cause.message,
+                        ),
+                    )
+                }.collect { emit(it) }
+        }.catch { cause ->
+            System.err.println("[DeviceDataCacheService] Failed to read host info: ${cause.message}")
+            cause.printStackTrace()
+            emit(
+                DeviceState.Host.Error(
+                    info = null,
+                    errorType = cause.toDeviceErrorType(),
+                    message = cause.message,
+                ),
+            )
+        }
+
+    val state: StateFlow<List<DeviceState>> =
+        combine(
+            getHostFlow(),
+            every(pollingIntervals.deviceConfig) { openAquaDeviceEngineApi.listDevices().devices }
+                .combineByKey(
+                    keySelector = { it.id },
+                    itemFlow = { device -> device.getStateFlow(pollingIntervals) },
+                ),
+        ) { host, aquaDevices ->
+            listOf(host) + aquaDevices
+        }.throttleLatest(pollingIntervals.telemetry)
             .stateIn(
                 scope = coroutineScope,
                 started = SharingStarted.Eagerly,
-                initialValue = State.Loading,
+                initialValue = listOf(DeviceState.Host.Loading),
             )
 
-    fun getDeviceStateFlow(deviceId: DeviceId): Flow<DeviceState> =
-        state
-            .filterIsInstance<State.Ready>()
-            .mapNotNull { ready -> ready.deviceStates.firstOrNull { it.device.id == deviceId } }
+    /**
+     * Real-time stream of all connected host sensor temperatures mapped by HostSensorId.
+     * Centralized telemetry access for UI and virtual sensor feeds.
+     */
+    val hostTemperatures: Flow<Map<HostSensorId, Double>> =
+        getHostStateFlow()
+            .filterIsInstance<DeviceState.Host.Ready>()
+            .map { ready ->
+                ready.telemetry.sensors
+                    .filterIsInstance<HostSensorTelemetry.Connected>()
+                    .associate { it.id to it.tempCelsius }
+            }
 
-    fun getReadyDeviceStateFlow(deviceId: DeviceId): Flow<DeviceState.Ready> =
-        getDeviceStateFlow(deviceId)
-            .filterIsInstance<DeviceState.Ready>()
+    fun getHostStateFlow(): Flow<DeviceState.Host> =
+        state.mapNotNull { list ->
+            list.filterIsInstance<DeviceState.Host>().firstOrNull()
+        }
 
-    private fun DetectedHardwareDevice.getStateFlow(pollingIntervals: PollingIntervals): Flow<DeviceState> {
+    fun getAquaDeviceStateFlow(deviceId: DeviceId): Flow<DeviceState.Aqua> =
+        state.mapNotNull { list ->
+            list
+                .filterIsInstance<DeviceState.Aqua>()
+                .firstOrNull { it.device.id == deviceId }
+        }
+
+    fun getReadyAquaDeviceStateFlow(deviceId: DeviceId): Flow<DeviceState.Aqua.Ready> =
+        getAquaDeviceStateFlow(deviceId)
+            .filterIsInstance<DeviceState.Aqua.Ready>()
+
+    private fun DetectedHardwareDevice.getStateFlow(pollingIntervals: PollingIntervals): Flow<DeviceState.Aqua> {
         val descriptor = DeviceRegistry.findByType(type)
-        return combine<DeviceConfig, DeviceTelemetry, DeviceState>(
+        return combine<DeviceConfig, DeviceTelemetry, DeviceState.Aqua>(
             every(pollingIntervals.deviceConfig) { openAquaDeviceEngineApi.getDeviceConfig(id) },
             openAquaDeviceEngineApi.getTelemetryStream(id),
         ) { config, telemetry ->
-            DeviceState.Ready(
+            DeviceState.Aqua.Ready(
                 device = this@getStateFlow,
                 descriptor = descriptor,
                 telemetry = telemetry,
                 config = config,
             )
-        }.onStart { emit(DeviceState.Connecting(this@getStateFlow, descriptor)) }
+        }.onStart { emit(DeviceState.Aqua.Connecting(this@getStateFlow, descriptor)) }
             .catch { cause ->
                 System.err.println("[DeviceDataCacheService] Error reading device '$id' ($name): ${cause.message}")
                 cause.printStackTrace()
-                emit(DeviceState.Error(this@getStateFlow, descriptor, cause.toDeviceErrorType()))
+                emit(DeviceState.Aqua.Error(this@getStateFlow, descriptor, cause.toDeviceErrorType()))
             }
     }
 }
@@ -116,24 +166,45 @@ sealed interface DeviceErrorType {
 }
 
 sealed interface DeviceState {
-    val device: DetectedHardwareDevice
-    val descriptor: DeviceDescriptor
+    sealed interface Host : DeviceState {
+        data object Loading : Host
 
-    data class Connecting(
-        override val device: DetectedHardwareDevice,
-        override val descriptor: DeviceDescriptor,
-    ) : DeviceState
+        data class Connecting(
+            val info: HostInfo,
+        ) : Host
 
-    data class Error(
-        override val device: DetectedHardwareDevice,
-        override val descriptor: DeviceDescriptor,
-        val errorType: DeviceErrorType,
-    ) : DeviceState
+        data class Ready(
+            val info: HostInfo,
+            val telemetry: HostTelemetry,
+        ) : Host
 
-    data class Ready(
-        override val device: DetectedHardwareDevice,
-        override val descriptor: DeviceDescriptor,
-        val telemetry: DeviceTelemetry,
-        val config: DeviceConfig,
-    ) : DeviceState
+        data class Error(
+            val info: HostInfo? = null,
+            val errorType: DeviceErrorType,
+            val message: String? = null,
+        ) : Host
+    }
+
+    sealed interface Aqua : DeviceState {
+        val device: DetectedHardwareDevice
+        val descriptor: DeviceDescriptor
+
+        data class Connecting(
+            override val device: DetectedHardwareDevice,
+            override val descriptor: DeviceDescriptor,
+        ) : Aqua
+
+        data class Error(
+            override val device: DetectedHardwareDevice,
+            override val descriptor: DeviceDescriptor,
+            val errorType: DeviceErrorType,
+        ) : Aqua
+
+        data class Ready(
+            override val device: DetectedHardwareDevice,
+            override val descriptor: DeviceDescriptor,
+            val telemetry: DeviceTelemetry,
+            val config: DeviceConfig,
+        ) : Aqua
+    }
 }

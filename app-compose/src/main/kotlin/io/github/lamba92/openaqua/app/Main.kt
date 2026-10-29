@@ -1,6 +1,8 @@
 package io.github.lamba92.openaqua.app
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -8,9 +10,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Warning
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material.icons.outlined.TouchApp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -20,6 +22,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -34,6 +39,7 @@ import io.github.lamba92.openaqua.app.di.LocalDI
 import io.github.lamba92.openaqua.app.di.createOpenAquaDI
 import io.github.lamba92.openaqua.app.di.rememberInstance
 import io.github.lamba92.openaqua.app.feature.device.DeviceScreen
+import io.github.lamba92.openaqua.app.feature.host.HostScreen
 import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavEvent
 import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavState
 import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavViewModel
@@ -50,10 +56,9 @@ import io.github.lamba92.openaqua.theme.ThemePalette
 import kotlinx.coroutines.runBlocking
 import open_aqua.app_compose.generated.resources.Res
 import open_aqua.app_compose.generated.resources.ic_app_icon
-import open_aqua.app_compose.generated.resources.no_devices_found
-import open_aqua.app_compose.generated.resources.scanning_hardware
+import open_aqua.app_compose.generated.resources.select_a_device_subtitle
+import open_aqua.app_compose.generated.resources.select_a_device_title
 import open_aqua.app_compose.generated.resources.window_title
-import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.kodein.di.instance
@@ -61,9 +66,9 @@ import java.awt.Taskbar
 import javax.imageio.ImageIO
 
 fun main() {
-    val enginePath = runBlocking { EngineExtractor.extract() }
+    val engines = runBlocking { EngineExtractor.extract() }
     val scopeProvider = DefaultCoroutineScopeProvider()
-    val di = createOpenAquaDI(enginePath, scopeProvider)
+    val di = createOpenAquaDI(engines.deviceEngine, engines.hostEngine, scopeProvider)
     val appDataRepository by di.instance<AppDataRepository>()
 
     configureTaskbarIcon()
@@ -131,7 +136,6 @@ private fun OpenAquaThemedApp(storedData: AppStoredData) {
     }
 }
 
-@OptIn(ExperimentalResourceApi::class)
 private fun configureTaskbarIcon() {
     runCatching {
         if (Taskbar.isTaskbarSupported()) {
@@ -157,83 +161,66 @@ fun OpenAquaApp(navViewModel: DeviceNavViewModel = rememberInstance()) {
                 .fillMaxSize()
                 .background(OpenAquaTheme.colors.background),
     ) {
-        when (val state = navState) {
-            DeviceNavState.Loading -> LoadingIndicator()
-            DeviceNavState.NoDevices -> NoDevicesDetected()
-            is DeviceNavState.Ready -> DeviceReady(state, navViewModel)
+        DeviceNavigationRailScaffold(
+            state = navState,
+            onEvent = navViewModel::onEvent,
+        ) {
+            when (val item = navState.selectedItem) {
+                null -> SelectADeviceScreen()
+                DeviceNavState.SelectedItem.Settings ->
+                    SettingsScreen(viewModel = rememberInstance())
+                DeviceNavState.SelectedItem.Host ->
+                    HostScreen(hostState = navState.host)
+                is DeviceNavState.SelectedItem.Device ->
+                    DeviceScreen(
+                        deviceId = item.deviceId,
+                        selectedTab = item.selectedTab,
+                        onSelectTab = { navViewModel.onEvent(DeviceNavEvent.SelectTab(it)) },
+                    )
+            }
         }
     }
 }
 
 @Composable
-private fun DeviceReady(
-    state: DeviceNavState.Ready,
-    navViewModel: DeviceNavViewModel,
-) {
-    DeviceNavigationRailScaffold(
-        state = state,
-        onEvent = navViewModel::onEvent,
-    ) {
-        when (val item = state.selectedItem) {
-            DeviceNavState.Ready.SelectedItem.Settings ->
-                SettingsScreen(
-                    viewModel = rememberInstance(),
-                )
-            is DeviceNavState.Ready.SelectedItem.Device ->
-                DeviceScreen(
-                    deviceId = item.deviceId,
-                    selectedTab = item.selectedTab,
-                    onSelectTab = { navViewModel.onEvent(DeviceNavEvent.SelectTab(it)) },
-                )
-        }
-    }
-}
+fun SelectADeviceScreen(modifier: Modifier = Modifier) {
+    val colors = OpenAquaTheme.colors
+    val metrics = OpenAquaTheme.metrics
 
-@Composable
-private fun NoDevicesDetected() {
     Box(
-        modifier = Modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize().padding(metrics.spacingXxl),
         contentAlignment = Alignment.Center,
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(metrics.spacingMd),
+            modifier =
+                Modifier
+                    .clip(RoundedCornerShape(metrics.radiusLarge))
+                    .background(colors.surfaceLow)
+                    .border(metrics.strokeThin, colors.borderOutline, RoundedCornerShape(metrics.radiusLarge))
+                    .padding(metrics.spacingXxl),
         ) {
             Icon(
-                imageVector = Icons.Outlined.Warning,
+                imageVector = Icons.Outlined.TouchApp,
                 contentDescription = null,
-                tint = OpenAquaTheme.colors.statusWarning,
+                tint = colors.primaryBright,
                 modifier = Modifier.size(48.dp),
             )
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = stringResource(Res.string.no_devices_found),
-                color = OpenAquaTheme.colors.textPrimary,
-                fontSize = 16.sp,
+                text = stringResource(Res.string.select_a_device_title),
+                color = colors.textPrimary,
+                fontSize = 18.sp,
+                lineHeight = 24.sp,
+                fontWeight = FontWeight.Bold,
             )
-        }
-    }
-}
-
-@Composable
-private fun LoadingIndicator() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(16.dp),
-        ) {
-            CircularProgressIndicator(
-                color = OpenAquaTheme.colors.primaryBright,
-                modifier = Modifier.size(48.dp),
-            )
-            Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = stringResource(Res.string.scanning_hardware),
-                color = OpenAquaTheme.colors.textSecondary,
-                fontSize = 14.sp,
+                text = stringResource(Res.string.select_a_device_subtitle),
+                color = colors.textSecondary,
+                fontSize = 13.sp,
+                lineHeight = 18.sp,
+                textAlign = TextAlign.Center,
             )
         }
     }

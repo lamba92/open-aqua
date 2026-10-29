@@ -78,7 +78,7 @@ import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun DeviceInfoContent(
-    deviceState: DeviceState.Ready,
+    deviceState: DeviceState.Aqua,
     modifier: Modifier = Modifier,
     scrollState: ScrollState = rememberScrollState(),
 ) {

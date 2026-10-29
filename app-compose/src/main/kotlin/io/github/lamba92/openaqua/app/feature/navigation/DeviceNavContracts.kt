@@ -4,27 +4,26 @@ import io.github.lamba92.openaqua.app.feature.device.common.CommonDeviceTab
 import io.github.lamba92.openaqua.app.repository.DeviceState
 import io.github.lamba92.openaqua.model.device.DeviceId
 
-sealed interface DeviceNavState {
-    data object Loading : DeviceNavState
+data class DeviceNavState(
+    val host: DeviceState.Host = DeviceState.Host.Loading,
+    val devices: List<DeviceState.Aqua> = emptyList(),
+    val selectedItem: SelectedItem? = null,
+) {
+    sealed interface SelectedItem {
+        data object Host : SelectedItem
 
-    data object NoDevices : DeviceNavState
+        data class Device(
+            val deviceId: DeviceId,
+            val selectedTab: CommonDeviceTab = CommonDeviceTab.DEVICE_INFO,
+        ) : SelectedItem
 
-    data class Ready(
-        val devices: List<DeviceState>,
-        val selectedItem: SelectedItem,
-    ) : DeviceNavState {
-        sealed interface SelectedItem {
-            data class Device(
-                val deviceId: DeviceId,
-                val selectedTab: CommonDeviceTab = CommonDeviceTab.DEVICE_INFO,
-            ) : SelectedItem
-
-            data object Settings : SelectedItem
-        }
+        data object Settings : SelectedItem
     }
 }
 
 sealed interface DeviceNavEvent {
+    data object SelectHost : DeviceNavEvent
+
     data class SelectDevice(
         val deviceId: DeviceId,
     ) : DeviceNavEvent

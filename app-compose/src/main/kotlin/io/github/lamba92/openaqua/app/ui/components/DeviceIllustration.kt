@@ -47,7 +47,6 @@ fun DeviceIllustration(
                 DeviceType.OCTO -> drawOctoBoard()
                 DeviceType.QUADRO -> drawQuadroBoard()
                 DeviceType.D5_NEXT -> drawD5NextPump()
-                else -> drawGenericBoard()
             }
         }
         // Overlay label in bottom corner

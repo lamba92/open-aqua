@@ -58,13 +58,13 @@ class FansViewModel(
                 }.distinctUntilChanged()
 
         combine(
-            cacheService.getDeviceStateFlow(deviceId),
+            cacheService.getAquaDeviceStateFlow(deviceId),
             preferencesFlow,
         ) { deviceState, preferences ->
             state.update { current ->
                 when (deviceState) {
-                    is DeviceState.Connecting, is DeviceState.Error -> FansUiState.Loading
-                    is DeviceState.Ready -> {
+                    is DeviceState.Aqua.Connecting, is DeviceState.Aqua.Error -> FansUiState.Loading
+                    is DeviceState.Aqua.Ready -> {
                         val fans = deviceState.telemetry.fans.toPwmFanItems(deviceState.config.fans, preferences.storedData)
                         val sensors = deviceState.telemetry.sensors.toSensorItems(deviceState.config.sensorOffsets, preferences.storedData)
 
@@ -242,7 +242,7 @@ class FansViewModel(
                 }
 
                 viewModelScope.launch {
-                    val initialConfig = (cacheService.getDeviceStateFlow(deviceId).first() as? DeviceState.Ready)?.config
+                    val initialConfig = (cacheService.getAquaDeviceStateFlow(deviceId).first() as? DeviceState.Aqua.Ready)?.config
                     cacheService.flashConfig(
                         deviceId = deviceId,
                         config = FlashConfigRequest(fans = updates),
@@ -250,7 +250,7 @@ class FansViewModel(
 
                     // Await next config change from cacheService where updates are applied
                     cacheService
-                        .getReadyDeviceStateFlow(deviceId)
+                        .getReadyAquaDeviceStateFlow(deviceId)
                         .first { readyState -> readyState.config != initialConfig }
                     state.update { current ->
                         when (current) {

@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.update
 
 class DeviceViewModel(
     cacheService: DeviceDataCacheService,
@@ -29,22 +30,23 @@ class DeviceViewModel(
 
     init {
         cacheService
-            .getDeviceStateFlow(deviceId)
+            .getAquaDeviceStateFlow(deviceId)
             .onEach { deviceState ->
-                state.value =
+                state.update { currentState ->
                     when (deviceState) {
-                        is DeviceState.Connecting -> DeviceUiState.Loading
-                        is DeviceState.Error ->
+                        is DeviceState.Aqua.Connecting -> DeviceUiState.Loading
+                        is DeviceState.Aqua.Error ->
                             DeviceUiState.Error(
                                 device = deviceState.device,
                                 errorType = deviceState.errorType,
                             )
 
-                        is DeviceState.Ready ->
+                        is DeviceState.Aqua.Ready ->
                             DeviceUiState.Ready(
                                 deviceState = deviceState,
                             )
                     }
+                }
             }.launchIn(viewModelScope)
     }
 

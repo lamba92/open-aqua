@@ -13,7 +13,7 @@ sealed interface DeviceUiState {
     ) : DeviceUiState
 
     data class Ready(
-        val deviceState: DeviceState.Ready,
+        val deviceState: DeviceState.Aqua,
     ) : DeviceUiState
 }
 
