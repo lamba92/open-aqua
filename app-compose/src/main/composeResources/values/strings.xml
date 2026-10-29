@@ -240,4 +240,11 @@
     <string name="settings_reset_dialog_confirm">Reset data</string>
     <string name="curve_target_temp_range_error">Target temperature must be between %1°C and %2°C</string>
     <string name="curve_target_temp_explanation">The hardware device executes an autonomous closed-loop PID regulator directly on its microcontroller. Fan speed is continuously adjusted to stabilize the selected sensor at this target setpoint without requiring software or curve points.</string>
+
+    <!-- Sensor Options & Types -->
+    <string name="sensor_options">Sensor options</string>
+    <string name="sensor_settings_menu_title">Sensor settings</string>
+    <string name="sensor_type_set">Set sensor type</string>
+    <string name="sensor_type_die">Die</string>
+    <string name="sensor_type_water">Water</string>
 </resources>

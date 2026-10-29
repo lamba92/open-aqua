@@ -92,6 +92,24 @@ data class NavigationRailMetrics(
     val dividerWidth: Dp = 72.dp,
 )
 
+data class DropdownMenuMetrics(
+    val cornerRadius: Dp = 8.dp,
+    val borderWidth: Dp = 1.dp,
+    val headerPaddingHorizontal: Dp = 14.dp,
+    val headerPaddingTop: Dp = 8.dp,
+    val headerPaddingBottom: Dp = 4.dp,
+    val headerTextSize: TextUnit = 11.sp,
+    val headerLineHeight: TextUnit = 14.sp,
+    val itemPaddingHorizontal: Dp = 6.dp,
+    val itemPaddingVertical: Dp = 2.dp,
+    val itemCornerRadius: Dp = 8.dp,
+    val itemTextSize: TextUnit = 13.sp,
+    val itemLineHeight: TextUnit = 16.sp,
+    val itemIconSize: Dp = 16.dp,
+    val dividerPaddingHorizontal: Dp = 6.dp,
+    val dividerPaddingVertical: Dp = 4.dp,
+)
+
 data class AppMetrics(
     val scale: AppMetricsScale = AppMetricsScale.STANDARD,
     // Base Spacings
@@ -117,6 +135,7 @@ data class AppMetrics(
     val channelDetailHeader: ChannelDetailHeaderMetrics = ChannelDetailHeaderMetrics(),
     val featurePlaceholderBox: FeaturePlaceholderBoxMetrics = FeaturePlaceholderBoxMetrics(),
     val navigationRail: NavigationRailMetrics = NavigationRailMetrics(),
+    val dropdownMenu: DropdownMenuMetrics = DropdownMenuMetrics(),
 ) {
     companion object {
         val Compact =
@@ -159,6 +178,21 @@ data class AppMetrics(
                         statusDotSize = 7.dp,
                         dividerWidth = 60.dp,
                     ),
+                dropdownMenu =
+                    DropdownMenuMetrics(
+                        cornerRadius = 6.dp,
+                        headerPaddingHorizontal = 10.dp,
+                        headerPaddingTop = 6.dp,
+                        headerPaddingBottom = 3.dp,
+                        headerTextSize = 10.sp,
+                        headerLineHeight = 12.sp,
+                        itemPaddingHorizontal = 4.dp,
+                        itemPaddingVertical = 2.dp,
+                        itemCornerRadius = 6.dp,
+                        itemTextSize = 12.sp,
+                        itemLineHeight = 15.sp,
+                        itemIconSize = 14.dp,
+                    ),
             )
 
         val Standard =
@@ -171,6 +205,7 @@ data class AppMetrics(
                 channelDetailHeader = ChannelDetailHeaderMetrics(),
                 featurePlaceholderBox = FeaturePlaceholderBoxMetrics(),
                 navigationRail = NavigationRailMetrics(),
+                dropdownMenu = DropdownMenuMetrics(),
             )
 
         val Comfortable =
@@ -230,6 +265,21 @@ data class AppMetrics(
                         headerCornerRadius = 18.dp,
                         statusDotSize = 10.dp,
                         dividerWidth = 84.dp,
+                    ),
+                dropdownMenu =
+                    DropdownMenuMetrics(
+                        cornerRadius = 10.dp,
+                        headerPaddingHorizontal = 16.dp,
+                        headerPaddingTop = 10.dp,
+                        headerPaddingBottom = 6.dp,
+                        headerTextSize = 12.sp,
+                        headerLineHeight = 16.sp,
+                        itemPaddingHorizontal = 8.dp,
+                        itemPaddingVertical = 3.dp,
+                        itemCornerRadius = 10.dp,
+                        itemTextSize = 14.sp,
+                        itemLineHeight = 18.sp,
+                        itemIconSize = 18.dp,
                     ),
             )
 

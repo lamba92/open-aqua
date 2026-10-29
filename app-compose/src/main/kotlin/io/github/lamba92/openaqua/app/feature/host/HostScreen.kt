@@ -3,6 +3,7 @@ package io.github.lamba92.openaqua.app.feature.host
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,6 +23,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.DeveloperBoard
 import androidx.compose.material.icons.outlined.Devices
 import androidx.compose.material.icons.outlined.Memory
@@ -33,21 +36,33 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import io.github.lamba92.openaqua.app.di.rememberInstance
+import io.github.lamba92.openaqua.app.model.SensorTargetType
+import io.github.lamba92.openaqua.app.model.color
+import io.github.lamba92.openaqua.app.model.progressFraction
 import io.github.lamba92.openaqua.app.repository.DeviceState
 import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
+import io.github.lamba92.openaqua.app.ui.components.OpenAquaDropdownHeader
+import io.github.lamba92.openaqua.app.ui.components.OpenAquaDropdownMenu
+import io.github.lamba92.openaqua.app.ui.components.OpenAquaDropdownMenuItem
+import io.github.lamba92.openaqua.app.ui.components.OpenAquaDropdownSubmenuItem
 import io.github.lamba92.openaqua.app.ui.components.OpenAquaVerticalScrollbar
 import io.github.lamba92.openaqua.app.ui.components.ScreenHeader
 import io.github.lamba92.openaqua.app.ui.components.scrollFadingEdge
-import io.github.lamba92.openaqua.app.ui.components.sensorTemperatureColor
 import io.github.lamba92.openaqua.model.host.HostDevice
 import io.github.lamba92.openaqua.model.host.HostDeviceType
 import io.github.lamba92.openaqua.model.host.HostSensorDescriptor
@@ -65,13 +80,34 @@ import open_aqua.app_compose.generated.resources.host_status_connecting
 import open_aqua.app_compose.generated.resources.host_status_error
 import open_aqua.app_compose.generated.resources.host_telemetry_subtitle
 import open_aqua.app_compose.generated.resources.host_telemetry_title
+import open_aqua.app_compose.generated.resources.sensor_options
+import open_aqua.app_compose.generated.resources.sensor_settings_menu_title
 import open_aqua.app_compose.generated.resources.sensor_temp_disconnected
 import open_aqua.app_compose.generated.resources.sensor_temp_short_value
+import open_aqua.app_compose.generated.resources.sensor_type_die
+import open_aqua.app_compose.generated.resources.sensor_type_set
+import open_aqua.app_compose.generated.resources.sensor_type_water
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun HostScreen(
-    hostState: DeviceState.Host,
+    viewModel: HostViewModel = rememberInstance(),
+    modifier: Modifier = Modifier,
+    scrollState: ScrollState = rememberScrollState(),
+) {
+    val state by viewModel.state.collectAsState()
+    HostScreen(
+        state = state,
+        onEvent = viewModel::onEvent,
+        modifier = modifier,
+        scrollState = scrollState,
+    )
+}
+
+@Composable
+fun HostScreen(
+    state: HostState,
+    onEvent: (HostEvent) -> Unit,
     modifier: Modifier = Modifier,
     scrollState: ScrollState = rememberScrollState(),
 ) {
@@ -94,7 +130,7 @@ fun HostScreen(
                     title = stringResource(Res.string.host_telemetry_title),
                     subtitle = stringResource(Res.string.host_telemetry_subtitle),
                     trailingContent = {
-                        HostStatusBadge(hostState)
+                        HostStatusBadge(state.hostState)
                     },
                 )
             }
@@ -115,7 +151,7 @@ fun HostScreen(
                         height = 36.dp,
                     ),
         ) {
-            when (hostState) {
+            when (val host = state.hostState) {
                 DeviceState.Host.Loading -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
@@ -127,26 +163,33 @@ fun HostScreen(
                         )
                     }
                 }
+
                 is DeviceState.Host.Error -> {
-                    HostErrorContent(hostState)
+                    HostErrorContent(host)
                 }
+
                 is DeviceState.Host.Connecting -> {
                     HostContent(
-                        devices = hostState.info.devices,
+                        devices = host.info.devices,
                         telemetryMap = emptyMap(),
+                        state = state,
+                        onEvent = onEvent,
                         scrollState = scrollState,
                     )
                 }
+
                 is DeviceState.Host.Ready -> {
                     val telemetryMap =
-                        remember(hostState.telemetry) {
-                            hostState.telemetry.sensors
+                        remember(host.telemetry) {
+                            host.telemetry.sensors
                                 .filterIsInstance<HostSensorTelemetry.Connected>()
                                 .associate { it.id to it.tempCelsius }
                         }
                     HostContent(
-                        devices = hostState.info.devices,
+                        devices = host.info.devices,
                         telemetryMap = telemetryMap,
+                        state = state,
+                        onEvent = onEvent,
                         scrollState = scrollState,
                     )
                 }
@@ -175,8 +218,10 @@ private fun HostStatusBadge(hostState: DeviceState.Host) {
         when (hostState) {
             DeviceState.Host.Loading, is DeviceState.Host.Connecting ->
                 stringResource(Res.string.host_status_connecting) to colors.primary
+
             is DeviceState.Host.Error ->
                 stringResource(Res.string.host_status_error) to colors.statusWarning
+
             is DeviceState.Host.Ready ->
                 stringResource(Res.string.host_status_connected) to colors.statusNominal
         }
@@ -247,6 +292,8 @@ private fun HostErrorContent(error: DeviceState.Host.Error) {
 private fun HostContent(
     devices: List<HostDevice>,
     telemetryMap: Map<HostSensorId, Double>,
+    state: HostState,
+    onEvent: (HostEvent) -> Unit,
     scrollState: ScrollState,
 ) {
     val metrics = OpenAquaTheme.metrics
@@ -282,6 +329,8 @@ private fun HostContent(
                     type = type,
                     devices = devList,
                     telemetryMap = telemetryMap,
+                    state = state,
+                    onEvent = onEvent,
                 )
             }
         }
@@ -294,6 +343,8 @@ private fun HostDeviceTypeSection(
     type: HostDeviceType,
     devices: List<HostDevice>,
     telemetryMap: Map<HostSensorId, Double>,
+    state: HostState,
+    onEvent: (HostEvent) -> Unit,
 ) {
     val colors = OpenAquaTheme.colors
     val metrics = OpenAquaTheme.metrics
@@ -341,6 +392,8 @@ private fun HostDeviceTypeSection(
             HostDeviceCard(
                 device = device,
                 telemetryMap = telemetryMap,
+                state = state,
+                onEvent = onEvent,
             )
         }
     }
@@ -351,6 +404,8 @@ private fun HostDeviceTypeSection(
 private fun HostDeviceCard(
     device: HostDevice,
     telemetryMap: Map<HostSensorId, Double>,
+    state: HostState,
+    onEvent: (HostEvent) -> Unit,
 ) {
     val colors = OpenAquaTheme.colors
     val metrics = OpenAquaTheme.metrics
@@ -402,9 +457,14 @@ private fun HostDeviceCard(
             ) {
                 device.sensors.forEach { sensor ->
                     val temp = telemetryMap[sensor.id]
+                    val targetType = state.targetTypeFor(sensor.id)
                     HostSensorTile(
                         sensor = sensor,
                         tempCelsius = temp,
+                        targetType = targetType,
+                        onSetTargetType = { newType ->
+                            onEvent(HostEvent.SetSensorTargetType(sensor.id, newType))
+                        },
                     )
                 }
             }
@@ -416,22 +476,20 @@ private fun HostDeviceCard(
 private fun HostSensorTile(
     sensor: HostSensorDescriptor,
     tempCelsius: Double?,
+    targetType: SensorTargetType,
+    onSetTargetType: (SensorTargetType) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = OpenAquaTheme.colors
     val metrics = OpenAquaTheme.metrics
 
-    val tempColor = sensorTemperatureColor(tempCelsius)
+    val tempColor = targetType.color(tempCelsius)
     val tempText =
         tempCelsius?.let {
             stringResource(Res.string.sensor_temp_short_value, "%.1f".format(it))
         } ?: stringResource(Res.string.sensor_temp_disconnected)
 
-    val fillFraction =
-        when (tempCelsius) {
-            null -> 0f
-            else -> ((tempCelsius - 20.0) / 40.0).toFloat().coerceIn(0f, 1f)
-        }
+    val fillFraction = targetType.progressFraction(tempCelsius)
 
     Column(
         modifier =
@@ -443,15 +501,105 @@ private fun HostSensorTile(
                 .padding(10.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Text(
-            text = sensor.name,
-            color = colors.textSecondary,
-            fontSize = 12.sp,
-            lineHeight = 15.sp,
-            fontWeight = FontWeight.Medium,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Top,
+        ) {
+            Text(
+                text = sensor.name,
+                color = colors.textSecondary,
+                fontSize = 12.sp,
+                lineHeight = 15.sp,
+                fontWeight = FontWeight.Medium,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+
+            var menuExpanded by remember { mutableStateOf(false) }
+            var subMenuExpanded by remember { mutableStateOf(false) }
+            Spacer(modifier = Modifier.width(4.dp))
+            Box {
+                Box(
+                    modifier =
+                        Modifier
+                            .size(28.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(if (menuExpanded) colors.surfaceContainer else Color.Transparent)
+                            .clickable {
+                                menuExpanded = true
+                                subMenuExpanded = false
+                            },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.MoreVert,
+                        contentDescription = stringResource(Res.string.sensor_options),
+                        tint = if (menuExpanded) colors.primaryBright else colors.textSecondary,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+
+                OpenAquaDropdownMenu(
+                    expanded = menuExpanded,
+                    onDismissRequest = {
+                        menuExpanded = false
+                        subMenuExpanded = false
+                    },
+                ) {
+                    OpenAquaDropdownHeader(
+                        text = stringResource(Res.string.sensor_settings_menu_title),
+                    )
+
+                    OpenAquaDropdownSubmenuItem(
+                        text = stringResource(Res.string.sensor_type_set),
+                        expanded = subMenuExpanded,
+                        onExpandedChange = { subMenuExpanded = it },
+                        onDismissRequest = {
+                            subMenuExpanded = false
+                            menuExpanded = false
+                        },
+                    ) {
+                        SensorTargetType.entries.forEach { type ->
+                            val isSelected = type == targetType
+                            OpenAquaDropdownMenuItem(
+                                text = {
+                                    Text(
+                                        text =
+                                            when (type) {
+                                                SensorTargetType.DIE -> stringResource(Res.string.sensor_type_die)
+                                                SensorTargetType.WATER -> stringResource(Res.string.sensor_type_water)
+                                            },
+                                        fontSize = 13.sp,
+                                        color = if (isSelected) colors.primaryBright else colors.textPrimary,
+                                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                                    )
+                                },
+                                leadingIcon = {
+                                    if (isSelected) {
+                                        Icon(
+                                            imageVector = Icons.Default.Check,
+                                            contentDescription = null,
+                                            tint = colors.primaryBright,
+                                            modifier = Modifier.size(16.dp),
+                                        )
+                                    } else {
+                                        Spacer(modifier = Modifier.size(16.dp))
+                                    }
+                                },
+                                onClick = {
+                                    onSetTargetType(type)
+                                    subMenuExpanded = false
+                                    menuExpanded = false
+                                },
+                                isSelected = isSelected,
+                            )
+                        }
+                    }
+                }
+            }
+        }
 
         Text(
             text = tempText,
@@ -472,7 +620,7 @@ private fun HostSensorTile(
             overflow = TextOverflow.Ellipsis,
         )
 
-        // Mini temperature bar
+// Mini temperature bar
         Box(
             modifier =
                 Modifier

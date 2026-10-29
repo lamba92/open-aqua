@@ -60,6 +60,19 @@ data class NavigationRailColors(
     val itemUnselectedText: Color,
 )
 
+data class DropdownMenuColors(
+    val container: Color,
+    val border: Color,
+    val headerText: Color,
+    val itemText: Color,
+    val itemTextHighlighted: Color,
+    val itemHoverContainer: Color,
+    val itemHoverBorder: Color,
+    val divider: Color,
+    val iconTint: Color,
+    val iconTintHighlighted: Color,
+)
+
 data class AppColors(
     val palette: ThemePalette,
     // Base Surfaces
@@ -94,6 +107,7 @@ data class AppColors(
     val channelDetailHeader: ChannelDetailHeaderColors,
     val featurePlaceholderBox: FeaturePlaceholderBoxColors,
     val navigationRail: NavigationRailColors,
+    val dropdownMenu: DropdownMenuColors,
 ) {
     fun toMaterialDarkColorScheme(): ColorScheme =
         darkColorScheme(
@@ -216,6 +230,19 @@ data class AppColors(
                         itemUnselectedIcon = textMuted,
                         itemSelectedText = textPrimary,
                         itemUnselectedText = textMuted,
+                    ),
+                dropdownMenu =
+                    DropdownMenuColors(
+                        container = surf,
+                        border = borderOutline,
+                        headerText = textMuted,
+                        itemText = textPrimary,
+                        itemTextHighlighted = primaryBright,
+                        itemHoverContainer = surfHighest,
+                        itemHoverBorder = borderOutline,
+                        divider = borderOutline,
+                        iconTint = textSecondary,
+                        iconTintHighlighted = primaryBright,
                     ),
             )
         }

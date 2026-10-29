@@ -8,6 +8,7 @@ import io.github.lamba92.openaqua.app.coroutine.DefaultCoroutineScopeProvider
 import io.github.lamba92.openaqua.app.feature.device.DeviceViewModel
 import io.github.lamba92.openaqua.app.feature.device.fans.FansViewModel
 import io.github.lamba92.openaqua.app.feature.device.sensors.SensorsViewModel
+import io.github.lamba92.openaqua.app.feature.host.HostViewModel
 import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavViewModel
 import io.github.lamba92.openaqua.app.feature.settings.SettingsViewModel
 import io.github.lamba92.openaqua.app.repository.AppDataRepository
@@ -40,6 +41,13 @@ fun createAppModule(
     }
     bindSingleton { DeviceNavViewModel(dataCacheService = instance(), scopeProvider = instance()) }
     bindSingleton { SettingsViewModel(appDataRepository = instance(), scopeProvider = instance()) }
+    bindSingleton {
+        HostViewModel(
+            dataCacheService = instance(),
+            appDataRepository = instance(),
+            scopeProvider = instance(),
+        )
+    }
     bindMultiton { deviceId: DeviceId ->
         DeviceViewModel(
             cacheService = instance(),

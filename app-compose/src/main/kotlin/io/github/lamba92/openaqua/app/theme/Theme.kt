@@ -55,6 +55,9 @@ val LocalFeaturePlaceholderBoxColors = staticCompositionLocalOf { AppColors.from
 val LocalNavigationRailMetrics = staticCompositionLocalOf { AppMetrics.Standard.navigationRail }
 val LocalNavigationRailColors = staticCompositionLocalOf { AppColors.fromPalette(ThemePalette.HydroDark).navigationRail }
 
+val LocalDropdownMenuMetrics = staticCompositionLocalOf { AppMetrics.Standard.dropdownMenu }
+val LocalDropdownMenuColors = staticCompositionLocalOf { AppColors.fromPalette(ThemePalette.HydroDark).dropdownMenu }
+
 val AppColorScheme.stringResource: StringResource
     get() =
         when (this) {
@@ -117,6 +120,7 @@ fun OpenAquaTheme(
                         defaultFontFamily = jetBrainsMono,
                         monospaceFontFamily = jetBrainsMono,
                     )
+
                 AppFontFamily.SYSTEM_DEFAULT ->
                     AppTypography(
                         fontPreference = fontFamilyPreference,
@@ -197,6 +201,8 @@ fun OpenAquaTheme(
         LocalFeaturePlaceholderBoxColors provides appColors.featurePlaceholderBox,
         LocalNavigationRailMetrics provides metrics.navigationRail,
         LocalNavigationRailColors provides appColors.navigationRail,
+        LocalDropdownMenuMetrics provides metrics.dropdownMenu,
+        LocalDropdownMenuColors provides appColors.dropdownMenu,
         LocalScrollbarStyle provides scrollbarStyle,
     ) {
         MaterialTheme(

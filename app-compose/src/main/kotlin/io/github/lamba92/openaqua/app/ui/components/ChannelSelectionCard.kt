@@ -1,5 +1,4 @@
 package io.github.lamba92.openaqua.app.ui.components
-
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -35,6 +34,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import io.github.lamba92.openaqua.app.model.SensorTargetType
+import io.github.lamba92.openaqua.app.model.color
 import io.github.lamba92.openaqua.app.theme.ChannelSelectionTileColors
 import io.github.lamba92.openaqua.app.theme.ChannelSelectionTileMetrics
 import io.github.lamba92.openaqua.app.theme.LocalChannelSelectionTileColors
@@ -71,28 +72,10 @@ fun lerpColor(
  * Maps a temperature reading (assumed 20°C min to 60°C max) smoothly across:
  * Cool Blue (20°C) -> Hydro Teal (30°C) -> Emerald Green (40°C) -> Amber Alert (50°C) -> Coral Red (60°C).
  */
-fun sensorTemperatureColor(tempCelsius: Double?): Color {
-    if (tempCelsius == null) return Color(0xFF0288D1)
-    val t = ((tempCelsius - 20.0) / 40.0).toFloat().coerceIn(0f, 1f)
-    return when {
-        t < 0.5f -> {
-            val subT = t / 0.5f
-            if (subT < 0.5f) {
-                lerpColor(Color(0xFF0288D1), Color(0xFF00B4D8), subT * 2f)
-            } else {
-                lerpColor(Color(0xFF00B4D8), Color(0xFF10B981), (subT - 0.5f) * 2f)
-            }
-        }
-        else -> {
-            val subT = (t - 0.5f) / 0.5f
-            if (subT < 0.5f) {
-                lerpColor(Color(0xFF10B981), Color(0xFFFFB703), subT * 2f)
-            } else {
-                lerpColor(Color(0xFFFFB703), Color(0xFFE63946), (subT - 0.5f) * 2f)
-            }
-        }
-    }
-}
+fun sensorTemperatureColor(
+    tempCelsius: Double?,
+    targetType: SensorTargetType = SensorTargetType.DIE,
+): Color = targetType.color(tempCelsius)
 
 @Composable
 fun ChannelSelectionCard(

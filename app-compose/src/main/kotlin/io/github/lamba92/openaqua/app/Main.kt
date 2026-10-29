@@ -170,7 +170,7 @@ fun OpenAquaApp(navViewModel: DeviceNavViewModel = rememberInstance()) {
                 DeviceNavState.SelectedItem.Settings ->
                     SettingsScreen(viewModel = rememberInstance())
                 DeviceNavState.SelectedItem.Host ->
-                    HostScreen(hostState = navState.host)
+                    HostScreen(viewModel = rememberInstance())
                 is DeviceNavState.SelectedItem.Device ->
                     DeviceScreen(
                         deviceId = item.deviceId,
