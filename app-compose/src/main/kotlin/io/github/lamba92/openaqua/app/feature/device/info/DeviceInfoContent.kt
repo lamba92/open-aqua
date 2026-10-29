@@ -350,11 +350,11 @@ private fun SpecCard(
     Column(
         modifier =
             modifier
-                .width(196.dp)
+                .width(240.dp)
                 .clip(RoundedCornerShape(metrics.radiusSmall))
                 .background(colors.surfaceContainer)
                 .border(metrics.strokeThin, colors.borderOutline, RoundedCornerShape(metrics.radiusSmall))
-                .padding(12.dp),
+                .padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Text(
@@ -363,7 +363,8 @@ private fun SpecCard(
             fontSize = 11.sp,
             lineHeight = 14.sp,
             fontWeight = FontWeight.Medium,
-            maxLines = 1,
+            minLines = 2,
+            maxLines = 2,
             overflow = TextOverflow.Ellipsis,
         )
         Text(
@@ -381,7 +382,8 @@ private fun SpecCard(
             fontSize = 11.sp,
             lineHeight = 14.sp,
             fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
-            maxLines = 1,
+            minLines = 2,
+            maxLines = 2,
             overflow = TextOverflow.Ellipsis,
         )
     }
