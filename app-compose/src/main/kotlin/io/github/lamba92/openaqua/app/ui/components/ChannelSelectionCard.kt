@@ -33,9 +33,11 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.github.lamba92.openaqua.app.model.SensorTargetType
 import io.github.lamba92.openaqua.app.model.color
+import io.github.lamba92.openaqua.app.model.progressFraction
 import io.github.lamba92.openaqua.app.theme.ChannelSelectionTileColors
 import io.github.lamba92.openaqua.app.theme.ChannelSelectionTileMetrics
 import io.github.lamba92.openaqua.app.theme.LocalChannelSelectionTileColors
@@ -69,13 +71,59 @@ fun lerpColor(
 }
 
 /**
- * Maps a temperature reading (assumed 20°C min to 60°C max) smoothly across:
- * Cool Blue (20°C) -> Hydro Teal (30°C) -> Emerald Green (40°C) -> Amber Alert (50°C) -> Coral Red (60°C).
+ * Maps a temperature reading smoothly across the calibrated target type thresholds.
  */
 fun sensorTemperatureColor(
     tempCelsius: Double?,
-    targetType: SensorTargetType = SensorTargetType.DIE,
+    targetType: SensorTargetType = SensorTargetType.WATER,
 ): Color = targetType.color(tempCelsius)
+
+/**
+ * Maps a temperature reading to a normalized progress fraction (0..1) based on target type thresholds.
+ */
+fun sensorTemperatureProgressFraction(
+    tempCelsius: Double?,
+    targetType: SensorTargetType = SensorTargetType.WATER,
+): Float = targetType.progressFraction(tempCelsius)
+
+/**
+ * Draws a subtle horizontal gauge progress fill with a soft diffused gradient
+ * and a vertical leading-edge highlight line.
+ */
+fun Modifier.gaugeProgress(
+    fraction: Float,
+    color: Color,
+    startAlpha: Float = 0.22f,
+    endAlpha: Float = 0.12f,
+    leadingEdgeAlpha: Float = 0.65f,
+    leadingEdgeWidth: Dp = 2.dp,
+): Modifier =
+    drawBehind {
+        val clampedFraction = fraction.coerceIn(0f, 1f)
+        if (clampedFraction > 0f) {
+            val fillWidth = size.width * clampedFraction
+            drawRect(
+                brush =
+                    Brush.horizontalGradient(
+                        colors =
+                            listOf(
+                                color.copy(alpha = startAlpha),
+                                color.copy(alpha = endAlpha),
+                            ),
+                        startX = 0f,
+                        endX = fillWidth,
+                    ),
+                topLeft = Offset.Zero,
+                size = Size(fillWidth, size.height),
+            )
+            drawLine(
+                color = color.copy(alpha = leadingEdgeAlpha),
+                start = Offset(fillWidth, 0f),
+                end = Offset(fillWidth, size.height),
+                strokeWidth = leadingEdgeWidth.toPx(),
+            )
+        }
+    }
 
 @Composable
 fun ChannelSelectionCard(
@@ -117,34 +165,11 @@ fun ChannelSelectionCard(
                     .height(metrics.height)
                     .clip(RoundedCornerShape(metrics.cornerRadius))
                     .background(if (selected) colors.selectedContainer else colors.unselectedContainer)
-                    .drawBehind {
-                        val clampedFraction = fillFraction.coerceIn(0f, 1f)
-                        if (clampedFraction > 0f) {
-                            val fillWidth = size.width * clampedFraction
-                            // Soft, diffused ("soffused") gauge fill
-                            drawRect(
-                                brush =
-                                    Brush.horizontalGradient(
-                                        colors =
-                                            listOf(
-                                                fillColor.copy(alpha = 0.22f),
-                                                fillColor.copy(alpha = 0.12f),
-                                            ),
-                                        startX = 0f,
-                                        endX = fillWidth,
-                                    ),
-                                topLeft = Offset.Zero,
-                                size = Size(fillWidth, size.height),
-                            )
-                            // Leading edge highlight line
-                            drawLine(
-                                color = fillColor.copy(alpha = 0.55f),
-                                start = Offset(fillWidth, 0f),
-                                end = Offset(fillWidth, size.height),
-                                strokeWidth = 2.dp.toPx(),
-                            )
-                        }
-                    }.border(
+                    .gaugeProgress(
+                        fraction = fillFraction,
+                        color = fillColor,
+                        leadingEdgeAlpha = 0.55f,
+                    ).border(
                         border =
                             if (selected) {
                                 BorderStroke(metrics.selectedBorderWidth, colors.selectedBorder)

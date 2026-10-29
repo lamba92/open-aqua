@@ -23,6 +23,7 @@ import io.github.lamba92.openaqua.app.di.rememberInstance
 import io.github.lamba92.openaqua.app.feature.device.common.DeviceLoadingContent
 import io.github.lamba92.openaqua.app.feature.device.common.SensorItem
 import io.github.lamba92.openaqua.app.feature.device.common.canBeHidden
+import io.github.lamba92.openaqua.app.model.SensorTargetType
 import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
 import io.github.lamba92.openaqua.app.ui.components.ChannelDetailHeader
 import io.github.lamba92.openaqua.app.ui.components.ChannelPageScaffold
@@ -35,6 +36,7 @@ import io.github.lamba92.openaqua.app.ui.components.RenameDialog
 import io.github.lamba92.openaqua.app.ui.components.VisibilityEmptyState
 import io.github.lamba92.openaqua.app.ui.components.VisibilityFilterChip
 import io.github.lamba92.openaqua.app.ui.components.sensorTemperatureColor
+import io.github.lamba92.openaqua.app.ui.components.sensorTemperatureProgressFraction
 import io.github.lamba92.openaqua.model.device.DeviceId
 import io.github.lamba92.openaqua.model.device.SensorChannelKind
 import io.github.lamba92.openaqua.model.device.tempCelsiusOrNull
@@ -253,10 +255,10 @@ fun SensorSelectionTile(
         if (isDisconnected) {
             0f
         } else {
-            ((tempCelsius - 20.0) / 40.0).toFloat().coerceIn(0f, 1f)
+            sensorTemperatureProgressFraction(tempCelsius, SensorTargetType.WATER)
         }
 
-    val tempColor = sensorTemperatureColor(tempCelsius)
+    val tempColor = sensorTemperatureColor(tempCelsius, SensorTargetType.WATER)
     val valueText =
         tempCelsius?.let {
             stringResource(Res.string.sensor_temp_short_value, "%.1f".format(it))
