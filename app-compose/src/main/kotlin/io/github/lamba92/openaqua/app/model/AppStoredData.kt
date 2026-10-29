@@ -1,11 +1,18 @@
 package io.github.lamba92.openaqua.app.model
 
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.WindowPlacement
+import androidx.compose.ui.window.WindowPosition
+import androidx.compose.ui.window.WindowState
+import io.github.lamba92.openaqua.app.feature.device.common.CommonDeviceTab
 import io.github.lamba92.openaqua.app.theme.AppFontFamily
 import io.github.lamba92.openaqua.app.theme.AppMetricsScale
 import io.github.lamba92.openaqua.app.theme.FontScaleConstants
 import io.github.lamba92.openaqua.model.device.DeviceId
 import io.github.lamba92.openaqua.model.host.HostSensorId
 import io.github.lamba92.openaqua.theme.AppColorScheme
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -20,11 +27,67 @@ data class AppStoredData(
     val hideDisconnectedSensors: Boolean = false,
     val hideUnconfiguredVirtualSensors: Boolean = false,
     val sensorTypes: SensorTypesStoredData = SensorTypesStoredData.DEFAULT,
+    val windowState: WindowStateStoredData = WindowStateStoredData.DEFAULT,
+    val navigationSelection: NavigationSelectionStoredData? = null,
     val devices: Map<DeviceId, DeviceStoredData> = emptyMap(),
 ) {
     companion object {
         val DEFAULT = AppStoredData()
     }
+}
+
+@Serializable
+sealed interface NavigationSelectionStoredData {
+    @Serializable
+    @SerialName("host")
+    data object Host : NavigationSelectionStoredData
+
+    @Serializable
+    @SerialName("device")
+    data class Device(
+        val deviceId: DeviceId,
+        val tab: CommonDeviceTab = CommonDeviceTab.DEVICE_INFO,
+    ) : NavigationSelectionStoredData
+
+    @Serializable
+    @SerialName("settings")
+    data object Settings : NavigationSelectionStoredData
+}
+
+@Serializable
+data class WindowStateStoredData(
+    val widthDp: Float = 1380f,
+    val heightDp: Float = 880f,
+    val xDp: Float? = null,
+    val yDp: Float? = null,
+    val placement: WindowPlacement = WindowPlacement.Floating,
+) {
+    companion object {
+        val DEFAULT = WindowStateStoredData()
+    }
+}
+
+fun WindowStateStoredData.toPosition(): WindowPosition =
+    when {
+        xDp != null && yDp != null -> WindowPosition(xDp.dp, yDp.dp)
+        else -> WindowPosition.PlatformDefault
+    }
+
+fun WindowStateStoredData.toSize(): DpSize =
+    when {
+        widthDp > 0f && heightDp > 0f -> DpSize(widthDp.dp, heightDp.dp)
+        else -> DpSize(1380.dp, 880.dp)
+    }
+
+fun WindowState.toStoredData(previous: WindowStateStoredData = WindowStateStoredData.DEFAULT): WindowStateStoredData {
+    val isFloating = placement == WindowPlacement.Floating
+    return WindowStateStoredData(
+        widthDp = if (isFloating && size.width.value > 0f) size.width.value else previous.widthDp,
+        heightDp = if (isFloating && size.height.value > 0f) size.height.value else previous.heightDp,
+        xDp = if (isFloating && position.isSpecified) position.x.value else previous.xDp,
+        yDp = if (isFloating && position.isSpecified) position.y.value else previous.yDp,
+        placement = placement,
+    )
 }
 
 @Serializable

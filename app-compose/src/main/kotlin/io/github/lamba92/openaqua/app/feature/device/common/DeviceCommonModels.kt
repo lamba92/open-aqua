@@ -6,7 +6,9 @@ import io.github.lamba92.openaqua.model.device.FanChannelConfig
 import io.github.lamba92.openaqua.model.device.SensorChannelKind
 import io.github.lamba92.openaqua.model.device.SensorOffset
 import io.github.lamba92.openaqua.model.device.SensorTelemetry
+import kotlinx.serialization.Serializable
 
+@Serializable
 enum class CommonDeviceTab {
     DEVICE_INFO,
     FANS,

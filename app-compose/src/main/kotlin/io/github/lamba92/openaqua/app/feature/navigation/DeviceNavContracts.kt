@@ -1,6 +1,7 @@
 package io.github.lamba92.openaqua.app.feature.navigation
 
 import io.github.lamba92.openaqua.app.feature.device.common.CommonDeviceTab
+import io.github.lamba92.openaqua.app.model.NavigationSelectionStoredData
 import io.github.lamba92.openaqua.app.repository.DeviceState
 import io.github.lamba92.openaqua.model.device.DeviceId
 
@@ -20,6 +21,20 @@ data class DeviceNavState(
         data object Settings : SelectedItem
     }
 }
+
+fun DeviceNavState.SelectedItem.toStoredData(): NavigationSelectionStoredData =
+    when (this) {
+        DeviceNavState.SelectedItem.Host -> NavigationSelectionStoredData.Host
+        is DeviceNavState.SelectedItem.Device -> NavigationSelectionStoredData.Device(deviceId, selectedTab)
+        DeviceNavState.SelectedItem.Settings -> NavigationSelectionStoredData.Settings
+    }
+
+fun NavigationSelectionStoredData.toSelectedItem(): DeviceNavState.SelectedItem =
+    when (this) {
+        NavigationSelectionStoredData.Host -> DeviceNavState.SelectedItem.Host
+        is NavigationSelectionStoredData.Device -> DeviceNavState.SelectedItem.Device(deviceId, tab)
+        NavigationSelectionStoredData.Settings -> DeviceNavState.SelectedItem.Settings
+    }
 
 sealed interface DeviceNavEvent {
     data object SelectHost : DeviceNavEvent

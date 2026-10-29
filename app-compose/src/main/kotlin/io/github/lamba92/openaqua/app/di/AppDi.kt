@@ -39,7 +39,13 @@ fun createAppModule(
             coroutineScopeProvider = instance(),
         )
     }
-    bindSingleton { DeviceNavViewModel(dataCacheService = instance(), scopeProvider = instance()) }
+    bindSingleton {
+        DeviceNavViewModel(
+            dataCacheService = instance(),
+            appDataRepository = instance(),
+            scopeProvider = instance(),
+        )
+    }
     bindSingleton { SettingsViewModel(appDataRepository = instance(), scopeProvider = instance()) }
     bindSingleton {
         HostViewModel(

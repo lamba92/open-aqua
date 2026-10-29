@@ -10,7 +10,7 @@ data class ExtractedEngines(
 )
 
 object EngineExtractor {
-    suspend fun extract(): ExtractedEngines {
+    fun extract(): ExtractedEngines {
         val os = System.getProperty("os.name").lowercase()
         val arch = System.getProperty("os.arch").lowercase()
 

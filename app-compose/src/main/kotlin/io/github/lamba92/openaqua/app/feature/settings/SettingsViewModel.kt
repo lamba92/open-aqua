@@ -5,6 +5,7 @@ import io.github.lamba92.openaqua.app.coroutine.getScope
 import io.github.lamba92.openaqua.app.mvi.MVIViewModel
 import io.github.lamba92.openaqua.app.repository.AppDataRepository
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -13,6 +14,7 @@ import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import kotlin.io.path.absolutePathString
 
 class SettingsViewModel(
@@ -47,36 +49,37 @@ class SettingsViewModel(
             }.launchIn(viewModelScope)
     }
 
-    override fun onEvent(event: SettingsEvent) {
-        when (event) {
-            SettingsEvent.OpenDataFolder -> appDataRepository.openDataFolder()
-            SettingsEvent.RequestRestoreDefaults -> state.update { it.copy(showResetConfirmationDialog = true) }
-            SettingsEvent.DismissRestoreDefaults -> state.update { it.copy(showResetConfirmationDialog = false) }
-            SettingsEvent.ConfirmRestoreDefaults -> {
-                appDataRepository.resetToDefaults()
-                state.update { it.copy(showResetConfirmationDialog = false) }
+    override fun onEvent(event: SettingsEvent): Job =
+        viewModelScope.launch {
+            when (event) {
+                SettingsEvent.OpenDataFolder -> appDataRepository.openDataFolder()
+                SettingsEvent.RequestRestoreDefaults -> state.update { it.copy(showResetConfirmationDialog = true) }
+                SettingsEvent.DismissRestoreDefaults -> state.update { it.copy(showResetConfirmationDialog = false) }
+                SettingsEvent.ConfirmRestoreDefaults -> {
+                    appDataRepository.resetToDefaults()
+                    state.update { it.copy(showResetConfirmationDialog = false) }
+                }
+                is SettingsEvent.SelectColorScheme -> {
+                    appDataRepository.update { it.copy(colorScheme = event.scheme) }
+                }
+                is SettingsEvent.SelectMetricsScale -> {
+                    appDataRepository.update { it.copy(metricsScale = event.scale) }
+                }
+                is SettingsEvent.SetFontSp -> {
+                    appDataRepository.update { it.copy(fontSp = event.sp) }
+                }
+                is SettingsEvent.SelectFontFamily -> {
+                    appDataRepository.update { it.copy(fontFamily = event.family) }
+                }
+                is SettingsEvent.SelectLanguage -> {
+                    appDataRepository.update { it.copy(language = event.language) }
+                }
+                is SettingsEvent.ToggleHideDisconnectedFans -> appDataRepository.setHideDisconnectedFans(event.hide)
+                is SettingsEvent.ToggleHideDisconnectedSensorsInFans ->
+                    appDataRepository.setHideDisconnectedSensorsInFans(event.hide)
+                is SettingsEvent.ToggleHideDisconnectedSensors -> appDataRepository.setHideDisconnectedSensors(event.hide)
+                is SettingsEvent.ToggleHideUnconfiguredVirtualSensors ->
+                    appDataRepository.setHideUnconfiguredVirtualSensors(event.hide)
             }
-            is SettingsEvent.SelectColorScheme -> {
-                appDataRepository.update { it.copy(colorScheme = event.scheme) }
-            }
-            is SettingsEvent.SelectMetricsScale -> {
-                appDataRepository.update { it.copy(metricsScale = event.scale) }
-            }
-            is SettingsEvent.SetFontSp -> {
-                appDataRepository.update { it.copy(fontSp = event.sp) }
-            }
-            is SettingsEvent.SelectFontFamily -> {
-                appDataRepository.update { it.copy(fontFamily = event.family) }
-            }
-            is SettingsEvent.SelectLanguage -> {
-                appDataRepository.update { it.copy(language = event.language) }
-            }
-            is SettingsEvent.ToggleHideDisconnectedFans -> appDataRepository.setHideDisconnectedFans(event.hide)
-            is SettingsEvent.ToggleHideDisconnectedSensorsInFans ->
-                appDataRepository.setHideDisconnectedSensorsInFans(event.hide)
-            is SettingsEvent.ToggleHideDisconnectedSensors -> appDataRepository.setHideDisconnectedSensors(event.hide)
-            is SettingsEvent.ToggleHideUnconfiguredVirtualSensors ->
-                appDataRepository.setHideUnconfiguredVirtualSensors(event.hide)
         }
-    }
 }

@@ -5,7 +5,9 @@ import io.github.lamba92.openaqua.app.coroutine.getScope
 import io.github.lamba92.openaqua.app.model.AppStoredData
 import io.github.lamba92.openaqua.app.model.DeviceStoredData
 import io.github.lamba92.openaqua.app.model.FanStoredData
+import io.github.lamba92.openaqua.app.model.NavigationSelectionStoredData
 import io.github.lamba92.openaqua.app.model.SensorStoredData
+import io.github.lamba92.openaqua.app.model.WindowStateStoredData
 import io.github.lamba92.openaqua.model.device.DeviceId
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -41,6 +43,16 @@ class AppDataRepository(
         value class Ready(
             val data: AppStoredData,
         ) : State
+    }
+
+    fun setNavigationSelection(selection: NavigationSelectionStoredData?) {
+        update { it.copy(navigationSelection = selection) }
+    }
+
+    fun saveWindowStateSync(windowState: WindowStateStoredData) {
+        update { it.copy(windowState = windowState) }
+        val current = (state.value as? State.Ready)?.data ?: return
+        saveToDisk(current)
     }
 
     val storageDirectory: Path
@@ -214,9 +226,11 @@ class AppDataRepository(
                         val appData = System.getenv("APPDATA")?.takeIf { it.isNotBlank() }
                         if (appData != null) Path.of(appData) else Path.of(userHome, "AppData", "Roaming")
                     }
+
                     os.contains("mac") -> {
                         Path.of(userHome, "Library", "Application Support")
                     }
+
                     else -> {
                         val xdgConfig = System.getenv("XDG_CONFIG_HOME")?.takeIf { it.isNotBlank() }
                         if (xdgConfig != null) Path.of(xdgConfig) else Path.of(userHome, ".config")

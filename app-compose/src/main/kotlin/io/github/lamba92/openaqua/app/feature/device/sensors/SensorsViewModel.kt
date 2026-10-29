@@ -10,6 +10,7 @@ import io.github.lamba92.openaqua.app.repository.DeviceDataCacheService
 import io.github.lamba92.openaqua.app.repository.DeviceState
 import io.github.lamba92.openaqua.model.device.DeviceId
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -20,6 +21,7 @@ import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 class SensorsViewModel(
     cacheService: DeviceDataCacheService,
@@ -83,41 +85,42 @@ class SensorsViewModel(
         }.launchIn(viewModelScope)
     }
 
-    override fun onEvent(event: SensorsUiEvent) {
-        when (event) {
-            is SensorsUiEvent.SelectSensor ->
-                state.update { current ->
-                    if (current is SensorsUiState.Ready) current.copy(selectedSensorChannel = event.channel) else current
+    override fun onEvent(event: SensorsUiEvent): Job =
+        viewModelScope.launch {
+            when (event) {
+                is SensorsUiEvent.SelectSensor ->
+                    state.update { current ->
+                        if (current is SensorsUiState.Ready) current.copy(selectedSensorChannel = event.channel) else current
+                    }
+
+                is SensorsUiEvent.StartRenamingSensor ->
+                    state.update { current ->
+                        if (current is SensorsUiState.Ready) current.copy(renamingChannel = event.channel) else current
+                    }
+
+                is SensorsUiEvent.DismissRenameDialog ->
+                    state.update { current ->
+                        if (current is SensorsUiState.Ready) current.copy(renamingChannel = null) else current
+                    }
+
+                is SensorsUiEvent.RenameSensor -> {
+                    appDataRepository.setSensorName(deviceId = deviceId, channel = event.channel, name = event.name)
+                    state.update { current ->
+                        if (current is SensorsUiState.Ready) current.copy(renamingChannel = null) else current
+                    }
                 }
 
-            is SensorsUiEvent.StartRenamingSensor ->
-                state.update { current ->
-                    if (current is SensorsUiState.Ready) current.copy(renamingChannel = event.channel) else current
-                }
-
-            is SensorsUiEvent.DismissRenameDialog ->
-                state.update { current ->
-                    if (current is SensorsUiState.Ready) current.copy(renamingChannel = null) else current
-                }
-
-            is SensorsUiEvent.RenameSensor -> {
-                appDataRepository.setSensorName(deviceId = deviceId, channel = event.channel, name = event.name)
-                state.update { current ->
-                    if (current is SensorsUiState.Ready) current.copy(renamingChannel = null) else current
-                }
-            }
-
-            SensorsUiEvent.ToggleShowAllSensors -> {
-                val currentState = state.value as? SensorsUiState.Ready ?: return
-                val isHidingAny = currentState.hideDisconnectedSensors || currentState.hideUnconfiguredVirtualSensors
-                if (isHidingAny) {
-                    appDataRepository.setHideDisconnectedSensors(false)
-                    appDataRepository.setHideUnconfiguredVirtualSensors(false)
-                } else {
-                    appDataRepository.setHideDisconnectedSensors(true)
-                    appDataRepository.setHideUnconfiguredVirtualSensors(true)
+                SensorsUiEvent.ToggleShowAllSensors -> {
+                    val currentState = state.value as? SensorsUiState.Ready ?: return@launch
+                    val isHidingAny = currentState.hideDisconnectedSensors || currentState.hideUnconfiguredVirtualSensors
+                    if (isHidingAny) {
+                        appDataRepository.setHideDisconnectedSensors(false)
+                        appDataRepository.setHideUnconfiguredVirtualSensors(false)
+                    } else {
+                        appDataRepository.setHideDisconnectedSensors(true)
+                        appDataRepository.setHideUnconfiguredVirtualSensors(true)
+                    }
                 }
             }
         }
-    }
 }

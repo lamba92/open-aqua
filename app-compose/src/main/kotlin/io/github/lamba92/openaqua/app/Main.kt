@@ -17,15 +17,16 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Window
@@ -48,11 +49,17 @@ import io.github.lamba92.openaqua.app.feature.settings.SettingsScreen
 import io.github.lamba92.openaqua.app.i18n.AppLocaleProvider
 import io.github.lamba92.openaqua.app.model.AppStoredData
 import io.github.lamba92.openaqua.app.model.locale
+import io.github.lamba92.openaqua.app.model.toPosition
+import io.github.lamba92.openaqua.app.model.toSize
+import io.github.lamba92.openaqua.app.model.toStoredData
 import io.github.lamba92.openaqua.app.repository.AppDataRepository
 import io.github.lamba92.openaqua.app.theme.AppMetrics
 import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
 import io.github.lamba92.openaqua.app.util.EngineExtractor
 import io.github.lamba92.openaqua.theme.ThemePalette
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.runBlocking
 import open_aqua.app_compose.generated.resources.Res
 import open_aqua.app_compose.generated.resources.ic_app_icon
@@ -64,21 +71,23 @@ import org.jetbrains.compose.resources.stringResource
 import org.kodein.di.instance
 import java.awt.Taskbar
 import javax.imageio.ImageIO
+import kotlin.time.Duration.Companion.milliseconds
 
+@OptIn(FlowPreview::class)
 fun main() {
-    val engines = runBlocking { EngineExtractor.extract() }
+    val engines = EngineExtractor.extract()
     val scopeProvider = DefaultCoroutineScopeProvider()
-    val di = createOpenAquaDI(engines.deviceEngine, engines.hostEngine, scopeProvider)
+    val di =
+        createOpenAquaDI(
+            deviceEnginePath = engines.deviceEngine,
+            hostEnginePath = engines.hostEngine,
+            scopeProvider = scopeProvider,
+        )
     val appDataRepository by di.instance<AppDataRepository>()
 
     configureTaskbarIcon()
 
     application {
-        val windowState =
-            rememberWindowState(
-                size = DpSize(1380.dp, 880.dp),
-            )
-
         setSingletonImageLoaderFactory { context ->
             ImageLoader
                 .Builder(context)
@@ -94,9 +103,26 @@ fun main() {
                 is AppDataRepository.State.Ready -> state.data
             }
 
+        val windowState =
+            rememberWindowState(
+                placement = storedData.windowState.placement,
+                position = storedData.windowState.toPosition(),
+                size = storedData.windowState.toSize(),
+            )
+
+        LaunchedEffect(windowState) {
+            snapshotFlow { windowState.toStoredData(storedData.windowState) }
+                .distinctUntilChanged()
+                .debounce(500.milliseconds)
+                .collect { newWindowState ->
+                    appDataRepository.update { it.copy(windowState = newWindowState) }
+                }
+        }
+
         AppLocaleProvider(storedData.language.locale) {
             Window(
                 onCloseRequest = {
+                    appDataRepository.saveWindowStateSync(windowState.toStoredData(storedData.windowState))
                     scopeProvider.cancelAll()
                     exitApplication()
                 },
@@ -169,8 +195,10 @@ fun OpenAquaApp(navViewModel: DeviceNavViewModel = rememberInstance()) {
                 null -> SelectADeviceScreen()
                 DeviceNavState.SelectedItem.Settings ->
                     SettingsScreen(viewModel = rememberInstance())
+
                 DeviceNavState.SelectedItem.Host ->
                     HostScreen(viewModel = rememberInstance())
+
                 is DeviceNavState.SelectedItem.Device ->
                     DeviceScreen(
                         deviceId = item.deviceId,

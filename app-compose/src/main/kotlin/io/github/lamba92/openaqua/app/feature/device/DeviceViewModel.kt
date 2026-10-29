@@ -7,6 +7,7 @@ import io.github.lamba92.openaqua.app.repository.DeviceDataCacheService
 import io.github.lamba92.openaqua.app.repository.DeviceState
 import io.github.lamba92.openaqua.model.device.DeviceId
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -14,6 +15,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 class DeviceViewModel(
     cacheService: DeviceDataCacheService,
@@ -50,7 +52,8 @@ class DeviceViewModel(
             }.launchIn(viewModelScope)
     }
 
-    override fun onEvent(event: DeviceUiEvent) {
-        // Device-level events if needed in the future
-    }
+    override fun onEvent(event: DeviceUiEvent): Job =
+        viewModelScope.launch {
+            // Device-level events if needed in the future
+        }
 }

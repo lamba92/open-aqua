@@ -9,6 +9,7 @@ import io.github.lamba92.openaqua.app.repository.AppDataRepository
 import io.github.lamba92.openaqua.app.repository.DeviceDataCacheService
 import io.github.lamba92.openaqua.model.host.HostSensorId
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -19,6 +20,7 @@ import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 class HostViewModel(
     dataCacheService: DeviceDataCacheService,
@@ -53,11 +55,12 @@ class HostViewModel(
         }.launchIn(viewModelScope)
     }
 
-    override fun onEvent(event: HostEvent) {
-        when (event) {
-            is HostEvent.SetSensorTargetType -> setSensorTargetType(event.sensorId, event.targetType)
+    override fun onEvent(event: HostEvent): Job =
+        viewModelScope.launch {
+            when (event) {
+                is HostEvent.SetSensorTargetType -> setSensorTargetType(event.sensorId, event.targetType)
+            }
         }
-    }
 
     private fun setSensorTargetType(
         sensorId: HostSensorId,
