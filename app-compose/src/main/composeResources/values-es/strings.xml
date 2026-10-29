@@ -173,10 +173,10 @@
     <string name="metrics_scale_comfortable">Cómoda</string>
     <string name="settings_font_scale_title">Tamaño de fuente</string>
     <string name="settings_font_scale_desc">Especifique el tamaño del texto en sp (mín %1$d sp, máx %2$d sp)</string>
-    <string name="font_preset_small">Pequeño (11 sp)</string>
-    <string name="font_preset_standard">Estándar (13 sp)</string>
-    <string name="font_preset_large">Grande (15 sp)</string>
-    <string name="font_preset_extra_large">Muy grande (18 sp)</string>
+    <string name="font_preset_small">Pequeño (13 sp)</string>
+    <string name="font_preset_standard">Estándar (15 sp)</string>
+    <string name="font_preset_large">Grande (17 sp)</string>
+    <string name="font_preset_extra_large">Muy grande (20 sp)</string>
     <string name="settings_font_family_title">Familia tipográfica</string>
     <string name="settings_font_family_desc">Seleccione la tipografía para métricas de la cabina, telemetría y etiquetas</string>
     <string name="font_family_jetbrains_mono">JetBrains Mono (Recomendado)</string>

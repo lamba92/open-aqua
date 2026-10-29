@@ -116,7 +116,7 @@ fun ConfirmationDialog(
                 Text(
                     text = title,
                     color = TextPrimary,
-                    fontSize = 18.sp,
+                    fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                 )
             }
@@ -125,7 +125,7 @@ fun ConfirmationDialog(
                 Text(
                     text = message,
                     color = TextSecondary,
-                    fontSize = 13.sp,
+                    fontSize = 15.sp,
                 )
             }
 
@@ -168,7 +168,7 @@ fun ConfirmationDialog(
                             )
                             Text(
                                 text = loadingText ?: confirmText,
-                                fontSize = 13.sp,
+                                fontSize = 15.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = TextMuted,
                             )

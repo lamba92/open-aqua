@@ -855,7 +855,7 @@ private fun CopyFanModeControls(
                                     Text(
                                         text = fanDisplayName(fan),
                                         color = if (isSelected) colors.primaryBright else colors.textPrimary,
-                                        fontSize = 12.sp,
+                                        fontSize = 14.sp,
                                         fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
                                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                                     )
@@ -897,12 +897,12 @@ private fun CurveParamSlider(
             Text(
                 text = label,
                 color = colors.textMuted,
-                fontSize = 11.sp,
+                fontSize = 13.sp,
             )
             Text(
                 text = valueText,
                 color = colors.primaryBright,
-                fontSize = 12.sp,
+                fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
             )
@@ -1002,7 +1002,7 @@ private fun CurveVisualizerGraph(
                     Text(
                         text = stringResource(Res.string.curve_legend_current),
                         color = colors.secondary,
-                        fontSize = 11.sp,
+                        fontSize = 13.sp,
                         fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
                     )
                 }
@@ -1027,7 +1027,7 @@ private fun CurveVisualizerGraph(
                                 stringResource(Res.string.curve_legend_destination)
                             },
                         color = colors.primaryBright,
-                        fontSize = 11.sp,
+                        fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
                         fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
                     )
@@ -1045,7 +1045,7 @@ private fun CurveVisualizerGraph(
                             livePwm.roundToInt().toString(),
                         ),
                     color = colors.accent,
-                    fontSize = 11.sp,
+                    fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
                     fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
                 )
@@ -1079,7 +1079,7 @@ private fun CurveVisualizerGraph(
             val labelStyle =
                 TextStyle(
                     color = colors.textMuted,
-                    fontSize = 9.sp,
+                    fontSize = 11.sp,
                 )
 
             yTicks.forEach { pwm ->

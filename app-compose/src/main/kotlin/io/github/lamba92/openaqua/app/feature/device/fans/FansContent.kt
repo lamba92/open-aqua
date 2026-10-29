@@ -248,7 +248,7 @@ fun FansContent(
                     Text(
                         text = stringResource(Res.string.flash_dialog_desc),
                         color = colors.textSecondary,
-                        fontSize = 13.sp,
+                        fontSize = 15.sp,
                     )
                     state.pendingFans.forEach { (fan, targetConfig) ->
                         PendingFanDiffCard(
@@ -626,13 +626,13 @@ private fun PendingFanDiffCard(
             Text(
                 text = fanName,
                 color = colors.textPrimary,
-                fontSize = 13.sp,
+                fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
             )
             Text(
                 text = summary,
                 color = colors.textMuted,
-                fontSize = 11.sp,
+                fontSize = 13.sp,
                 fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
             )
         }

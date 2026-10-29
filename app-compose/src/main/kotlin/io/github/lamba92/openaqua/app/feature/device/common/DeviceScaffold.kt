@@ -94,7 +94,7 @@ fun DeviceDrawerScaffold(
                     Text(
                         text = displayName,
                         color = TextPrimary,
-                        fontSize = 14.sp,
+                        fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -103,7 +103,7 @@ fun DeviceDrawerScaffold(
                     Text(
                         text = device.alias.value,
                         color = ElectricCyan,
-                        fontSize = 11.sp,
+                        fontSize = 13.sp,
                         fontFamily = FontFamily.Monospace,
                         modifier = Modifier.padding(horizontal = 12.dp),
                     )
@@ -166,8 +166,8 @@ private fun DeviceDrawerTabItem(
         label = {
             Text(
                 text = label,
-                fontSize = 13.sp,
-                lineHeight = 20.sp,
+                fontSize = 15.sp,
+                lineHeight = 22.sp,
                 fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
                 style = LocalTextStyle.current.copy(lineHeightStyle = DrawerLineHeightStyle),
             )
@@ -231,7 +231,7 @@ fun DeviceErrorContent(
             Text(
                 text = message,
                 color = TextPrimary,
-                fontSize = 16.sp,
+                fontSize = 18.sp,
             )
         }
     }

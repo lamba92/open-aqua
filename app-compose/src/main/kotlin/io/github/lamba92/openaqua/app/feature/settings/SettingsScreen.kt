@@ -278,7 +278,7 @@ private fun AppearanceSection(
         Text(
             text = stringResource(Res.string.settings_appearance_desc),
             color = colors.textMuted,
-            fontSize = 12.sp,
+            fontSize = 14.sp,
         )
 
         // Color scheme chooser
@@ -286,13 +286,13 @@ private fun AppearanceSection(
             Text(
                 text = stringResource(Res.string.settings_color_scheme_title),
                 color = colors.textPrimary,
-                fontSize = 14.sp,
+                fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
                 text = stringResource(Res.string.settings_color_scheme_desc),
                 color = colors.textMuted,
-                fontSize = 12.sp,
+                fontSize = 14.sp,
             )
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
@@ -323,13 +323,13 @@ private fun AppearanceSection(
             Text(
                 text = stringResource(Res.string.settings_metrics_scale_title),
                 color = colors.textPrimary,
-                fontSize = 14.sp,
+                fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
                 text = stringResource(Res.string.settings_metrics_scale_desc),
                 color = colors.textMuted,
-                fontSize = 12.sp,
+                fontSize = 14.sp,
             )
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
@@ -353,13 +353,13 @@ private fun AppearanceSection(
             Text(
                 text = stringResource(Res.string.settings_font_family_title),
                 color = colors.textPrimary,
-                fontSize = 14.sp,
+                fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
                 text = stringResource(Res.string.settings_font_family_desc),
                 color = colors.textMuted,
-                fontSize = 12.sp,
+                fontSize = 14.sp,
             )
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
@@ -396,13 +396,13 @@ private fun AppearanceSection(
                 Text(
                     text = stringResource(Res.string.settings_language_title),
                     color = colors.textPrimary,
-                    fontSize = 14.sp,
+                    fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
                 )
                 Text(
                     text = stringResource(Res.string.settings_language_desc),
                     color = colors.textMuted,
-                    fontSize = 12.sp,
+                    fontSize = 14.sp,
                 )
             }
 
@@ -439,7 +439,7 @@ private fun LanguageDropdown(
             Text(
                 text = stringResource(selectedLanguage.stringResource),
                 color = colors.textPrimary,
-                fontSize = 13.sp,
+                fontSize = 15.sp,
                 fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
             )
             Icon(
@@ -465,7 +465,7 @@ private fun LanguageDropdown(
                         Text(
                             text = stringResource(lang.stringResource),
                             color = if (isSelected) colors.primaryBright else colors.textPrimary,
-                            fontSize = 13.sp,
+                            fontSize = 15.sp,
                             fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                         )
@@ -513,7 +513,7 @@ private fun ChannelVisibilitySection(
         Text(
             text = stringResource(Res.string.settings_channel_visibility_desc),
             color = colors.textMuted,
-            fontSize = 12.sp,
+            fontSize = 14.sp,
         )
 
         SettingToggleRow(
@@ -575,13 +575,13 @@ private fun SettingToggleRow(
             Text(
                 text = title,
                 color = colors.textPrimary,
-                fontSize = 14.sp,
+                fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
                 text = description,
                 color = colors.textMuted,
-                fontSize = 12.sp,
+                fontSize = 14.sp,
             )
         }
 
@@ -624,7 +624,7 @@ private fun FontSizeSection(
                 Text(
                     text = stringResource(Res.string.settings_font_scale_title),
                     color = colors.textPrimary,
-                    fontSize = 14.sp,
+                    fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
                 )
                 Text(
@@ -635,7 +635,7 @@ private fun FontSizeSection(
                             FontScaleConstants.MAX_SP,
                         ),
                     color = colors.textMuted,
-                    fontSize = 12.sp,
+                    fontSize = 14.sp,
                 )
             }
 
@@ -650,7 +650,7 @@ private fun FontSizeSection(
                 Text(
                     text = "$selectedFontSp sp ($percentage%)",
                     color = colors.primaryBright,
-                    fontSize = 13.sp,
+                    fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
                     fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
                 )
@@ -664,10 +664,10 @@ private fun FontSizeSection(
         ) {
             val presets =
                 listOf(
-                    11 to Res.string.font_preset_small,
-                    13 to Res.string.font_preset_standard,
-                    15 to Res.string.font_preset_large,
-                    18 to Res.string.font_preset_extra_large,
+                    13 to Res.string.font_preset_small,
+                    15 to Res.string.font_preset_standard,
+                    17 to Res.string.font_preset_large,
+                    20 to Res.string.font_preset_extra_large,
                 )
             presets.forEach { (sp, labelRes) ->
                 val isSelected = selectedFontSp == sp
@@ -699,7 +699,7 @@ private fun FontSizeSection(
             Text(
                 text = "${FontScaleConstants.MIN_SP} sp",
                 color = colors.textMuted,
-                fontSize = 11.sp,
+                fontSize = 13.sp,
                 fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
             )
 
@@ -722,7 +722,7 @@ private fun FontSizeSection(
             Text(
                 text = "${FontScaleConstants.MAX_SP} sp",
                 color = colors.textMuted,
-                fontSize = 11.sp,
+                fontSize = 13.sp,
                 fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
             )
 
@@ -782,7 +782,7 @@ private fun ThemeOptionChip(
         Text(
             text = text,
             color = textColor,
-            fontSize = 13.sp,
+            fontSize = 15.sp,
             fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
             fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
         )
@@ -827,18 +827,18 @@ private fun AppDataSection(
                 Text(
                     text = stringResource(Res.string.settings_open_data_folder_title),
                     color = colors.textPrimary,
-                    fontSize = 14.sp,
+                    fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
                 )
                 Text(
                     text = stringResource(Res.string.settings_open_data_folder_desc),
                     color = colors.textMuted,
-                    fontSize = 12.sp,
+                    fontSize = 14.sp,
                 )
                 Text(
                     text = dataFolderPath,
                     color = colors.primary,
-                    fontSize = 11.sp,
+                    fontSize = 13.sp,
                     fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
                     modifier = Modifier.padding(top = 2.dp),
                 )
@@ -866,13 +866,13 @@ private fun AppDataSection(
                 Text(
                     text = stringResource(Res.string.settings_restore_defaults_title),
                     color = colors.textPrimary,
-                    fontSize = 14.sp,
+                    fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
                 )
                 Text(
                     text = stringResource(Res.string.settings_restore_defaults_desc),
                     color = colors.textMuted,
-                    fontSize = 12.sp,
+                    fontSize = 14.sp,
                 )
             }
 

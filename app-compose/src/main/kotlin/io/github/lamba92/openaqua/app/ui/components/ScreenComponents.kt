@@ -367,7 +367,7 @@ fun VisibilityFilterChip(
         Text(
             text = text,
             color = textColor,
-            fontSize = 12.sp,
+            fontSize = 14.sp,
             fontWeight = FontWeight.Medium,
             fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
         )
@@ -403,7 +403,7 @@ fun VisibilityEmptyState(
         Text(
             text = message,
             color = colors.textSecondary,
-            fontSize = 14.sp,
+            fontSize = 16.sp,
         )
         OpenAquaOutlinedButton(
             text = stringResource(Res.string.visibility_show_all_action),

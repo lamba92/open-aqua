@@ -19,11 +19,11 @@ import org.jetbrains.compose.resources.Font
 import org.jetbrains.compose.resources.StringResource
 
 object FontScaleConstants {
-    const val MIN_SP = 10
-    const val MAX_SP = 20
-    const val DEFAULT_SP = 13
+    const val MIN_SP = 12
+    const val MAX_SP = 22
+    const val DEFAULT_SP = 15
 
-    val PRESETS = listOf(11, 13, 15, 18)
+    val PRESETS = listOf(13, 15, 17, 20)
 }
 
 fun calculateFontScaleFactor(sp: Int): Float = sp.toFloat() / FontScaleConstants.DEFAULT_SP.toFloat()

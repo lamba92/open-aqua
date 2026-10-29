@@ -62,8 +62,8 @@ fun DeviceIllustration(
                     .align(Alignment.BottomEnd)
                     .padding(8.dp),
             color = CyanBright.copy(alpha = 0.6f),
-            fontSize = 11.sp,
-            lineHeight = 14.sp,
+            fontSize = 13.sp,
+            lineHeight = 16.sp,
             fontWeight = FontWeight.Bold,
             fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
         )

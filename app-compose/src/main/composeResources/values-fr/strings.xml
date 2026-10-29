@@ -173,10 +173,10 @@
     <string name="metrics_scale_comfortable">Confortable</string>
     <string name="settings_font_scale_title">Taille de police</string>
     <string name="settings_font_scale_desc">Spécifier la taille du texte en sp (min %1$d sp, max %2$d sp)</string>
-    <string name="font_preset_small">Petite (11 sp)</string>
-    <string name="font_preset_standard">Standard (13 sp)</string>
-    <string name="font_preset_large">Grande (15 sp)</string>
-    <string name="font_preset_extra_large">Très grande (18 sp)</string>
+    <string name="font_preset_small">Petite (13 sp)</string>
+    <string name="font_preset_standard">Standard (15 sp)</string>
+    <string name="font_preset_large">Grande (17 sp)</string>
+    <string name="font_preset_extra_large">Très grande (20 sp)</string>
     <string name="settings_font_family_title">Police d'écriture</string>
     <string name="settings_font_family_desc">Sélectionner la typographie pour les métriques, la télémétrie et les libellés</string>
     <string name="font_family_jetbrains_mono">JetBrains Mono (Recommandé)</string>

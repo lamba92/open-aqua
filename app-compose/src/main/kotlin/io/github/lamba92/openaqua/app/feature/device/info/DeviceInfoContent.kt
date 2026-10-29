@@ -127,8 +127,8 @@ fun DeviceInfoContent(
                             Text(
                                 text = stringResource(Res.string.usb_hid_connected),
                                 color = colors.textPrimary,
-                                fontSize = 12.sp,
-                                lineHeight = 16.sp,
+                                fontSize = 14.sp,
+                                lineHeight = 18.sp,
                                 fontWeight = FontWeight.Medium,
                             )
                         }
@@ -324,14 +324,14 @@ private fun InfoRow(
         Text(
             text = label,
             color = colors.textSecondary,
-            fontSize = 13.sp,
-            lineHeight = 18.sp,
+            fontSize = 15.sp,
+            lineHeight = 20.sp,
         )
         Text(
             text = value,
             color = colors.textPrimary,
-            fontSize = 13.sp,
-            lineHeight = 18.sp,
+            fontSize = 15.sp,
+            lineHeight = 20.sp,
             fontWeight = FontWeight.SemiBold,
             fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
         )
@@ -360,8 +360,8 @@ private fun SpecCard(
         Text(
             text = title,
             color = colors.textMuted,
-            fontSize = 11.sp,
-            lineHeight = 14.sp,
+            fontSize = 13.sp,
+            lineHeight = 16.sp,
             fontWeight = FontWeight.Medium,
             minLines = 2,
             maxLines = 2,
@@ -370,8 +370,8 @@ private fun SpecCard(
         Text(
             text = value,
             color = colors.textPrimary,
-            fontSize = 14.sp,
-            lineHeight = 18.sp,
+            fontSize = 16.sp,
+            lineHeight = 20.sp,
             fontWeight = FontWeight.Bold,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -379,8 +379,8 @@ private fun SpecCard(
         Text(
             text = subtitle,
             color = colors.primaryBright,
-            fontSize = 11.sp,
-            lineHeight = 14.sp,
+            fontSize = 13.sp,
+            lineHeight = 16.sp,
             fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
             minLines = 2,
             maxLines = 2,

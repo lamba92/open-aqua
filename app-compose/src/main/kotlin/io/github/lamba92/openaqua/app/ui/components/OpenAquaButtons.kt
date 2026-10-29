@@ -73,7 +73,7 @@ fun OpenAquaButton(
         }
         Text(
             text = text,
-            fontSize = 13.sp,
+            fontSize = 15.sp,
             fontWeight = FontWeight.Bold,
         )
     }
@@ -126,7 +126,7 @@ fun OpenAquaOutlinedButton(
         }
         Text(
             text = text,
-            fontSize = 13.sp,
+            fontSize = 15.sp,
             fontWeight = FontWeight.Medium,
         )
     }
