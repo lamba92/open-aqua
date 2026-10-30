@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 import kotlin.time.Duration.Companion.seconds
@@ -126,21 +127,17 @@ class DeviceNavViewModel(
     }
 
     private fun selectDevice(deviceId: DeviceId) {
-        val selectedItem =
-            DeviceNavState.SelectedItem.Device(
-                deviceId = deviceId,
-                selectedTab =
-                    when (val currentSelectedItem = state.value.selectedItem) {
-                        is DeviceNavState.SelectedItem.Device if currentSelectedItem.deviceId == deviceId ->
-                            currentSelectedItem.selectedTab
-
-                        else -> CommonDeviceTab.DEVICE_INFO
-                    },
-            )
-        state.update { currentState ->
-            currentState.copy(selectedItem = selectedItem)
-        }
-        appDataRepository.setNavigationSelection(selectedItem.toStoredData())
+        val finalState =
+            state.updateAndGet { currentState ->
+                currentState.copy(
+                    selectedItem =
+                        when (currentState.selectedItem) {
+                            is DeviceNavState.SelectedItem.Device -> currentState.selectedItem.copy(deviceId = deviceId)
+                            else -> DeviceNavState.SelectedItem.Device(deviceId = deviceId, selectedTab = CommonDeviceTab.DEVICE_INFO)
+                        },
+                )
+            }
+        appDataRepository.setNavigationSelection(finalState.selectedItem?.toStoredData())
     }
 
     private fun selectTab(tab: CommonDeviceTab) {
