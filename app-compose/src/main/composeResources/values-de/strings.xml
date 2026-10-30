@@ -107,6 +107,8 @@
     <string name="curve_legend_current">Aktuell (Hardware)</string>
     <string name="curve_legend_destination">Ziel (Entwurf)</string>
     <string name="curve_legend_live_operating_point">Betriebspunkt: %1$s°C → %2$s%</string>
+    <string name="curve_legend_op_current">Aktuelle Kurve: %1$s°C → %2$s%</string>
+    <string name="curve_legend_op_destination">Neue Kurve: %1$s°C → %2$s%</string>
     <string name="curve_action_apply">Anwenden &amp; Flashen</string>
     <string name="curve_action_flash_all">Änderungen flashen (%1$d)</string>
     <string name="curve_action_discard">Verwerfen</string>

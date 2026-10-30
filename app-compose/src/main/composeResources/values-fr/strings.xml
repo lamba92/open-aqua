@@ -107,6 +107,8 @@
     <string name="curve_legend_current">Actuel (Matériel)</string>
     <string name="curve_legend_destination">Destination (Brouillon)</string>
     <string name="curve_legend_live_operating_point">Point de fonctionnement : %1$s°C → %2$s%</string>
+    <string name="curve_legend_op_current">Courbe actuelle : %1$s°C → %2$s%</string>
+    <string name="curve_legend_op_destination">Nouvelle courbe : %1$s°C → %2$s%</string>
     <string name="curve_action_apply">Appliquer &amp; Flasher</string>
     <string name="curve_action_flash_all">Flasher les modifications (%1$d)</string>
     <string name="curve_action_discard">Abandonner</string>

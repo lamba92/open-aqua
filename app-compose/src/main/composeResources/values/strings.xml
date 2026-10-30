@@ -122,6 +122,8 @@
     <string name="curve_legend_current">Current (Hardware)</string>
     <string name="curve_legend_destination">Destination (Draft)</string>
     <string name="curve_legend_live_operating_point">Operating Point: %1$s°C → %2$s%</string>
+    <string name="curve_legend_op_current">Current Curve: %1$s°C → %2$s%</string>
+    <string name="curve_legend_op_destination">New Curve: %1$s°C → %2$s%</string>
     <string name="curve_action_apply">Apply &amp; Flash</string>
     <string name="curve_action_flash_all">Flash Changes (%1$d)</string>
     <string name="curve_action_discard">Discard</string>

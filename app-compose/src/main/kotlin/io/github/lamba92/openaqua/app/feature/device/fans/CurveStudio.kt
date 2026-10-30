@@ -75,7 +75,8 @@ import open_aqua.app_compose.generated.resources.curve_fixed_power
 import open_aqua.app_compose.generated.resources.curve_fixed_power_desc
 import open_aqua.app_compose.generated.resources.curve_legend_current
 import open_aqua.app_compose.generated.resources.curve_legend_destination
-import open_aqua.app_compose.generated.resources.curve_legend_live_operating_point
+import open_aqua.app_compose.generated.resources.curve_legend_op_current
+import open_aqua.app_compose.generated.resources.curve_legend_op_destination
 import open_aqua.app_compose.generated.resources.curve_legend_target
 import open_aqua.app_compose.generated.resources.curve_pwm_max
 import open_aqua.app_compose.generated.resources.curve_pwm_min
@@ -995,15 +996,23 @@ private fun CurveVisualizerGraph(
                 // Current (Hardware) Legend
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Box(
+                    Canvas(
                         modifier =
                             Modifier
-                                .width(16.dp)
-                                .height(2.dp)
-                                .background(colors.secondary),
-                    )
+                                .width(28.dp)
+                                .height(10.dp),
+                    ) {
+                        val y = size.height / 2f
+                        drawLine(
+                            color = colors.secondary,
+                            start = Offset(0f, y),
+                            end = Offset(size.width, y),
+                            strokeWidth = 2.dp.toPx(),
+                            pathEffect = PathEffect.dashPathEffect(floatArrayOf(5.dp.toPx(), 3.dp.toPx()), 0f),
+                        )
+                    }
                     Text(
                         text = stringResource(Res.string.curve_legend_current),
                         color = colors.secondary,
@@ -1015,15 +1024,22 @@ private fun CurveVisualizerGraph(
                 // Destination (Draft) Legend
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Box(
+                    Canvas(
                         modifier =
                             Modifier
-                                .width(16.dp)
-                                .height(3.dp)
-                                .background(colors.primaryBright),
-                    )
+                                .width(28.dp)
+                                .height(10.dp),
+                    ) {
+                        val y = size.height / 2f
+                        drawLine(
+                            color = colors.primaryBright,
+                            start = Offset(0f, y),
+                            end = Offset(size.width, y),
+                            strokeWidth = 2.5.dp.toPx(),
+                        )
+                    }
                     Text(
                         text =
                             if (draftConfig is TargetTempFanConfig) {
@@ -1039,21 +1055,38 @@ private fun CurveVisualizerGraph(
                 }
             }
 
-            // Live Operating point reading
+            // Live Operating point readings (Current Curve vs New Curve at current temp)
             if (liveTemp != null) {
-                val livePwm = evaluatePwmAt(draftConfig, liveTemp)
-                Text(
-                    text =
-                        stringResource(
-                            Res.string.curve_legend_live_operating_point,
-                            "%.1f".format(liveTemp),
-                            livePwm.roundToInt().toString(),
-                        ),
-                    color = colors.accent,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
-                )
+                val currentPwm = currentPoints[liveTemp] ?: evaluatePwmAt(currentConfig, liveTemp)
+                val destPwm = draftPoints[liveTemp] ?: evaluatePwmAt(draftConfig, liveTemp)
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text =
+                            stringResource(
+                                Res.string.curve_legend_op_current,
+                                "%.1f".format(liveTemp),
+                                currentPwm.roundToInt().toString(),
+                            ),
+                        color = colors.secondary,
+                        fontSize = 12.sp,
+                        fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
+                    )
+                    Text(
+                        text =
+                            stringResource(
+                                Res.string.curve_legend_op_destination,
+                                "%.1f".format(liveTemp),
+                                destPwm.roundToInt().toString(),
+                            ),
+                        color = colors.primaryBright,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
+                    )
+                }
             }
         }
 
@@ -1225,36 +1258,51 @@ private fun CurveVisualizerGraph(
                 }
             }
 
-            // 6. Draw Live Operating Point Marker (vertical dashed line + pulsating dot)
+            // 6. Draw Live Operating Point Marker (vertical dashed line + operating point dots)
             if (liveTemp != null && liveTemp in 10.0..80.0) {
                 val lx = tempToX(liveTemp)
+                val currentPwm = currentPoints[liveTemp] ?: evaluatePwmAt(currentConfig, liveTemp)
                 val destPwm = draftPoints[liveTemp] ?: evaluatePwmAt(draftConfig, liveTemp)
-                val ly = pwmToY(destPwm)
+                val currentY = pwmToY(currentPwm)
+                val destY = pwmToY(destPwm)
 
                 drawLine(
-                    color = colors.accent.copy(alpha = 0.5f),
+                    color = colors.borderOutline.copy(alpha = 0.5f),
                     start = Offset(lx, plotTop),
                     end = Offset(lx, plotBottom),
                     strokeWidth = 1.2.dp.toPx(),
                     pathEffect = PathEffect.dashPathEffect(floatArrayOf(3.dp.toPx(), 3.dp.toPx()), 0f),
                 )
 
+                // Current operating point dot (hardware) on current curve
+                drawCircle(
+                    color = colors.secondary,
+                    radius = 4.dp.toPx(),
+                    center = Offset(lx, currentY),
+                )
+                drawCircle(
+                    color = colors.surfaceLowest,
+                    radius = 2.dp.toPx(),
+                    center = Offset(lx, currentY),
+                )
+
+                // Destination operating point dot (pulsing halo + solid center dot) on destination curve
                 // Pulsing outer halo
                 drawCircle(
-                    color = colors.accent.copy(alpha = pulseAlpha * 0.35f),
+                    color = colors.primaryBright.copy(alpha = pulseAlpha * 0.35f),
                     radius = (5 + pulseRadius).dp.toPx(),
-                    center = Offset(lx, ly),
+                    center = Offset(lx, destY),
                 )
                 // Solid center dot
                 drawCircle(
-                    color = colors.accent,
+                    color = colors.primaryBright,
                     radius = 4.5.dp.toPx(),
-                    center = Offset(lx, ly),
+                    center = Offset(lx, destY),
                 )
                 drawCircle(
                     color = Color.White,
                     radius = 2.dp.toPx(),
-                    center = Offset(lx, ly),
+                    center = Offset(lx, destY),
                 )
             }
         }

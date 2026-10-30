@@ -107,6 +107,8 @@
     <string name="curve_legend_current">Attuale (Hardware)</string>
     <string name="curve_legend_destination">Destinazione (Bozza)</string>
     <string name="curve_legend_live_operating_point">Punto operativo: %1$s°C → %2$s%</string>
+    <string name="curve_legend_op_current">Curva attuale: %1$s°C → %2$s%</string>
+    <string name="curve_legend_op_destination">Nuova curva: %1$s°C → %2$s%</string>
     <string name="curve_action_apply">Applica &amp; Scrivi EEPROM</string>
     <string name="curve_action_flash_all">Scrivi modifiche (%1$d)</string>
     <string name="curve_action_discard">Annulla</string>
