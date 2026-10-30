@@ -46,6 +46,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
@@ -644,18 +645,22 @@ private fun TargetTempModeControls(
                         ),
                 )
 
-                if (hasError) {
-                    Text(
-                        text =
-                            stringResource(
-                                Res.string.curve_target_temp_range_error,
-                                minTemp.toInt().toString(),
-                                maxTemp.toInt().toString(),
-                            ),
-                        color = colors.statusCritical,
-                        fontSize = 11.sp,
-                    )
-                }
+                Text(
+                    text =
+                        stringResource(
+                            Res.string.curve_target_temp_range_error,
+                            minTemp.toInt().toString(),
+                            maxTemp.toInt().toString(),
+                        ),
+                    color = if (hasError) colors.statusCritical else Color.Transparent,
+                    fontSize = 11.sp,
+                    modifier =
+                        if (hasError) {
+                            Modifier
+                        } else {
+                            Modifier.clearAndSetSemantics { }
+                        },
+                )
             }
         }
     }

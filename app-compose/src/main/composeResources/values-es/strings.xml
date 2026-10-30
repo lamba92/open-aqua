@@ -223,6 +223,6 @@
     <string name="settings_reset_dialog_message">Esto solo restablecerá las opciones locales de OpenAqua, como nombres personalizados. Los datos y configuraciones en sus dispositivos de hardware NO se modificarán.</string>
     <string name="settings_reset_dialog_cancel">NO restablecer</string>
     <string name="settings_reset_dialog_confirm">Restablecer datos</string>
-    <string name="curve_target_temp_range_error">La temperatura objetivo debe estar entre %1°C y %2°C</string>
+    <string name="curve_target_temp_range_error">La temperatura objetivo debe estar entre %1$s°C y %2$s°C</string>
     <string name="curve_target_temp_explanation">El dispositivo ejecuta un regulador PID autónomo de bucle cerrado directamente en su microcontrolador. La velocidad del ventilador se ajusta continuamente para estabilizar el sensor seleccionado en este punto de ajuste sin requerir software ni puntos de curva.</string>
 </resources>

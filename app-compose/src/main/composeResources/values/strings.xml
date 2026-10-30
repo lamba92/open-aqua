@@ -238,7 +238,7 @@
     <string name="settings_reset_dialog_message">This will only reset local OpenAqua settings such as custom fan and sensor names back to their defaults. Data and configurations stored on your hardware devices will NOT be changed.</string>
     <string name="settings_reset_dialog_cancel">Do NOT reset</string>
     <string name="settings_reset_dialog_confirm">Reset data</string>
-    <string name="curve_target_temp_range_error">Target temperature must be between %1°C and %2°C</string>
+    <string name="curve_target_temp_range_error">Target temperature must be between %1$s°C and %2$s°C</string>
     <string name="curve_target_temp_explanation">The hardware device executes an autonomous closed-loop PID regulator directly on its microcontroller. Fan speed is continuously adjusted to stabilize the selected sensor at this target setpoint without requiring software or curve points.</string>
 
     <!-- Sensor Options & Types -->
