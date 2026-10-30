@@ -87,8 +87,8 @@ data class ThemePalette(
                 surfaceHigh = ThemeColor(0xFF222B42),
                 surfaceHighest = ThemeColor(0xFF2E3B59),
                 surfaceBright = ThemeColor(0xFF3B4A70),
-                primary = ThemeColor(0xFF00F5FF),
-                primaryBright = ThemeColor(0xFF70FAFF),
+                primary = OpenAquaPalette.ElectricCyan,
+                primaryBright = OpenAquaPalette.CyanBright,
                 secondary = ThemeColor(0xFF22D3EE),
                 secondaryDark = ThemeColor(0xFF0891B2),
                 accent = ThemeColor(0xFF38BDF8),
@@ -111,11 +111,11 @@ data class ThemePalette(
                 surfaceHigh = ThemeColor(0xFF334155),
                 surfaceHighest = ThemeColor(0xFF475569),
                 surfaceBright = ThemeColor(0xFF64748B),
-                primary = ThemeColor(0xFF38BDF8),
-                primaryBright = ThemeColor(0xFF7DD3FC),
-                secondary = ThemeColor(0xFF818CF8),
-                secondaryDark = ThemeColor(0xFF4F46E5),
-                accent = ThemeColor(0xFF38BDF8),
+                primary = ThemeColor(0xFF0284C7),
+                primaryBright = ThemeColor(0xFF38BDF8),
+                secondary = ThemeColor(0xFF6366F1),
+                secondaryDark = ThemeColor(0xFF4338CA),
+                accent = ThemeColor(0xFF0EA5E9),
                 textPrimary = ThemeColor(0xFFF8FAFC),
                 textSecondary = ThemeColor(0xFFCBD5E1),
                 textMuted = ThemeColor(0xFF94A3B8),
@@ -135,11 +135,11 @@ data class ThemePalette(
                 surfaceHigh = ThemeColor(0xFF2D3344),
                 surfaceHighest = ThemeColor(0xFF3D445A),
                 surfaceBright = ThemeColor(0xFF4E5772),
-                primary = ThemeColor(0xFFF59E0B),
-                primaryBright = ThemeColor(0xFFFBBF24),
+                primary = ThemeColor(0xFFD97706),
+                primaryBright = ThemeColor(0xFFF59E0B),
                 secondary = ThemeColor(0xFF14B8A6),
                 secondaryDark = ThemeColor(0xFF0D9488),
-                accent = ThemeColor(0xFFFB923C),
+                accent = ThemeColor(0xFFF97316),
                 textPrimary = ThemeColor(0xFFF8FAFC),
                 textSecondary = ThemeColor(0xFFE2E8F0),
                 textMuted = ThemeColor(0xFF94A3B8),
@@ -178,8 +178,8 @@ object OpenAquaPalette {
     val SurfaceBright = ThemeColor(0xFF343945)
 
     // Hydro-Telemetry UI Accent Tokens
-    val ElectricCyan = ThemeColor(0xFF00F2FE)
-    val CyanBright = ThemeColor(0xFF6FF6FF)
+    val ElectricCyan = ThemeColor(0xFF06B6D4)
+    val CyanBright = ThemeColor(0xFF38C2DE)
     val CoolantTeal = ThemeColor(0xFF4FDBC8)
     val TealDark = ThemeColor(0xFF04B4A2)
     val SkyBlue = ThemeColor(0xFF38BDF8)

@@ -591,8 +591,8 @@ private fun SettingToggleRow(
             colors =
                 SwitchDefaults.colors(
                     checkedThumbColor = colors.surfaceLowest,
-                    checkedTrackColor = colors.primaryBright,
-                    checkedBorderColor = colors.primaryBright,
+                    checkedTrackColor = colors.primary,
+                    checkedBorderColor = colors.primary,
                     uncheckedThumbColor = colors.textMuted,
                     uncheckedTrackColor = colors.surfaceHigh,
                     uncheckedBorderColor = colors.borderOutline,
