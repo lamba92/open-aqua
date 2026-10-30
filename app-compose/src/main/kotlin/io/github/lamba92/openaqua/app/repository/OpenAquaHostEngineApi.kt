@@ -8,10 +8,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeout
-import kotlinx.io.asSource
-import kotlinx.io.buffered
-import kotlinx.io.readLineStrict
 import kotlinx.serialization.json.Json
 import java.nio.file.Path
 import kotlin.io.path.absolutePathString
@@ -54,25 +50,9 @@ class OpenAquaHostEngineApi(
         vararg command: String,
         timeout: Duration = 5.seconds,
     ): T =
-        withContext(Dispatchers.IO) {
-            val process =
-                ProcessBuilder(
-                    enginePath.absolutePathString(),
-                    *command,
-                ).start()
-            val result =
-                withTimeout(timeout) {
-                    val input =
-                        process.inputStream
-                            .asSource()
-                            .buffered()
-                            .readLineStrict()
-                    when (val response = json.decodeFromString<EngineResponse<T>>(input)) {
-                        is EngineResponse.Error -> error(response.message)
-                        is EngineResponse.Success<T> -> response.value
-                    }
-                }
-            process.waitFor()
-            result
-        }
+        executeAndDecodeWithTimeout(
+            command = arrayOf(enginePath.absolutePathString(), *command),
+            timeout = timeout,
+            json = json,
+        )
 }
