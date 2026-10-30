@@ -32,7 +32,6 @@ import io.github.lamba92.openaqua.app.di.rememberInstance
 import io.github.lamba92.openaqua.app.feature.device.common.DeviceLoadingContent
 import io.github.lamba92.openaqua.app.feature.device.common.FanItem
 import io.github.lamba92.openaqua.app.feature.device.common.SensorItem
-import io.github.lamba92.openaqua.app.theme.BrandPureWhite
 import io.github.lamba92.openaqua.app.theme.CoolantTeal
 import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
 import io.github.lamba92.openaqua.app.ui.components.ChannelDetailHeader
@@ -233,10 +232,6 @@ fun FansContent(
             dismissText = stringResource(Res.string.flash_dialog_cancel_btn),
             isLoading = isFlashing,
             loadingText = stringResource(Res.string.curve_action_flashing),
-            confirmContainerColor = colors.primary,
-            confirmContentColor = BrandPureWhite,
-            dismissContainerColor = colors.surfaceHigh,
-            dismissContentColor = colors.textPrimary,
             onConfirm = { onEvent(FansUiEvent.ConfirmFlash) },
             onDismiss = { onEvent(FansUiEvent.DismissFlashDialog) },
             width = 480.dp,

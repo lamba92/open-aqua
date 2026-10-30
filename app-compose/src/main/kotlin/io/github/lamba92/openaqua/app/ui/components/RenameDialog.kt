@@ -26,6 +26,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
@@ -39,12 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import io.github.lamba92.openaqua.app.theme.BorderOutline
-import io.github.lamba92.openaqua.app.theme.CyanBright
-import io.github.lamba92.openaqua.app.theme.SurfaceContainer
-import io.github.lamba92.openaqua.app.theme.SurfaceContainerLow
-import io.github.lamba92.openaqua.app.theme.TextMuted
-import io.github.lamba92.openaqua.app.theme.TextPrimary
+import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
 import open_aqua.app_compose.generated.resources.Res
 import open_aqua.app_compose.generated.resources.rename_dialog_cancel
 import open_aqua.app_compose.generated.resources.rename_dialog_label
@@ -64,12 +60,14 @@ fun RenameDialog(
     confirmText: String = stringResource(Res.string.rename_dialog_save),
     dismissText: String = stringResource(Res.string.rename_dialog_cancel),
     icon: Painter? = null,
-    iconTint: Color = CyanBright,
+    iconTint: Color = Color.Unspecified,
 ) {
     var textFieldValue by remember {
         mutableStateOf(TextFieldValue(text = initialValue, selection = TextRange(0, initialValue.length)))
     }
     val focusRequester = remember { FocusRequester() }
+    val colors = OpenAquaTheme.colors
+    val resolvedIconTint = if (iconTint.isSpecified) iconTint else colors.primaryBright
 
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
@@ -92,8 +90,8 @@ fun RenameDialog(
                 modifier
                     .width(440.dp)
                     .clip(RoundedCornerShape(16.dp))
-                    .background(SurfaceContainerLow)
-                    .border(1.dp, BorderOutline, RoundedCornerShape(16.dp))
+                    .background(colors.surfaceLow)
+                    .border(1.dp, colors.borderOutline, RoundedCornerShape(16.dp))
                     .padding(24.dp)
                     .onPreviewKeyEvent { event ->
                         when (event.type) {
@@ -122,13 +120,13 @@ fun RenameDialog(
                     Icon(
                         painter = icon,
                         contentDescription = null,
-                        tint = iconTint,
+                        tint = resolvedIconTint,
                         modifier = Modifier.size(24.dp),
                     )
                 }
                 Text(
                     text = title,
-                    color = TextPrimary,
+                    color = colors.textPrimary,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                 )
@@ -144,18 +142,18 @@ fun RenameDialog(
                 singleLine = true,
                 shape = RoundedCornerShape(10.dp),
                 label = { Text(text = label) },
-                placeholder = { Text(text = placeholder, color = TextMuted) },
+                placeholder = { Text(text = placeholder, color = colors.textMuted) },
                 colors =
                     OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = CyanBright,
-                        unfocusedBorderColor = BorderOutline,
-                        focusedLabelColor = CyanBright,
-                        unfocusedLabelColor = TextMuted,
-                        focusedTextColor = TextPrimary,
-                        unfocusedTextColor = TextPrimary,
-                        cursorColor = CyanBright,
-                        focusedContainerColor = SurfaceContainer,
-                        unfocusedContainerColor = SurfaceContainer,
+                        focusedBorderColor = colors.primaryBright,
+                        unfocusedBorderColor = colors.borderOutline,
+                        focusedLabelColor = colors.primaryBright,
+                        unfocusedLabelColor = colors.textMuted,
+                        focusedTextColor = colors.textPrimary,
+                        unfocusedTextColor = colors.textPrimary,
+                        cursorColor = colors.primaryBright,
+                        focusedContainerColor = colors.surfaceContainer,
+                        unfocusedContainerColor = colors.surfaceContainer,
                     ),
             )
 
