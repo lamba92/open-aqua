@@ -1,5 +1,6 @@
 package io.github.lamba92.openaqua.app.util
 
+import io.github.lamba92.openaqua.model.retryAtLeast
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -152,9 +153,11 @@ fun <T, K, R> Flow<List<T>>.combineByKey(
                         val stateFlow = MutableStateFlow<R?>(null)
                         val job =
                             launch {
-                                itemFlow(item).collect { value ->
-                                    stateFlow.value = value
-                                }
+                                itemFlow(item)
+                                    .retryAtLeast(3)
+                                    .collect { value ->
+                                        stateFlow.value = value
+                                    }
                             }
                         activeChildren[key] = ChildFlowEntry(item, job, stateFlow)
                     }

@@ -15,6 +15,7 @@ import io.github.lamba92.openaqua.model.host.HostInfo
 import io.github.lamba92.openaqua.model.host.HostSensorId
 import io.github.lamba92.openaqua.model.host.HostSensorTelemetry
 import io.github.lamba92.openaqua.model.host.HostTelemetry
+import io.github.lamba92.openaqua.model.retryAtLeast
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
@@ -57,7 +58,8 @@ class DeviceDataCacheService(
                 .getTelemetryStream()
                 .map { telemetry ->
                     DeviceState.Host.Ready(info = info, telemetry = telemetry)
-                }.catch { cause ->
+                }.retryAtLeast(3)
+                .catch { cause ->
                     System.err.println("[DeviceDataCacheService] Host engine telemetry stream error: ${cause.message}")
                     cause.printStackTrace()
                     emit(
@@ -68,22 +70,24 @@ class DeviceDataCacheService(
                         ),
                     )
                 }.collect { emit(it) }
-        }.catch { cause ->
-            System.err.println("[DeviceDataCacheService] Failed to read host info: ${cause.message}")
-            cause.printStackTrace()
-            emit(
-                DeviceState.Host.Error(
-                    info = null,
-                    errorType = cause.toDeviceErrorType(),
-                    message = cause.message,
-                ),
-            )
-        }
+        }.retryAtLeast(3)
+            .catch { cause ->
+                System.err.println("[DeviceDataCacheService] Failed to read host info: ${cause.message}")
+                cause.printStackTrace()
+                emit(
+                    DeviceState.Host.Error(
+                        info = null,
+                        errorType = cause.toDeviceErrorType(),
+                        message = cause.message,
+                    ),
+                )
+            }
 
     val state: StateFlow<List<DeviceState>> =
         combine(
             getHostFlow(),
             every(pollingIntervals.deviceConfig) { openAquaDeviceEngineApi.listDevices().devices }
+                .retryAtLeast(3)
                 .combineByKey(
                     keySelector = { it.id },
                     itemFlow = { device -> device.getStateFlow(pollingIntervals) },
@@ -129,8 +133,11 @@ class DeviceDataCacheService(
     private fun DetectedHardwareDevice.getStateFlow(pollingIntervals: PollingIntervals): Flow<DeviceState.Aqua> {
         val descriptor = DeviceRegistry.findByType(type)
         return combine<DeviceConfig, DeviceTelemetry, DeviceState.Aqua>(
-            every(pollingIntervals.deviceConfig) { openAquaDeviceEngineApi.getDeviceConfig(id) },
-            openAquaDeviceEngineApi.getTelemetryStream(id),
+            every(pollingIntervals.deviceConfig) { openAquaDeviceEngineApi.getDeviceConfig(id) }
+                .retryAtLeast(3),
+            openAquaDeviceEngineApi
+                .getTelemetryStream(id)
+                .retryAtLeast(3),
         ) { config, telemetry ->
             DeviceState.Aqua.Ready(
                 device = this@getStateFlow,
@@ -139,6 +146,7 @@ class DeviceDataCacheService(
                 config = config,
             )
         }.onStart { emit(DeviceState.Aqua.Connecting(this@getStateFlow, descriptor)) }
+            .retryAtLeast(3)
             .catch { cause ->
                 System.err.println("[DeviceDataCacheService] Error reading device '$id' ($name): ${cause.message}")
                 cause.printStackTrace()

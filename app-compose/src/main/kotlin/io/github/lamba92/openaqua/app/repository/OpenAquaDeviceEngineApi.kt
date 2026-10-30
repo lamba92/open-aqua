@@ -14,8 +14,10 @@ import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
+import kotlinx.io.asSource
+import kotlinx.io.buffered
+import kotlinx.io.readLine
 import kotlinx.serialization.json.Json
 import java.nio.file.Path
 import kotlin.io.path.absolutePathString
@@ -42,9 +44,9 @@ class OpenAquaDeviceEngineApi(
                 val process =
                     ProcessBuilder(enginePath.absolutePathString(), "stream-telemetry", "--device=${deviceId.value}").start()
                 try {
-                    val reader = process.inputStream.bufferedReader()
-                    while (isActive) {
-                        val line = reader.readLine() ?: break
+                    val reader = process.inputStream.asSource().buffered()
+                    while (true) {
+                        val line = reader.readLine() ?: error("Device telemetry stream process closed unexpectedly for device '${deviceId.value}'")
                         when (val telemetry = json.decodeFromString<EngineResponse<DeviceTelemetry>>(line)) {
                             is EngineResponse.Error -> error(telemetry.message)
                             is EngineResponse.Success<DeviceTelemetry> -> send(telemetry.value)
