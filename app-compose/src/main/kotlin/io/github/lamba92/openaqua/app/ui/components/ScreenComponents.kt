@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -360,7 +359,6 @@ fun VisibilityFilterChip(
             modifier =
                 Modifier
                     .size(6.dp)
-                    .offset(y = 1.5.dp)
                     .clip(CircleShape)
                     .background(if (showingAll) colors.statusWarning else colors.primary),
         )
