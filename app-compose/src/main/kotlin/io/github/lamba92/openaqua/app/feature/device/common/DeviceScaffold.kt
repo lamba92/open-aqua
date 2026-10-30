@@ -35,14 +35,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.lamba92.openaqua.app.repository.DeviceErrorType
-import io.github.lamba92.openaqua.app.theme.BorderOutline
-import io.github.lamba92.openaqua.app.theme.CyanBright
-import io.github.lamba92.openaqua.app.theme.ElectricCyan
-import io.github.lamba92.openaqua.app.theme.StatusWarning
-import io.github.lamba92.openaqua.app.theme.SurfaceContainerHigh
-import io.github.lamba92.openaqua.app.theme.SurfaceContainerLow
-import io.github.lamba92.openaqua.app.theme.TextPrimary
-import io.github.lamba92.openaqua.app.theme.TextSecondary
+import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
 import io.github.lamba92.openaqua.model.device.DetectedHardwareDevice
 import open_aqua.app_compose.generated.resources.Res
 import open_aqua.app_compose.generated.resources.device_error_generic
@@ -72,6 +65,7 @@ fun DeviceDrawerScaffold(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
+    val colors = OpenAquaTheme.colors
     PermanentNavigationDrawer(
         drawerContent = {
             PermanentDrawerSheet(
@@ -79,8 +73,8 @@ fun DeviceDrawerScaffold(
                     Modifier
                         .width(220.dp)
                         .fillMaxHeight(),
-                drawerContainerColor = SurfaceContainerLow,
-                drawerContentColor = TextPrimary,
+                drawerContainerColor = colors.surfaceLow,
+                drawerContentColor = colors.textPrimary,
                 drawerShape = RoundedCornerShape(0.dp),
             ) {
                 Column(
@@ -93,7 +87,7 @@ fun DeviceDrawerScaffold(
                     val displayName = device.name.removePrefix("Aquacomputer").trim()
                     Text(
                         text = displayName,
-                        color = TextPrimary,
+                        color = colors.textPrimary,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
@@ -102,24 +96,24 @@ fun DeviceDrawerScaffold(
                     )
                     Text(
                         text = device.alias.value,
-                        color = ElectricCyan,
+                        color = colors.primary,
                         fontSize = 13.sp,
                         fontFamily = FontFamily.Monospace,
                         modifier = Modifier.padding(horizontal = 12.dp),
                     )
 
                     Spacer(modifier = Modifier.height(8.dp))
-                    HorizontalDivider(color = BorderOutline)
+                    HorizontalDivider(color = colors.borderOutline)
                     Spacer(modifier = Modifier.height(8.dp))
 
                     val drawerColors =
                         NavigationDrawerItemDefaults.colors(
-                            selectedContainerColor = SurfaceContainerHigh,
+                            selectedContainerColor = colors.surfaceHigh,
                             unselectedContainerColor = Color.Transparent,
-                            selectedIconColor = CyanBright,
-                            unselectedIconColor = TextSecondary,
-                            selectedTextColor = TextPrimary,
-                            unselectedTextColor = TextSecondary,
+                            selectedIconColor = colors.primaryBright,
+                            unselectedIconColor = colors.textSecondary,
+                            selectedTextColor = colors.textPrimary,
+                            unselectedTextColor = colors.textSecondary,
                         )
 
                     DeviceDrawerTabItem(
@@ -194,7 +188,7 @@ fun DeviceLoadingContent(modifier: Modifier = Modifier) {
         contentAlignment = Alignment.Center,
     ) {
         CircularProgressIndicator(
-            color = CyanBright,
+            color = OpenAquaTheme.colors.primaryBright,
             modifier = Modifier.size(48.dp),
         )
     }
@@ -224,13 +218,13 @@ fun DeviceErrorContent(
             Icon(
                 imageVector = Icons.Outlined.Warning,
                 contentDescription = null,
-                tint = StatusWarning,
+                tint = OpenAquaTheme.colors.statusWarning,
                 modifier = Modifier.size(48.dp),
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = message,
-                color = TextPrimary,
+                color = OpenAquaTheme.colors.textPrimary,
                 fontSize = 18.sp,
             )
         }

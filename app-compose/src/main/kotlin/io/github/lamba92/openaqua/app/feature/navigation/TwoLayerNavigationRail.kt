@@ -37,18 +37,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.github.lamba92.openaqua.app.repository.DeviceState
-import io.github.lamba92.openaqua.app.theme.BorderOutline
-import io.github.lamba92.openaqua.app.theme.CyanBright
-import io.github.lamba92.openaqua.app.theme.ElectricCyan
+import io.github.lamba92.openaqua.app.theme.AppColors
 import io.github.lamba92.openaqua.app.theme.LocalNavigationRailColors
 import io.github.lamba92.openaqua.app.theme.LocalNavigationRailMetrics
 import io.github.lamba92.openaqua.app.theme.NavigationRailColors
 import io.github.lamba92.openaqua.app.theme.NavigationRailMetrics
 import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
-import io.github.lamba92.openaqua.app.theme.StatusNominal
-import io.github.lamba92.openaqua.app.theme.StatusWarning
-import io.github.lamba92.openaqua.app.theme.SurfaceContainerHigh
-import io.github.lamba92.openaqua.app.theme.TextPrimary
 import io.github.lamba92.openaqua.app.ui.components.OpenAquaVerticalScrollbar
 import io.github.lamba92.openaqua.model.device.DeviceId
 import open_aqua.app_compose.generated.resources.Res
@@ -92,7 +86,7 @@ fun DeviceNavigationRailScaffold(
         NavigationRail(
             modifier = Modifier.width(metrics.width).fillMaxHeight(),
             containerColor = colors.container,
-            contentColor = TextPrimary,
+            contentColor = colors.itemSelectedText,
             header = {
                 NavigationRailHeader(metrics = metrics)
             },
@@ -107,7 +101,7 @@ fun DeviceNavigationRailScaffold(
 
             if (state.devices.isNotEmpty()) {
                 HorizontalDivider(
-                    color = BorderOutline,
+                    color = OpenAquaTheme.colors.borderOutline,
                     modifier = Modifier.width(metrics.dividerWidth).padding(vertical = 4.dp),
                 )
             }
@@ -230,19 +224,19 @@ private fun NavigationRailHeader(
                 Modifier
                     .size(metrics.headerLogoSize)
                     .clip(RoundedCornerShape(metrics.headerCornerRadius))
-                    .background(SurfaceContainerHigh),
+                    .background(OpenAquaTheme.colors.surfaceHigh),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
                 painter = painterResource(Res.drawable.ic_openaqua),
                 contentDescription = null,
-                tint = CyanBright,
+                tint = OpenAquaTheme.colors.primaryBright,
                 modifier = Modifier.size(metrics.headerIconSize),
             )
         }
         Spacer(modifier = Modifier.height(12.dp))
         HorizontalDivider(
-            color = BorderOutline,
+            color = OpenAquaTheme.colors.borderOutline,
             modifier = Modifier.width(metrics.dividerWidth),
         )
     }
@@ -261,7 +255,7 @@ private fun NavigationRailFooter(
         modifier = modifier.padding(bottom = 14.dp),
     ) {
         HorizontalDivider(
-            color = BorderOutline,
+            color = OpenAquaTheme.colors.borderOutline,
             modifier = Modifier.width(metrics.dividerWidth),
         )
         Spacer(modifier = Modifier.height(10.dp))
@@ -289,7 +283,7 @@ private fun HostLoadingItem(
         CircularProgressIndicator(
             modifier = Modifier.size(metrics.itemIconSize),
             strokeWidth = 2.dp,
-            color = CyanBright,
+            color = OpenAquaTheme.colors.primaryBright,
         )
     }
 }
@@ -319,7 +313,7 @@ private fun HostNavigationRailItem(
                         Modifier
                             .size(metrics.statusDotSize)
                             .clip(CircleShape)
-                            .background(host.statusColor()),
+                            .background(host.statusColor(OpenAquaTheme.colors)),
                 )
             }
         },
@@ -362,7 +356,7 @@ private fun AquaDeviceNavigationRailItem(
                         Modifier
                             .size(metrics.statusDotSize)
                             .clip(CircleShape)
-                            .background(deviceState.statusColor()),
+                            .background(deviceState.statusColor(OpenAquaTheme.colors)),
                 )
             }
         },
@@ -453,17 +447,17 @@ private fun Modifier.verticalScrollFadingEdge(
         }
     }
 
-private fun DeviceState.Host.statusColor(): Color =
+private fun DeviceState.Host.statusColor(colors: AppColors): Color =
     when (this) {
-        is DeviceState.Host.Connecting -> ElectricCyan
-        is DeviceState.Host.Error -> StatusWarning
-        is DeviceState.Host.Ready -> StatusNominal
-        DeviceState.Host.Loading -> CyanBright
+        is DeviceState.Host.Connecting -> colors.primary
+        is DeviceState.Host.Error -> colors.statusWarning
+        is DeviceState.Host.Ready -> colors.statusNominal
+        DeviceState.Host.Loading -> colors.primaryBright
     }
 
-private fun DeviceState.Aqua.statusColor(): Color =
+private fun DeviceState.Aqua.statusColor(colors: AppColors): Color =
     when (this) {
-        is DeviceState.Aqua.Connecting -> ElectricCyan
-        is DeviceState.Aqua.Error -> StatusWarning
-        is DeviceState.Aqua.Ready -> StatusNominal
+        is DeviceState.Aqua.Connecting -> colors.primary
+        is DeviceState.Aqua.Error -> colors.statusWarning
+        is DeviceState.Aqua.Ready -> colors.statusNominal
     }

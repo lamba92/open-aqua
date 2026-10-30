@@ -224,7 +224,7 @@ data class AppColors(
                     ),
                 navigationRail =
                     NavigationRailColors(
-                        container = surfLow,
+                        container = surfLowest,
                         itemIndicator = primary.copy(alpha = 0.2f),
                         itemSelectedIcon = primaryBright,
                         itemUnselectedIcon = textMuted,
