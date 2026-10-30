@@ -1,15 +1,16 @@
 package io.github.lamba92.openaqua.app.feature.device.sensors
 
 import io.github.lamba92.openaqua.app.coroutine.CoroutineScopeProvider
+import io.github.lamba92.openaqua.app.coroutine.LoggingScope
 import io.github.lamba92.openaqua.app.coroutine.getScope
 import io.github.lamba92.openaqua.app.feature.device.common.toSensorItems
 import io.github.lamba92.openaqua.app.model.DeviceStoredData
 import io.github.lamba92.openaqua.app.mvi.MVIViewModel
+import io.github.lamba92.openaqua.app.mvi.viewModelLogger
 import io.github.lamba92.openaqua.app.repository.AppDataRepository
 import io.github.lamba92.openaqua.app.repository.DeviceDataCacheService
 import io.github.lamba92.openaqua.app.repository.DeviceState
 import io.github.lamba92.openaqua.model.device.DeviceId
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,7 +30,7 @@ class SensorsViewModel(
     scopeProvider: CoroutineScopeProvider,
     private val deviceId: DeviceId,
 ) : MVIViewModel<SensorsUiState, SensorsUiEvent, SensorsUiEffect> {
-    override val viewModelScope: CoroutineScope = scopeProvider.getScope()
+    override val viewModelScope: LoggingScope = scopeProvider.getScope()
 
     override val state: StateFlow<SensorsUiState>
         field = MutableStateFlow<SensorsUiState>(SensorsUiState.Loading)
@@ -104,6 +105,7 @@ class SensorsViewModel(
                     }
 
                 is SensorsUiEvent.RenameSensor -> {
+                    viewModelLogger.i { "Renamed sensor channel ${event.channel} on device '$deviceId' to '${event.name}'" }
                     appDataRepository.setSensorName(deviceId = deviceId, channel = event.channel, name = event.name)
                     state.update { current ->
                         if (current is SensorsUiState.Ready) current.copy(renamingChannel = null) else current
@@ -113,6 +115,7 @@ class SensorsViewModel(
                 SensorsUiEvent.ToggleShowAllSensors -> {
                     val currentState = state.value as? SensorsUiState.Ready ?: return@launch
                     val isHidingAny = currentState.hideDisconnectedSensors || currentState.hideUnconfiguredVirtualSensors
+                    viewModelLogger.i { "Toggled sensor visibility on device '$deviceId' (hideDisconnected=${!isHidingAny})" }
                     if (isHidingAny) {
                         appDataRepository.setHideDisconnectedSensors(false)
                         appDataRepository.setHideUnconfiguredVirtualSensors(false)

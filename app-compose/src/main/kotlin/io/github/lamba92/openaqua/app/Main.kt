@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
+import co.touchlab.kermit.Logger
 import coil3.ImageLoader
 import coil3.compose.setSingletonImageLoaderFactory
 import coil3.svg.SvgDecoder
@@ -75,7 +76,10 @@ import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(FlowPreview::class)
 fun main() {
+    val logger = Logger.withTag("Main")
+    logger.i { "Starting OpenAqua..." }
     val engines = EngineExtractor.extract()
+    logger.i { "Extracted engine binaries: device='${engines.deviceEngine.fileName}', host='${engines.hostEngine.fileName}'" }
     val scopeProvider = DefaultCoroutineScopeProvider()
     val di =
         createOpenAquaDI(
@@ -122,6 +126,7 @@ fun main() {
         AppLocaleProvider(storedData.language.locale) {
             Window(
                 onCloseRequest = {
+                    logger.i { "Application closing, cancelling active scopes..." }
                     appDataRepository.saveWindowStateSync(windowState.toStoredData(storedData.windowState))
                     scopeProvider.cancelAll()
                     exitApplication()

@@ -2,6 +2,7 @@ package io.github.lamba92.openaqua.app.repository
 
 import io.github.lamba92.openaqua.app.coroutine.CoroutineScopeProvider
 import io.github.lamba92.openaqua.app.coroutine.getScope
+import io.github.lamba92.openaqua.app.coroutine.logger
 import io.github.lamba92.openaqua.app.model.AppStoredData
 import io.github.lamba92.openaqua.app.model.DeviceStoredData
 import io.github.lamba92.openaqua.app.model.FanStoredData
@@ -72,14 +73,18 @@ class AppDataRepository(
 
     init {
         coroutineScope.launch {
-            state.value = State.Ready(loadFromDisk())
+            val initial = loadFromDisk()
+            logger.i { "Loaded configuration from $storagePath" }
+            state.value = State.Ready(initial)
             state
                 .filterIsInstance<State.Ready>()
                 .map { it.data }
                 .distinctUntilChanged()
                 .flowOn(Dispatchers.Default)
-                .onEach { saveToDisk(it) }
-                .collect()
+                .onEach {
+                    saveToDisk(it)
+                    logger.d { "Saved updated configuration to $storagePath" }
+                }.collect()
         }
     }
 

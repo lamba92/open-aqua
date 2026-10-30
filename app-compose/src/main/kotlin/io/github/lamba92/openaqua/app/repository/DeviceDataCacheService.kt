@@ -1,6 +1,7 @@
 package io.github.lamba92.openaqua.app.repository
 
 import io.github.lamba92.openaqua.app.coroutine.CoroutineScopeProvider
+import io.github.lamba92.openaqua.app.coroutine.getLogger
 import io.github.lamba92.openaqua.app.coroutine.getScope
 import io.github.lamba92.openaqua.app.util.combineByKey
 import io.github.lamba92.openaqua.app.util.throttleLatest
@@ -22,10 +23,12 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.serialization.SerializationException
@@ -53,6 +56,7 @@ class DeviceDataCacheService(
     private fun getHostFlow(): Flow<DeviceState.Host> =
         flow {
             val info = openAquaHostEngineApi.getHostInfo()
+            getLogger().i { "Host engine connected with ${info.devices.size} device(s): ${info.devices.joinToString { it.name }}" }
             emit(DeviceState.Host.Connecting(info))
             openAquaHostEngineApi
                 .getTelemetryStream()
@@ -60,8 +64,7 @@ class DeviceDataCacheService(
                     DeviceState.Host.Ready(info = info, telemetry = telemetry)
                 }.retryAtLeast(3)
                 .catch { cause ->
-                    System.err.println("[DeviceDataCacheService] Host engine telemetry stream error: ${cause.message}")
-                    cause.printStackTrace()
+                    getLogger().e(cause) { "Host engine telemetry stream error: ${cause.message}" }
                     emit(
                         DeviceState.Host.Error(
                             info = info,
@@ -72,8 +75,7 @@ class DeviceDataCacheService(
                 }.collect { emit(it) }
         }.retryAtLeast(3)
             .catch { cause ->
-                System.err.println("[DeviceDataCacheService] Failed to read host info: ${cause.message}")
-                cause.printStackTrace()
+                getLogger().e(cause) { "Failed to read host info: ${cause.message}" }
                 emit(
                     DeviceState.Host.Error(
                         info = null,
@@ -88,7 +90,16 @@ class DeviceDataCacheService(
             getHostFlow(),
             every(pollingIntervals.deviceConfig) { openAquaDeviceEngineApi.listDevices().devices }
                 .retryAtLeast(3)
-                .combineByKey(
+                .distinctUntilChanged()
+                .onEach { devices ->
+                    coroutineScope.logger.i {
+                        if (devices.isEmpty()) {
+                            "No Aqua devices detected"
+                        } else {
+                            "Detected ${devices.size} Aqua device(s): ${devices.joinToString { "${it.name} (${it.id})" }}"
+                        }
+                    }
+                }.combineByKey(
                     keySelector = { it.id },
                     itemFlow = { device -> device.getStateFlow(pollingIntervals) },
                 ),
@@ -132,6 +143,7 @@ class DeviceDataCacheService(
 
     private fun DetectedHardwareDevice.getStateFlow(pollingIntervals: PollingIntervals): Flow<DeviceState.Aqua> {
         val descriptor = DeviceRegistry.findByType(type)
+        var isFirstReady = true
         return combine<DeviceConfig, DeviceTelemetry, DeviceState.Aqua>(
             every(pollingIntervals.deviceConfig) { openAquaDeviceEngineApi.getDeviceConfig(id) }
                 .retryAtLeast(3),
@@ -145,11 +157,17 @@ class DeviceDataCacheService(
                 telemetry = telemetry,
                 config = config,
             )
-        }.onStart { emit(DeviceState.Aqua.Connecting(this@getStateFlow, descriptor)) }
-            .retryAtLeast(3)
+        }.onStart {
+            getLogger().i { "Connecting to Aqua device '$name' (id=$id, type=$type)..." }
+            emit(DeviceState.Aqua.Connecting(this@getStateFlow, descriptor))
+        }.onEach { state ->
+            if (state is DeviceState.Aqua.Ready && isFirstReady) {
+                isFirstReady = false
+                getLogger().i { "Aqua device '$name' (id=$id) is ready with ${state.config.fans.size} fan(s)" }
+            }
+        }.retryAtLeast(3)
             .catch { cause ->
-                System.err.println("[DeviceDataCacheService] Error reading device '$id' ($name): ${cause.message}")
-                cause.printStackTrace()
+                getLogger().e(cause) { "Error reading device '$id' ($name): ${cause.message}" }
                 emit(DeviceState.Aqua.Error(this@getStateFlow, descriptor, cause.toDeviceErrorType()))
             }
     }

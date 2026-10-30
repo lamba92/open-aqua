@@ -1,5 +1,6 @@
 package io.github.lamba92.openaqua.app.repository
 
+import io.github.lamba92.openaqua.app.coroutine.getLogger
 import io.github.lamba92.openaqua.model.EngineResponse
 import io.github.lamba92.openaqua.model.device.DescriptorsResponse
 import io.github.lamba92.openaqua.model.device.DeviceConfig
@@ -40,9 +41,11 @@ class OpenAquaDeviceEngineApi(
 
     fun getTelemetryStream(deviceId: DeviceId): Flow<DeviceTelemetry> =
         channelFlow {
+            val logger = getLogger()
             withContext(Dispatchers.IO) {
                 val process =
                     ProcessBuilder(enginePath.absolutePathString(), "stream-telemetry", "--device=${deviceId.value}").start()
+                logger.i { "Started device telemetry stream process for '${deviceId.value}' (PID ${process.pid()})" }
                 try {
                     val reader = process.inputStream.asSource().buffered()
                     while (true) {
@@ -53,6 +56,7 @@ class OpenAquaDeviceEngineApi(
                         }
                     }
                 } finally {
+                    logger.i { "Terminating device telemetry stream process for '${deviceId.value}'" }
                     process.destroy()
                 }
             }
@@ -63,24 +67,32 @@ class OpenAquaDeviceEngineApi(
     override suspend fun flashConfig(
         deviceId: DeviceId,
         config: FlashConfigRequest,
-    ): DeviceConfig =
-        executeAndDecodeWithTimeout(
-            "config",
-            "flash",
-            "--device=${deviceId.value}",
-            "--request=${json.encodeToString(FlashConfigRequest.serializer(), config)}",
-        )
+    ): DeviceConfig {
+        val logger = getLogger()
+        logger.i { "Flashing configuration to device '${deviceId.value}'..." }
+        val result: DeviceConfig =
+            executeAndDecodeWithTimeout(
+                "config",
+                "flash",
+                "--device=${deviceId.value}",
+                "--request=${json.encodeToString(FlashConfigRequest.serializer(), config)}",
+            )
+        logger.i { "Configuration flashed successfully to device '${deviceId.value}'" }
+        return result
+    }
 
     suspend fun feedVirtualSensors(
         deviceId: DeviceId,
         source: Flow<FeedVirtualSensorsRequest>,
     ) = withContext(Dispatchers.IO) {
+        val logger = getLogger()
         val process =
             ProcessBuilder(
                 enginePath.absolutePathString(),
                 "feed-virtual-sensors",
                 "--device=${deviceId.value}",
             ).start()
+        logger.i { "Started virtual sensor feeder process for device '${deviceId.value}' (PID ${process.pid()})" }
         try {
             val writer = process.outputStream.bufferedWriter()
             source
@@ -91,6 +103,7 @@ class OpenAquaDeviceEngineApi(
                 }.flowOn(Dispatchers.IO)
                 .collect()
         } finally {
+            logger.i { "Terminating virtual sensor feeder process for device '${deviceId.value}'" }
             process.destroy()
         }
     }

@@ -1,5 +1,6 @@
 package io.github.lamba92.openaqua.app.repository
 
+import io.github.lamba92.openaqua.app.coroutine.getLogger
 import io.github.lamba92.openaqua.model.EngineResponse
 import io.github.lamba92.openaqua.model.host.HostInfo
 import io.github.lamba92.openaqua.model.host.HostTelemetry
@@ -30,9 +31,11 @@ class OpenAquaHostEngineApi(
 
     fun getTelemetryStream(): Flow<HostTelemetry> =
         channelFlow {
+            val logger = getLogger()
             withContext(Dispatchers.IO) {
                 val process =
                     ProcessBuilder(enginePath.absolutePathString(), "stream-telemetry").start()
+                logger.i { "Started host telemetry stream process (PID ${process.pid()})" }
                 try {
                     val reader = process.inputStream.asSource().buffered()
                     while (true) {
@@ -43,6 +46,7 @@ class OpenAquaHostEngineApi(
                         }
                     }
                 } finally {
+                    logger.i { "Terminating host telemetry stream process" }
                     process.destroy()
                 }
             }

@@ -1,7 +1,9 @@
 package io.github.lamba92.openaqua.app.feature.device.fans
 
 import io.github.lamba92.openaqua.app.coroutine.CoroutineScopeProvider
+import io.github.lamba92.openaqua.app.coroutine.LoggingScope
 import io.github.lamba92.openaqua.app.coroutine.getScope
+import io.github.lamba92.openaqua.app.coroutine.logger
 import io.github.lamba92.openaqua.app.feature.device.common.toPwmFanItems
 import io.github.lamba92.openaqua.app.feature.device.common.toSensorItems
 import io.github.lamba92.openaqua.app.model.DeviceStoredData
@@ -11,7 +13,6 @@ import io.github.lamba92.openaqua.app.repository.DeviceDataCacheService
 import io.github.lamba92.openaqua.app.repository.DeviceState
 import io.github.lamba92.openaqua.model.device.DeviceId
 import io.github.lamba92.openaqua.model.device.FlashConfigRequest
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,7 +33,7 @@ class FansViewModel(
     scopeProvider: CoroutineScopeProvider,
     private val deviceId: DeviceId,
 ) : MVIViewModel<FansUiState, FansUiEvent, FansUiEffect> {
-    override val viewModelScope: CoroutineScope = scopeProvider.getScope()
+    override val viewModelScope: LoggingScope = scopeProvider.getScope()
 
     override val state: StateFlow<FansUiState>
         field = MutableStateFlow<FansUiState>(FansUiState.Loading)
@@ -111,6 +112,7 @@ class FansViewModel(
                     }
 
                 is FansUiEvent.RenameFan -> {
+                    logger.i { "Renamed fan channel ${event.channel} on device '$deviceId' to '${event.name}'" }
                     appDataRepository.setFanName(deviceId = deviceId, channel = event.channel, name = event.name)
                     state.update { current ->
                         if (current is FansUiState.Ready) current.copy(renamingChannel = null) else current
@@ -119,6 +121,7 @@ class FansViewModel(
 
                 FansUiEvent.ToggleHideDisconnectedFans -> {
                     val currentHide = (state.value as? FansUiState.Ready)?.hideDisconnectedFans ?: false
+                    logger.i { "Toggled hide disconnected fans on device '$deviceId' to ${!currentHide}" }
                     appDataRepository.setHideDisconnectedFans(!currentHide)
                 }
 
@@ -126,6 +129,7 @@ class FansViewModel(
                 CurveStudioEvent.ToggleHideDisconnectedSensors,
                 -> {
                     val currentHide = (state.value as? FansUiState.Ready)?.hideDisconnectedSensors ?: false
+                    logger.i { "Toggled hide disconnected sensors in fans on device '$deviceId' to ${!currentHide}" }
                     appDataRepository.setHideDisconnectedSensorsInFans(!currentHide)
                 }
 
@@ -244,6 +248,7 @@ class FansViewModel(
                     }
 
                     viewModelScope.launch {
+                        logger.i { "Flashing fan configuration for device '$deviceId' (channels: ${updates.keys})..." }
                         val initialConfig = (cacheService.getAquaDeviceStateFlow(deviceId).first() as? DeviceState.Aqua.Ready)?.config
                         cacheService.flashConfig(
                             deviceId = deviceId,
@@ -254,6 +259,7 @@ class FansViewModel(
                         cacheService
                             .getReadyAquaDeviceStateFlow(deviceId)
                             .first { readyState -> readyState.config != initialConfig }
+                        logger.i { "Flashed configuration active and verified for device '$deviceId'" }
                         state.update { current ->
                             when (current) {
                                 is FansUiState.Ready ->

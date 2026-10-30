@@ -3,6 +3,7 @@ package io.github.lamba92.openaqua.app.di
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
+import co.touchlab.kermit.Logger
 import io.github.lamba92.openaqua.app.coroutine.CoroutineScopeProvider
 import io.github.lamba92.openaqua.app.coroutine.DefaultCoroutineScopeProvider
 import io.github.lamba92.openaqua.app.feature.device.DeviceViewModel
@@ -26,8 +27,10 @@ import java.nio.file.Path
 fun createAppModule(
     deviceEnginePath: Path,
     hostEnginePath: Path,
-    scopeProvider: CoroutineScopeProvider = DefaultCoroutineScopeProvider(),
+    logger: Logger = Logger,
+    scopeProvider: CoroutineScopeProvider = DefaultCoroutineScopeProvider(baseLogger = logger),
 ) = DI.Module("appModule") {
+    bindSingleton<Logger> { logger }
     bindSingleton<CoroutineScopeProvider> { scopeProvider }
     bindSingleton<OpenAquaDeviceEngineApi> { OpenAquaDeviceEngineApi(enginePath = deviceEnginePath) }
     bindSingleton<OpenAquaHostEngineApi> { OpenAquaHostEngineApi(enginePath = hostEnginePath) }
@@ -82,10 +85,11 @@ fun createAppModule(
 fun createOpenAquaDI(
     deviceEnginePath: Path,
     hostEnginePath: Path,
-    scopeProvider: CoroutineScopeProvider = DefaultCoroutineScopeProvider(),
+    logger: Logger = Logger,
+    scopeProvider: CoroutineScopeProvider = DefaultCoroutineScopeProvider(baseLogger = logger),
 ): DI =
     DI {
-        import(createAppModule(deviceEnginePath, hostEnginePath, scopeProvider))
+        import(createAppModule(deviceEnginePath, hostEnginePath, logger, scopeProvider))
     }
 
 val LocalDI = staticCompositionLocalOf<DI> { error("No DI container provided") }

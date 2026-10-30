@@ -1,14 +1,15 @@
 package io.github.lamba92.openaqua.app.feature.host
 
 import io.github.lamba92.openaqua.app.coroutine.CoroutineScopeProvider
+import io.github.lamba92.openaqua.app.coroutine.LoggingScope
 import io.github.lamba92.openaqua.app.coroutine.getScope
 import io.github.lamba92.openaqua.app.model.SensorTargetType
 import io.github.lamba92.openaqua.app.model.withHostSensorType
 import io.github.lamba92.openaqua.app.mvi.MVIViewModel
+import io.github.lamba92.openaqua.app.mvi.viewModelLogger
 import io.github.lamba92.openaqua.app.repository.AppDataRepository
 import io.github.lamba92.openaqua.app.repository.DeviceDataCacheService
 import io.github.lamba92.openaqua.model.host.HostSensorId
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,7 +28,7 @@ class HostViewModel(
     private val appDataRepository: AppDataRepository,
     scopeProvider: CoroutineScopeProvider,
 ) : MVIViewModel<HostState, HostEvent, HostEffect> {
-    override val viewModelScope: CoroutineScope = scopeProvider.getScope()
+    override val viewModelScope: LoggingScope = scopeProvider.getScope()
 
     override val state: StateFlow<HostState>
         field = MutableStateFlow(HostState())
@@ -66,6 +67,7 @@ class HostViewModel(
         sensorId: HostSensorId,
         targetType: SensorTargetType,
     ) {
+        viewModelLogger.i { "Configured host sensor '$sensorId' as target type '$targetType'" }
         appDataRepository.update { current ->
             current.copy(
                 sensorTypes = current.sensorTypes.withHostSensorType(sensorId, targetType),

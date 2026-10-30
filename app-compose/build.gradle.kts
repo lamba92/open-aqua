@@ -37,6 +37,7 @@ dependencies {
     implementation(libs.kotlinx.coroutines.swing)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.io.core)
+    implementation(libs.kermit)
 }
 
 fun getCurrentPlatformComposeRuntime() =

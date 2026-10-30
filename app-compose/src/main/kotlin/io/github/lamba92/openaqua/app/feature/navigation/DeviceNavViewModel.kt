@@ -1,15 +1,16 @@
 package io.github.lamba92.openaqua.app.feature.navigation
 
 import io.github.lamba92.openaqua.app.coroutine.CoroutineScopeProvider
+import io.github.lamba92.openaqua.app.coroutine.LoggingScope
 import io.github.lamba92.openaqua.app.coroutine.getScope
 import io.github.lamba92.openaqua.app.feature.device.common.CommonDeviceTab
 import io.github.lamba92.openaqua.app.model.NavigationSelectionStoredData
 import io.github.lamba92.openaqua.app.mvi.MVIViewModel
+import io.github.lamba92.openaqua.app.mvi.viewModelLogger
 import io.github.lamba92.openaqua.app.repository.AppDataRepository
 import io.github.lamba92.openaqua.app.repository.DeviceDataCacheService
 import io.github.lamba92.openaqua.app.repository.DeviceState
 import io.github.lamba92.openaqua.model.device.DeviceId
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -33,7 +34,7 @@ class DeviceNavViewModel(
     private val appDataRepository: AppDataRepository,
     scopeProvider: CoroutineScopeProvider,
 ) : MVIViewModel<DeviceNavState, DeviceNavEvent, DeviceNavEffect> {
-    override val viewModelScope: CoroutineScope = scopeProvider.getScope()
+    override val viewModelScope: LoggingScope = scopeProvider.getScope()
 
     override val state: StateFlow<DeviceNavState>
         field = MutableStateFlow(DeviceNavState())
@@ -58,9 +59,16 @@ class DeviceNavViewModel(
                         selectedItem =
                             when (val item = currentState.selectedItem) {
                                 is DeviceNavState.SelectedItem.Device ->
-                                    if (aqua.any { it.device.id == item.deviceId }) item else null
+                                    if (aqua.any { it.device.id == item.deviceId }) {
+                                        item
+                                    } else {
+                                        null
+                                    }
 
-                                else -> item
+                                null,
+                                DeviceNavState.SelectedItem.Host,
+                                DeviceNavState.SelectedItem.Settings,
+                                -> item
                             },
                     )
                 }
@@ -74,8 +82,9 @@ class DeviceNavViewModel(
                     val savedSelection =
                         appDataRepository.state
                             .filterIsInstance<AppDataRepository.State.Ready>()
-                            .map { it.data.navigationSelection }
                             .first()
+                            .data
+                            .navigationSelection
                             ?: return@withTimeout
 
                     val initialSelection =
@@ -98,12 +107,14 @@ class DeviceNavViewModel(
                         }
 
                     if (initialSelection != null) {
+                        viewModelLogger.i { "Restored navigation selection: $initialSelection" }
                         state.update { currentState ->
                             currentState.copy(selectedItem = currentState.selectedItem ?: initialSelection)
                         }
                     }
                 }
             } catch (_: TimeoutCancellationException) {
+                viewModelLogger.i { "Navigation selection initialization timed out; defaulting to unselected" }
                 appDataRepository.update { it.copy(navigationSelection = null) }
             }
         }
@@ -120,6 +131,7 @@ class DeviceNavViewModel(
         }
 
     private fun selectHost() {
+        viewModelLogger.i { "Navigating to Host screen" }
         state.update { currentState ->
             currentState.copy(selectedItem = DeviceNavState.SelectedItem.Host)
         }
@@ -127,6 +139,7 @@ class DeviceNavViewModel(
     }
 
     private fun selectDevice(deviceId: DeviceId) {
+        viewModelLogger.i { "Navigating to device '$deviceId'" }
         val finalState =
             state.updateAndGet { currentState ->
                 currentState.copy(
@@ -141,6 +154,7 @@ class DeviceNavViewModel(
     }
 
     private fun selectTab(tab: CommonDeviceTab) {
+        viewModelLogger.i { "Selected tab '$tab' for device" }
         state.update { currentState ->
             when (val currentItem = currentState.selectedItem) {
                 is DeviceNavState.SelectedItem.Device -> {
@@ -158,6 +172,7 @@ class DeviceNavViewModel(
     }
 
     private fun selectSettings() {
+        viewModelLogger.i { "Navigating to Settings screen" }
         state.update { currentState ->
             currentState.copy(selectedItem = DeviceNavState.SelectedItem.Settings)
         }
