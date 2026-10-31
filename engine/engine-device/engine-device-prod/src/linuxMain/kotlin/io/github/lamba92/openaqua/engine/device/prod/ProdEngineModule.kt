@@ -6,5 +6,5 @@ import org.kodein.di.bindSingleton
 
 actual val prodEngineModule: DI.Module =
     DI.Module("prodEngine") {
-        bindSingleton<HardwareController> { LinuxHardwareController() }
+        bindSingleton<HardwareController> { LinuxHardwareController }
     }

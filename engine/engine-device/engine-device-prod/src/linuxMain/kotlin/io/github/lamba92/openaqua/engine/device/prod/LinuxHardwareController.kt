@@ -59,17 +59,12 @@ private data class ScannedHardwareNode(
     val hidrawPath: String,
 )
 
-class LinuxHardwareController : HardwareController {
-    private val scannedNodes = mutableMapOf<DeviceId, ScannedHardwareNode>()
-
+object LinuxHardwareController : HardwareController {
     private fun getScannedNode(device: DetectedHardwareDevice): ScannedHardwareNode =
-        scannedNodes[device.id] ?: run {
-            scanDevices()
-            scannedNodes[device.id]
-                ?: error("Hardware device '${device.id}' (${device.name}) not found")
-        }
+        scanNodes().firstOrNull { it.id == device.id }
+            ?: error("Hardware device '${device.id}' (${device.name}) not found")
 
-    override fun scanDevices(): List<DetectedHardwareDevice> {
+    private fun scanNodes(): List<ScannedHardwareNode> {
         val scanned = mutableListOf<ScannedHardwareNode>()
         val hidrawDirs = Path(SYSFS_HIDRAW_DIR).listDirectory()
 
@@ -114,13 +109,11 @@ class LinuxHardwareController : HardwareController {
                 ),
             )
         }
-
-        scannedNodes.clear()
-        for (node in scanned) {
-            scannedNodes[node.id] = node
-        }
-
         return scanned
+    }
+
+    override fun scanDevices(): List<DetectedHardwareDevice> =
+        scanNodes()
             .sortedWith(
                 compareBy<ScannedHardwareNode> { it.descriptor.type.name }
                     .thenBy { it.serial ?: it.hidrawPath },
@@ -142,7 +135,6 @@ class LinuxHardwareController : HardwareController {
                     )
                 }
             }
-    }
 
     override fun streamTelemetry(device: DetectedHardwareDevice): Flow<DeviceTelemetry> =
         flow {

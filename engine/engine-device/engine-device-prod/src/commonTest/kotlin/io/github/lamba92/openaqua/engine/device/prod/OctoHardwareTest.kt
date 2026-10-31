@@ -16,7 +16,6 @@ import io.github.lamba92.openaqua.model.device.TargetTempFanConfig
 import io.github.lamba92.openaqua.model.device.TwoPointFanConfig
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
-import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -260,20 +259,15 @@ class OctoHardwareTest {
             println("Verified Sensor Offset flashed and read back successfully")
         }
 
-    /**
-     * NOTE: Virtual sensor streaming writes Report ID 0x04, which on OCTO is transmitted over
-     * USB Bulk OUT Endpoint 0x02 on Interface 0 rather than the HIDraw Interface 1.
-     * Pending implementation of USB Bulk OUT routing.
-     */
-    @Ignore
     @Test
     fun testFeedVirtualSensorsOnAllowedChannels() =
         withOctoSafeScope {
             val testChannel = 5 // Virtual sensor slot 2
-            val testTemp = 28.5
-            println("Feeding virtual sensor channel $testChannel with $testTemp°C...")
-            feedVirtualSensors(mapOf(testChannel to testTemp))
-            println("Virtual sensor packet sent successfully")
+            for (testTemp in listOf(28.5, 31.2, 34.0)) {
+                println("Feeding virtual sensor channel $testChannel with $testTemp°C...")
+                feedVirtualSensors(mapOf(testChannel to testTemp))
+            }
+            println("Virtual sensor packets sent successfully across persistent bulk session")
         }
 
     companion object {
