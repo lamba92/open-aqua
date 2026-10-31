@@ -16,27 +16,40 @@ import io.github.lamba92.openaqua.model.device.DeviceRegistry
 import io.github.lamba92.openaqua.model.device.DeviceTelemetry
 import io.github.lamba92.openaqua.model.device.DeviceType
 import io.github.lamba92.openaqua.model.device.FlashConfigRequest
+import kotlinx.cinterop.COpaquePointerVar
+import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.UByteVar
+import kotlinx.cinterop.UIntVar
 import kotlinx.cinterop.alloc
 import kotlinx.cinterop.allocArray
 import kotlinx.cinterop.get
 import kotlinx.cinterop.memScoped
+import kotlinx.cinterop.plus
+import kotlinx.cinterop.pointed
 import kotlinx.cinterop.ptr
+import kotlinx.cinterop.reinterpret
 import kotlinx.cinterop.set
+import kotlinx.cinterop.toKString
+import kotlinx.cinterop.value
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.isActive
 import kotlinx.io.files.Path
+import platform.posix.EACCES
+import platform.posix.EPERM
 import platform.posix.O_NONBLOCK
 import platform.posix.O_RDWR
 import platform.posix.POLLIN
 import platform.posix.close
+import platform.posix.errno
+import platform.posix.free
 import platform.posix.ioctl
 import platform.posix.open
 import platform.posix.poll
 import platform.posix.pollfd
 import platform.posix.read
+import platform.posix.realpath
 import platform.posix.usleep
 
 private data class ScannedHardwareNode(
@@ -231,7 +244,7 @@ class LinuxHardwareController : HardwareController {
         val report = VirtualSensorsWriter.buildReport(descriptor, slotMap)
         val node = getScannedNode(device)
 
-        writeOutputOrFeatureReport(node.hidrawPath, report)
+        writeVirtualSensorsBulkReport(node.hidrawPath, report)
     }
 }
 
@@ -361,29 +374,127 @@ private fun writeFeatureReport(
     }
 }
 
-private fun writeOutputOrFeatureReport(
+private const val USBDEVFS_CLAIMINTERFACE: ULong = 0x8004550FUL
+private const val USBDEVFS_RELEASEINTERFACE: ULong = 0x80045510UL
+private const val USBDEVFS_BULK: ULong = 0xC0185502UL
+
+private data class UsbBulkSession(
+    val fd: Int,
+    val ifaceNumber: UInt,
+)
+
+private val activeUsbBulkSessions = mutableMapOf<String, UsbBulkSession>()
+
+@OptIn(ExperimentalForeignApi::class)
+private fun closeUsbBulkSession(hidrawPath: String) {
+    val session = activeUsbBulkSessions.remove(hidrawPath) ?: return
+    memScoped {
+        val iface = alloc<UIntVar>()
+        iface.value = session.ifaceNumber
+        ioctl(session.fd, USBDEVFS_RELEASEINTERFACE, iface.ptr)
+    }
+    close(session.fd)
+}
+
+@OptIn(ExperimentalForeignApi::class)
+private fun resolveUsbDevicePath(hidrawPath: String): String? {
+    val hidrawName = hidrawPath.substringAfterLast('/')
+    val deviceLink = Path("/sys/class/hidraw/$hidrawName/device")
+    val realPath =
+        realpath(deviceLink.toString(), null)?.let { ptr ->
+            val s = ptr.toKString()
+            free(ptr)
+            s
+        } ?: return null
+
+    var cur = realPath
+    while (cur.isNotBlank() && cur != "/") {
+        val busnum = Path("$cur/busnum").readTextOrNull()?.trim()?.toIntOrNull()
+        val devnum = Path("$cur/devnum").readTextOrNull()?.trim()?.toIntOrNull()
+        if (busnum != null && devnum != null) {
+            val bStr = busnum.toString().padStart(3, '0')
+            val dStr = devnum.toString().padStart(3, '0')
+            return "/dev/bus/usb/$bStr/$dStr"
+        }
+        val next = cur.substringBeforeLast('/', "")
+        if (next == cur) break
+        cur = next
+    }
+    return null
+}
+
+@OptIn(ExperimentalForeignApi::class)
+private fun getOrCreateUsbBulkSession(hidrawPath: String): UsbBulkSession {
+    val existing = activeUsbBulkSessions[hidrawPath]
+    if (existing != null) return existing
+
+    val usbPath =
+        resolveUsbDevicePath(hidrawPath)
+            ?: error("Cannot determine USB device path for $hidrawPath")
+
+    val fd = open(usbPath, O_RDWR)
+    if (fd < 0) {
+        val err = errno
+        if (err == EACCES || err == EPERM) {
+            error(
+                "Cannot open $usbPath for virtual sensors feeding (Permission denied). " +
+                    "Aqua Computer devices require USB bulk write permissions on Interface 0. " +
+                    "Add this udev rule to /etc/udev/rules.d/70-open-aqua.rules:\n" +
+                    "SUBSYSTEM==\"usb\", ATTRS{idVendor}==\"0c70\", TAG+=\"uaccess\"",
+            )
+        }
+        error("Cannot open $usbPath for virtual sensors feeding (errno $err)")
+    }
+
+    memScoped {
+        val iface = alloc<UIntVar>()
+        iface.value = 0u // Interface 0 (Vendor Specific)
+        val claimRet = ioctl(fd, USBDEVFS_CLAIMINTERFACE, iface.ptr)
+        if (claimRet < 0) {
+            val err = errno
+            close(fd)
+            error("ioctl USBDEVFS_CLAIMINTERFACE failed on $usbPath interface 0 (errno $err)")
+        }
+    }
+
+    val session = UsbBulkSession(fd = fd, ifaceNumber = 0u)
+    activeUsbBulkSessions[hidrawPath] = session
+    return session
+}
+
+@OptIn(ExperimentalForeignApi::class)
+private fun writeVirtualSensorsBulkReport(
     hidrawPath: String,
     reportData: UByteArray,
 ) {
-    val totalLen = reportData.size
-    val fd = open(hidrawPath, O_RDWR)
-    check(fd >= 0) { "Cannot open $hidrawPath for writing" }
-
+    val session = getOrCreateUsbBulkSession(hidrawPath)
     try {
         memScoped {
-            val buf = allocArray<UByteVar>(totalLen)
-            for (i in 0 until totalLen) {
+            // struct usbdevfs_bulktransfer { ep: u32, len: u32, timeout: u32, pad: u32, data: void* }
+            // 24 bytes on 64-bit Linux
+            val transfer = allocArray<UByteVar>(24)
+            val uintView = transfer.reinterpret<UIntVar>()
+            uintView[0] = 0x02u // Endpoint 0x02 OUT
+            uintView[1] = reportData.size.toUInt()
+            uintView[2] = 2000u // 2000 ms timeout
+
+            val buf = allocArray<UByteVar>(reportData.size)
+            for (i in reportData.indices) {
                 buf[i] = reportData[i]
             }
 
-            val written = platform.posix.write(fd, buf, totalLen.toULong())
-            if (written < 0) {
-                val cmd = hidiocsfeature(totalLen)
-                val ret = ioctl(fd, cmd, buf)
-                check(ret >= 0) { "Failed to write report to $hidrawPath" }
+            val dataPtr = (transfer + 16)!!.reinterpret<COpaquePointerVar>().pointed
+            dataPtr.value = buf
+
+            val bulkRet = ioctl(session.fd, USBDEVFS_BULK, transfer)
+            if (bulkRet < 0) {
+                val err = errno
+                closeUsbBulkSession(hidrawPath)
+                error("ioctl USBDEVFS_BULK failed on $hidrawPath EP 0x02 OUT (errno $err)")
             }
         }
-    } finally {
-        close(fd)
+    } catch (t: Throwable) {
+        closeUsbBulkSession(hidrawPath)
+        throw t
     }
 }

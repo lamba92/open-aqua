@@ -32,7 +32,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.isActive
 import kotlin.math.round
-import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Duration.Companion.milliseconds
 
 class MockHardwareController : HardwareController {
     override fun scanDevices(): List<DetectedHardwareDevice> = loadMockStorage().devices
@@ -111,10 +111,8 @@ class MockHardwareController : HardwareController {
                 else -> 4..19
             }
 
-        sensors.forEach { (channel, temp) ->
-            if (channel in allowedRange) {
-                deviceSensors[channel] = temp
-            }
+        allowedRange.forEach { channel ->
+            deviceSensors[channel] = sensors[channel]
         }
         storage[key] = deviceSensors
         saveMockVirtualSensorsStorage(storage)
@@ -130,7 +128,7 @@ class MockHardwareController : HardwareController {
                     allSensorsStorage[device.alias.value] ?: allSensorsStorage[device.id.value] ?: emptyMap()
 
                 emit(generateTelemetry(descriptor, config, virtualSensorsMap))
-                delay(1.seconds)
+                delay(200.milliseconds)
             }
         }
 
