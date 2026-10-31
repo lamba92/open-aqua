@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -21,10 +22,17 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,6 +45,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import io.github.lamba92.openaqua.app.model.SensorTargetType
 import io.github.lamba92.openaqua.app.theme.ChannelDetailHeaderColors
 import io.github.lamba92.openaqua.app.theme.ChannelDetailHeaderMetrics
 import io.github.lamba92.openaqua.app.theme.FeaturePlaceholderBoxColors
@@ -61,6 +70,10 @@ import io.github.lamba92.openaqua.app.theme.SectionHeaderMetrics
 import open_aqua.app_compose.generated.resources.Res
 import open_aqua.app_compose.generated.resources.ic_info
 import open_aqua.app_compose.generated.resources.ic_tune
+import open_aqua.app_compose.generated.resources.sensor_options
+import open_aqua.app_compose.generated.resources.sensor_type_die
+import open_aqua.app_compose.generated.resources.sensor_type_set
+import open_aqua.app_compose.generated.resources.sensor_type_water
 import open_aqua.app_compose.generated.resources.visibility_filter_hidden_count
 import open_aqua.app_compose.generated.resources.visibility_filter_hide_inactive
 import open_aqua.app_compose.generated.resources.visibility_show_all_action
@@ -528,5 +541,79 @@ fun MetricCard(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
+    }
+}
+
+@Composable
+fun SensorTargetTypeMenuButton(
+    targetType: SensorTargetType,
+    onSetTargetType: (SensorTargetType) -> Unit,
+    modifier: Modifier = Modifier,
+    buttonSize: Dp = 24.dp,
+    iconSize: Dp = 20.dp,
+) {
+    val colors = OpenAquaTheme.colors
+    var menuExpanded by remember { mutableStateOf(false) }
+
+    Box(modifier = modifier) {
+        Box(
+            modifier =
+                Modifier
+                    .size(buttonSize)
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(if (menuExpanded) colors.surfaceContainer else Color.Transparent)
+                    .clickable { menuExpanded = true },
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Default.MoreVert,
+                contentDescription = stringResource(Res.string.sensor_options),
+                tint = if (menuExpanded) colors.primaryBright else colors.textMuted,
+                modifier = Modifier.size(iconSize),
+            )
+        }
+
+        OpenAquaDropdownMenu(
+            expanded = menuExpanded,
+            onDismissRequest = { menuExpanded = false },
+        ) {
+            OpenAquaDropdownHeader(
+                text = stringResource(Res.string.sensor_type_set),
+            )
+            SensorTargetType.entries.forEach { type ->
+                val isSelected = type == targetType
+                OpenAquaDropdownMenuItem(
+                    text = {
+                        Text(
+                            text =
+                                when (type) {
+                                    SensorTargetType.DIE -> stringResource(Res.string.sensor_type_die)
+                                    SensorTargetType.WATER -> stringResource(Res.string.sensor_type_water)
+                                },
+                            fontSize = 15.sp,
+                            color = if (isSelected) colors.primaryBright else colors.textPrimary,
+                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                        )
+                    },
+                    leadingIcon = {
+                        if (isSelected) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = null,
+                                tint = colors.primaryBright,
+                                modifier = Modifier.size(16.dp),
+                            )
+                        } else {
+                            Spacer(modifier = Modifier.size(16.dp))
+                        }
+                    },
+                    onClick = {
+                        onSetTargetType(type)
+                        menuExpanded = false
+                    },
+                    isSelected = isSelected,
+                )
+            }
+        }
     }
 }

@@ -3,7 +3,6 @@ package io.github.lamba92.openaqua.app.feature.host
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,8 +22,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.DeveloperBoard
 import androidx.compose.material.icons.outlined.Devices
 import androidx.compose.material.icons.outlined.Memory
@@ -38,13 +35,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -56,11 +50,9 @@ import io.github.lamba92.openaqua.app.model.color
 import io.github.lamba92.openaqua.app.model.progressFraction
 import io.github.lamba92.openaqua.app.repository.DeviceState
 import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
-import io.github.lamba92.openaqua.app.ui.components.OpenAquaDropdownHeader
-import io.github.lamba92.openaqua.app.ui.components.OpenAquaDropdownMenu
-import io.github.lamba92.openaqua.app.ui.components.OpenAquaDropdownMenuItem
 import io.github.lamba92.openaqua.app.ui.components.OpenAquaVerticalScrollbar
 import io.github.lamba92.openaqua.app.ui.components.ScreenHeader
+import io.github.lamba92.openaqua.app.ui.components.SensorTargetTypeMenuButton
 import io.github.lamba92.openaqua.app.ui.components.gaugeProgress
 import io.github.lamba92.openaqua.app.ui.components.scrollFadingEdge
 import io.github.lamba92.openaqua.model.host.HostDevice
@@ -80,12 +72,8 @@ import open_aqua.app_compose.generated.resources.host_status_connecting
 import open_aqua.app_compose.generated.resources.host_status_error
 import open_aqua.app_compose.generated.resources.host_telemetry_subtitle
 import open_aqua.app_compose.generated.resources.host_telemetry_title
-import open_aqua.app_compose.generated.resources.sensor_options
 import open_aqua.app_compose.generated.resources.sensor_temp_disconnected
 import open_aqua.app_compose.generated.resources.sensor_temp_short_value
-import open_aqua.app_compose.generated.resources.sensor_type_die
-import open_aqua.app_compose.generated.resources.sensor_type_set
-import open_aqua.app_compose.generated.resources.sensor_type_water
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -489,8 +477,6 @@ private fun HostSensorTile(
             stringResource(Res.string.sensor_temp_short_value, "%.1f".format(it))
         } ?: stringResource(Res.string.sensor_temp_disconnected)
 
-    var menuExpanded by remember { mutableStateOf(false) }
-
     Box(
         modifier =
             modifier
@@ -530,67 +516,10 @@ private fun HostSensorTile(
                 )
 
                 // 3-dots button (kebab menu)
-                Box {
-                    Box(
-                        modifier =
-                            Modifier
-                                .size(24.dp)
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(if (menuExpanded) colors.surfaceContainer else Color.Transparent)
-                                .clickable { menuExpanded = true },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.MoreVert,
-                            contentDescription = stringResource(Res.string.sensor_options),
-                            tint = if (menuExpanded) colors.primaryBright else colors.textMuted,
-                            modifier = Modifier.size(20.dp),
-                        )
-                    }
-
-                    OpenAquaDropdownMenu(
-                        expanded = menuExpanded,
-                        onDismissRequest = { menuExpanded = false },
-                    ) {
-                        OpenAquaDropdownHeader(
-                            text = stringResource(Res.string.sensor_type_set),
-                        )
-                        SensorTargetType.entries.forEach { type ->
-                            val isSelected = type == targetType
-                            OpenAquaDropdownMenuItem(
-                                text = {
-                                    Text(
-                                        text =
-                                            when (type) {
-                                                SensorTargetType.DIE -> stringResource(Res.string.sensor_type_die)
-                                                SensorTargetType.WATER -> stringResource(Res.string.sensor_type_water)
-                                            },
-                                        fontSize = 15.sp,
-                                        color = if (isSelected) colors.primaryBright else colors.textPrimary,
-                                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                                    )
-                                },
-                                leadingIcon = {
-                                    if (isSelected) {
-                                        Icon(
-                                            imageVector = Icons.Default.Check,
-                                            contentDescription = null,
-                                            tint = colors.primaryBright,
-                                            modifier = Modifier.size(16.dp),
-                                        )
-                                    } else {
-                                        Spacer(modifier = Modifier.size(16.dp))
-                                    }
-                                },
-                                onClick = {
-                                    onSetTargetType(type)
-                                    menuExpanded = false
-                                },
-                                isSelected = isSelected,
-                            )
-                        }
-                    }
-                }
+                SensorTargetTypeMenuButton(
+                    targetType = targetType,
+                    onSetTargetType = onSetTargetType,
+                )
             }
 
             // Bottom row: Temperature Reading + Sensor ID

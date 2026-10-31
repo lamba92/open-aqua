@@ -1,6 +1,7 @@
 package io.github.lamba92.openaqua.app.feature.device.sensors
 
 import io.github.lamba92.openaqua.app.feature.device.common.SensorItem
+import io.github.lamba92.openaqua.app.model.SensorTargetType
 import io.github.lamba92.openaqua.app.model.VirtualSensorFeedSource
 import io.github.lamba92.openaqua.model.device.DeviceId
 import io.github.lamba92.openaqua.model.device.SensorChannelKind
@@ -114,6 +115,11 @@ sealed interface SensorsUiEvent {
     data object DismissRenameDialog : SensorsUiEvent
 
     data object ToggleShowAllSensors : SensorsUiEvent
+
+    data class SetSensorTargetType(
+        val channel: Int,
+        val targetType: SensorTargetType,
+    ) : SensorsUiEvent
 
     data class UpdateVirtualFeedDraft(
         val channel: Int,

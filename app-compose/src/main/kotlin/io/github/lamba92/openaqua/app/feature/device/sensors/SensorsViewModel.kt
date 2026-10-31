@@ -5,6 +5,8 @@ import io.github.lamba92.openaqua.app.coroutine.LoggingScope
 import io.github.lamba92.openaqua.app.coroutine.getScope
 import io.github.lamba92.openaqua.app.feature.device.common.toSensorItems
 import io.github.lamba92.openaqua.app.model.DeviceStoredData
+import io.github.lamba92.openaqua.app.model.SensorTypesStoredData
+import io.github.lamba92.openaqua.app.model.withAquaSensorType
 import io.github.lamba92.openaqua.app.mvi.MVIViewModel
 import io.github.lamba92.openaqua.app.mvi.viewModelLogger
 import io.github.lamba92.openaqua.app.repository.AppDataRepository
@@ -48,6 +50,7 @@ class SensorsViewModel(
     private data class CombinedPreferences(
         val storedData: DeviceStoredData,
         val allDevicesStored: Map<DeviceId, DeviceStoredData>,
+        val sensorTypes: SensorTypesStoredData,
         val hideDisconnectedSensors: Boolean,
         val hideUnconfiguredVirtualSensors: Boolean,
     )
@@ -60,6 +63,7 @@ class SensorsViewModel(
                     CombinedPreferences(
                         storedData = ready.data.devices[deviceId] ?: DeviceStoredData(),
                         allDevicesStored = ready.data.devices,
+                        sensorTypes = ready.data.sensorTypes,
                         hideDisconnectedSensors = ready.data.hideDisconnectedSensors,
                         hideUnconfiguredVirtualSensors = ready.data.hideUnconfiguredVirtualSensors,
                     )
@@ -85,6 +89,8 @@ class SensorsViewModel(
                                 storedData = preferences.storedData,
                                 feedErrors = feedErrors,
                                 resolveFeedValue = { source -> resolveFeedSourceValue(source, allDevices) },
+                                deviceId = deviceId,
+                                sensorTypes = preferences.sensorTypes,
                             )
 
                         val readyHost = allDevices.filterIsInstance<DeviceState.Host.Ready>().firstOrNull()
@@ -126,35 +132,36 @@ class SensorsViewModel(
                                                 liveTemp = (s as? SensorTelemetry.Connected)?.tempCelsius,
                                             )
                                         }
-                                if (physicalSensors.isNotEmpty()) {
-                                    AquaDeviceOption(
-                                        deviceId = aqua.device.id,
-                                        name = devName,
-                                        sensors = physicalSensors,
-                                    )
-                                } else {
-                                    null
+                                when {
+                                    physicalSensors.isNotEmpty() ->
+                                        AquaDeviceOption(
+                                            deviceId = aqua.device.id,
+                                            name = devName,
+                                            sensors = physicalSensors,
+                                        )
+                                    else -> null
                                 }
                             }
 
-                        if (current is SensorsUiState.Ready) {
-                            current.copy(
-                                sensors = sensors,
-                                hideDisconnectedSensors = preferences.hideDisconnectedSensors,
-                                hideUnconfiguredVirtualSensors = preferences.hideUnconfiguredVirtualSensors,
-                                availableHostSensors = availableHostSensors,
-                                availableAquaDevices = availableAquaDevices,
-                            )
-                        } else {
-                            val initialChannel = sensors.firstOrNull { it.feedError != null }?.channel ?: 0
-                            SensorsUiState.Ready(
-                                sensors = sensors,
-                                selectedSensorChannel = initialChannel,
-                                hideDisconnectedSensors = preferences.hideDisconnectedSensors,
-                                hideUnconfiguredVirtualSensors = preferences.hideUnconfiguredVirtualSensors,
-                                availableHostSensors = availableHostSensors,
-                                availableAquaDevices = availableAquaDevices,
-                            )
+                        when (current) {
+                            is SensorsUiState.Ready ->
+                                current.copy(
+                                    sensors = sensors,
+                                    hideDisconnectedSensors = preferences.hideDisconnectedSensors,
+                                    hideUnconfiguredVirtualSensors = preferences.hideUnconfiguredVirtualSensors,
+                                    availableHostSensors = availableHostSensors,
+                                    availableAquaDevices = availableAquaDevices,
+                                )
+
+                            else ->
+                                SensorsUiState.Ready(
+                                    sensors = sensors,
+                                    selectedSensorChannel = sensors.firstOrNull { it.feedError != null }?.channel ?: 0,
+                                    hideDisconnectedSensors = preferences.hideDisconnectedSensors,
+                                    hideUnconfiguredVirtualSensors = preferences.hideUnconfiguredVirtualSensors,
+                                    availableHostSensors = availableHostSensors,
+                                    availableAquaDevices = availableAquaDevices,
+                                )
                         }
                     }
                 }
@@ -198,6 +205,22 @@ class SensorsViewModel(
                     } else {
                         appDataRepository.setHideDisconnectedSensors(true)
                         appDataRepository.setHideUnconfiguredVirtualSensors(true)
+                    }
+                }
+
+                is SensorsUiEvent.SetSensorTargetType -> {
+                    viewModelLogger.i {
+                        "Configured sensor channel ${event.channel} on device '$deviceId' as target type '${event.targetType}'"
+                    }
+                    appDataRepository.update { current ->
+                        current.copy(
+                            sensorTypes =
+                                current.sensorTypes.withAquaSensorType(
+                                    deviceId = deviceId,
+                                    sensorChannel = event.channel,
+                                    type = event.targetType,
+                                ),
+                        )
                     }
                 }
 

@@ -1,10 +1,14 @@
 package io.github.lamba92.openaqua.app.feature.device.common
 
 import io.github.lamba92.openaqua.app.model.DeviceStoredData
+import io.github.lamba92.openaqua.app.model.SensorTargetType
+import io.github.lamba92.openaqua.app.model.SensorTypesStoredData
 import io.github.lamba92.openaqua.app.model.VirtualSensorFeedError
 import io.github.lamba92.openaqua.app.model.VirtualSensorFeedSource
+import io.github.lamba92.openaqua.app.model.targetTypeFor
 import io.github.lamba92.openaqua.app.ui.components.FeederStatus
 import io.github.lamba92.openaqua.model.device.CoolingChannelTelemetry
+import io.github.lamba92.openaqua.model.device.DeviceId
 import io.github.lamba92.openaqua.model.device.FanChannelConfig
 import io.github.lamba92.openaqua.model.device.SensorChannelKind
 import io.github.lamba92.openaqua.model.device.SensorOffset
@@ -34,6 +38,7 @@ data class SensorItem(
     val virtualFeedSource: VirtualSensorFeedSource? = null,
     val feedError: VirtualSensorFeedError? = null,
     val feedValue: Double? = null,
+    val targetType: SensorTargetType = SensorTargetType.DIE,
 )
 
 val SensorItem.virtualSensorIndex: Int
@@ -81,9 +86,22 @@ fun List<SensorTelemetry>.toSensorItems(
     storedData: DeviceStoredData = DeviceStoredData(),
     feedErrors: Map<Int, VirtualSensorFeedError> = emptyMap(),
     resolveFeedValue: (VirtualSensorFeedSource) -> Double? = { null },
+    deviceId: DeviceId? = null,
+    sensorTypes: SensorTypesStoredData = SensorTypesStoredData.DEFAULT,
 ): List<SensorItem> =
     map { tel ->
         val feedSource = storedData.sensors[tel.channel]?.virtualFeedSource
+        val targetType =
+            when {
+                tel.kind == SensorChannelKind.VIRTUAL ->
+                    when (feedSource) {
+                        is VirtualSensorFeedSource.Host -> sensorTypes.targetTypeFor(feedSource.sensorId)
+                        is VirtualSensorFeedSource.Device -> sensorTypes.targetTypeFor(feedSource.deviceId, feedSource.channel)
+                        null -> deviceId?.let { sensorTypes.targetTypeFor(it, tel.channel) } ?: SensorTargetType.DIE
+                    }
+                deviceId != null -> sensorTypes.targetTypeFor(deviceId, tel.channel)
+                else -> SensorTargetType.DIE
+            }
         SensorItem(
             channel = tel.channel,
             customName = storedData.sensors[tel.channel]?.customName,
@@ -92,5 +110,6 @@ fun List<SensorTelemetry>.toSensorItems(
             virtualFeedSource = feedSource,
             feedError = feedErrors[tel.channel],
             feedValue = feedSource?.let(resolveFeedValue),
+            targetType = targetType,
         )
     }

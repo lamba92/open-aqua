@@ -68,6 +68,7 @@ import io.github.lamba92.openaqua.app.ui.components.OpenAquaDropdownMenu
 import io.github.lamba92.openaqua.app.ui.components.OpenAquaDropdownMenuItem
 import io.github.lamba92.openaqua.app.ui.components.OpenAquaOutlinedButton
 import io.github.lamba92.openaqua.app.ui.components.RenameDialog
+import io.github.lamba92.openaqua.app.ui.components.SensorTargetTypeMenuButton
 import io.github.lamba92.openaqua.app.ui.components.VisibilityEmptyState
 import io.github.lamba92.openaqua.app.ui.components.VisibilityFilterChip
 import io.github.lamba92.openaqua.model.device.DeviceId
@@ -210,6 +211,7 @@ fun SensorsContent(
                     pinLabel = sensorPin,
                     tempCelsius = temp,
                     selected = isSelected,
+                    targetType = sensor.targetType,
                     hasPendingChanges = state.isSensorModified(sensor),
                     feederStatus = sensor.feederStatus,
                     onClick = { onEvent(SensorsUiEvent.SelectSensor(sensor.channel)) },
@@ -241,11 +243,24 @@ fun SensorsContent(
                         title = stringResource(Res.string.sensor_settings_title, selectedSensorName),
                         subtitle = stringResource(Res.string.sensor_hardware_channel, selectedSensorPin),
                         trailingContent = {
-                            OpenAquaOutlinedButton(
-                                text = stringResource(Res.string.action_rename),
-                                icon = painterResource(Res.drawable.ic_edit),
-                                onClick = { onEvent(SensorsUiEvent.StartRenamingSensor(selectedSensor.channel)) },
-                            )
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(metrics.spacingSm),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                if (selectedSensor.telemetry.kind != SensorChannelKind.VIRTUAL) {
+                                    SensorTargetTypeMenuButton(
+                                        targetType = selectedSensor.targetType,
+                                        onSetTargetType = { type ->
+                                            onEvent(SensorsUiEvent.SetSensorTargetType(selectedSensor.channel, type))
+                                        },
+                                    )
+                                }
+                                OpenAquaOutlinedButton(
+                                    text = stringResource(Res.string.action_rename),
+                                    icon = painterResource(Res.drawable.ic_edit),
+                                    onClick = { onEvent(SensorsUiEvent.StartRenamingSensor(selectedSensor.channel)) },
+                                )
+                            }
                         },
                     )
 
@@ -561,7 +576,7 @@ fun SensorOffsetCalibrationCard(
                 color = colors.textMuted,
                 fontSize = 12.sp,
             )
-            val calibratedColor = SensorTargetType.WATER.color(calibratedTemp)
+            val calibratedColor = sensor.targetType.color(calibratedTemp)
             Text(
                 text = "Calibrated: ${calibratedTemp?.let { "%.2f °C".format(it) } ?: "--.- °C"}",
                 color = calibratedColor,
@@ -1129,6 +1144,7 @@ fun SensorSelectionTile(
     selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    targetType: SensorTargetType = SensorTargetType.DIE,
     hasPendingChanges: Boolean = false,
     feederStatus: FeederStatus = FeederStatus.NONE,
     onDoubleClick: (() -> Unit)? = null,
@@ -1140,10 +1156,10 @@ fun SensorSelectionTile(
         if (isDisconnected) {
             0f
         } else {
-            SensorTargetType.WATER.progressFraction(tempCelsius)
+            targetType.progressFraction(tempCelsius)
         }
 
-    val tempColor = SensorTargetType.WATER.color(tempCelsius)
+    val tempColor = targetType.color(tempCelsius)
     val valueText =
         tempCelsius?.let {
             stringResource(Res.string.sensor_temp_short_value, "%.1f".format(it))

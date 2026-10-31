@@ -7,6 +7,7 @@ import io.github.lamba92.openaqua.app.coroutine.logger
 import io.github.lamba92.openaqua.app.feature.device.common.toPwmFanItems
 import io.github.lamba92.openaqua.app.feature.device.common.toSensorItems
 import io.github.lamba92.openaqua.app.model.DeviceStoredData
+import io.github.lamba92.openaqua.app.model.SensorTypesStoredData
 import io.github.lamba92.openaqua.app.mvi.MVIViewModel
 import io.github.lamba92.openaqua.app.repository.AppDataRepository
 import io.github.lamba92.openaqua.app.repository.DeviceDataCacheService
@@ -44,6 +45,7 @@ class FansViewModel(
 
     private data class CombinedPreferences(
         val storedData: DeviceStoredData,
+        val sensorTypes: SensorTypesStoredData,
         val hideDisconnectedFans: Boolean,
         val hideDisconnectedSensors: Boolean,
     )
@@ -55,6 +57,7 @@ class FansViewModel(
                 .map { ready ->
                     CombinedPreferences(
                         storedData = ready.data.devices[deviceId] ?: DeviceStoredData(),
+                        sensorTypes = ready.data.sensorTypes,
                         hideDisconnectedFans = ready.data.hideDisconnectedFans,
                         hideDisconnectedSensors = ready.data.hideDisconnectedSensorsInFans,
                     )
@@ -75,6 +78,8 @@ class FansViewModel(
                                 offsets = deviceState.config.sensorOffsets,
                                 storedData = preferences.storedData,
                                 resolveFeedValue = { source -> resolveFeedSourceValue(source, allDevices) },
+                                deviceId = deviceId,
+                                sensorTypes = preferences.sensorTypes,
                             )
 
                         if (current is FansUiState.Ready) {
