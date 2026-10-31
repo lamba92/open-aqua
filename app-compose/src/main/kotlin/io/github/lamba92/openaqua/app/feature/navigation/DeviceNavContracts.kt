@@ -8,6 +8,7 @@ import io.github.lamba92.openaqua.model.device.DeviceId
 data class DeviceNavState(
     val host: DeviceState.Host = DeviceState.Host.Loading,
     val devices: List<DeviceState.Aqua> = emptyList(),
+    val devicesWithFeedErrors: Set<DeviceId> = emptySet(),
     val selectedItem: SelectedItem? = null,
 ) {
     sealed interface SelectedItem {

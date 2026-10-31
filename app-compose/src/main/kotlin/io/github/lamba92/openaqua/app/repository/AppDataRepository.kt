@@ -1,6 +1,7 @@
 package io.github.lamba92.openaqua.app.repository
 
 import io.github.lamba92.openaqua.app.coroutine.CoroutineScopeProvider
+import io.github.lamba92.openaqua.app.coroutine.getLogger
 import io.github.lamba92.openaqua.app.coroutine.getScope
 import io.github.lamba92.openaqua.app.coroutine.logger
 import io.github.lamba92.openaqua.app.model.AppStoredData
@@ -8,7 +9,9 @@ import io.github.lamba92.openaqua.app.model.DeviceStoredData
 import io.github.lamba92.openaqua.app.model.FanStoredData
 import io.github.lamba92.openaqua.app.model.NavigationSelectionStoredData
 import io.github.lamba92.openaqua.app.model.SensorStoredData
+import io.github.lamba92.openaqua.app.model.VirtualSensorFeedSource
 import io.github.lamba92.openaqua.app.model.WindowStateStoredData
+import io.github.lamba92.openaqua.app.model.withVirtualSensorFeed
 import io.github.lamba92.openaqua.model.device.DeviceId
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -83,7 +86,7 @@ class AppDataRepository(
                 .flowOn(Dispatchers.Default)
                 .onEach {
                     saveToDisk(it)
-                    logger.d { "Saved updated configuration to $storagePath" }
+                    getLogger().d { "Saved updated configuration to $storagePath" }
                 }.collect()
         }
     }
@@ -193,6 +196,14 @@ class AppDataRepository(
                 }
             device.copy(sensors = updatedSensors)
         }
+    }
+
+    fun setSensorVirtualFeed(
+        deviceId: DeviceId,
+        channel: Int,
+        feedSource: VirtualSensorFeedSource?,
+    ) {
+        update { it.withVirtualSensorFeed(deviceId, channel, feedSource) }
     }
 
     private fun loadFromDisk(): AppStoredData =

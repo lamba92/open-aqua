@@ -9,7 +9,9 @@ import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
+import kotlin.time.Clock
 import kotlin.time.Duration
+import kotlin.time.Instant
 
 /**
  * Emits the latest value from [this] flow, dropping intermediate values, with at least [period]
@@ -17,17 +19,20 @@ import kotlin.time.Duration
  */
 fun <T> Flow<T>.throttleLatest(period: Duration): Flow<T> =
     flow {
-        var lastEmission = 0L
+        var lastEmission: Instant = Instant.DISTANT_PAST
         collect { value ->
-            val now = System.currentTimeMillis()
+            val now = Clock.System.now()
             val timeSinceLast = now - lastEmission
-            if (timeSinceLast >= period.inWholeMilliseconds) {
-                lastEmission = now
-                emit(value)
-            } else {
-                delay(period.inWholeMilliseconds - timeSinceLast)
-                lastEmission = System.currentTimeMillis()
-                emit(value)
+            when {
+                timeSinceLast >= period -> {
+                    lastEmission = now
+                    emit(value)
+                }
+                else -> {
+                    delay(period - timeSinceLast)
+                    lastEmission = Clock.System.now()
+                    emit(value)
+                }
             }
         }
     }

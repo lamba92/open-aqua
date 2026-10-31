@@ -123,6 +123,22 @@ fun SensorTypesStoredData.withAquaSensorType(
 }
 
 @Serializable
+sealed interface VirtualSensorFeedSource {
+    @Serializable
+    @SerialName("host")
+    data class Host(
+        val sensorId: HostSensorId,
+    ) : VirtualSensorFeedSource
+
+    @Serializable
+    @SerialName("device")
+    data class Device(
+        val deviceId: DeviceId,
+        val channel: Int,
+    ) : VirtualSensorFeedSource
+}
+
+@Serializable
 data class DeviceStoredData(
     val customName: String? = null,
     val fans: Map<Int, FanStoredData> = emptyMap(),
@@ -145,8 +161,35 @@ data class FanStoredData(
 @Serializable
 data class SensorStoredData(
     val customName: String? = null,
+    val virtualFeedSource: VirtualSensorFeedSource? = null,
 ) {
     companion object {
         val DEFAULT = SensorStoredData()
     }
+}
+
+fun AppStoredData.withVirtualSensorFeed(
+    deviceId: DeviceId,
+    sensorChannel: Int,
+    feedSource: VirtualSensorFeedSource?,
+): AppStoredData {
+    val currentDevice = devices[deviceId] ?: DeviceStoredData.DEFAULT
+    val currentSensor = currentDevice.sensors[sensorChannel] ?: SensorStoredData.DEFAULT
+    val updatedSensors =
+        when (val updatedSensor = currentSensor.copy(virtualFeedSource = feedSource)) {
+            SensorStoredData.DEFAULT -> currentDevice.sensors - sensorChannel
+            else -> currentDevice.sensors + (sensorChannel to updatedSensor)
+        }
+    val updatedDevice =
+        when {
+            currentDevice.customName == null && currentDevice.fans.isEmpty() && updatedSensors.isEmpty() -> null
+            else -> currentDevice.copy(sensors = updatedSensors)
+        }
+    val updatedDevices =
+        if (updatedDevice != null) {
+            devices + (deviceId to updatedDevice)
+        } else {
+            devices - deviceId
+        }
+    return copy(devices = updatedDevices)
 }

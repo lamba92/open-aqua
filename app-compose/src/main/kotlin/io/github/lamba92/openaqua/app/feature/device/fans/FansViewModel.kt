@@ -11,6 +11,7 @@ import io.github.lamba92.openaqua.app.mvi.MVIViewModel
 import io.github.lamba92.openaqua.app.repository.AppDataRepository
 import io.github.lamba92.openaqua.app.repository.DeviceDataCacheService
 import io.github.lamba92.openaqua.app.repository.DeviceState
+import io.github.lamba92.openaqua.app.repository.resolveFeedSourceValue
 import io.github.lamba92.openaqua.model.device.DeviceId
 import io.github.lamba92.openaqua.model.device.FlashConfigRequest
 import kotlinx.coroutines.Job
@@ -62,13 +63,19 @@ class FansViewModel(
         combine(
             cacheService.getAquaDeviceStateFlow(deviceId),
             preferencesFlow,
-        ) { deviceState, preferences ->
+            cacheService.state,
+        ) { deviceState, preferences, allDevices ->
             state.update { current ->
                 when (deviceState) {
                     is DeviceState.Aqua.Connecting, is DeviceState.Aqua.Error -> FansUiState.Loading
                     is DeviceState.Aqua.Ready -> {
                         val fans = deviceState.telemetry.fans.toPwmFanItems(deviceState.config.fans, preferences.storedData)
-                        val sensors = deviceState.telemetry.sensors.toSensorItems(deviceState.config.sensorOffsets, preferences.storedData)
+                        val sensors =
+                            deviceState.telemetry.sensors.toSensorItems(
+                                offsets = deviceState.config.sensorOffsets,
+                                storedData = preferences.storedData,
+                                resolveFeedValue = { source -> resolveFeedSourceValue(source, allDevices) },
+                            )
 
                         if (current is FansUiState.Ready) {
                             current.copy(

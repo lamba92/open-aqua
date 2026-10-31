@@ -10,6 +10,7 @@ import io.github.lamba92.openaqua.app.mvi.viewModelLogger
 import io.github.lamba92.openaqua.app.repository.AppDataRepository
 import io.github.lamba92.openaqua.app.repository.DeviceDataCacheService
 import io.github.lamba92.openaqua.app.repository.DeviceState
+import io.github.lamba92.openaqua.app.repository.VirtualSensorFeederService
 import io.github.lamba92.openaqua.model.device.DeviceId
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.TimeoutCancellationException
@@ -17,6 +18,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.first
@@ -32,6 +34,7 @@ import kotlin.time.Duration.Companion.seconds
 class DeviceNavViewModel(
     private val dataCacheService: DeviceDataCacheService,
     private val appDataRepository: AppDataRepository,
+    private val feederService: VirtualSensorFeederService,
     scopeProvider: CoroutineScopeProvider,
 ) : MVIViewModel<DeviceNavState, DeviceNavEvent, DeviceNavEffect> {
     override val viewModelScope: LoggingScope = scopeProvider.getScope()
@@ -49,30 +52,36 @@ class DeviceNavViewModel(
     }
 
     private fun observeDeviceStates() {
-        dataCacheService.state
-            .onEach { deviceStates ->
-                state.update { currentState ->
-                    val aqua = deviceStates.filterIsInstance<DeviceState.Aqua>()
-                    currentState.copy(
-                        host = deviceStates.filterIsInstance<DeviceState.Host>().firstOrNull() ?: DeviceState.Host.Loading,
-                        devices = aqua,
-                        selectedItem =
-                            when (val item = currentState.selectedItem) {
-                                is DeviceNavState.SelectedItem.Device ->
-                                    if (aqua.any { it.device.id == item.deviceId }) {
-                                        item
-                                    } else {
-                                        null
-                                    }
+        combine(
+            dataCacheService.state,
+            feederService.feedErrorsState,
+        ) { deviceStates, feedErrors ->
+            deviceStates to feedErrors
+        }.onEach { (deviceStates, feedErrors) ->
+            val aqua = deviceStates.filterIsInstance<DeviceState.Aqua>()
+            val errorDeviceIds = feedErrors.filterValues { it.isNotEmpty() }.keys
+            state.update { currentState ->
+                currentState.copy(
+                    host = deviceStates.filterIsInstance<DeviceState.Host>().firstOrNull() ?: DeviceState.Host.Loading,
+                    devices = aqua,
+                    devicesWithFeedErrors = errorDeviceIds,
+                    selectedItem =
+                        when (val item = currentState.selectedItem) {
+                            is DeviceNavState.SelectedItem.Device ->
+                                if (aqua.any { it.device.id == item.deviceId }) {
+                                    item
+                                } else {
+                                    null
+                                }
 
-                                null,
-                                DeviceNavState.SelectedItem.Host,
-                                DeviceNavState.SelectedItem.Settings,
-                                -> item
-                            },
-                    )
-                }
-            }.launchIn(viewModelScope)
+                            null,
+                            DeviceNavState.SelectedItem.Host,
+                            DeviceNavState.SelectedItem.Settings,
+                            -> item
+                        },
+                )
+            }
+        }.launchIn(viewModelScope)
     }
 
     private fun initializeNavigationSelection() {

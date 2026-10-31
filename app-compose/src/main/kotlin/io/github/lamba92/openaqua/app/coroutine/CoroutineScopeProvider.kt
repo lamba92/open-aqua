@@ -72,7 +72,7 @@ class DefaultCoroutineScopeProvider(
         val effectiveDispatcher = if (dispatcher == Dispatchers.Default && defaultDispatcher != Dispatchers.Default) defaultDispatcher else dispatcher
         val coroutineLogger = CoroutineLogger(logger)
         val exceptionHandler = CoroutineExceptionHandler { ctx, throwable ->
-            logger.e(throwable) { "Uncaught exception in $ctx: ${throwable.message}" }
+            logger.e(throwable) { "Uncaught exception in '$name': ${throwable.message}" }
             onException?.invoke(ctx, throwable)
         }
         val context = childJob + effectiveDispatcher + coroutineLogger + exceptionHandler + CoroutineName(name)

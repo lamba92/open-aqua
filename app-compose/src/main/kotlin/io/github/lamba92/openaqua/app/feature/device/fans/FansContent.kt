@@ -32,6 +32,7 @@ import io.github.lamba92.openaqua.app.di.rememberInstance
 import io.github.lamba92.openaqua.app.feature.device.common.DeviceLoadingContent
 import io.github.lamba92.openaqua.app.feature.device.common.FanItem
 import io.github.lamba92.openaqua.app.feature.device.common.SensorItem
+import io.github.lamba92.openaqua.app.feature.device.common.virtualSensorIndex
 import io.github.lamba92.openaqua.app.theme.CoolantTeal
 import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
 import io.github.lamba92.openaqua.app.ui.components.ChannelDetailHeader
@@ -639,6 +640,6 @@ private fun sensorName(sensor: SensorItem): String =
     sensor.customName
         ?: when (sensor.telemetry.kind) {
             SensorChannelKind.INTEGRATED_COOLANT -> stringResource(Res.string.sensor_coolant_name)
-            SensorChannelKind.VIRTUAL -> stringResource(Res.string.sensor_virtual_name, sensor.channel + 1)
+            SensorChannelKind.VIRTUAL -> stringResource(Res.string.sensor_virtual_name, sensor.virtualSensorIndex)
             else -> stringResource(Res.string.sensor_channel_name, sensor.channel + 1)
         }

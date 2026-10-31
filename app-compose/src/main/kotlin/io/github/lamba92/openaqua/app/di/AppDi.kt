@@ -16,8 +16,10 @@ import io.github.lamba92.openaqua.app.repository.AppDataRepository
 import io.github.lamba92.openaqua.app.repository.DeviceDataCacheService
 import io.github.lamba92.openaqua.app.repository.OpenAquaDeviceEngineApi
 import io.github.lamba92.openaqua.app.repository.OpenAquaHostEngineApi
+import io.github.lamba92.openaqua.app.repository.VirtualSensorFeederService
 import io.github.lamba92.openaqua.model.device.DeviceId
 import org.kodein.di.DI
+import org.kodein.di.bindEagerSingleton
 import org.kodein.di.bindMultiton
 import org.kodein.di.bindSingleton
 import org.kodein.di.direct
@@ -42,10 +44,19 @@ fun createAppModule(
             coroutineScopeProvider = instance(),
         )
     }
+    bindEagerSingleton {
+        VirtualSensorFeederService(
+            openAquaDeviceEngineApi = instance(),
+            deviceDataCacheService = instance(),
+            appDataRepository = instance(),
+            coroutineScopeProvider = instance(),
+        )
+    }
     bindSingleton {
         DeviceNavViewModel(
             dataCacheService = instance(),
             appDataRepository = instance(),
+            feederService = instance(),
             scopeProvider = instance(),
         )
     }
@@ -60,6 +71,8 @@ fun createAppModule(
     bindMultiton { deviceId: DeviceId ->
         DeviceViewModel(
             cacheService = instance(),
+            feederService = instance(),
+            appDataRepository = instance(),
             scopeProvider = instance(),
             deviceId = deviceId,
         )
@@ -76,6 +89,7 @@ fun createAppModule(
         SensorsViewModel(
             cacheService = instance(),
             appDataRepository = instance(),
+            feederService = instance(),
             scopeProvider = instance(),
             deviceId = deviceId,
         )

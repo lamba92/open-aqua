@@ -83,6 +83,9 @@ sealed interface HostSensorTelemetry {
     ) : HostSensorTelemetry
 }
 
+val HostSensorTelemetry.tempCelsiusOrNull: Double?
+    get() = (this as? HostSensorTelemetry.Connected)?.tempCelsius
+
 @Serializable
 @SerialName("host-telemetry")
 data class HostTelemetry(

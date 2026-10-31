@@ -10,7 +10,13 @@ import io.github.lamba92.openaqua.app.mvi.viewModelLogger
 import io.github.lamba92.openaqua.app.repository.AppDataRepository
 import io.github.lamba92.openaqua.app.repository.DeviceDataCacheService
 import io.github.lamba92.openaqua.app.repository.DeviceState
+import io.github.lamba92.openaqua.app.repository.VirtualSensorFeederService
+import io.github.lamba92.openaqua.app.repository.resolveFeedSourceValue
 import io.github.lamba92.openaqua.model.device.DeviceId
+import io.github.lamba92.openaqua.model.device.FlashConfigRequest
+import io.github.lamba92.openaqua.model.device.SensorChannelKind
+import io.github.lamba92.openaqua.model.device.SensorTelemetry
+import io.github.lamba92.openaqua.model.host.HostSensorTelemetry
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,8 +31,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class SensorsViewModel(
-    cacheService: DeviceDataCacheService,
+    private val cacheService: DeviceDataCacheService,
     private val appDataRepository: AppDataRepository,
+    feederService: VirtualSensorFeederService,
     scopeProvider: CoroutineScopeProvider,
     private val deviceId: DeviceId,
 ) : MVIViewModel<SensorsUiState, SensorsUiEvent, SensorsUiEffect> {
@@ -40,6 +47,7 @@ class SensorsViewModel(
 
     private data class CombinedPreferences(
         val storedData: DeviceStoredData,
+        val allDevicesStored: Map<DeviceId, DeviceStoredData>,
         val hideDisconnectedSensors: Boolean,
         val hideUnconfiguredVirtualSensors: Boolean,
     )
@@ -51,33 +59,101 @@ class SensorsViewModel(
                 .map { ready ->
                     CombinedPreferences(
                         storedData = ready.data.devices[deviceId] ?: DeviceStoredData(),
+                        allDevicesStored = ready.data.devices,
                         hideDisconnectedSensors = ready.data.hideDisconnectedSensors,
                         hideUnconfiguredVirtualSensors = ready.data.hideUnconfiguredVirtualSensors,
                     )
                 }.distinctUntilChanged()
 
+        val deviceFeedErrorsFlow =
+            feederService.feedErrorsState
+                .map { it[deviceId].orEmpty() }
+
         combine(
             cacheService.getAquaDeviceStateFlow(deviceId),
             preferencesFlow,
-        ) { deviceState, preferences ->
+            deviceFeedErrorsFlow,
+            cacheService.state,
+        ) { deviceState, preferences, feedErrors, allDevices ->
             state.update { current ->
                 when (deviceState) {
                     is DeviceState.Aqua.Connecting, is DeviceState.Aqua.Error -> SensorsUiState.Loading
                     is DeviceState.Aqua.Ready -> {
-                        val sensors = deviceState.telemetry.sensors.toSensorItems(deviceState.config.sensorOffsets, preferences.storedData)
+                        val sensors =
+                            deviceState.telemetry.sensors.toSensorItems(
+                                offsets = deviceState.config.sensorOffsets,
+                                storedData = preferences.storedData,
+                                feedErrors = feedErrors,
+                                resolveFeedValue = { source -> resolveFeedSourceValue(source, allDevices) },
+                            )
+
+                        val readyHost = allDevices.filterIsInstance<DeviceState.Host.Ready>().firstOrNull()
+                        val availableHostSensors =
+                            readyHost
+                                ?.let { host ->
+                                    val telemetryMap =
+                                        host.telemetry.sensors.associate {
+                                            it.id to (it as? HostSensorTelemetry.Connected)?.tempCelsius
+                                        }
+                                    host.info.devices.flatMap { dev ->
+                                        dev.sensors.map { sensor ->
+                                            HostSensorOption(
+                                                id = sensor.id,
+                                                name = "${dev.name} - ${sensor.name}",
+                                                liveTemp = telemetryMap[sensor.id],
+                                            )
+                                        }
+                                    }
+                                }.orEmpty()
+
+                        val availableAquaDevices =
+                            allDevices.filterIsInstance<DeviceState.Aqua.Ready>().mapNotNull { aqua ->
+                                val devStored = preferences.allDevicesStored[aqua.device.id]
+                                val devName = devStored?.customName ?: aqua.device.name
+                                val physicalSensors =
+                                    aqua.telemetry.sensors
+                                        .filter { it.kind != SensorChannelKind.VIRTUAL }
+                                        .map { s ->
+                                            val custom = devStored?.sensors?.get(s.channel)?.customName
+                                            val defaultName =
+                                                when (s.kind) {
+                                                    SensorChannelKind.INTEGRATED_COOLANT -> "Coolant"
+                                                    else -> "Sensor ${s.channel + 1}"
+                                                }
+                                            DeviceSensorOption(
+                                                channel = s.channel,
+                                                name = custom ?: defaultName,
+                                                liveTemp = (s as? SensorTelemetry.Connected)?.tempCelsius,
+                                            )
+                                        }
+                                if (physicalSensors.isNotEmpty()) {
+                                    AquaDeviceOption(
+                                        deviceId = aqua.device.id,
+                                        name = devName,
+                                        sensors = physicalSensors,
+                                    )
+                                } else {
+                                    null
+                                }
+                            }
 
                         if (current is SensorsUiState.Ready) {
                             current.copy(
                                 sensors = sensors,
                                 hideDisconnectedSensors = preferences.hideDisconnectedSensors,
                                 hideUnconfiguredVirtualSensors = preferences.hideUnconfiguredVirtualSensors,
+                                availableHostSensors = availableHostSensors,
+                                availableAquaDevices = availableAquaDevices,
                             )
                         } else {
+                            val initialChannel = sensors.firstOrNull { it.feedError != null }?.channel ?: 0
                             SensorsUiState.Ready(
                                 sensors = sensors,
-                                selectedSensorChannel = 0,
+                                selectedSensorChannel = initialChannel,
                                 hideDisconnectedSensors = preferences.hideDisconnectedSensors,
                                 hideUnconfiguredVirtualSensors = preferences.hideUnconfiguredVirtualSensors,
+                                availableHostSensors = availableHostSensors,
+                                availableAquaDevices = availableAquaDevices,
                             )
                         }
                     }
@@ -122,6 +198,95 @@ class SensorsViewModel(
                     } else {
                         appDataRepository.setHideDisconnectedSensors(true)
                         appDataRepository.setHideUnconfiguredVirtualSensors(true)
+                    }
+                }
+
+                is SensorsUiEvent.UpdateVirtualFeedDraft ->
+                    state.update { current ->
+                        if (current is SensorsUiState.Ready) {
+                            current.copy(virtualFeedDrafts = current.virtualFeedDrafts + (event.channel to event.draft))
+                        } else {
+                            current
+                        }
+                    }
+
+                is SensorsUiEvent.DiscardVirtualFeedDraft ->
+                    state.update { current ->
+                        if (current is SensorsUiState.Ready) {
+                            current.copy(virtualFeedDrafts = current.virtualFeedDrafts - event.channel)
+                        } else {
+                            current
+                        }
+                    }
+
+                is SensorsUiEvent.ApplyVirtualFeed -> {
+                    val currentState = state.value as? SensorsUiState.Ready ?: return@launch
+                    val draft = currentState.virtualFeedDrafts[event.channel] ?: return@launch
+                    val source = draft.toFeedSource()
+                    viewModelLogger.i { "Applying virtual feed source for channel ${event.channel} on device '$deviceId' to $source" }
+                    state.update { current ->
+                        if (current is SensorsUiState.Ready) current.copy(isApplyingVirtualFeed = true) else current
+                    }
+                    appDataRepository.setSensorVirtualFeed(
+                        deviceId = deviceId,
+                        channel = event.channel,
+                        feedSource = source,
+                    )
+                    state.update { current ->
+                        if (current is SensorsUiState.Ready) {
+                            current.copy(
+                                isApplyingVirtualFeed = false,
+                                virtualFeedDrafts = current.virtualFeedDrafts - event.channel,
+                            )
+                        } else {
+                            current
+                        }
+                    }
+                }
+
+                is SensorsUiEvent.UpdateOffsetDraft ->
+                    state.update { current ->
+                        if (current is SensorsUiState.Ready) {
+                            current.copy(offsetDrafts = current.offsetDrafts + (event.channel to event.offset))
+                        } else {
+                            current
+                        }
+                    }
+
+                is SensorsUiEvent.DiscardOffsetDraft ->
+                    state.update { current ->
+                        if (current is SensorsUiState.Ready) {
+                            current.copy(offsetDrafts = current.offsetDrafts - event.channel)
+                        } else {
+                            current
+                        }
+                    }
+
+                is SensorsUiEvent.FlashOffset -> {
+                    val currentState = state.value as? SensorsUiState.Ready ?: return@launch
+                    val offset = currentState.offsetDrafts[event.channel] ?: return@launch
+                    viewModelLogger.i { "Flashing sensor offset for channel ${event.channel} on device '$deviceId' to $offset °C..." }
+                    state.update { current ->
+                        if (current is SensorsUiState.Ready) current.copy(isFlashingOffset = true) else current
+                    }
+                    try {
+                        cacheService.flashConfig(
+                            deviceId = deviceId,
+                            config = FlashConfigRequest(sensorOffsets = mapOf(event.channel to offset)),
+                        )
+                    } catch (e: Exception) {
+                        viewModelLogger.e(e) { "Failed to flash sensor offset: ${e.message}" }
+                    } finally {
+                        state.update { current ->
+                            if (current is SensorsUiState.Ready) {
+                                current.copy(
+                                    isFlashingOffset = false,
+                                    offsetDrafts = current.offsetDrafts - event.channel,
+                                )
+                            } else {
+                                current
+                            }
+                        }
                     }
                 }
             }

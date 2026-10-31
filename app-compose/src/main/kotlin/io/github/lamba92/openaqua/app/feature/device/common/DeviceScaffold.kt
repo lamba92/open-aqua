@@ -36,6 +36,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.lamba92.openaqua.app.repository.DeviceErrorType
 import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
+import io.github.lamba92.openaqua.app.ui.components.FeederStatus
+import io.github.lamba92.openaqua.app.ui.components.FeederStatusBadge
 import io.github.lamba92.openaqua.model.device.DetectedHardwareDevice
 import open_aqua.app_compose.generated.resources.Res
 import open_aqua.app_compose.generated.resources.device_error_generic
@@ -63,6 +65,7 @@ fun DeviceDrawerScaffold(
     selectedTab: CommonDeviceTab,
     onSelectTab: (CommonDeviceTab) -> Unit,
     modifier: Modifier = Modifier,
+    feederStatus: FeederStatus = FeederStatus.NONE,
     content: @Composable () -> Unit,
 ) {
     val colors = OpenAquaTheme.colors
@@ -138,6 +141,12 @@ fun DeviceDrawerScaffold(
                         selected = selectedTab == CommonDeviceTab.SENSORS,
                         onClick = { onSelectTab(CommonDeviceTab.SENSORS) },
                         colors = drawerColors,
+                        badge =
+                            if (feederStatus != FeederStatus.NONE) {
+                                { FeederStatusBadge(status = feederStatus) }
+                            } else {
+                                null
+                            },
                     )
                 }
             }
@@ -155,6 +164,7 @@ private fun DeviceDrawerTabItem(
     onClick: () -> Unit,
     colors: NavigationDrawerItemColors,
     modifier: Modifier = Modifier,
+    badge: (@Composable () -> Unit)? = null,
 ) {
     NavigationDrawerItem(
         label = {
@@ -173,6 +183,7 @@ private fun DeviceDrawerTabItem(
                 modifier = Modifier.size(20.dp),
             )
         },
+        badge = badge,
         selected = selected,
         onClick = onClick,
         colors = colors,

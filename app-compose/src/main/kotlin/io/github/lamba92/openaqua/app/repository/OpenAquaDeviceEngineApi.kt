@@ -10,16 +10,21 @@ import io.github.lamba92.openaqua.model.device.DevicesResponse
 import io.github.lamba92.openaqua.model.device.FeedVirtualSensorsRequest
 import io.github.lamba92.openaqua.model.device.FlashConfigRequest
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.withContext
+import kotlinx.io.asSink
 import kotlinx.io.asSource
 import kotlinx.io.buffered
 import kotlinx.io.readLine
+import kotlinx.io.writeString
 import kotlinx.serialization.json.Json
+import java.io.IOException
 import java.nio.file.Path
 import kotlin.io.path.absolutePathString
 import kotlin.time.Duration
@@ -94,16 +99,28 @@ class OpenAquaDeviceEngineApi(
             ).start()
         logger.i { "Started virtual sensor feeder process for device '${deviceId.value}' (PID ${process.pid()})" }
         try {
-            val writer = process.outputStream.bufferedWriter()
+            val writer = process.outputStream.asSink().buffered()
             source
                 .flowOn(Dispatchers.Default)
                 .onEach { request ->
-                    writer.write(json.encodeToString(FeedVirtualSensorsRequest.serializer(), request) + "\n")
+                    writer.writeString(json.encodeToString(FeedVirtualSensorsRequest.serializer(), request) + "\n")
                     writer.flush()
                 }.flowOn(Dispatchers.IO)
                 .collect()
+        } catch (e: Exception) {
+            currentCoroutineContext().ensureActive()
+            val errorOutput = runCatching { process.errorStream.bufferedReader().readText() }.getOrNull().orEmpty()
+            if (e is IOException && e.message?.contains("Stream closed") == true) {
+                logger.i { "Feeder stream closed for device '${deviceId.value}'" }
+            } else {
+                logger.e(e) {
+                    "Error while feeding virtual sensors for device '${deviceId.value}'" +
+                        if (errorOutput.isNotBlank()) ": $errorOutput" else ""
+                }
+            }
         } finally {
             logger.i { "Terminating virtual sensor feeder process for device '${deviceId.value}'" }
+            runCatching { process.outputStream.close() }
             process.destroy()
         }
     }

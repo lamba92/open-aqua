@@ -50,6 +50,7 @@ fun DeviceScreen(
                 selectedTab = selectedTab,
                 onSelectTab = onSelectTab,
                 modifier = modifier,
+                feederStatus = s.status,
             ) {
                 saveableStateHolder.SaveableStateProvider(selectedTab) {
                     when (selectedTab) {

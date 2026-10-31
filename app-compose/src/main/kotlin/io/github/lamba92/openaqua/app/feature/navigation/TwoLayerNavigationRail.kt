@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
@@ -37,12 +36,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.github.lamba92.openaqua.app.repository.DeviceState
-import io.github.lamba92.openaqua.app.theme.AppColors
 import io.github.lamba92.openaqua.app.theme.LocalNavigationRailColors
 import io.github.lamba92.openaqua.app.theme.LocalNavigationRailMetrics
 import io.github.lamba92.openaqua.app.theme.NavigationRailColors
 import io.github.lamba92.openaqua.app.theme.NavigationRailMetrics
 import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
+import io.github.lamba92.openaqua.app.ui.components.FeederStatus
+import io.github.lamba92.openaqua.app.ui.components.FeederStatusBadge
 import io.github.lamba92.openaqua.app.ui.components.OpenAquaVerticalScrollbar
 import io.github.lamba92.openaqua.model.device.DeviceId
 import open_aqua.app_compose.generated.resources.Res
@@ -108,6 +108,7 @@ fun DeviceNavigationRailScaffold(
 
             DeviceNavigationRailList(
                 devices = state.devices,
+                devicesWithFeedErrors = state.devicesWithFeedErrors,
                 selectedItem = state.selectedItem,
                 onSelectDevice = { onEvent(DeviceNavEvent.SelectDevice(it)) },
                 railItemColors = railItemColors,
@@ -161,6 +162,7 @@ private fun HostItem(
 @Composable
 private fun DeviceNavigationRailList(
     devices: List<DeviceState.Aqua>,
+    devicesWithFeedErrors: Set<DeviceId>,
     selectedItem: DeviceNavState.SelectedItem?,
     onSelectDevice: (DeviceId) -> Unit,
     railItemColors: NavigationRailItemColors,
@@ -187,6 +189,7 @@ private fun DeviceNavigationRailList(
             devices.forEach { deviceState ->
                 AquaDeviceNavigationRailItem(
                     deviceState = deviceState,
+                    hasError = deviceState.device.id in devicesWithFeedErrors,
                     isSelected =
                         selectedItem is DeviceNavState.SelectedItem.Device &&
                             selectedItem.deviceId == deviceState.device.id,
@@ -297,6 +300,15 @@ private fun HostNavigationRailItem(
     metrics: NavigationRailMetrics,
     modifier: Modifier = Modifier,
 ) {
+    val status =
+        when (host) {
+            is DeviceState.Host.Error -> FeederStatus.ERROR
+            is DeviceState.Host.Ready -> FeederStatus.OPERATIONAL
+            is DeviceState.Host.Connecting,
+            DeviceState.Host.Loading,
+            -> FeederStatus.NONE
+        }
+
     NavigationRailItem(
         modifier = modifier.fillMaxWidth(),
         selected = isSelected,
@@ -308,12 +320,9 @@ private fun HostNavigationRailItem(
                     contentDescription = stringResource(Res.string.nav_host),
                     modifier = Modifier.size(metrics.itemIconSize),
                 )
-                Box(
-                    modifier =
-                        Modifier
-                            .size(metrics.statusDotSize)
-                            .clip(CircleShape)
-                            .background(host.statusColor(OpenAquaTheme.colors)),
+                FeederStatusBadge(
+                    status = status,
+                    size = metrics.statusDotSize,
                 )
             }
         },
@@ -338,8 +347,16 @@ private fun AquaDeviceNavigationRailItem(
     colors: NavigationRailItemColors,
     metrics: NavigationRailMetrics,
     modifier: Modifier = Modifier,
+    hasError: Boolean = false,
 ) {
     val device = deviceState.device
+    val status =
+        when {
+            hasError || deviceState is DeviceState.Aqua.Error -> FeederStatus.ERROR
+            deviceState is DeviceState.Aqua.Ready -> FeederStatus.OPERATIONAL
+            else -> FeederStatus.NONE
+        }
+
     NavigationRailItem(
         modifier = modifier.fillMaxWidth(),
         selected = isSelected,
@@ -351,12 +368,9 @@ private fun AquaDeviceNavigationRailItem(
                     contentDescription = device.name,
                     modifier = Modifier.size(metrics.itemIconSize),
                 )
-                Box(
-                    modifier =
-                        Modifier
-                            .size(metrics.statusDotSize)
-                            .clip(CircleShape)
-                            .background(deviceState.statusColor(OpenAquaTheme.colors)),
+                FeederStatusBadge(
+                    status = status,
+                    size = metrics.statusDotSize,
                 )
             }
         },
@@ -445,19 +459,4 @@ private fun Modifier.verticalScrollFadingEdge(
                 )
             }
         }
-    }
-
-private fun DeviceState.Host.statusColor(colors: AppColors): Color =
-    when (this) {
-        is DeviceState.Host.Connecting -> colors.primary
-        is DeviceState.Host.Error -> colors.statusWarning
-        is DeviceState.Host.Ready -> colors.statusNominal
-        DeviceState.Host.Loading -> colors.primaryBright
-    }
-
-private fun DeviceState.Aqua.statusColor(colors: AppColors): Color =
-    when (this) {
-        is DeviceState.Aqua.Connecting -> colors.primary
-        is DeviceState.Aqua.Error -> colors.statusWarning
-        is DeviceState.Aqua.Ready -> colors.statusNominal
     }

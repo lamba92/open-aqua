@@ -135,6 +135,7 @@ fun ChannelSelectionCard(
     badgeText: String? = null,
     secondaryValueText: String? = null,
     hasPendingChanges: Boolean = false,
+    feederStatus: FeederStatus = FeederStatus.NONE,
     onDoubleClick: (() -> Unit)? = null,
     fillFraction: Float = 0f,
     fillColor: Color = OpenAquaTheme.colors.primary,
@@ -279,6 +280,21 @@ fun ChannelSelectionCard(
                         .clip(CircleShape)
                         .background(OpenAquaTheme.colors.statusCritical),
             )
+        }
+
+        // Feeder status badge centered on the top-right vertex/corner of the card rectangle (like iOS badge)
+        if (feederStatus != FeederStatus.NONE) {
+            Box(
+                modifier =
+                    Modifier
+                        .align(Alignment.TopEnd)
+                        .offset(x = dotRadius, y = -dotRadius),
+            ) {
+                FeederStatusBadge(
+                    status = feederStatus,
+                    size = dotSize,
+                )
+            }
         }
     }
 }

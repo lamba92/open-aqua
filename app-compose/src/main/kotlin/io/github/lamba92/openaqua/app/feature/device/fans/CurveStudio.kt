@@ -57,6 +57,8 @@ import androidx.compose.ui.unit.sp
 import io.github.lamba92.openaqua.app.feature.device.common.FanItem
 import io.github.lamba92.openaqua.app.feature.device.common.SensorItem
 import io.github.lamba92.openaqua.app.feature.device.common.canBeHidden
+import io.github.lamba92.openaqua.app.feature.device.common.effectiveTempCelsius
+import io.github.lamba92.openaqua.app.feature.device.common.virtualSensorIndex
 import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
 import io.github.lamba92.openaqua.app.ui.components.VisibilityFilterChip
 import io.github.lamba92.openaqua.model.device.AutoCurveFanConfig
@@ -67,7 +69,6 @@ import io.github.lamba92.openaqua.model.device.FanChannelConfig
 import io.github.lamba92.openaqua.model.device.FixedFanConfig
 import io.github.lamba92.openaqua.model.device.SensorChannelKind
 import io.github.lamba92.openaqua.model.device.TargetTempFanConfig
-import io.github.lamba92.openaqua.model.device.tempCelsiusOrNull
 import open_aqua.app_compose.generated.resources.Res
 import open_aqua.app_compose.generated.resources.curve_copy_no_channels
 import open_aqua.app_compose.generated.resources.curve_copy_source
@@ -144,7 +145,7 @@ fun CurveStudio(
             }
         }
 
-    val liveTemp = activeSensor?.telemetry?.tempCelsiusOrNull
+    val liveTemp = activeSensor?.effectiveTempCelsius
 
     Column(
         modifier =
@@ -756,11 +757,18 @@ private fun SensorDropdown(
             ) {
                 displayedSensors.forEach { sensor ->
                     val isSelected = sensor.channel == selectedIndex
+                    val isConnected = sensor.effectiveTempCelsius != null
                     DropdownMenuItem(
+                        enabled = isConnected,
                         text = {
                             Text(
                                 text = sensorDisplayName(sensor),
-                                color = if (isSelected) colors.primaryBright else colors.textPrimary,
+                                color =
+                                    when {
+                                        !isConnected -> colors.textMuted
+                                        isSelected -> colors.primaryBright
+                                        else -> colors.textPrimary
+                                    },
                                 fontSize = 12.sp,
                                 fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
@@ -1365,10 +1373,10 @@ private fun sensorDisplayName(sensor: SensorItem): String {
         sensor.customName
             ?: when (sensor.telemetry.kind) {
                 SensorChannelKind.INTEGRATED_COOLANT -> stringResource(Res.string.sensor_coolant_name)
-                SensorChannelKind.VIRTUAL -> stringResource(Res.string.sensor_virtual_name, sensor.channel + 1)
+                SensorChannelKind.VIRTUAL -> stringResource(Res.string.sensor_virtual_name, sensor.virtualSensorIndex)
                 else -> stringResource(Res.string.sensor_channel_name, sensor.channel + 1)
             }
-    val temp = sensor.telemetry.tempCelsiusOrNull
+    val temp = sensor.effectiveTempCelsius
     return if (temp != null) {
         "$base (%.1f°C)".format(temp)
     } else {

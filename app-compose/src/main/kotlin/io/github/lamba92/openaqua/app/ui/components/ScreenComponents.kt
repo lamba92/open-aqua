@@ -91,47 +91,6 @@ fun Modifier.scrollFadingEdge(
         }
     }
 
-fun Modifier.horizontalScrollFadingEdge(
-    color: Color,
-    scrollState: ScrollState,
-    width: Dp = 24.dp,
-): Modifier =
-    this.drawWithContent {
-        drawContent()
-        val fadeWidthPx = width.toPx()
-        if (fadeWidthPx > 0f) {
-            val leftAlpha = (scrollState.value.toFloat() / (fadeWidthPx / 2f)).coerceIn(0f, 1f)
-            val maxScroll = scrollState.maxValue.toFloat()
-            val rightAlpha =
-                if (maxScroll > 0f) {
-                    ((maxScroll - scrollState.value.toFloat()) / (fadeWidthPx / 2f)).coerceIn(0f, 1f)
-                } else {
-                    0f
-                }
-
-            if (leftAlpha > 0f) {
-                drawRect(
-                    brush =
-                        Brush.horizontalGradient(
-                            colors = listOf(color.copy(alpha = leftAlpha), Color.Transparent),
-                            startX = 0f,
-                            endX = fadeWidthPx,
-                        ),
-                )
-            }
-            if (rightAlpha > 0f) {
-                drawRect(
-                    brush =
-                        Brush.horizontalGradient(
-                            colors = listOf(Color.Transparent, color.copy(alpha = rightAlpha)),
-                            startX = size.width - fadeWidthPx,
-                            endX = size.width,
-                        ),
-                )
-            }
-        }
-    }
-
 object ScreenHeaderDefaults {
     @Composable
     fun colors(): ScreenHeaderColors = LocalScreenHeaderColors.current
