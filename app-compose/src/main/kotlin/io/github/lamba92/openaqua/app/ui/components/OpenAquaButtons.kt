@@ -11,6 +11,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -81,7 +82,7 @@ fun OpenAquaButton(
             Icon(
                 painter = icon,
                 contentDescription = null,
-                tint = iconTint,
+                tint = resolvedIconTint,
                 modifier = Modifier.size(18.dp),
             )
             Spacer(modifier = Modifier.width(8.dp))
@@ -123,6 +124,60 @@ fun OpenAquaOutlinedButton(
                 contentColor = resolvedContentColor,
                 disabledContainerColor = colors.surfaceLow,
                 disabledContentColor = colors.textMuted,
+            ),
+        modifier =
+            modifier.onPreviewKeyEvent { event ->
+                if (
+                    enabled &&
+                    event.type == KeyEventType.KeyDown &&
+                    (event.key == Key.Enter || event.key == Key.NumPadEnter)
+                ) {
+                    onClick()
+                    true
+                } else {
+                    false
+                }
+            },
+    ) {
+        if (icon != null) {
+            Icon(
+                painter = icon,
+                contentDescription = null,
+                tint = if (enabled) resolvedIconTint else colors.textMuted,
+                modifier = Modifier.size(18.dp),
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+        }
+        Text(
+            text = text,
+            fontSize = 15.sp,
+            fontWeight = FontWeight.Medium,
+        )
+    }
+}
+
+@Composable
+fun OpenAquaTextButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    icon: Painter? = null,
+    contentColor: Color = Color.Unspecified,
+    iconTint: Color = Color.Unspecified,
+) {
+    val colors = OpenAquaTheme.colors
+    val resolvedContentColor = if (contentColor.isSpecified) contentColor else colors.textSecondary
+    val resolvedIconTint = if (iconTint.isSpecified) iconTint else colors.primaryBright
+
+    TextButton(
+        onClick = onClick,
+        enabled = enabled,
+        shape = RoundedCornerShape(10.dp),
+        colors =
+            ButtonDefaults.textButtonColors(
+                contentColor = resolvedContentColor,
+                disabledContentColor = colors.textMuted.copy(alpha = 0.5f),
             ),
         modifier =
             modifier.onPreviewKeyEvent { event ->

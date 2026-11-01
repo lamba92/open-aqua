@@ -154,6 +154,7 @@
     <string name="rename_dialog_title">Renombrar %1$s</string>
     <string name="rename_dialog_save">Guardar</string>
     <string name="rename_dialog_cancel">Cancelar</string>
+    <string name="rename_dialog_reset">Restablecer</string>
     <string name="rename_dialog_label">Nombre personalizado</string>
     <string name="rename_dialog_placeholder">Ingrese un nombre personalizado o deje vacío para el predeterminado</string>
 

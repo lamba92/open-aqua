@@ -58,7 +58,7 @@ import io.github.lamba92.openaqua.app.feature.device.common.FanItem
 import io.github.lamba92.openaqua.app.feature.device.common.SensorItem
 import io.github.lamba92.openaqua.app.feature.device.common.canBeHidden
 import io.github.lamba92.openaqua.app.feature.device.common.effectiveTempCelsius
-import io.github.lamba92.openaqua.app.feature.device.common.virtualSensorIndex
+import io.github.lamba92.openaqua.app.feature.device.common.resolveName
 import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
 import io.github.lamba92.openaqua.app.ui.components.VisibilityFilterChip
 import io.github.lamba92.openaqua.model.device.AutoCurveFanConfig
@@ -67,7 +67,6 @@ import io.github.lamba92.openaqua.model.device.CurveFanConfig
 import io.github.lamba92.openaqua.model.device.CurvePoint
 import io.github.lamba92.openaqua.model.device.FanChannelConfig
 import io.github.lamba92.openaqua.model.device.FixedFanConfig
-import io.github.lamba92.openaqua.model.device.SensorChannelKind
 import io.github.lamba92.openaqua.model.device.TargetTempFanConfig
 import open_aqua.app_compose.generated.resources.Res
 import open_aqua.app_compose.generated.resources.curve_copy_no_channels
@@ -94,17 +93,11 @@ import open_aqua.app_compose.generated.resources.curve_target_temp_explanation
 import open_aqua.app_compose.generated.resources.curve_target_temp_range_error
 import open_aqua.app_compose.generated.resources.curve_temp_max
 import open_aqua.app_compose.generated.resources.curve_temp_min
-import open_aqua.app_compose.generated.resources.d5_fan_name
-import open_aqua.app_compose.generated.resources.d5_pump_name
-import open_aqua.app_compose.generated.resources.fan_channel_name
 import open_aqua.app_compose.generated.resources.fan_mode_auto_curve
 import open_aqua.app_compose.generated.resources.fan_mode_copy_fan
 import open_aqua.app_compose.generated.resources.fan_mode_fixed
 import open_aqua.app_compose.generated.resources.fan_mode_target_temp
 import open_aqua.app_compose.generated.resources.ic_tune
-import open_aqua.app_compose.generated.resources.sensor_channel_name
-import open_aqua.app_compose.generated.resources.sensor_coolant_name
-import open_aqua.app_compose.generated.resources.sensor_virtual_name
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import kotlin.math.abs
@@ -123,6 +116,7 @@ fun CurveStudio(
     val colors = OpenAquaTheme.colors
     val metrics = OpenAquaTheme.metrics
 
+    val hasPump = remember(allFans) { allFans.any { it.telemetry.kind == CoolingChannelKind.PUMP } }
     val otherFans = remember(allFans, fan.channel) { allFans.filter { it.channel != fan.channel } }
     val draftConfig = remember(draft, allFans) { draft.toFanChannelConfig(allFans) }
 
@@ -259,6 +253,7 @@ fun CurveStudio(
                     otherFans = otherFans,
                     selectedSourceChannel = draft.sourceChannel,
                     onSelectSourceChannel = { onEvent(CurveStudioEvent.ChangeCopySource(it)) },
+                    hasPump = hasPump,
                 )
                 visualizerGraph()
             }
@@ -791,6 +786,7 @@ private fun CopyFanModeControls(
     selectedSourceChannel: Int,
     onSelectSourceChannel: (Int) -> Unit,
     modifier: Modifier = Modifier,
+    hasPump: Boolean = false,
 ) {
     val colors = OpenAquaTheme.colors
     val metrics = OpenAquaTheme.metrics
@@ -841,7 +837,7 @@ private fun CopyFanModeControls(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
                         Text(
-                            text = currentSource?.let { fanDisplayName(it) } ?: "--",
+                            text = currentSource?.resolveName(hasPump) ?: "--",
                             color = colors.textPrimary,
                             fontSize = 12.sp,
                             fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
@@ -867,7 +863,7 @@ private fun CopyFanModeControls(
                             DropdownMenuItem(
                                 text = {
                                     Text(
-                                        text = fanDisplayName(fan),
+                                        text = fan.resolveName(hasPump),
                                         color = if (isSelected) colors.primaryBright else colors.textPrimary,
                                         fontSize = 14.sp,
                                         fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
@@ -1369,33 +1365,11 @@ private fun evaluatePointsAt(
 
 @Composable
 private fun sensorDisplayName(sensor: SensorItem): String {
-    val base =
-        sensor.customName
-            ?: when (sensor.telemetry.kind) {
-                SensorChannelKind.INTEGRATED_COOLANT -> stringResource(Res.string.sensor_coolant_name)
-                SensorChannelKind.VIRTUAL -> stringResource(Res.string.sensor_virtual_name, sensor.virtualSensorIndex)
-                else -> stringResource(Res.string.sensor_channel_name, sensor.channel + 1)
-            }
+    val base = sensor.resolveName()
     val temp = sensor.effectiveTempCelsius
     return if (temp != null) {
         "$base (%.1f°C)".format(temp)
     } else {
         base
     }
-}
-
-@Composable
-private fun fanDisplayName(fan: FanItem): String {
-    val base =
-        fan.customName
-            ?: when (fan.telemetry.kind) {
-                CoolingChannelKind.PUMP -> stringResource(Res.string.d5_pump_name)
-                CoolingChannelKind.FAN ->
-                    if (fan.channel == 1) {
-                        stringResource(Res.string.d5_fan_name)
-                    } else {
-                        stringResource(Res.string.fan_channel_name, fan.channel + 1)
-                    }
-            }
-    return base
 }

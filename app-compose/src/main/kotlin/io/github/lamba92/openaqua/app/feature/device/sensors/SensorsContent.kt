@@ -47,6 +47,7 @@ import io.github.lamba92.openaqua.app.feature.device.common.SensorItem
 import io.github.lamba92.openaqua.app.feature.device.common.canBeHidden
 import io.github.lamba92.openaqua.app.feature.device.common.effectiveTempCelsius
 import io.github.lamba92.openaqua.app.feature.device.common.feederStatus
+import io.github.lamba92.openaqua.app.feature.device.common.resolveName
 import io.github.lamba92.openaqua.app.feature.device.common.virtualSensorIndex
 import io.github.lamba92.openaqua.app.model.SensorTargetType
 import io.github.lamba92.openaqua.app.model.VirtualSensorFeedError
@@ -77,6 +78,7 @@ import io.github.lamba92.openaqua.model.device.SensorTelemetry
 import io.github.lamba92.openaqua.model.device.tempCelsiusOrNull
 import open_aqua.app_compose.generated.resources.Res
 import open_aqua.app_compose.generated.resources.action_rename
+import open_aqua.app_compose.generated.resources.curve_action_discard
 import open_aqua.app_compose.generated.resources.ic_computer
 import open_aqua.app_compose.generated.resources.ic_device
 import open_aqua.app_compose.generated.resources.ic_edit
@@ -88,9 +90,7 @@ import open_aqua.app_compose.generated.resources.metric_live_temperature
 import open_aqua.app_compose.generated.resources.metric_offset_calibration
 import open_aqua.app_compose.generated.resources.metric_probe_type
 import open_aqua.app_compose.generated.resources.rename_dialog_title
-import open_aqua.app_compose.generated.resources.sensor_channel_name
 import open_aqua.app_compose.generated.resources.sensor_channel_pin
-import open_aqua.app_compose.generated.resources.sensor_coolant_name
 import open_aqua.app_compose.generated.resources.sensor_coolant_pin
 import open_aqua.app_compose.generated.resources.sensor_feeder_apply
 import open_aqua.app_compose.generated.resources.sensor_feeder_desc
@@ -128,7 +128,6 @@ import open_aqua.app_compose.generated.resources.sensor_temp_disconnected
 import open_aqua.app_compose.generated.resources.sensor_temp_long_value
 import open_aqua.app_compose.generated.resources.sensor_temp_short_disconnected
 import open_aqua.app_compose.generated.resources.sensor_temp_short_value
-import open_aqua.app_compose.generated.resources.sensor_virtual_name
 import open_aqua.app_compose.generated.resources.sensor_virtual_pin
 import open_aqua.app_compose.generated.resources.sensors_screen_subtitle
 import open_aqua.app_compose.generated.resources.sensors_screen_title
@@ -303,6 +302,7 @@ fun SensorsContent(
                             onOffsetChange = { offset ->
                                 onEvent(SensorsUiEvent.UpdateOffsetDraft(selectedSensor.channel, offset))
                             },
+                            onDiscardOffset = { onEvent(SensorsUiEvent.DiscardOffsetDraft(selectedSensor.channel)) },
                             onFlashOffset = { onEvent(SensorsUiEvent.FlashOffset(selectedSensor.channel)) },
                         )
                     } else {
@@ -316,6 +316,7 @@ fun SensorsContent(
                             onDraftChange = { draft ->
                                 onEvent(SensorsUiEvent.UpdateVirtualFeedDraft(selectedSensor.channel, draft))
                             },
+                            onDiscard = { onEvent(SensorsUiEvent.DiscardVirtualFeedDraft(selectedSensor.channel)) },
                             onApply = { onEvent(SensorsUiEvent.ApplyVirtualFeed(selectedSensor.channel)) },
                         )
                     }
@@ -330,7 +331,7 @@ fun SensorsContent(
     if (activeRenamingSensor != null) {
         RenameDialog(
             title = stringResource(Res.string.rename_dialog_title, activeRenamingSensor.resolveName()),
-            initialValue = activeRenamingSensor.customName ?: "",
+            initialValue = activeRenamingSensor.name,
             icon = painterResource(Res.drawable.ic_edit),
             onConfirm = { newName ->
                 onEvent(SensorsUiEvent.RenameSensor(activeRenamingSensor.channel, newName))
@@ -413,6 +414,7 @@ fun SensorOffsetCalibrationCard(
     isModified: Boolean,
     isFlashing: Boolean,
     onOffsetChange: (Double) -> Unit,
+    onDiscardOffset: () -> Unit,
     onFlashOffset: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -533,12 +535,28 @@ fun SensorOffsetCalibrationCard(
                 }
             }
 
-            OpenAquaButton(
-                text = stringResource(Res.string.sensor_offset_flash),
-                isLoading = isFlashing,
-                enabled = isModified && !isFlashing,
-                onClick = onFlashOffset,
-            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(metrics.spacingSm),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (isModified) {
+                    OpenAquaOutlinedButton(
+                        text = stringResource(Res.string.curve_action_discard),
+                        enabled = !isFlashing,
+                        onClick = {
+                            onDiscardOffset()
+                            textInput = "%.1f".format(sensor.calibrationOffset)
+                        },
+                    )
+                }
+
+                OpenAquaButton(
+                    text = stringResource(Res.string.sensor_offset_flash),
+                    isLoading = isFlashing,
+                    enabled = isModified && !isFlashing,
+                    onClick = onFlashOffset,
+                )
+            }
         }
 
         // Live Math Preview Box
@@ -597,6 +615,7 @@ fun VirtualSensorFeederCard(
     availableHostSensors: List<HostSensorOption>,
     availableAquaDevices: List<AquaDeviceOption>,
     onDraftChange: (VirtualSensorFeedDraft) -> Unit,
+    onDiscard: () -> Unit,
     onApply: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -659,8 +678,15 @@ fun VirtualSensorFeederCard(
             is VirtualSensorFeedDraft.Host ->
                 availableHostSensors.firstOrNull { it.id == draft.sensorId }?.name
                     ?: draft.sensorId?.value ?: ""
-            is VirtualSensorFeedDraft.Device ->
-                "${currentSelectedDevice?.name.orEmpty()} → ${currentSelectedDevice?.sensors?.firstOrNull { it.channel == draft.channel }?.name.orEmpty()}"
+            is VirtualSensorFeedDraft.Device -> {
+                val resolvedSensorName =
+                    currentSelectedDevice
+                        ?.sensors
+                        ?.firstOrNull { it.channel == draft.channel }
+                        ?.resolveName()
+                        .orEmpty()
+                "${currentSelectedDevice?.name.orEmpty()} → $resolvedSensorName"
+            }
         }
 
     val feedError = sensor.feedError
@@ -990,7 +1016,7 @@ fun VirtualSensorFeederCard(
                         // Sensor Channel Dropdown
                         Box(modifier = Modifier.weight(1f)) {
                             val selectedChannelItem = currentSelectedDevice?.sensors?.firstOrNull { it.channel == selectedDeviceChannel }
-                            val channelName = selectedChannelItem?.name ?: stringResource(Res.string.sensor_feeder_no_device_sensors)
+                            val channelName = selectedChannelItem?.resolveName() ?: stringResource(Res.string.sensor_feeder_no_device_sensors)
 
                             Row(
                                 modifier =
@@ -1031,7 +1057,7 @@ fun VirtualSensorFeederCard(
                                 ) {
                                     displayedDeviceSensors.forEach { sensorItem ->
                                         SensorDropdownMenuItem(
-                                            name = sensorItem.name,
+                                            name = sensorItem.resolveName(),
                                             temperature = sensorItem.liveTemp,
                                             onClick = {
                                                 val devId = currentSelectedDevice?.deviceId
@@ -1047,12 +1073,25 @@ fun VirtualSensorFeederCard(
                 }
             }
 
-            OpenAquaButton(
-                text = stringResource(Res.string.sensor_feeder_apply),
-                isLoading = isApplying,
-                enabled = isModified && !isApplying,
-                onClick = onApply,
-            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(metrics.spacingSm),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (isModified) {
+                    OpenAquaOutlinedButton(
+                        text = stringResource(Res.string.curve_action_discard),
+                        enabled = !isApplying,
+                        onClick = onDiscard,
+                    )
+                }
+
+                OpenAquaButton(
+                    text = stringResource(Res.string.sensor_feeder_apply),
+                    isLoading = isApplying,
+                    enabled = isModified && !isApplying,
+                    onClick = onApply,
+                )
+            }
         }
 
         // Live Feed Pipeline Visualizer
@@ -1196,14 +1235,6 @@ fun SensorSelectionTile(
         },
     )
 }
-
-@Composable
-private fun SensorItem.resolveName(): String =
-    customName ?: when (telemetry.kind) {
-        SensorChannelKind.PHYSICAL_NTC -> stringResource(Res.string.sensor_channel_name, channel + 1)
-        SensorChannelKind.VIRTUAL -> stringResource(Res.string.sensor_virtual_name, virtualSensorIndex)
-        SensorChannelKind.INTEGRATED_COOLANT -> stringResource(Res.string.sensor_coolant_name)
-    }
 
 @Composable
 private fun SensorItem.resolvePinLabel(): String =

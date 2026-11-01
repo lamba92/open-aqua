@@ -154,6 +154,7 @@
     <string name="rename_dialog_title">%1$s umbenennen</string>
     <string name="rename_dialog_save">Speichern</string>
     <string name="rename_dialog_cancel">Abbrechen</string>
+    <string name="rename_dialog_reset">Zurücksetzen</string>
     <string name="rename_dialog_label">Benutzerdefinierter Name</string>
     <string name="rename_dialog_placeholder">Name eingeben oder leer lassen für Standard</string>
 

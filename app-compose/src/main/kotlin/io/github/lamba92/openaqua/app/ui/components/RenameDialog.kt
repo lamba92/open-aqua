@@ -40,30 +40,39 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import io.github.lamba92.openaqua.app.feature.device.common.ChannelName
+import io.github.lamba92.openaqua.app.feature.device.common.toChannelName
 import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
 import open_aqua.app_compose.generated.resources.Res
 import open_aqua.app_compose.generated.resources.rename_dialog_cancel
 import open_aqua.app_compose.generated.resources.rename_dialog_label
 import open_aqua.app_compose.generated.resources.rename_dialog_placeholder
+import open_aqua.app_compose.generated.resources.rename_dialog_reset
 import open_aqua.app_compose.generated.resources.rename_dialog_save
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun RenameDialog(
     title: String,
-    initialValue: String,
-    onConfirm: (String?) -> Unit,
+    initialValue: ChannelName,
+    onConfirm: (ChannelName) -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
     label: String = stringResource(Res.string.rename_dialog_label),
     placeholder: String = stringResource(Res.string.rename_dialog_placeholder),
     confirmText: String = stringResource(Res.string.rename_dialog_save),
     dismissText: String = stringResource(Res.string.rename_dialog_cancel),
+    resetText: String = stringResource(Res.string.rename_dialog_reset),
     icon: Painter? = null,
     iconTint: Color = Color.Unspecified,
 ) {
+    val initialText =
+        when (initialValue) {
+            ChannelName.Default -> ""
+            is ChannelName.Custom -> initialValue.value
+        }
     var textFieldValue by remember {
-        mutableStateOf(TextFieldValue(text = initialValue, selection = TextRange(0, initialValue.length)))
+        mutableStateOf(TextFieldValue(text = initialText, selection = TextRange(0, initialText.length)))
     }
     val focusRequester = remember { FocusRequester() }
     val colors = OpenAquaTheme.colors
@@ -74,7 +83,7 @@ fun RenameDialog(
     }
 
     fun submit() {
-        onConfirm(textFieldValue.text.trim().takeIf { it.isNotEmpty() })
+        onConfirm(textFieldValue.text.toChannelName())
     }
 
     Dialog(
@@ -159,18 +168,29 @@ fun RenameDialog(
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                OpenAquaOutlinedButton(
-                    text = dismissText,
-                    onClick = onDismiss,
+                OpenAquaTextButton(
+                    text = resetText,
+                    enabled = initialValue is ChannelName.Custom || textFieldValue.text.isNotEmpty(),
+                    onClick = { onConfirm(ChannelName.Default) },
                 )
 
-                OpenAquaButton(
-                    text = confirmText,
-                    onClick = { submit() },
-                )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    OpenAquaOutlinedButton(
+                        text = dismissText,
+                        onClick = onDismiss,
+                    )
+
+                    OpenAquaButton(
+                        text = confirmText,
+                        onClick = { submit() },
+                    )
+                }
             }
         }
     }

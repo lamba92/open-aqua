@@ -3,6 +3,7 @@ package io.github.lamba92.openaqua.app.feature.device.sensors
 import io.github.lamba92.openaqua.app.coroutine.CoroutineScopeProvider
 import io.github.lamba92.openaqua.app.coroutine.LoggingScope
 import io.github.lamba92.openaqua.app.coroutine.getScope
+import io.github.lamba92.openaqua.app.feature.device.common.ChannelName
 import io.github.lamba92.openaqua.app.feature.device.common.toSensorItems
 import io.github.lamba92.openaqua.app.model.DeviceStoredData
 import io.github.lamba92.openaqua.app.model.SensorTypesStoredData
@@ -115,53 +116,52 @@ class SensorsViewModel(
                         val availableAquaDevices =
                             allDevices.filterIsInstance<DeviceState.Aqua.Ready>().mapNotNull { aqua ->
                                 val devStored = preferences.allDevicesStored[aqua.device.id]
-                                val devName = devStored?.customName ?: aqua.device.name
+                                val devName =
+                                    when (val name = devStored?.name ?: ChannelName.Default) {
+                                        ChannelName.Default -> aqua.device.name
+                                        is ChannelName.Custom -> name.value
+                                    }
                                 val physicalSensors =
                                     aqua.telemetry.sensors
                                         .filter { it.kind != SensorChannelKind.VIRTUAL }
                                         .map { s ->
-                                            val custom = devStored?.sensors?.get(s.channel)?.customName
-                                            val defaultName =
-                                                when (s.kind) {
-                                                    SensorChannelKind.INTEGRATED_COOLANT -> "Coolant"
-                                                    else -> "Sensor ${s.channel + 1}"
-                                                }
+                                            val sensorName = devStored?.sensors?.get(s.channel)?.name ?: ChannelName.Default
                                             DeviceSensorOption(
                                                 channel = s.channel,
-                                                name = custom ?: defaultName,
+                                                kind = s.kind,
+                                                name = sensorName,
                                                 liveTemp = (s as? SensorTelemetry.Connected)?.tempCelsius,
                                             )
                                         }
-                                when {
-                                    physicalSensors.isNotEmpty() ->
-                                        AquaDeviceOption(
-                                            deviceId = aqua.device.id,
-                                            name = devName,
-                                            sensors = physicalSensors,
-                                        )
-                                    else -> null
+                                if (physicalSensors.isNotEmpty()) {
+                                    AquaDeviceOption(
+                                        deviceId = aqua.device.id,
+                                        name = devName,
+                                        sensors = physicalSensors,
+                                    )
+                                } else {
+                                    null
                                 }
                             }
 
-                        when (current) {
-                            is SensorsUiState.Ready ->
-                                current.copy(
-                                    sensors = sensors,
-                                    hideDisconnectedSensors = preferences.hideDisconnectedSensors,
-                                    hideUnconfiguredVirtualSensors = preferences.hideUnconfiguredVirtualSensors,
-                                    availableHostSensors = availableHostSensors,
-                                    availableAquaDevices = availableAquaDevices,
-                                )
-
-                            else ->
-                                SensorsUiState.Ready(
-                                    sensors = sensors,
-                                    selectedSensorChannel = sensors.firstOrNull { it.feedError != null }?.channel ?: 0,
-                                    hideDisconnectedSensors = preferences.hideDisconnectedSensors,
-                                    hideUnconfiguredVirtualSensors = preferences.hideUnconfiguredVirtualSensors,
-                                    availableHostSensors = availableHostSensors,
-                                    availableAquaDevices = availableAquaDevices,
-                                )
+                        if (current is SensorsUiState.Ready) {
+                            current.copy(
+                                sensors = sensors,
+                                hideDisconnectedSensors = preferences.hideDisconnectedSensors,
+                                hideUnconfiguredVirtualSensors = preferences.hideUnconfiguredVirtualSensors,
+                                availableHostSensors = availableHostSensors,
+                                availableAquaDevices = availableAquaDevices,
+                            )
+                        } else {
+                            val initialChannel = sensors.firstOrNull { it.feedError != null }?.channel ?: 0
+                            SensorsUiState.Ready(
+                                sensors = sensors,
+                                selectedSensorChannel = initialChannel,
+                                hideDisconnectedSensors = preferences.hideDisconnectedSensors,
+                                hideUnconfiguredVirtualSensors = preferences.hideUnconfiguredVirtualSensors,
+                                availableHostSensors = availableHostSensors,
+                                availableAquaDevices = availableAquaDevices,
+                            )
                         }
                     }
                 }

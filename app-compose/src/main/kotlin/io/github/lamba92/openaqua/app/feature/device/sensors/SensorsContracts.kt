@@ -1,6 +1,9 @@
 package io.github.lamba92.openaqua.app.feature.device.sensors
 
+import androidx.compose.runtime.Composable
+import io.github.lamba92.openaqua.app.feature.device.common.ChannelName
 import io.github.lamba92.openaqua.app.feature.device.common.SensorItem
+import io.github.lamba92.openaqua.app.feature.device.common.resolveSensorName
 import io.github.lamba92.openaqua.app.model.SensorTargetType
 import io.github.lamba92.openaqua.app.model.VirtualSensorFeedSource
 import io.github.lamba92.openaqua.model.device.DeviceId
@@ -46,9 +49,13 @@ data class HostSensorOption(
 
 data class DeviceSensorOption(
     val channel: Int,
-    val name: String,
+    val kind: SensorChannelKind,
+    val name: ChannelName = ChannelName.Default,
     val liveTemp: Double?,
 )
+
+@Composable
+fun DeviceSensorOption.resolveName(): String = name.resolveSensorName(channel = channel, kind = kind)
 
 data class AquaDeviceOption(
     val deviceId: DeviceId,
@@ -105,7 +112,7 @@ sealed interface SensorsUiEvent {
 
     data class RenameSensor(
         val channel: Int,
-        val name: String?,
+        val name: ChannelName,
     ) : SensorsUiEvent
 
     data class StartRenamingSensor(

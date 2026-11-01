@@ -1,5 +1,6 @@
 package io.github.lamba92.openaqua.app.feature.device.fans
 
+import io.github.lamba92.openaqua.app.feature.device.common.ChannelName
 import io.github.lamba92.openaqua.app.feature.device.common.FanItem
 import io.github.lamba92.openaqua.app.feature.device.common.SensorItem
 import io.github.lamba92.openaqua.model.device.AutoCurveFanConfig
@@ -199,7 +200,7 @@ sealed interface FansUiEvent {
 
     data class RenameFan(
         val channel: Int,
-        val name: String?,
+        val name: ChannelName,
     ) : FansUiEvent
 
     data class StartRenamingFan(

@@ -4,6 +4,7 @@ import io.github.lamba92.openaqua.app.coroutine.CoroutineScopeProvider
 import io.github.lamba92.openaqua.app.coroutine.getLogger
 import io.github.lamba92.openaqua.app.coroutine.getScope
 import io.github.lamba92.openaqua.app.coroutine.logger
+import io.github.lamba92.openaqua.app.feature.device.common.ChannelName
 import io.github.lamba92.openaqua.app.model.AppStoredData
 import io.github.lamba92.openaqua.app.model.DeviceStoredData
 import io.github.lamba92.openaqua.app.model.FanStoredData
@@ -32,7 +33,7 @@ import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import kotlin.io.path.absolutePathString
 import kotlin.io.path.createDirectories
-import kotlin.io.path.exists
+import kotlin.io.path.deleteIfExists
 import kotlin.io.path.readText
 import kotlin.io.path.writeText
 
@@ -156,24 +157,22 @@ class AppDataRepository(
 
     fun setDeviceName(
         deviceId: DeviceId,
-        name: String?,
+        name: ChannelName,
     ) {
-        val normalized = name?.trim()?.takeIf { it.isNotEmpty() }
         updateDevice(deviceId) { device ->
-            device.copy(customName = normalized)
+            device.copy(name = name)
         }
     }
 
     fun setFanName(
         deviceId: DeviceId,
         channel: Int,
-        name: String?,
+        name: ChannelName,
     ) {
-        val normalized = name?.trim()?.takeIf { it.isNotEmpty() }
         updateDevice(deviceId) { device ->
             val currentFan = device.fans[channel] ?: FanStoredData.DEFAULT
             val updatedFans =
-                when (val updatedFan = currentFan.copy(customName = normalized)) {
+                when (val updatedFan = currentFan.copy(name = name)) {
                     FanStoredData.DEFAULT -> device.fans - channel
                     else -> device.fans + (channel to updatedFan)
                 }
@@ -184,13 +183,12 @@ class AppDataRepository(
     fun setSensorName(
         deviceId: DeviceId,
         channel: Int,
-        name: String?,
+        name: ChannelName,
     ) {
-        val normalized = name?.trim()?.takeIf { it.isNotEmpty() }
         updateDevice(deviceId) { device ->
             val currentSensor = device.sensors[channel] ?: SensorStoredData.DEFAULT
             val updatedSensors =
-                when (val updatedSensor = currentSensor.copy(customName = normalized)) {
+                when (val updatedSensor = currentSensor.copy(name = name)) {
                     SensorStoredData.DEFAULT -> device.sensors - channel
                     else -> device.sensors + (channel to updatedSensor)
                 }
@@ -207,9 +205,11 @@ class AppDataRepository(
     }
 
     private fun loadFromDisk(): AppStoredData =
-        when {
-            !storagePath.exists() -> AppStoredData()
-            else -> json.decodeFromString<AppStoredData>(storagePath.readText())
+        try {
+            json.decodeFromString<AppStoredData>(storagePath.readText())
+        } catch (_: Exception) {
+            storagePath.deleteIfExists()
+            AppStoredData()
         }
 
     private fun saveToDisk(storedData: AppStoredData) {

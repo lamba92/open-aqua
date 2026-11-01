@@ -154,6 +154,7 @@
     <string name="rename_dialog_title">Renommer %1$s</string>
     <string name="rename_dialog_save">Enregistrer</string>
     <string name="rename_dialog_cancel">Annuler</string>
+    <string name="rename_dialog_reset">Réinitialiser</string>
     <string name="rename_dialog_label">Nom personnalisé</string>
     <string name="rename_dialog_placeholder">Entrez un nom ou laissez vide pour la valeur par défaut</string>
 

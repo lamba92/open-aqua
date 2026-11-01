@@ -20,7 +20,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -32,7 +31,7 @@ import io.github.lamba92.openaqua.app.di.rememberInstance
 import io.github.lamba92.openaqua.app.feature.device.common.DeviceLoadingContent
 import io.github.lamba92.openaqua.app.feature.device.common.FanItem
 import io.github.lamba92.openaqua.app.feature.device.common.SensorItem
-import io.github.lamba92.openaqua.app.feature.device.common.virtualSensorIndex
+import io.github.lamba92.openaqua.app.feature.device.common.resolveName
 import io.github.lamba92.openaqua.app.theme.CoolantTeal
 import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
 import io.github.lamba92.openaqua.app.ui.components.ChannelDetailHeader
@@ -53,7 +52,6 @@ import io.github.lamba92.openaqua.model.device.CurveFanConfig
 import io.github.lamba92.openaqua.model.device.DeviceId
 import io.github.lamba92.openaqua.model.device.FanChannelConfig
 import io.github.lamba92.openaqua.model.device.FixedFanConfig
-import io.github.lamba92.openaqua.model.device.SensorChannelKind
 import io.github.lamba92.openaqua.model.device.TargetTempFanConfig
 import open_aqua.app_compose.generated.resources.Res
 import open_aqua.app_compose.generated.resources.action_rename
@@ -61,11 +59,8 @@ import open_aqua.app_compose.generated.resources.curve_action_apply
 import open_aqua.app_compose.generated.resources.curve_action_discard
 import open_aqua.app_compose.generated.resources.curve_action_flash_all
 import open_aqua.app_compose.generated.resources.curve_action_flashing
-import open_aqua.app_compose.generated.resources.d5_fan_name
 import open_aqua.app_compose.generated.resources.d5_fan_pin
-import open_aqua.app_compose.generated.resources.d5_pump_name
 import open_aqua.app_compose.generated.resources.d5_pump_pin
-import open_aqua.app_compose.generated.resources.fan_channel_name
 import open_aqua.app_compose.generated.resources.fan_channel_pin
 import open_aqua.app_compose.generated.resources.fan_channels_header
 import open_aqua.app_compose.generated.resources.fan_current_value
@@ -94,8 +89,6 @@ import open_aqua.app_compose.generated.resources.metric_speed
 import open_aqua.app_compose.generated.resources.metric_voltage
 import open_aqua.app_compose.generated.resources.rename_dialog_title
 import open_aqua.app_compose.generated.resources.sensor_channel_name
-import open_aqua.app_compose.generated.resources.sensor_coolant_name
-import open_aqua.app_compose.generated.resources.sensor_virtual_name
 import open_aqua.app_compose.generated.resources.visibility_no_fans_visible
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -151,7 +144,7 @@ fun FansContent(
             },
         selectorContent = {
             displayedFans.forEach { fan ->
-                val name = fan.customName ?: defaultCoolingName(fan, hasPump)
+                val name = fan.resolveName(hasPump)
                 val pinLabel = defaultCoolingPin(fan, hasPump)
                 val icon =
                     if (fan.telemetry.kind == CoolingChannelKind.PUMP) {
@@ -181,7 +174,7 @@ fun FansContent(
                     onShowAll = { onEvent(FansUiEvent.ToggleHideDisconnectedFans) },
                 )
             } else if (selectedFan != null) {
-                val name = selectedFan.customName ?: defaultCoolingName(selectedFan, hasPump)
+                val name = selectedFan.resolveName(hasPump)
                 val pinLabel = defaultCoolingPin(selectedFan, hasPump)
                 val draft =
                     state.fanDrafts[selectedFan.channel] ?: selectedFan.config.toInitialDraft(
@@ -211,10 +204,9 @@ fun FansContent(
 
     val activeRenamingFan = state.renamingFan
     if (activeRenamingFan != null) {
-        val defaultName = defaultCoolingName(activeRenamingFan, hasPump)
         RenameDialog(
-            title = stringResource(Res.string.rename_dialog_title, activeRenamingFan.customName ?: defaultName),
-            initialValue = activeRenamingFan.customName ?: "",
+            title = stringResource(Res.string.rename_dialog_title, activeRenamingFan.resolveName(hasPump)),
+            initialValue = activeRenamingFan.name,
             icon = painterResource(Res.drawable.ic_edit),
             onConfirm = { newName ->
                 onEvent(FansUiEvent.RenameFan(activeRenamingFan.channel, newName))
@@ -251,6 +243,7 @@ fun FansContent(
                             fan = fan,
                             targetConfig = targetConfig,
                             sensors = state.sensors,
+                            hasPump = hasPump,
                         )
                     }
                 }
@@ -258,21 +251,6 @@ fun FansContent(
         )
     }
 }
-
-@Composable
-private fun defaultCoolingName(
-    fan: FanItem,
-    hasPump: Boolean,
-): String =
-    when (fan.telemetry.kind) {
-        CoolingChannelKind.PUMP -> stringResource(Res.string.d5_pump_name)
-        CoolingChannelKind.FAN ->
-            if (fan.channel == 1 && hasPump) {
-                stringResource(Res.string.d5_fan_name)
-            } else {
-                stringResource(Res.string.fan_channel_name, fan.channel + 1)
-            }
-    }
 
 @Composable
 private fun defaultCoolingPin(
@@ -553,22 +531,13 @@ private fun PendingFanDiffCard(
     fan: FanItem,
     targetConfig: FanChannelConfig,
     sensors: List<SensorItem>,
+    hasPump: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val colors = OpenAquaTheme.colors
     val metrics = OpenAquaTheme.metrics
 
-    val fanName =
-        fan.customName
-            ?: when (fan.telemetry.kind) {
-                CoolingChannelKind.PUMP -> stringResource(Res.string.d5_pump_name)
-                CoolingChannelKind.FAN ->
-                    if (fan.channel == 1) {
-                        stringResource(Res.string.d5_fan_name)
-                    } else {
-                        stringResource(Res.string.fan_channel_name, fan.channel + 1)
-                    }
-            }
+    val fanName = fan.resolveName(hasPump)
 
     val icon =
         if (fan.telemetry.kind == CoolingChannelKind.PUMP) {
@@ -582,20 +551,20 @@ private fun PendingFanDiffCard(
             is FixedFanConfig -> "Fixed PWM: ${targetConfig.powerPercent.roundToInt()}%"
             is AutoCurveFanConfig -> {
                 val sensorName =
-                    sensors.firstOrNull { it.channel == targetConfig.sensorIndex }?.let { sensorName(it) }
-                        ?: "Sensor ${targetConfig.sensorIndex + 1}"
+                    sensors.firstOrNull { it.channel == targetConfig.sensorIndex }?.resolveName()
+                        ?: stringResource(Res.string.sensor_channel_name, targetConfig.sensorIndex + 1)
                 "Auto Curve • $sensorName • ${targetConfig.tMin.roundToInt()}°C - ${targetConfig.tMax.roundToInt()}°C (${targetConfig.pMin.roundToInt()}% - ${targetConfig.pMax.roundToInt()}%)"
             }
             is CurveFanConfig -> {
                 val sensorName =
-                    sensors.firstOrNull { it.channel == targetConfig.sensorIndex }?.let { sensorName(it) }
-                        ?: "Sensor ${targetConfig.sensorIndex + 1}"
+                    sensors.firstOrNull { it.channel == targetConfig.sensorIndex }?.resolveName()
+                        ?: stringResource(Res.string.sensor_channel_name, targetConfig.sensorIndex + 1)
                 "Custom Curve • $sensorName • 16 points"
             }
             is TargetTempFanConfig -> {
                 val sensorName =
-                    sensors.firstOrNull { it.channel == targetConfig.sensorIndex }?.let { sensorName(it) }
-                        ?: "Sensor ${targetConfig.sensorIndex + 1}"
+                    sensors.firstOrNull { it.channel == targetConfig.sensorIndex }?.resolveName()
+                        ?: stringResource(Res.string.sensor_channel_name, targetConfig.sensorIndex + 1)
                 "Target Temp • $sensorName • ${"%.1f".format(targetConfig.targetTempCelsius)}°C"
             }
             else -> "Custom Config"
@@ -634,12 +603,3 @@ private fun PendingFanDiffCard(
         }
     }
 }
-
-@Composable
-private fun sensorName(sensor: SensorItem): String =
-    sensor.customName
-        ?: when (sensor.telemetry.kind) {
-            SensorChannelKind.INTEGRATED_COOLANT -> stringResource(Res.string.sensor_coolant_name)
-            SensorChannelKind.VIRTUAL -> stringResource(Res.string.sensor_virtual_name, sensor.virtualSensorIndex)
-            else -> stringResource(Res.string.sensor_channel_name, sensor.channel + 1)
-        }

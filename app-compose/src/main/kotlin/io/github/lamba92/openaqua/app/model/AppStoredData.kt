@@ -5,6 +5,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.WindowPlacement
 import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.WindowState
+import io.github.lamba92.openaqua.app.feature.device.common.ChannelName
 import io.github.lamba92.openaqua.app.feature.device.common.CommonDeviceTab
 import io.github.lamba92.openaqua.app.theme.AppFontFamily
 import io.github.lamba92.openaqua.app.theme.AppMetricsScale
@@ -140,7 +141,7 @@ sealed interface VirtualSensorFeedSource {
 
 @Serializable
 data class DeviceStoredData(
-    val customName: String? = null,
+    val name: ChannelName = ChannelName.Default,
     val fans: Map<Int, FanStoredData> = emptyMap(),
     val sensors: Map<Int, SensorStoredData> = emptyMap(),
 ) {
@@ -151,7 +152,7 @@ data class DeviceStoredData(
 
 @Serializable
 data class FanStoredData(
-    val customName: String? = null,
+    val name: ChannelName = ChannelName.Default,
 ) {
     companion object {
         val DEFAULT = FanStoredData()
@@ -160,7 +161,7 @@ data class FanStoredData(
 
 @Serializable
 data class SensorStoredData(
-    val customName: String? = null,
+    val name: ChannelName = ChannelName.Default,
     val virtualFeedSource: VirtualSensorFeedSource? = null,
 ) {
     companion object {
@@ -181,9 +182,9 @@ fun AppStoredData.withVirtualSensorFeed(
             else -> currentDevice.sensors + (sensorChannel to updatedSensor)
         }
     val updatedDevice =
-        when {
-            currentDevice.customName == null && currentDevice.fans.isEmpty() && updatedSensors.isEmpty() -> null
-            else -> currentDevice.copy(sensors = updatedSensors)
+        when (val candidate = currentDevice.copy(sensors = updatedSensors)) {
+            DeviceStoredData.DEFAULT -> null
+            else -> candidate
         }
     val updatedDevices =
         if (updatedDevice != null) {
