@@ -165,18 +165,15 @@ fun FanItem.resolveName(hasPump: Boolean = false): String =
     )
 
 val SensorItem.effectiveTempCelsius: Double?
-    get() =
-        when (telemetry.kind) {
-            SensorChannelKind.VIRTUAL -> telemetry.tempCelsiusOrNull ?: (if (feedError == null) feedValue else null)
-            else -> telemetry.tempCelsiusOrNull
-        }
+    get() = telemetry.tempCelsiusOrNull
 
 val SensorItem.feederStatus: FeederStatus
     get() =
         when {
             telemetry.kind != SensorChannelKind.VIRTUAL -> FeederStatus.NONE
             feedError != null -> FeederStatus.ERROR
-            virtualFeedSource != null -> FeederStatus.OPERATIONAL
+            virtualFeedSource != null ->
+                if (telemetry is SensorTelemetry.Connected) FeederStatus.OPERATIONAL else FeederStatus.ERROR
             else -> FeederStatus.NONE
         }
 

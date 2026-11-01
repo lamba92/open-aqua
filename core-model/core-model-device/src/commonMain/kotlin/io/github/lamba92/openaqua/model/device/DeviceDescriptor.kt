@@ -44,6 +44,7 @@ data class DeviceDescriptor(
     val rgbpxPortCount: Int = 0,
     val virtualSensorsCount: Int = 0,
     val virtualSensorsStartOffset: Int? = null,
+    val virtualSensorsReportSize: Int = 0x43,
 )
 
 object DeviceRegistry {
@@ -84,6 +85,7 @@ object DeviceRegistry {
             rgbpxPortCount = 2,
             virtualSensorsCount = 16,
             virtualSensorsStartOffset = 0x45,
+            virtualSensorsReportSize = 0x33,
         )
 
     val QUADRO =

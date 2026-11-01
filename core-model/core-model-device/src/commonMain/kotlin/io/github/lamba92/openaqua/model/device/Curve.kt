@@ -2,6 +2,7 @@ package io.github.lamba92.openaqua.model.device
 
 import kotlinx.serialization.Serializable
 import kotlin.math.abs
+import kotlin.math.ln
 import kotlin.math.pow
 import kotlin.math.round
 
@@ -68,5 +69,44 @@ object CurveMath {
                 pwm = round(pwm * 10.0) / 10.0,
             )
         }
+    }
+
+    /**
+     * Deduces the curve shape exponent from a list of points (e.g. 16-point table).
+     * Returns 0.0 for linear/flat curves, > 0.0 for progressive curves, and < 0.0 for digressive curves.
+     */
+    fun inferShape(points: List<CurvePoint>): Double {
+        if (points.size < 2) return 0.0
+        val pMin = points.first().pwm
+        val pMax = points.last().pwm
+        val spanP = pMax - pMin
+        if (abs(spanP) < 1e-4) return 0.0
+
+        val n = points.size
+        val shapes = mutableListOf<Double>()
+
+        for (i in 1 until n - 1) {
+            val tNorm = i.toDouble() / (n - 1)
+            val y = ((points[i].pwm - pMin) / spanP).coerceIn(0.0, 1.0)
+            if (tNorm in 0.001..0.999 && y in 0.001..0.999) {
+                val s =
+                    when {
+                        y < tNorm - 1e-4 -> (ln(y) / ln(tNorm)) - 1.0
+                        y > tNorm + 1e-4 -> -((ln(1.0 - y) / ln(1.0 - tNorm)) - 1.0)
+                        else -> 0.0
+                    }
+                shapes.add(s)
+            }
+        }
+
+        if (shapes.isEmpty()) return 0.0
+        shapes.sort()
+        val median =
+            if (shapes.size % 2 == 1) {
+                shapes[shapes.size / 2]
+            } else {
+                (shapes[shapes.size / 2 - 1] + shapes[shapes.size / 2]) / 2.0
+            }
+        return round(median * 10.0) / 10.0
     }
 }

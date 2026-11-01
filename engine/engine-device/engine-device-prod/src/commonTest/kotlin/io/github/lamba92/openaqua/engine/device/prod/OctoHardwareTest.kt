@@ -153,10 +153,22 @@ class OctoHardwareTest {
                 assertNotNull(fan, "Fan ${channel + 1} (channel $channel) must be present in telemetry")
                 assertTrue(fan is CoolingChannelTelemetry.Connected, "Fan ${channel + 1} must be connected")
                 println(
-                    "Fan ${channel + 1}: rpm=${fan.rpm}, voltage=${fan.voltageVolts}V, " +
+                    "Fan ${channel + 1}: rpm=${fan.rpm}, pwm=${fan.pwmPercent}%, voltage=${fan.voltageVolts}V, " +
                         "current=${fan.currentAmps}A, power=${fan.powerWatts}W",
                 )
                 assertTrue(fan.voltageVolts > 0.0, "Fan ${channel + 1} voltage should be > 0V")
+            }
+
+            val currentConfig = controller.readConfig(octo)
+            println("Sensor Offsets: ${currentConfig.sensorOffsets}")
+            val fan4 = telemetry.fans.firstOrNull { it.channel == 3 }
+            if (fan4 is CoolingChannelTelemetry.Connected) {
+                println("Fan 4: pwm=${fan4.pwmPercent}%, rpm=${fan4.rpm}")
+            }
+            for (s in telemetry.sensors) {
+                if (s is SensorTelemetry.Connected) {
+                    println("Sensor ${s.channel}: ${s.tempCelsius}°C (${s.kind})")
+                }
             }
 
             // Sensor 1 is occupied (channel 0)
@@ -262,12 +274,22 @@ class OctoHardwareTest {
     @Test
     fun testFeedVirtualSensorsOnAllowedChannels() =
         withOctoSafeScope {
-            val testChannel = 5 // Virtual sensor slot 2
+            val testChannel = 5 // Virtual sensor slot 1 (channel 5)
             for (testTemp in listOf(28.5, 31.2, 34.0)) {
                 println("Feeding virtual sensor channel $testChannel with $testTemp°C...")
                 feedVirtualSensors(mapOf(testChannel to testTemp))
+                val telemetry = runBlocking { controller.streamTelemetry(octo).first() }
+                val sensor = telemetry.sensors.firstOrNull { it.channel == testChannel }
+                assertNotNull(sensor, "Virtual sensor channel $testChannel must be present in telemetry")
+                assertTrue(sensor is SensorTelemetry.Connected, "Virtual sensor channel $testChannel must be connected")
+                assertEquals(
+                    expected = testTemp,
+                    actual = sensor.tempCelsius,
+                    absoluteTolerance = 0.2,
+                    message = "Virtual sensor channel $testChannel readback temperature should match fed value",
+                )
             }
-            println("Virtual sensor packets sent successfully across persistent bulk session")
+            println("Virtual sensor packets verified successfully on real hardware")
         }
 
     companion object {

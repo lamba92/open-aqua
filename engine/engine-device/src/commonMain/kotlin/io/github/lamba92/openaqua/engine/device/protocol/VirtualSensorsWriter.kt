@@ -18,16 +18,23 @@ object VirtualSensorsWriter {
         descriptor: DeviceDescriptor,
         temperaturesBySlot: Map<Int, Double>,
     ): UByteArray {
-        val report = UByteArray(REPORT_SIZE)
+        val reportSize = descriptor.virtualSensorsReportSize
+        val report = UByteArray(reportSize)
         report[0] = REPORT_ID.toUByte()
 
         // Initialize all 16 slots as disabled
         for (i in 0 until 16) {
             val valOffset = VALUES_OFFSET + (i * 2)
-            report[valOffset] = ((DISABLED_VALUE.toInt() ushr 8) and 0xFF).toUByte()
-            report[valOffset + 1] = (DISABLED_VALUE.toInt() and 0xFF).toUByte()
-            report[TYPES_OFFSET + i] = TYPE_DISABLED
-            report[UNKNOWN_OFFSET + i] = UNKNOWN_BYTE
+            if (valOffset + 1 < reportSize) {
+                report[valOffset] = ((DISABLED_VALUE.toInt() ushr 8) and 0xFF).toUByte()
+                report[valOffset + 1] = (DISABLED_VALUE.toInt() and 0xFF).toUByte()
+            }
+            if (TYPES_OFFSET + i < reportSize - 2) {
+                report[TYPES_OFFSET + i] = TYPE_DISABLED
+            }
+            if (reportSize >= 0x43 && UNKNOWN_OFFSET + i < reportSize - 2) {
+                report[UNKNOWN_OFFSET + i] = UNKNOWN_BYTE
+            }
         }
 
         temperaturesBySlot.forEach { (slot, tempCelsius) ->
@@ -38,10 +45,12 @@ object VirtualSensorsWriter {
             val rawTemp = (tempCelsius * 100.0).roundToInt().coerceIn(-5000, 15000).toShort()
             report[valOffset] = ((rawTemp.toInt() ushr 8) and 0xFF).toUByte()
             report[valOffset + 1] = (rawTemp.toInt() and 0xFF).toUByte()
-            report[TYPES_OFFSET + slot] = TYPE_TEMPERATURE
+            if (TYPES_OFFSET + slot < reportSize - 2) {
+                report[TYPES_OFFSET + slot] = TYPE_TEMPERATURE
+            }
         }
 
-        ConfigWriter.finalizeReport(report, REPORT_SIZE)
+        ConfigWriter.finalizeReport(report, reportSize)
         return report
     }
 }

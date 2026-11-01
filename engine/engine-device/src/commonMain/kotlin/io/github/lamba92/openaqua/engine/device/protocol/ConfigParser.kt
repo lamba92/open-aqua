@@ -6,6 +6,7 @@ import io.github.lamba92.openaqua.model.device.CurvePoint
 import io.github.lamba92.openaqua.model.device.DetectedHardwareDevice
 import io.github.lamba92.openaqua.model.device.DeviceConfig
 import io.github.lamba92.openaqua.model.device.DeviceDescriptor
+import io.github.lamba92.openaqua.model.device.DeviceType
 import io.github.lamba92.openaqua.model.device.FanChannelConfig
 import io.github.lamba92.openaqua.model.device.FixedFanConfig
 import io.github.lamba92.openaqua.model.device.RgbEffectMode
@@ -22,8 +23,8 @@ object ConfigParser {
     const val MODE_CURVE = 0x02
     const val MODE_TWO_POINT = 0x05
 
-    // Physical sensors (0..3 on OCTO/QUADRO) + Virtual sensors (4..19)
-    const val MAX_SUPPORTED_SENSOR_INDEX = 19
+    // Physical sensors (0..3 on OCTO/QUADRO) + Flow (4) + Virtual sensors (5..20)
+    const val MAX_SUPPORTED_SENSOR_INDEX = 20
 
     fun parseCurvePoints(
         report: UByteArray,
@@ -46,10 +47,32 @@ object ConfigParser {
         report: UByteArray,
         baseOffset: Int,
         channel: Int,
+        descriptor: DeviceDescriptor? = null,
     ): FanChannelConfig {
         val mode = report[baseOffset].toInt() and 0xFF
         val rawSensor = ((report[baseOffset + 3].toInt() and 0xFF shl 8) or (report[baseOffset + 4].toInt() and 0xFF))
-        val sensorIndex = if (rawSensor in 0..MAX_SUPPORTED_SENSOR_INDEX) rawSensor else null
+
+        val maxHwSensorIndex =
+            if (descriptor != null && (descriptor.type == DeviceType.OCTO || descriptor.type == DeviceType.QUADRO)) {
+                descriptor.tempSensors.size + 1 + descriptor.virtualSensorsCount - 1
+            } else {
+                MAX_SUPPORTED_SENSOR_INDEX
+            }
+
+        val sensorIndex =
+            if (rawSensor in 0..maxHwSensorIndex) {
+                if (descriptor != null && (descriptor.type == DeviceType.OCTO || descriptor.type == DeviceType.QUADRO)) {
+                    when {
+                        rawSensor < 4 -> rawSensor
+                        rawSensor == 4 -> null
+                        else -> rawSensor - 1
+                    }
+                } else {
+                    rawSensor
+                }
+            } else {
+                null
+            }
 
         return when (mode) {
             MODE_CURVE -> {
@@ -122,7 +145,7 @@ object ConfigParser {
         descriptor: DeviceDescriptor,
     ): List<FanChannelConfig> =
         descriptor.fanChannels.map { fan ->
-            parseFanChannelConfig(report, fan.ctrlOffset, fan.channel)
+            parseFanChannelConfig(report, fan.ctrlOffset, fan.channel, descriptor)
         }
 
     private fun parseOffsets(

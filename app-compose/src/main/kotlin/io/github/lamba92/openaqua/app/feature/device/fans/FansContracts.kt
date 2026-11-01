@@ -5,6 +5,7 @@ import io.github.lamba92.openaqua.app.feature.device.common.FanItem
 import io.github.lamba92.openaqua.app.feature.device.common.SensorItem
 import io.github.lamba92.openaqua.model.device.AutoCurveFanConfig
 import io.github.lamba92.openaqua.model.device.CurveFanConfig
+import io.github.lamba92.openaqua.model.device.CurveMath
 import io.github.lamba92.openaqua.model.device.FanChannelConfig
 import io.github.lamba92.openaqua.model.device.FixedFanConfig
 import io.github.lamba92.openaqua.model.device.TargetTempFanConfig
@@ -140,7 +141,7 @@ fun FanChannelConfig?.toInitialDraft(
                 tMax = points.lastOrNull()?.temp ?: 55.0,
                 pMin = points.firstOrNull()?.pwm ?: 25.0,
                 pMax = points.lastOrNull()?.pwm ?: 100.0,
-                shape = 0.0,
+                shape = CurveMath.inferShape(points),
             )
 
         is TargetTempFanConfig ->

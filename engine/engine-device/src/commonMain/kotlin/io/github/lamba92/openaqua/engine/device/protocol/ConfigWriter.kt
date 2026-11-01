@@ -7,6 +7,7 @@ import io.github.lamba92.openaqua.model.device.CurveFanConfig
 import io.github.lamba92.openaqua.model.device.CurvePoint
 import io.github.lamba92.openaqua.model.device.DeviceConfig
 import io.github.lamba92.openaqua.model.device.DeviceDescriptor
+import io.github.lamba92.openaqua.model.device.DeviceType
 import io.github.lamba92.openaqua.model.device.FanChannelConfig
 import io.github.lamba92.openaqua.model.device.FixedFanConfig
 import io.github.lamba92.openaqua.model.device.FlashConfigRequest
@@ -40,7 +41,15 @@ object ConfigWriter {
         report: UByteArray,
         baseOffset: Int,
         config: FanChannelConfig,
+        descriptor: DeviceDescriptor? = null,
     ) {
+        fun mapSensorIndex(sensorIndex: Int): Int {
+            if (descriptor != null && (descriptor.type == DeviceType.OCTO || descriptor.type == DeviceType.QUADRO)) {
+                return if (sensorIndex >= 4) sensorIndex + 1 else sensorIndex
+            }
+            return sensorIndex
+        }
+
         when (config) {
             is FixedFanConfig -> {
                 report[baseOffset + 0] = ConfigParser.MODE_FIXED.toUByte()
@@ -50,25 +59,28 @@ object ConfigWriter {
             }
             is CurveFanConfig -> {
                 report[baseOffset + 0] = ConfigParser.MODE_CURVE.toUByte()
-                report[baseOffset + 3] = ((config.sensorIndex ushr 8) and 0xFF).toUByte()
-                report[baseOffset + 4] = (config.sensorIndex and 0xFF).toUByte()
+                val hwSensor = mapSensorIndex(config.sensorIndex)
+                report[baseOffset + 3] = ((hwSensor ushr 8) and 0xFF).toUByte()
+                report[baseOffset + 4] = (hwSensor and 0xFF).toUByte()
                 encodeCurvePoints(report, baseOffset, config.points)
             }
             is AutoCurveFanConfig -> {
-                encodeFanChannelConfig(report, baseOffset, config.toCurveFanConfig())
+                encodeFanChannelConfig(report, baseOffset, config.toCurveFanConfig(), descriptor)
             }
             is TargetTempFanConfig -> {
                 report[baseOffset + 0] = ConfigParser.MODE_TARGET_TEMP.toUByte()
-                report[baseOffset + 3] = ((config.sensorIndex ushr 8) and 0xFF).toUByte()
-                report[baseOffset + 4] = (config.sensorIndex and 0xFF).toUByte()
+                val hwSensor = mapSensorIndex(config.sensorIndex)
+                report[baseOffset + 3] = ((hwSensor ushr 8) and 0xFF).toUByte()
+                report[baseOffset + 4] = (hwSensor and 0xFF).toUByte()
                 val rawTemp = (config.targetTempCelsius * 100.0).roundToInt().coerceIn(-5000, 15000).toShort()
                 report[baseOffset + 5] = ((rawTemp.toInt() ushr 8) and 0xFF).toUByte()
                 report[baseOffset + 6] = (rawTemp.toInt() and 0xFF).toUByte()
             }
             is TwoPointFanConfig -> {
                 report[baseOffset + 0] = ConfigParser.MODE_TWO_POINT.toUByte()
-                report[baseOffset + 3] = ((config.sensorIndex ushr 8) and 0xFF).toUByte()
-                report[baseOffset + 4] = (config.sensorIndex and 0xFF).toUByte()
+                val hwSensor = mapSensorIndex(config.sensorIndex)
+                report[baseOffset + 3] = ((hwSensor ushr 8) and 0xFF).toUByte()
+                report[baseOffset + 4] = (hwSensor and 0xFF).toUByte()
             }
             is UnconfiguredFanConfig -> {
                 report[baseOffset + 0] = config.rawMode.toUByte()
@@ -125,7 +137,7 @@ object ConfigWriter {
             val fan =
                 descriptor.fanChannels.firstOrNull { it.channel == channel }
                     ?: error("Unknown fan channel $channel for ${descriptor.name}")
-            encodeFanChannelConfig(report, fan.ctrlOffset, config)
+            encodeFanChannelConfig(report, fan.ctrlOffset, config, descriptor)
         }
         request.sensorOffsets?.let { offsets ->
             val baseOffset =
