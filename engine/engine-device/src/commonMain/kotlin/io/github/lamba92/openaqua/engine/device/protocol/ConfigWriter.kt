@@ -9,11 +9,14 @@ import io.github.lamba92.openaqua.model.device.DeviceConfig
 import io.github.lamba92.openaqua.model.device.DeviceDescriptor
 import io.github.lamba92.openaqua.model.device.DeviceType
 import io.github.lamba92.openaqua.model.device.FanChannelConfig
+import io.github.lamba92.openaqua.model.device.FanLimits
 import io.github.lamba92.openaqua.model.device.FixedFanConfig
 import io.github.lamba92.openaqua.model.device.FlashConfigRequest
+import io.github.lamba92.openaqua.model.device.LimitsOnlyFanConfig
 import io.github.lamba92.openaqua.model.device.TargetTempFanConfig
 import io.github.lamba92.openaqua.model.device.TwoPointFanConfig
 import io.github.lamba92.openaqua.model.device.UnconfiguredFanConfig
+import io.github.lamba92.openaqua.model.device.validateRequestMatchesDevice
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -87,6 +90,9 @@ object ConfigWriter {
                 report[baseOffset + 3] = 0xFFu
                 report[baseOffset + 4] = 0xFFu
             }
+            is LimitsOnlyFanConfig -> {
+                // No control register modification for limits-only config
+            }
         }
     }
 
@@ -128,16 +134,48 @@ object ConfigWriter {
         report[offsetPos + 1] = (centiCelsius.toInt() and 0xFF).toUByte()
     }
 
+    fun encodeFanLimits(
+        report: UByteArray,
+        setupOffset: Int,
+        limits: FanLimits,
+    ) {
+        var flags = 0
+        if (limits.holdMinPower) flags = flags or 0x01
+        if (limits.startBoost) flags = flags or 0x02
+        report[setupOffset] = flags.toUByte()
+
+        val rawMin = (limits.minPowerPercent * 100.0).roundToInt().coerceIn(0, 10000)
+        report[setupOffset + 1] = ((rawMin ushr 8) and 0xFF).toUByte()
+        report[setupOffset + 2] = (rawMin and 0xFF).toUByte()
+
+        val rawMax = (limits.maxPowerPercent * 100.0).roundToInt().coerceIn(0, 10000)
+        report[setupOffset + 3] = ((rawMax ushr 8) and 0xFF).toUByte()
+        report[setupOffset + 4] = (rawMax and 0xFF).toUByte()
+
+        val rawFallback = (limits.fallbackPowerPercent * 100.0).roundToInt().coerceIn(0, 10000)
+        report[setupOffset + 5] = ((rawFallback ushr 8) and 0xFF).toUByte()
+        report[setupOffset + 6] = (rawFallback and 0xFF).toUByte()
+    }
+
     fun applyFlashConfig(
         report: UByteArray,
         descriptor: DeviceDescriptor,
         request: FlashConfigRequest,
     ) {
+        descriptor.validateRequestMatchesDevice(request)
         request.fans?.forEach { (channel, config) ->
             val fan =
                 descriptor.fanChannels.firstOrNull { it.channel == channel }
                     ?: error("Unknown fan channel $channel for ${descriptor.name}")
-            encodeFanChannelConfig(report, fan.ctrlOffset, config, descriptor)
+            if (config !is LimitsOnlyFanConfig) {
+                encodeFanChannelConfig(report, fan.ctrlOffset, config, descriptor)
+            }
+            config.limits?.let { limits ->
+                val setupOffset =
+                    fan.setupOffset
+                        ?: error("${descriptor.name} does not support fan limits configuration for channel $channel")
+                encodeFanLimits(report, setupOffset, limits)
+            }
         }
         request.sensorOffsets?.let { offsets ->
             val baseOffset =
@@ -173,7 +211,29 @@ object ConfigWriter {
             val actConfig =
                 actual.fans.firstOrNull { it.channel == channel }
                     ?: error("Readback missing fan channel $channel")
-            verifyFanChannelConfig(expected = expConfig, actual = actConfig)
+            if (expConfig !is LimitsOnlyFanConfig) {
+                verifyFanChannelConfig(expected = expConfig, actual = actConfig)
+            }
+            expConfig.limits?.let { expLimits ->
+                val actLimits =
+                    actConfig.limits
+                        ?: error("Readback missing fan limits for channel $channel")
+                check(abs(actLimits.minPowerPercent - expLimits.minPowerPercent) <= 0.2) {
+                    "Verification failed on fan $channel minPower: expected ${expLimits.minPowerPercent}%, read ${actLimits.minPowerPercent}%"
+                }
+                check(abs(actLimits.maxPowerPercent - expLimits.maxPowerPercent) <= 0.2) {
+                    "Verification failed on fan $channel maxPower: expected ${expLimits.maxPowerPercent}%, read ${actLimits.maxPowerPercent}%"
+                }
+                check(abs(actLimits.fallbackPowerPercent - expLimits.fallbackPowerPercent) <= 0.2) {
+                    "Verification failed on fan $channel fallbackPower: expected ${expLimits.fallbackPowerPercent}%, read ${actLimits.fallbackPowerPercent}%"
+                }
+                check(actLimits.startBoost == expLimits.startBoost) {
+                    "Verification failed on fan $channel startBoost: expected ${expLimits.startBoost}, read ${actLimits.startBoost}"
+                }
+                check(actLimits.holdMinPower == expLimits.holdMinPower) {
+                    "Verification failed on fan $channel holdMinPower: expected ${expLimits.holdMinPower}, read ${actLimits.holdMinPower}"
+                }
+            }
         }
         expected.sensorOffsets?.forEach { (channel, expOffset) ->
             val actOffset =
@@ -250,6 +310,7 @@ object ConfigWriter {
                 }
             }
             is UnconfiguredFanConfig -> Unit
+            is LimitsOnlyFanConfig -> Unit
         }
     }
 

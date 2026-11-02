@@ -1,6 +1,7 @@
 package io.github.lamba92.openaqua.engine.device.protocol
 
 import io.github.lamba92.openaqua.model.device.DeviceDescriptor
+import io.github.lamba92.openaqua.model.device.virtualSensorsStartChannel
 import kotlin.math.roundToInt
 
 object VirtualSensorsWriter {
@@ -52,5 +53,25 @@ object VirtualSensorsWriter {
 
         ConfigWriter.finalizeReport(report, reportSize)
         return report
+    }
+
+    fun channelToSlot(
+        descriptor: DeviceDescriptor,
+        channel: Int,
+    ): Int {
+        val startChannel = descriptor.virtualSensorsStartChannel
+        val slot = channel - startChannel
+        require(slot in 0 until descriptor.virtualSensorsCount) {
+            "Channel $channel is not a valid virtual sensor for ${descriptor.name} (valid channels: $startChannel..${startChannel + descriptor.virtualSensorsCount - 1})"
+        }
+        return slot
+    }
+
+    fun buildReportFromChannels(
+        descriptor: DeviceDescriptor,
+        temperaturesByChannel: Map<Int, Double>,
+    ): UByteArray {
+        val slotMap = temperaturesByChannel.mapKeys { (ch, _) -> channelToSlot(descriptor, ch) }
+        return buildReport(descriptor, slotMap)
     }
 }

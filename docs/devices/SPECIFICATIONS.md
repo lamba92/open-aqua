@@ -234,17 +234,17 @@ In OpenAqua's software domain, temperature sensors are indexed sequentially:
 
 However, inside the microcontroller's hardware fan configuration register (`Report 0x03`, bytes `+0x03..+0x04` `temp_sensor`), the register allocation is:
 
-| Hardware Register Index | Device Hardware Binding | OpenAqua Software Domain |
-|---|---|---|
-| `0` | Physical Sensor 1 | `Channel 0` |
-| `1` | Physical Sensor 2 | `Channel 1` |
-| `2` | Physical Sensor 3 | `Channel 2` |
-| `3` | Physical Sensor 4 | `Channel 3` |
-| **`4`** | **Flow Sensor (Pulses/Flow Calculation)** | *N/A (Flow Metric)* |
-| **`5`** | **Virtual Software Sensor 1 (Slot 0)** | **`Channel 4`** |
-| `6` | Virtual Software Sensor 2 (Slot 1) | `Channel 5` |
-| `...` | `...` | `...` |
-| `20` | Virtual Software Sensor 16 (Slot 15) | `Channel 19` |
+| Hardware Register Index | Device Hardware Binding                   | OpenAqua Software Domain |
+|-------------------------|-------------------------------------------|--------------------------|
+| `0`                     | Physical Sensor 1                         | `Channel 0`              |
+| `1`                     | Physical Sensor 2                         | `Channel 1`              |
+| `2`                     | Physical Sensor 3                         | `Channel 2`              |
+| `3`                     | Physical Sensor 4                         | `Channel 3`              |
+| **`4`**                 | **Flow Sensor (Pulses/Flow Calculation)** | *N/A (Flow Metric)*      |
+| **`5`**                 | **Virtual Software Sensor 1 (Slot 0)**    | **`Channel 4`**          |
+| `6`                     | Virtual Software Sensor 2 (Slot 1)        | `Channel 5`              |
+| `...`                   | `...`                                     | `...`                    |
+| `20`                    | Virtual Software Sensor 16 (Slot 15)      | `Channel 19`             |
 
 * **Consequence of Unmapped Indices**:
   Writing OpenAqua's `Channel 4` directly to hardware caused the fan controller to bind to hardware index `4` (the Flow Sensor). Because no flow meter was attached, the sensor evaluated to disconnected / 0 °C, and the fan ran at fallback speed (~24%–29% PWM) while the CPU was thermal throttling.
@@ -322,10 +322,10 @@ In earlier revisions, the UI models fell back to displaying the host-side feed t
 
 ### 4.2 Header & System Telemetry
 
-| Byte Offset | Type / Width | Description | Units / Format |
-|---|---|---|---|
-| `0x00` | `u8` | Report ID | Always `0x01` |
-| `0x0D` | `u16 BE` | Firmware Revision | Raw integer (e.g. `1020` = v10.20) |
+| Byte Offset | Type / Width | Description       | Units / Format                     |
+|-------------|--------------|-------------------|------------------------------------|
+| `0x00`      | `u8`         | Report ID         | Always `0x01`                      |
+| `0x0D`      | `u16 BE`     | Firmware Revision | Raw integer (e.g. `1020` = v10.20) |
 
 ---
 
@@ -353,15 +353,15 @@ All temperature values are encoded as **16-bit Signed Big-Endian integers in cen
 
 Each cooling channel reports a **13-byte telemetry block**:
 
-| Channel Offset Relative to Base | Type / Width | Parameter | Unit / Conversion |
-|---|---|---|---|
-| `+0x00` | `u16 BE` | PWM Duty Cycle | Centipercent ($P \times 100$, divide by 100.0) |
-| `+0x02` | `u16 BE` | Voltage | Centivolts ($V \times 100$, divide by 100.0) |
-| `+0x04` | `u16 BE` | Current | Milliamperes (mA, divide by 1000.0) |
-| `+0x06` | `u16 BE` | Power Dissipation | Centiwatts ($W \times 100$, divide by 100.0) |
-| `+0x08` | `u16 BE` | Fan Tachometer | Revolutions Per Minute (RPM) |
-| `+0x0A` | `u16 BE` | Reserved / Internal Flags | Raw |
-| `+0x0C` | `u8` | Channel Status Flags | Bits `0x04` / `0x08` indicate stall / disconnect |
+| Channel Offset Relative to Base | Type / Width | Parameter                 | Unit / Conversion                                |
+|---------------------------------|--------------|---------------------------|--------------------------------------------------|
+| `+0x00`                         | `u16 BE`     | PWM Duty Cycle            | Centipercent ($P \times 100$, divide by 100.0)   |
+| `+0x02`                         | `u16 BE`     | Voltage                   | Centivolts ($V \times 100$, divide by 100.0)     |
+| `+0x04`                         | `u16 BE`     | Current                   | Milliamperes (mA, divide by 1000.0)              |
+| `+0x06`                         | `u16 BE`     | Power Dissipation         | Centiwatts ($W \times 100$, divide by 100.0)     |
+| `+0x08`                         | `u16 BE`     | Fan Tachometer            | Revolutions Per Minute (RPM)                     |
+| `+0x0A`                         | `u16 BE`     | Reserved / Internal Flags | Raw                                              |
+| `+0x0C`                         | `u8`         | Channel Status Flags      | Bits `0x04` / `0x08` indicate stall / disconnect |
 
 #### Fan Telemetry Base Offsets:
 * **OCTO**: Channels 0..7 start at `0x7D + (ch * 0x0D)`
@@ -441,14 +441,19 @@ Writing Report `0x03` updates the microcontroller's RAM registers. To commit the
 ### 5.4 Fan Setup Structure (Hardware Limits & Guardrails)
 
 Preceding the fan control blocks in Report `0x03`, each physical fan channel has a 9-byte electrical guardrail block:
+* **OCTO Setup Offsets**: `0x12 + (ch * 0x09)` (Channels 0..7 span `0x12..0x59`)
+* **QUADRO Setup Offsets**: `0x12 + (ch * 0x09)` (Channels 0..3 span `0x12..0x35`)
+* **D5 NEXT Setup Offsets**: Pump (Channel 0) at `0x12`, Fan (Channel 1) at `0x1B`
 
-| Relative Offset | Width | Field Name | Description |
-|---|---|---|---|
-| `+0x00` | `u8` | `flags` | Bit 0: `hold_min_power`, Bit 1: `start_boost` |
-| `+0x01` | `u16 BE` | `min_percent` | Hardware minimum power floor (centi-%, $0..10000$) |
-| `+0x03` | `u16 BE` | `max_percent` | Hardware maximum power ceiling (centi-%, $0..10000$) |
-| `+0x05` | `u16 BE` | `fallback` | Fallback power if sensor disconnects (centi-%) |
-| `+0x07` | `u16 BE` | `graph_rpm` | Upper limit for display scaling |
+| Relative Offset | Width    | Field Name    | Description                                          |
+|-----------------|----------|---------------|------------------------------------------------------|
+| `+0x00`         | `u8`     | `flags`       | Bit 0: `hold_min_power`, Bit 1: `start_boost`        |
+| `+0x01`         | `u16 BE` | `min_percent` | Hardware minimum power floor (centi-%, $0..10000$)   |
+| `+0x03`         | `u16 BE` | `max_percent` | Hardware maximum power ceiling (centi-%, $0..10000$) |
+| `+0x05`         | `u16 BE` | `fallback`    | Fallback power if sensor disconnects (centi-%)       |
+| `+0x07`         | `u16 BE` | `graph_rpm`   | Upper limit for display scaling                      |
+
+In OpenAqua, these registers map to the `FanLimits` data class (`minPowerPercent`, `maxPowerPercent`, `startBoost`, `holdMinPower`, `fallbackPowerPercent`) embedded directly within `FanChannelConfig.limits`. When flashing via `FlashConfigRequest(fans = mapOf(ch to config))`, `ConfigWriter.encodeFanLimits` updates bytes `+0x00..+0x06` whenever `config.limits != null`, while preserving the existing display scaling (`graph_rpm`). Dedicated limits updates can also be flashed using `LimitsOnlyFanConfig(channel, limits)`.
 
 ---
 
@@ -556,25 +561,25 @@ Total: 67 bytes (0x43)
 
 ## 7. Device Hardware Matrix & Offset Reference
 
-| Metric / Parameter | Aquacomputer OCTO | Aquacomputer QUADRO | Aquacomputer D5 NEXT |
-|---|:---:|:---:|:---:|
-| **USB Product ID (PID)** | `0xF011` | `0xF00D` | `0xF00E` |
-| **Cooling Channels** | 8 (PWM Fans) | 4 (PWM Fans) | 2 (1 Pump + 1 Fan) |
-| **Physical Temp Sensors** | 4 (NTC 10k) | 4 (NTC 10k) | 1 (Coolant Probe) |
-| **Virtual Sensors** | 16 | 16 | 8 |
-| **Flow Sensor Input** | Dedicated Port (dL/h) | Dedicated Port (dL/h) | Virtual / Calculated |
-| **RGBpx Ports** | 2 Ports | 1 Port | 1 Port |
-| **Integrated OLED Display**| None | None | 128x64 Graphical Display |
-| **Status Report Length (`0x01`)** | `0x147` (327 bytes) | `0xA5` (165 bytes) | `0x76` (118 bytes) |
-| **Control Report Length (`0x03`)**| `0x65F` (1631 bytes) | `0x3C1` (961 bytes) | `0x329` (809 bytes) |
-| **Virtual Sensors Report Size** | **51 Bytes (`0x33`)** | **67 Bytes (`0x43`)** | **51 Bytes (`0x33`)** |
-| **Fan Telemetry Stride** | `0x0D` (13 bytes) | `0x0D` (13 bytes) | Fixed offsets |
-| **Fan Telemetry Base** | `0x7D` | `0x70` | Pump: `0x6C`, Fan: `0x5F` |
-| **Fan Control Stride** | `0x55` (85 bytes) | `0x55` (85 bytes) | Fixed offsets |
-| **Fan Control Base** | `0x5A` | `0x36` | Pump: `0x36`, Fan: `0x8B` |
-| **Physical Temp Telemetry Base** | `0x3D` | `0x34` | `0x57` |
-| **Virtual Temp Telemetry Base** | `0x45` | `0x3C` | `0x3F` |
-| **Flow Telemetry Offset** | `0x7B` | `0x6E` | N/A |
-| **Flow Pulses Ctrl Offset** | `0x06` | `0x06` | N/A |
-| **Temp Sensor Ctrl Offset** | `0x0A` | `0x0A` | `0x2D` |
-| **Firmware Version Offset** | `0x0D` | `0x0D` | `0x0D` |
+| Metric / Parameter                 |   Aquacomputer OCTO   |  Aquacomputer QUADRO  |   Aquacomputer D5 NEXT    |
+|------------------------------------|:---------------------:|:---------------------:|:-------------------------:|
+| **USB Product ID (PID)**           |       `0xF011`        |       `0xF00D`        |         `0xF00E`          |
+| **Cooling Channels**               |     8 (PWM Fans)      |     4 (PWM Fans)      |    2 (1 Pump + 1 Fan)     |
+| **Physical Temp Sensors**          |      4 (NTC 10k)      |      4 (NTC 10k)      |     1 (Coolant Probe)     |
+| **Virtual Sensors**                |          16           |          16           |             8             |
+| **Flow Sensor Input**              | Dedicated Port (dL/h) | Dedicated Port (dL/h) |   Virtual / Calculated    |
+| **RGBpx Ports**                    |        2 Ports        |        1 Port         |          1 Port           |
+| **Integrated OLED Display**        |         None          |         None          | 128x64 Graphical Display  |
+| **Status Report Length (`0x01`)**  |  `0x147` (327 bytes)  |  `0xA5` (165 bytes)   |    `0x76` (118 bytes)     |
+| **Control Report Length (`0x03`)** | `0x65F` (1631 bytes)  |  `0x3C1` (961 bytes)  |    `0x329` (809 bytes)    |
+| **Virtual Sensors Report Size**    | **51 Bytes (`0x33`)** | **67 Bytes (`0x43`)** |   **51 Bytes (`0x33`)**   |
+| **Fan Telemetry Stride**           |   `0x0D` (13 bytes)   |   `0x0D` (13 bytes)   |       Fixed offsets       |
+| **Fan Telemetry Base**             |        `0x7D`         |        `0x70`         | Pump: `0x6C`, Fan: `0x5F` |
+| **Fan Control Stride**             |   `0x55` (85 bytes)   |   `0x55` (85 bytes)   |       Fixed offsets       |
+| **Fan Control Base**               |        `0x5A`         |        `0x36`         | Pump: `0x36`, Fan: `0x8B` |
+| **Physical Temp Telemetry Base**   |        `0x3D`         |        `0x34`         |          `0x57`           |
+| **Virtual Temp Telemetry Base**    |        `0x45`         |        `0x3C`         |          `0x3F`           |
+| **Flow Telemetry Offset**          |        `0x7B`         |        `0x6E`         |            N/A            |
+| **Flow Pulses Ctrl Offset**        |        `0x06`         |        `0x06`         |            N/A            |
+| **Temp Sensor Ctrl Offset**        |        `0x0A`         |        `0x0A`         |          `0x2D`           |
+| **Firmware Version Offset**        |        `0x0D`         |        `0x0D`         |          `0x0D`           |

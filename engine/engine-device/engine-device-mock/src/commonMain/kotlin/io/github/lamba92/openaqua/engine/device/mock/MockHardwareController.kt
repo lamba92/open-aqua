@@ -1,6 +1,7 @@
 package io.github.lamba92.openaqua.engine.device.mock
 
 import io.github.lamba92.openaqua.engine.device.hardware.HardwareController
+import io.github.lamba92.openaqua.engine.device.protocol.VirtualSensorsWriter
 import io.github.lamba92.openaqua.model.FeatureState
 import io.github.lamba92.openaqua.model.device.AutoCurveFanConfig
 import io.github.lamba92.openaqua.model.device.CoolingChannelKind
@@ -12,11 +13,12 @@ import io.github.lamba92.openaqua.model.device.DeviceConfig
 import io.github.lamba92.openaqua.model.device.DeviceDescriptor
 import io.github.lamba92.openaqua.model.device.DeviceRegistry
 import io.github.lamba92.openaqua.model.device.DeviceTelemetry
-import io.github.lamba92.openaqua.model.device.DeviceType
 import io.github.lamba92.openaqua.model.device.DisplayTelemetry
 import io.github.lamba92.openaqua.model.device.FanChannelConfig
+import io.github.lamba92.openaqua.model.device.FanLimits
 import io.github.lamba92.openaqua.model.device.FixedFanConfig
 import io.github.lamba92.openaqua.model.device.FlashConfigRequest
+import io.github.lamba92.openaqua.model.device.LimitsOnlyFanConfig
 import io.github.lamba92.openaqua.model.device.RgbpxPortConfig
 import io.github.lamba92.openaqua.model.device.SensorChannelKind
 import io.github.lamba92.openaqua.model.device.SensorOffset
@@ -25,6 +27,9 @@ import io.github.lamba92.openaqua.model.device.TargetTempFanConfig
 import io.github.lamba92.openaqua.model.device.TwoPointFanConfig
 import io.github.lamba92.openaqua.model.device.UnconfiguredFanConfig
 import io.github.lamba92.openaqua.model.device.tempCelsiusOrNull
+import io.github.lamba92.openaqua.model.device.validateRequestMatchesDevice
+import io.github.lamba92.openaqua.model.device.virtualSensorsChannelRange
+import io.github.lamba92.openaqua.model.device.withLimits
 import io.github.lamba92.openaqua.model.valueOrNull
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
@@ -48,6 +53,9 @@ class MockHardwareController : HardwareController {
         device: DetectedHardwareDevice,
         request: FlashConfigRequest,
     ): DeviceConfig {
+        val descriptor = DeviceRegistry.findByType(device.type)
+        descriptor.validateRequestMatchesDevice(request)
+
         val storage = loadMockStorage()
         val current =
             storage.configs[device.alias.value]
@@ -75,7 +83,20 @@ class MockHardwareController : HardwareController {
         val updatedFans = toMutableList()
         updates?.forEach { (channel, config) ->
             val idx = updatedFans.indexOfFirst { it.channel == channel }
-            if (idx >= 0) updatedFans[idx] = config
+            if (idx >= 0) {
+                val existing = updatedFans[idx]
+                val merged =
+                    if (config is LimitsOnlyFanConfig) {
+                        existing.withLimits(config.limits)
+                    } else if (config.limits == null) {
+                        config.withLimits(existing.limits)
+                    } else {
+                        config
+                    }
+                updatedFans[idx] = merged
+            } else {
+                updatedFans.add(config)
+            }
         }
         return updatedFans
     }
@@ -101,18 +122,23 @@ class MockHardwareController : HardwareController {
         device: DetectedHardwareDevice,
         sensors: Map<Int, Double>,
     ) {
+        val descriptor = DeviceRegistry.findByType(device.type)
+        check(descriptor.virtualSensorsCount > 0) {
+            "${device.name} does not support virtual sensors"
+        }
+
+        sensors.keys.forEach { channel ->
+            VirtualSensorsWriter.channelToSlot(descriptor, channel)
+        }
+
         val storage = loadMockVirtualSensorsStorage().toMutableMap()
         val key = if (storage.containsKey(device.alias.value)) device.alias.value else device.id.value
         val deviceSensors = (storage[key] ?: emptyMap()).toMutableMap()
 
-        val allowedRange =
-            when (device.type) {
-                DeviceType.D5_NEXT -> 1..8
-                else -> 4..19
+        descriptor.virtualSensorsChannelRange.forEach { channel ->
+            if (sensors.containsKey(channel)) {
+                deviceSensors[channel] = sensors[channel]
             }
-
-        allowedRange.forEach { channel ->
-            deviceSensors[channel] = sensors[channel]
         }
         storage[key] = deviceSensors
         saveMockVirtualSensorsStorage(storage)
@@ -179,6 +205,7 @@ class MockHardwareController : HardwareController {
         val fans =
             descriptor.fanChannels.map { fan ->
                 val fanConfig = config.fans.firstOrNull { it.channel == fan.channel }
+                val fanLimits = fanConfig?.limits
                 val (maxRpm, maxAmps) =
                     when (fan.kind) {
                         CoolingChannelKind.PUMP -> 4800 to 1.8
@@ -187,6 +214,7 @@ class MockHardwareController : HardwareController {
                 simulateFan(
                     channel = fan.channel,
                     config = fanConfig,
+                    limits = fanLimits,
                     allSensors = allSensors,
                     maxRpm = maxRpm,
                     maxAmps = maxAmps,
@@ -230,12 +258,30 @@ class MockHardwareController : HardwareController {
     private fun simulateFan(
         channel: Int,
         config: FanChannelConfig?,
+        limits: FanLimits?,
         allSensors: Map<Int, Double?>,
         maxRpm: Int,
         maxAmps: Double,
         kind: CoolingChannelKind = CoolingChannelKind.FAN,
     ): CoolingChannelTelemetry {
-        val pwm = calculatePwm(config, allSensors)
+        val rawPwm = calculatePwm(config, allSensors)
+        val pwm =
+            if (limits != null) {
+                when (config) {
+                    is CurveFanConfig, is AutoCurveFanConfig -> {
+                        limits.minPowerPercent + (rawPwm / 100.0) * (limits.maxPowerPercent - limits.minPowerPercent)
+                    }
+                    else -> {
+                        if (rawPwm == 0.0 && !limits.holdMinPower) {
+                            0.0
+                        } else {
+                            rawPwm.coerceIn(limits.minPowerPercent, limits.maxPowerPercent)
+                        }
+                    }
+                }
+            } else {
+                rawPwm
+            }
         val finalPwm = round(pwm * 10.0) / 10.0
 
         return if (finalPwm == 0.0) {
@@ -295,7 +341,7 @@ class MockHardwareController : HardwareController {
                 }
             }
 
-            is UnconfiguredFanConfig, null -> 0.0
+            is UnconfiguredFanConfig, is LimitsOnlyFanConfig, null -> 0.0
         }.coerceIn(0.0, 100.0)
 
     private fun evaluateCurve(

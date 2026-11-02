@@ -8,6 +8,7 @@ import io.github.lamba92.openaqua.model.device.DeviceConfig
 import io.github.lamba92.openaqua.model.device.DeviceDescriptor
 import io.github.lamba92.openaqua.model.device.DeviceType
 import io.github.lamba92.openaqua.model.device.FanChannelConfig
+import io.github.lamba92.openaqua.model.device.FanLimits
 import io.github.lamba92.openaqua.model.device.FixedFanConfig
 import io.github.lamba92.openaqua.model.device.RgbEffectMode
 import io.github.lamba92.openaqua.model.device.RgbpxPortConfig
@@ -48,6 +49,7 @@ object ConfigParser {
         baseOffset: Int,
         channel: Int,
         descriptor: DeviceDescriptor? = null,
+        limits: FanLimits? = null,
     ): FanChannelConfig {
         val mode = report[baseOffset].toInt() and 0xFF
         val rawSensor = ((report[baseOffset + 3].toInt() and 0xFF shl 8) or (report[baseOffset + 4].toInt() and 0xFF))
@@ -80,12 +82,14 @@ object ConfigParser {
                     UnconfiguredFanConfig(
                         channel = channel,
                         rawMode = mode,
+                        limits = limits,
                     )
                 } else {
                     CurveFanConfig(
                         channel = channel,
                         sensorIndex = sensorIndex,
                         points = parseCurvePoints(report, baseOffset),
+                        limits = limits,
                     )
                 }
             }
@@ -94,6 +98,7 @@ object ConfigParser {
                 FixedFanConfig(
                     channel = channel,
                     powerPercent = round((pRaw.toDouble() / 100.0) * 10.0) / 10.0,
+                    limits = limits,
                 )
             }
             MODE_TARGET_TEMP -> {
@@ -101,6 +106,7 @@ object ConfigParser {
                     UnconfiguredFanConfig(
                         channel = channel,
                         rawMode = mode,
+                        limits = limits,
                     )
                 } else {
                     val tRaw = ((report[baseOffset + 5].toInt() shl 8) or (report[baseOffset + 6].toInt() and 0xFF)).toShort()
@@ -108,6 +114,7 @@ object ConfigParser {
                         channel = channel,
                         sensorIndex = sensorIndex,
                         targetTempCelsius = round((tRaw.toDouble() / 100.0) * 10.0) / 10.0,
+                        limits = limits,
                     )
                 }
             }
@@ -116,11 +123,13 @@ object ConfigParser {
                     UnconfiguredFanConfig(
                         channel = channel,
                         rawMode = mode,
+                        limits = limits,
                     )
                 } else {
                     TwoPointFanConfig(
                         channel = channel,
                         sensorIndex = sensorIndex,
+                        limits = limits,
                     )
                 }
             }
@@ -145,7 +154,8 @@ object ConfigParser {
         descriptor: DeviceDescriptor,
     ): List<FanChannelConfig> =
         descriptor.fanChannels.map { fan ->
-            parseFanChannelConfig(report, fan.ctrlOffset, fan.channel, descriptor)
+            val limits = fan.setupOffset?.let { parseFanLimits(report, it) }
+            parseFanChannelConfig(report, fan.ctrlOffset, fan.channel, descriptor, limits)
         }
 
     private fun parseOffsets(
@@ -168,6 +178,26 @@ object ConfigParser {
                 mode = RgbEffectMode.STATIC,
             )
         }
+
+    fun parseFanLimits(
+        report: UByteArray,
+        setupOffset: Int,
+    ): FanLimits {
+        val flags = report[setupOffset].toInt() and 0xFF
+        val holdMin = (flags and 0x01) != 0
+        val startBoost = (flags and 0x02) != 0
+        val rawMin = ((report[setupOffset + 1].toInt() and 0xFF shl 8) or (report[setupOffset + 2].toInt() and 0xFF))
+        val rawMax = ((report[setupOffset + 3].toInt() and 0xFF shl 8) or (report[setupOffset + 4].toInt() and 0xFF))
+        val rawFallback = ((report[setupOffset + 5].toInt() and 0xFF shl 8) or (report[setupOffset + 6].toInt() and 0xFF))
+
+        return FanLimits(
+            minPowerPercent = round((rawMin.toDouble() / 100.0) * 10.0) / 10.0,
+            maxPowerPercent = round((rawMax.toDouble() / 100.0) * 10.0) / 10.0,
+            startBoost = startBoost,
+            holdMinPower = holdMin,
+            fallbackPowerPercent = round((rawFallback.toDouble() / 100.0) * 10.0) / 10.0,
+        )
+    }
 
     fun parseConfig(
         device: DetectedHardwareDevice,

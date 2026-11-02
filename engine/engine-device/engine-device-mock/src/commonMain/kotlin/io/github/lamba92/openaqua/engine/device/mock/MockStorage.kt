@@ -13,6 +13,7 @@ import io.github.lamba92.openaqua.model.device.DeviceId
 import io.github.lamba92.openaqua.model.device.DeviceRegistry
 import io.github.lamba92.openaqua.model.device.DeviceType
 import io.github.lamba92.openaqua.model.device.DisplayConfig
+import io.github.lamba92.openaqua.model.device.FanLimits
 import io.github.lamba92.openaqua.model.device.FixedFanConfig
 import io.github.lamba92.openaqua.model.device.RgbEffectMode
 import io.github.lamba92.openaqua.model.device.RgbpxPortConfig
@@ -51,18 +52,20 @@ private fun defaultCurvePoints(): List<CurvePoint> =
         shape = 0.0,
     ).toCurveFanConfig().points
 
+private val defaultMockLimits = FanLimits(minPowerPercent = 5.0, maxPowerPercent = 100.0)
+
 fun defaultOctoConfig(): DeviceConfig =
     DeviceConfig(
         fans =
             listOf(
-                CurveFanConfig(channel = 0, sensorIndex = 0, points = defaultCurvePoints()),
-                FixedFanConfig(channel = 1, powerPercent = 40.0),
-                FixedFanConfig(channel = 2, powerPercent = 50.0),
-                FixedFanConfig(channel = 3, powerPercent = 50.0),
-                FixedFanConfig(channel = 4, powerPercent = 0.0),
-                FixedFanConfig(channel = 5, powerPercent = 0.0),
-                FixedFanConfig(channel = 6, powerPercent = 0.0),
-                FixedFanConfig(channel = 7, powerPercent = 0.0),
+                CurveFanConfig(channel = 0, sensorIndex = 0, points = defaultCurvePoints(), limits = defaultMockLimits),
+                FixedFanConfig(channel = 1, powerPercent = 40.0, limits = defaultMockLimits),
+                FixedFanConfig(channel = 2, powerPercent = 50.0, limits = defaultMockLimits),
+                FixedFanConfig(channel = 3, powerPercent = 50.0, limits = defaultMockLimits),
+                FixedFanConfig(channel = 4, powerPercent = 0.0, limits = defaultMockLimits),
+                FixedFanConfig(channel = 5, powerPercent = 0.0, limits = defaultMockLimits),
+                FixedFanConfig(channel = 6, powerPercent = 0.0, limits = defaultMockLimits),
+                FixedFanConfig(channel = 7, powerPercent = 0.0, limits = defaultMockLimits),
             ),
         sensorOffsets =
             listOf(
@@ -84,10 +87,10 @@ fun defaultQuadroConfig(): DeviceConfig =
     DeviceConfig(
         fans =
             listOf(
-                CurveFanConfig(channel = 0, sensorIndex = 0, points = defaultCurvePoints()),
-                FixedFanConfig(channel = 1, powerPercent = 50.0),
-                FixedFanConfig(channel = 2, powerPercent = 50.0),
-                FixedFanConfig(channel = 3, powerPercent = 0.0),
+                CurveFanConfig(channel = 0, sensorIndex = 0, points = defaultCurvePoints(), limits = defaultMockLimits),
+                FixedFanConfig(channel = 1, powerPercent = 50.0, limits = defaultMockLimits),
+                FixedFanConfig(channel = 2, powerPercent = 50.0, limits = defaultMockLimits),
+                FixedFanConfig(channel = 3, powerPercent = 0.0, limits = defaultMockLimits),
             ),
         sensorOffsets =
             listOf(
@@ -108,8 +111,8 @@ fun defaultD5NextConfig(): DeviceConfig =
     DeviceConfig(
         fans =
             listOf(
-                FixedFanConfig(channel = 0, powerPercent = 60.0),
-                CurveFanConfig(channel = 1, sensorIndex = 0, points = defaultCurvePoints()),
+                FixedFanConfig(channel = 0, powerPercent = 60.0, limits = defaultMockLimits),
+                CurveFanConfig(channel = 1, sensorIndex = 0, points = defaultCurvePoints(), limits = defaultMockLimits),
             ),
         sensorOffsets =
             listOf(

@@ -14,8 +14,8 @@ import io.github.lamba92.openaqua.model.device.DeviceDescriptor
 import io.github.lamba92.openaqua.model.device.DeviceId
 import io.github.lamba92.openaqua.model.device.DeviceRegistry
 import io.github.lamba92.openaqua.model.device.DeviceTelemetry
-import io.github.lamba92.openaqua.model.device.DeviceType
 import io.github.lamba92.openaqua.model.device.FlashConfigRequest
+import io.github.lamba92.openaqua.model.device.validateRequestMatchesDevice
 import kotlinx.cinterop.COpaquePointerVar
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.UByteVar
@@ -191,7 +191,7 @@ object LinuxHardwareController : HardwareController {
             DeviceRegistry.ALL.firstOrNull { it.type == device.type }
                 ?: error("Unsupported device type: ${device.type}")
 
-        validateRequestMatchesDevice(descriptor, request)
+        descriptor.validateRequestMatchesDevice(request)
 
         val node = getScannedNode(device)
         val report = readFeatureReport(node.hidrawPath, 0x03u, descriptor.ctrlReportLength)
@@ -223,51 +223,10 @@ object LinuxHardwareController : HardwareController {
             "${device.name} does not support virtual sensors"
         }
 
-        val startChannel = if (device.type == DeviceType.D5_NEXT) 1 else 4
-        val slotMap = mutableMapOf<Int, Double>()
-        sensors.forEach { (channel, temp) ->
-            val slot = channel - startChannel
-            require(slot in 0 until descriptor.virtualSensorsCount) {
-                "Channel $channel is not a valid virtual sensor for ${device.name} (valid channels: $startChannel..${startChannel + descriptor.virtualSensorsCount - 1})"
-            }
-            slotMap[slot] = temp
-        }
-
-        val report = VirtualSensorsWriter.buildReport(descriptor, slotMap)
+        val report = VirtualSensorsWriter.buildReportFromChannels(descriptor, sensors)
         val node = getScannedNode(device)
 
         writeVirtualSensorsBulkReport(node.hidrawPath, report)
-    }
-}
-
-private fun validateRequestMatchesDevice(
-    descriptor: DeviceDescriptor,
-    request: FlashConfigRequest,
-) {
-    request.fans?.keys?.forEach { ch ->
-        require(descriptor.fanChannels.any { it.channel == ch }) {
-            "Invalid fan channel $ch for ${descriptor.name}"
-        }
-    }
-    request.sensorOffsets?.keys?.forEach { ch ->
-        require(descriptor.tempSensors.any { it.channel == ch }) {
-            "Invalid sensor channel $ch for ${descriptor.name}"
-        }
-    }
-    request.rgbpx?.keys?.forEach { port ->
-        require(descriptor.hasRgbpx && port in 0 until descriptor.rgbpxPortCount) {
-            "Invalid RGBpx port $port for ${descriptor.name}"
-        }
-    }
-    if (request.flowPulsesPerLiter != null) {
-        require(descriptor.hasFlowSensor && descriptor.flowPulsesCtrlOffset != null) {
-            "Device ${descriptor.name} does not support flow sensor calibration"
-        }
-    }
-    if (request.display != null) {
-        require(descriptor.hasDisplay) {
-            "Device ${descriptor.name} does not support display configuration"
-        }
     }
 }
 

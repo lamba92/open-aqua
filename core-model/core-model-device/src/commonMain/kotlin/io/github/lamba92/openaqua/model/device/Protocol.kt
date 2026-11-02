@@ -62,6 +62,7 @@ data class DetectedHardwareDevice(
 @Serializable
 sealed interface FanChannelConfig {
     val channel: Int
+    val limits: FanLimits?
 }
 
 @Serializable
@@ -70,6 +71,7 @@ data class CurveFanConfig(
     override val channel: Int,
     val sensorIndex: Int,
     val points: List<CurvePoint>,
+    override val limits: FanLimits? = null,
 ) : FanChannelConfig
 
 @Serializable
@@ -82,6 +84,7 @@ data class AutoCurveFanConfig(
     val pMin: Double,
     val pMax: Double,
     val shape: Double = 0.0,
+    override val limits: FanLimits? = null,
 ) : FanChannelConfig {
     init {
         require(shape in -10.0..10.0) { "Shape must be in range -10.0..10.0 (got $shape)" }
@@ -101,6 +104,7 @@ data class AutoCurveFanConfig(
                     pMax = pMax,
                     shape = shape,
                 ),
+            limits = limits,
         )
 }
 
@@ -109,6 +113,7 @@ data class AutoCurveFanConfig(
 data class FixedFanConfig(
     override val channel: Int,
     val powerPercent: Double,
+    override val limits: FanLimits? = null,
 ) : FanChannelConfig
 
 @Serializable
@@ -117,6 +122,7 @@ data class TargetTempFanConfig(
     override val channel: Int,
     val sensorIndex: Int,
     val targetTempCelsius: Double,
+    override val limits: FanLimits? = null,
 ) : FanChannelConfig
 
 @Serializable
@@ -124,6 +130,7 @@ data class TargetTempFanConfig(
 data class TwoPointFanConfig(
     override val channel: Int,
     val sensorIndex: Int,
+    override val limits: FanLimits? = null,
 ) : FanChannelConfig
 
 @Serializable
@@ -131,7 +138,26 @@ data class TwoPointFanConfig(
 data class UnconfiguredFanConfig(
     override val channel: Int,
     val rawMode: Int,
+    override val limits: FanLimits? = null,
 ) : FanChannelConfig
+
+@Serializable
+@SerialName("limits-only")
+data class LimitsOnlyFanConfig(
+    override val channel: Int,
+    override val limits: FanLimits,
+) : FanChannelConfig
+
+fun FanChannelConfig.withLimits(limits: FanLimits?): FanChannelConfig =
+    when (this) {
+        is CurveFanConfig -> copy(limits = limits)
+        is AutoCurveFanConfig -> copy(limits = limits)
+        is FixedFanConfig -> copy(limits = limits)
+        is TargetTempFanConfig -> copy(limits = limits)
+        is TwoPointFanConfig -> copy(limits = limits)
+        is UnconfiguredFanConfig -> copy(limits = limits)
+        is LimitsOnlyFanConfig -> copy(limits = limits ?: this.limits)
+    }
 
 @Serializable
 data class SensorOffset(
@@ -195,6 +221,24 @@ data class RgbpxPortConfig(
         require(port >= 0) { "Port must be non-negative (got $port)" }
         require(ledCount in 0..90) { "LED count must be 0..90 (got $ledCount)" }
         require(brightnessPercent in 0..100) { "Brightness must be 0..100% (got $brightnessPercent)" }
+    }
+}
+
+@Serializable
+data class FanLimits(
+    val minPowerPercent: Double,
+    val maxPowerPercent: Double,
+    val startBoost: Boolean = true,
+    val holdMinPower: Boolean = false,
+    val fallbackPowerPercent: Double = 100.0,
+) {
+    init {
+        require(minPowerPercent in 0.0..100.0) { "minPowerPercent must be between 0 and 100 (got $minPowerPercent)" }
+        require(maxPowerPercent in 0.0..100.0) { "maxPowerPercent must be between 0 and 100 (got $maxPowerPercent)" }
+        require(minPowerPercent <= maxPowerPercent) {
+            "minPowerPercent ($minPowerPercent) cannot exceed maxPowerPercent ($maxPowerPercent)"
+        }
+        require(fallbackPowerPercent in 0.0..100.0) { "fallbackPowerPercent must be between 0 and 100 (got $fallbackPowerPercent)" }
     }
 }
 

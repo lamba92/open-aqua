@@ -9,8 +9,10 @@ import io.github.lamba92.openaqua.model.device.DetectedHardwareDevice
 import io.github.lamba92.openaqua.model.device.DeviceConfig
 import io.github.lamba92.openaqua.model.device.DeviceType
 import io.github.lamba92.openaqua.model.device.FanChannelConfig
+import io.github.lamba92.openaqua.model.device.FanLimits
 import io.github.lamba92.openaqua.model.device.FixedFanConfig
 import io.github.lamba92.openaqua.model.device.FlashConfigRequest
+import io.github.lamba92.openaqua.model.device.LimitsOnlyFanConfig
 import io.github.lamba92.openaqua.model.device.SensorTelemetry
 import io.github.lamba92.openaqua.model.device.TargetTempFanConfig
 import io.github.lamba92.openaqua.model.device.TwoPointFanConfig
@@ -18,6 +20,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -292,6 +295,74 @@ class OctoHardwareTest {
             println("Virtual sensor packets verified successfully on real hardware")
         }
 
+    @Test
+    fun testFlashFanLimitsOnAllowedFan() =
+        withOctoSafeScope {
+            val testChannel = 4 // Fan 5 (unoccupied)
+            val testLimits =
+                FanLimits(
+                    minPowerPercent = 10.0,
+                    maxPowerPercent = 95.0,
+                    startBoost = true,
+                    holdMinPower = false,
+                    fallbackPowerPercent = 80.0,
+                )
+            val testRequest =
+                FlashConfigRequest(
+                    fans = mapOf(testChannel to LimitsOnlyFanConfig(channel = testChannel, limits = testLimits)),
+                )
+
+            println("Testing Fan Limits on allowed Fan ${testChannel + 1} (min=10%, max=95%, fallback=80%)...")
+            val readback = flashAndVerify(testRequest)
+            val updated = readback.fans.firstOrNull { it.channel == testChannel }
+            assertNotNull(updated, "Fan config for channel $testChannel must be present")
+            val readbackLimits = updated.limits
+            assertNotNull(readbackLimits, "Fan limits for channel $testChannel must be present")
+            assertEquals(10.0, readbackLimits.minPowerPercent, 0.2)
+            assertEquals(95.0, readbackLimits.maxPowerPercent, 0.2)
+            assertEquals(80.0, readbackLimits.fallbackPowerPercent, 0.2)
+            assertTrue(readbackLimits.startBoost)
+            assertFalse(readbackLimits.holdMinPower)
+            println("Verified Fan Limits flashed and read back successfully")
+        }
+
+    @Test
+    fun testFlashCombinedFanConfigAndLimitsOnAllowedFan() =
+        withOctoSafeScope {
+            val testChannel = 4 // Fan 5 (unoccupied)
+            val testLimits =
+                FanLimits(
+                    minPowerPercent = 15.0,
+                    maxPowerPercent = 90.0,
+                    startBoost = false,
+                    holdMinPower = true,
+                    fallbackPowerPercent = 75.0,
+                )
+            val testFixedConfig =
+                FixedFanConfig(
+                    channel = testChannel,
+                    powerPercent = 40.0,
+                    limits = testLimits,
+                )
+            val testRequest = FlashConfigRequest(fans = mapOf(testChannel to testFixedConfig))
+
+            println("Testing combined FixedFanConfig and FanLimits on allowed Fan ${testChannel + 1}...")
+            val readback = flashAndVerify(testRequest)
+            val updated = readback.fans.firstOrNull { it.channel == testChannel }
+            assertNotNull(updated, "Fan config for channel $testChannel must be present")
+            assertTrue(updated is FixedFanConfig, "Fan config must be FixedFanConfig")
+            assertEquals(40.0, updated.powerPercent, 0.5)
+
+            val readbackLimits = updated.limits
+            assertNotNull(readbackLimits, "Fan limits for channel $testChannel must be present")
+            assertEquals(15.0, readbackLimits.minPowerPercent, 0.2)
+            assertEquals(90.0, readbackLimits.maxPowerPercent, 0.2)
+            assertEquals(75.0, readbackLimits.fallbackPowerPercent, 0.2)
+            assertFalse(readbackLimits.startBoost)
+            assertTrue(readbackLimits.holdMinPower)
+            println("Verified combined FanConfig and FanLimits flashed and read back successfully on Fan ${testChannel + 1}")
+        }
+
     companion object {
         private fun FanChannelConfig.toSafeRestorableConfig(): FanChannelConfig =
             when (this) {
@@ -300,7 +371,7 @@ class OctoHardwareTest {
                 is AutoCurveFanConfig -> this
                 is TargetTempFanConfig -> this
                 is TwoPointFanConfig -> this
-                else -> FixedFanConfig(channel = channel, powerPercent = 50.0)
+                else -> FixedFanConfig(channel = channel, powerPercent = 50.0, limits = limits)
             }
     }
 }

@@ -67,12 +67,14 @@ sealed interface FanDraft {
 fun FanDraft.toFanChannelConfig(
     allFans: List<FanItem>,
     allDrafts: Map<Int, FanDraft> = emptyMap(),
-): FanChannelConfig =
-    when (this) {
+): FanChannelConfig {
+    val existingLimits = allFans.firstOrNull { it.channel == channel }?.config?.limits
+    return when (this) {
         is FanDraft.Fixed ->
             FixedFanConfig(
                 channel = channel,
                 powerPercent = powerPercent,
+                limits = existingLimits,
             )
 
         is FanDraft.AutoCurve ->
@@ -84,6 +86,7 @@ fun FanDraft.toFanChannelConfig(
                 pMin = pMin,
                 pMax = pMax,
                 shape = shape,
+                limits = existingLimits,
             )
 
         is FanDraft.TargetTemp ->
@@ -91,6 +94,7 @@ fun FanDraft.toFanChannelConfig(
                 channel = channel,
                 sensorIndex = sensorIndex,
                 targetTempCelsius = targetTempCelsius,
+                limits = existingLimits,
             )
 
         is FanDraft.Copy -> {
@@ -102,14 +106,15 @@ fun FanDraft.toFanChannelConfig(
                     allFans.firstOrNull { it.channel == sourceChannel }?.config
                 }
             when (sourceConfig) {
-                is FixedFanConfig -> sourceConfig.copy(channel = channel)
-                is AutoCurveFanConfig -> sourceConfig.copy(channel = channel)
-                is CurveFanConfig -> sourceConfig.copy(channel = channel)
-                is TargetTempFanConfig -> sourceConfig.copy(channel = channel)
-                else -> FixedFanConfig(channel = channel, powerPercent = 50.0)
+                is FixedFanConfig -> sourceConfig.copy(channel = channel, limits = existingLimits)
+                is AutoCurveFanConfig -> sourceConfig.copy(channel = channel, limits = existingLimits)
+                is CurveFanConfig -> sourceConfig.copy(channel = channel, limits = existingLimits)
+                is TargetTempFanConfig -> sourceConfig.copy(channel = channel, limits = existingLimits)
+                else -> FixedFanConfig(channel = channel, powerPercent = 50.0, limits = existingLimits)
             }
         }
     }
+}
 
 fun FanChannelConfig?.toInitialDraft(
     channel: Int,

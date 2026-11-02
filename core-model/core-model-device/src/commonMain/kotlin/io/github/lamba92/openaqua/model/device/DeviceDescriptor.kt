@@ -15,6 +15,7 @@ data class FanChannelDescriptor(
     val ctrlOffset: Int,
     val statusOffset: Int,
     val kind: CoolingChannelKind = CoolingChannelKind.FAN,
+    val setupOffset: Int? = null,
 )
 
 @Serializable
@@ -64,6 +65,7 @@ object DeviceRegistry {
                         ctrlOffset = 0x5A + (it * 0x55),
                         statusOffset = 0x7D + (it * 0x0D),
                         kind = CoolingChannelKind.FAN,
+                        setupOffset = 0x12 + (it * 0x09),
                     )
                 },
             tempSensors =
@@ -102,6 +104,7 @@ object DeviceRegistry {
                         ctrlOffset = 0x36 + (it * 0x55),
                         statusOffset = 0x70 + (it * 0x0D),
                         kind = CoolingChannelKind.FAN,
+                        setupOffset = 0x12 + (it * 0x09),
                     )
                 },
             tempSensors =
@@ -139,12 +142,14 @@ object DeviceRegistry {
                         ctrlOffset = 0x36,
                         statusOffset = 0x6C,
                         kind = CoolingChannelKind.PUMP,
+                        setupOffset = 0x12,
                     ),
                     FanChannelDescriptor(
                         channel = 1,
                         ctrlOffset = 0x8B,
                         statusOffset = 0x5F,
                         kind = CoolingChannelKind.FAN,
+                        setupOffset = 0x1B,
                     ),
                 ),
             tempSensors =
@@ -176,3 +181,48 @@ object DeviceRegistry {
 }
 
 fun DetectedHardwareDevice.descriptor(): DeviceDescriptor = DeviceRegistry.findByType(type)
+
+val DeviceDescriptor.virtualSensorsStartChannel: Int
+    get() = tempSensors.size
+
+val DeviceDescriptor.virtualSensorsChannelRange: IntRange
+    get() =
+        when {
+            virtualSensorsCount > 0 ->
+                virtualSensorsStartChannel until (virtualSensorsStartChannel + virtualSensorsCount)
+            else -> IntRange.EMPTY
+        }
+
+fun DeviceDescriptor.validateRequestMatchesDevice(request: FlashConfigRequest) {
+    request.fans?.forEach { (ch, config) ->
+        val fan = fanChannels.firstOrNull { it.channel == ch }
+        requireNotNull(fan) {
+            "Invalid fan channel $ch for $name"
+        }
+        if (config.limits != null) {
+            require(fan.setupOffset != null) {
+                "Fan channel $ch does not support fan limits on $name"
+            }
+        }
+    }
+    request.sensorOffsets?.keys?.forEach { ch ->
+        require(tempSensors.any { it.channel == ch }) {
+            "Invalid sensor channel $ch for $name"
+        }
+    }
+    request.rgbpx?.keys?.forEach { port ->
+        require(hasRgbpx && port in 0 until rgbpxPortCount) {
+            "Invalid RGBpx port $port for $name"
+        }
+    }
+    if (request.flowPulsesPerLiter != null) {
+        require(hasFlowSensor && flowPulsesCtrlOffset != null) {
+            "Device $name does not support flow sensor calibration"
+        }
+    }
+    if (request.display != null) {
+        require(hasDisplay) {
+            "Device $name does not support display configuration"
+        }
+    }
+}

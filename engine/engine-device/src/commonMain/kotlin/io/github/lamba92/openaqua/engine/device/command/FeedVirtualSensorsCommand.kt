@@ -10,6 +10,8 @@ import io.github.lamba92.openaqua.model.device.DetectedHardwareDevice
 import io.github.lamba92.openaqua.model.device.DeviceType
 import io.github.lamba92.openaqua.model.device.FeedVirtualSensorsRequest
 import io.github.lamba92.openaqua.model.device.descriptor
+import io.github.lamba92.openaqua.model.device.virtualSensorsChannelRange
+import io.github.lamba92.openaqua.model.device.virtualSensorsStartChannel
 import kotlinx.serialization.json.Json
 
 class FeedVirtualSensorsCommand(
@@ -29,8 +31,8 @@ class FeedVirtualSensorsCommand(
             "${target.name} does not support virtual sensors"
         }
 
-        val startChannel = if (target.type == DeviceType.D5_NEXT) 1 else 4
-        val maxChannel = startChannel + descriptor.virtualSensorsCount - 1
+        val startChannel = descriptor.virtualSensorsStartChannel
+        val maxChannel = descriptor.virtualSensorsChannelRange.last
 
         while (true) {
             val line = readlnOrNull() ?: break
