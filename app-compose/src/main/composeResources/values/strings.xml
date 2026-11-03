@@ -133,9 +133,33 @@
 
     <!-- Flash Confirmation Dialog -->
     <string name="flash_dialog_title">Flash Hardware Configuration</string>
-    <string name="flash_dialog_desc">The following fan channel(s) will be committed and flashed to device EEPROM:</string>
+    <string name="flash_dialog_desc">The following fan channel(s) will be committed and flashed to device EEPROM (curves &amp; hardware limits):</string>
     <string name="flash_dialog_cancel_btn">Cancel</string>
     <string name="flash_dialog_confirm_btn">Flash EEPROM</string>
+
+    <!-- Fan Hardware Limits -->
+    <string name="fan_limits_title">Hardware Power Limits</string>
+    <string name="fan_limits_desc">Electrical and safety limits stored in controller EEPROM (Report 0x03). In Curve mode, controller firmware proportionally scales output between Minimum and Maximum Power.</string>
+    <string name="fan_limits_min_power">Minimum Power</string>
+    <string name="fan_limits_min_power_desc">Lowest duty cycle output. Set to 0% for 1:1 curve tracking, or higher to prevent motor stalling.</string>
+    <string name="fan_limits_max_power">Maximum Power</string>
+    <string name="fan_limits_max_power_desc">Upper output ceiling for acoustic dampening or motor protection.</string>
+    <string name="fan_limits_fallback_power">Fallback Power</string>
+    <string name="fan_limits_fallback_power_desc">Safety duty cycle applied if the temperature sensor is disconnected or communication times out.</string>
+    <string name="fan_limits_start_boost">Start Boost (Spin-up)</string>
+    <string name="fan_limits_start_boost_desc">Forces 100% power for 2 seconds on spin-up to overcome initial static friction.</string>
+    <string name="fan_limits_hold_min">Hold Minimum Power</string>
+    <string name="fan_limits_hold_min_desc">Keeps fan spinning at Minimum Power even when 0% is commanded (when disabled, 0% shuts off fan).</string>
+    <string name="fan_limits_reset_standard">Reset Standard Limits (0% - 100%)</string>
+    <string name="fan_limits_tip_1to1">1:1 Tracking Tip: Set Minimum Power to 0% and Maximum Power to 100% to disable firmware curve rescaling.</string>
+    <string name="fan_limits_badge_modified">Limits Modified</string>
+    <string name="fan_limits_diff_label">Hardware Limits to Flash:</string>
+    <string name="fan_limits_diff_summary">Min %1$d%% • Max %2$d%% • Fallback %3$d%%</string>
+    <string name="fan_limits_diff_boost_on">Start Boost: On</string>
+    <string name="fan_limits_diff_boost_off">Start Boost: Off</string>
+    <string name="fan_limits_diff_hold_on">Hold Min: On</string>
+    <string name="fan_limits_diff_hold_off">Hold Min: Off</string>
+    <string name="fan_limits_flash_hint">Flashing commits curve profiles and hardware limits to device EEPROM.</string>
 
     <!-- Sensors Screen -->
     <string name="sensors_screen_title">Temperature Sensors</string>

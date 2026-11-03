@@ -7,6 +7,7 @@ import io.github.lamba92.openaqua.model.device.AutoCurveFanConfig
 import io.github.lamba92.openaqua.model.device.CurveFanConfig
 import io.github.lamba92.openaqua.model.device.CurveMath
 import io.github.lamba92.openaqua.model.device.FanChannelConfig
+import io.github.lamba92.openaqua.model.device.FanLimits
 import io.github.lamba92.openaqua.model.device.FixedFanConfig
 import io.github.lamba92.openaqua.model.device.TargetTempFanConfig
 
@@ -28,10 +29,12 @@ sealed interface FlashDialogState {
 sealed interface FanDraft {
     val channel: Int
     val mode: CurveMode
+    val limits: FanLimits?
 
     data class Fixed(
         override val channel: Int,
         val powerPercent: Double = 50.0,
+        override val limits: FanLimits? = null,
     ) : FanDraft {
         override val mode: CurveMode get() = CurveMode.FIXED
     }
@@ -44,6 +47,7 @@ sealed interface FanDraft {
         val pMin: Double = 25.0,
         val pMax: Double = 100.0,
         val shape: Double = 0.0,
+        override val limits: FanLimits? = null,
     ) : FanDraft {
         override val mode: CurveMode get() = CurveMode.AUTO_CURVE
     }
@@ -52,6 +56,7 @@ sealed interface FanDraft {
         override val channel: Int,
         val sensorIndex: Int = 0,
         val targetTempCelsius: Double = 35.0,
+        override val limits: FanLimits? = null,
     ) : FanDraft {
         override val mode: CurveMode get() = CurveMode.TARGET_TEMP
     }
@@ -59,22 +64,32 @@ sealed interface FanDraft {
     data class Copy(
         override val channel: Int,
         val sourceChannel: Int = 0,
+        override val limits: FanLimits? = null,
     ) : FanDraft {
         override val mode: CurveMode get() = CurveMode.COPY_FAN
     }
 }
+
+fun FanDraft.withLimits(limits: FanLimits?): FanDraft =
+    when (this) {
+        is FanDraft.Fixed -> copy(limits = limits)
+        is FanDraft.AutoCurve -> copy(limits = limits)
+        is FanDraft.TargetTemp -> copy(limits = limits)
+        is FanDraft.Copy -> copy(limits = limits)
+    }
 
 fun FanDraft.toFanChannelConfig(
     allFans: List<FanItem>,
     allDrafts: Map<Int, FanDraft> = emptyMap(),
 ): FanChannelConfig {
     val existingLimits = allFans.firstOrNull { it.channel == channel }?.config?.limits
+    val targetLimits = limits ?: existingLimits
     return when (this) {
         is FanDraft.Fixed ->
             FixedFanConfig(
                 channel = channel,
                 powerPercent = powerPercent,
-                limits = existingLimits,
+                limits = targetLimits,
             )
 
         is FanDraft.AutoCurve ->
@@ -86,7 +101,7 @@ fun FanDraft.toFanChannelConfig(
                 pMin = pMin,
                 pMax = pMax,
                 shape = shape,
-                limits = existingLimits,
+                limits = targetLimits,
             )
 
         is FanDraft.TargetTemp ->
@@ -94,7 +109,7 @@ fun FanDraft.toFanChannelConfig(
                 channel = channel,
                 sensorIndex = sensorIndex,
                 targetTempCelsius = targetTempCelsius,
-                limits = existingLimits,
+                limits = targetLimits,
             )
 
         is FanDraft.Copy -> {
@@ -106,11 +121,11 @@ fun FanDraft.toFanChannelConfig(
                     allFans.firstOrNull { it.channel == sourceChannel }?.config
                 }
             when (sourceConfig) {
-                is FixedFanConfig -> sourceConfig.copy(channel = channel, limits = existingLimits)
-                is AutoCurveFanConfig -> sourceConfig.copy(channel = channel, limits = existingLimits)
-                is CurveFanConfig -> sourceConfig.copy(channel = channel, limits = existingLimits)
-                is TargetTempFanConfig -> sourceConfig.copy(channel = channel, limits = existingLimits)
-                else -> FixedFanConfig(channel = channel, powerPercent = 50.0, limits = existingLimits)
+                is FixedFanConfig -> sourceConfig.copy(channel = channel, limits = targetLimits)
+                is AutoCurveFanConfig -> sourceConfig.copy(channel = channel, limits = targetLimits)
+                is CurveFanConfig -> sourceConfig.copy(channel = channel, limits = targetLimits)
+                is TargetTempFanConfig -> sourceConfig.copy(channel = channel, limits = targetLimits)
+                else -> FixedFanConfig(channel = channel, powerPercent = 50.0, limits = targetLimits)
             }
         }
     }
@@ -125,6 +140,7 @@ fun FanChannelConfig?.toInitialDraft(
             FanDraft.Fixed(
                 channel = channel,
                 powerPercent = powerPercent,
+                limits = limits,
             )
 
         is AutoCurveFanConfig ->
@@ -136,6 +152,7 @@ fun FanChannelConfig?.toInitialDraft(
                 pMin = pMin,
                 pMax = pMax,
                 shape = shape,
+                limits = limits,
             )
 
         is CurveFanConfig ->
@@ -147,6 +164,7 @@ fun FanChannelConfig?.toInitialDraft(
                 pMin = points.firstOrNull()?.pwm ?: 25.0,
                 pMax = points.lastOrNull()?.pwm ?: 100.0,
                 shape = CurveMath.inferShape(points),
+                limits = limits,
             )
 
         is TargetTempFanConfig ->
@@ -154,6 +172,7 @@ fun FanChannelConfig?.toInitialDraft(
                 channel = channel,
                 sensorIndex = sensorIndex,
                 targetTempCelsius = targetTempCelsius,
+                limits = limits,
             )
 
         else ->
@@ -165,6 +184,7 @@ fun FanChannelConfig?.toInitialDraft(
                 pMin = 25.0,
                 pMax = 100.0,
                 shape = 0.0,
+                limits = this?.limits,
             )
     }
 
@@ -270,6 +290,30 @@ sealed interface CurveStudioEvent : FansUiEvent {
     data class ChangeTargetTemp(
         val targetTemp: Double,
     ) : CurveStudioEvent
+}
+
+sealed interface FanLimitsEvent : FansUiEvent {
+    data class ChangeMinPower(
+        val minPowerPercent: Double,
+    ) : FanLimitsEvent
+
+    data class ChangeMaxPower(
+        val maxPowerPercent: Double,
+    ) : FanLimitsEvent
+
+    data class ChangeFallbackPower(
+        val fallbackPowerPercent: Double,
+    ) : FanLimitsEvent
+
+    data class ChangeStartBoost(
+        val startBoost: Boolean,
+    ) : FanLimitsEvent
+
+    data class ChangeHoldMinPower(
+        val holdMinPower: Boolean,
+    ) : FanLimitsEvent
+
+    data object ResetToStandardLimits : FanLimitsEvent
 }
 
 sealed interface FansUiEffect

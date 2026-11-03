@@ -3,9 +3,13 @@ package io.github.lamba92.openaqua.app.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -56,6 +60,8 @@ fun ConfirmationDialog(
     loadingText: String? = null,
     enabled: Boolean = true,
     width: Dp = 440.dp,
+    height: Dp? = null,
+    maxHeight: Dp? = null,
     content: (@Composable () -> Unit)? = null,
 ) {
     val dismissFocusRequester = remember { FocusRequester() }
@@ -83,13 +89,22 @@ fun ConfirmationDialog(
             DialogProperties(
                 dismissOnBackPress = !isLoading,
                 dismissOnClickOutside = !isLoading,
+                usePlatformDefaultWidth = false,
             ),
     ) {
         Column(
             modifier =
                 modifier
                     .width(width)
-                    .clip(RoundedCornerShape(16.dp))
+                    .then(
+                        if (height != null) {
+                            Modifier.height(height)
+                        } else if (maxHeight != null) {
+                            Modifier.heightIn(max = maxHeight)
+                        } else {
+                            Modifier
+                        },
+                    ).clip(RoundedCornerShape(16.dp))
                     .background(colors.surfaceLow)
                     .border(1.dp, colors.borderOutline, RoundedCornerShape(16.dp))
                     .padding(24.dp)
@@ -132,7 +147,21 @@ fun ConfirmationDialog(
             }
 
             if (content != null) {
-                content()
+                if (height != null) {
+                    Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                        content()
+                    }
+                } else if (maxHeight != null) {
+                    Box(modifier = Modifier.weight(1f, fill = false).fillMaxWidth()) {
+                        content()
+                    }
+                } else {
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        content()
+                    }
+                }
+            } else if (height != null) {
+                Spacer(modifier = Modifier.weight(1f))
             }
 
             Row(

@@ -28,6 +28,8 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
+import kotlin.time.Duration.Companion.seconds
 
 class FansViewModel(
     private val cacheService: DeviceDataCacheService,
@@ -151,23 +153,39 @@ class FansViewModel(
                             is CurveStudioEvent.ChangeMode ->
                                 when (event.mode) {
                                     CurveMode.FIXED ->
-                                        currentDraft as? FanDraft.Fixed ?: FanDraft.Fixed(channel)
+                                        when {
+                                            currentDraft is FanDraft.Fixed ->
+                                                currentDraft.copy(limits = currentDraft.limits)
+                                            else -> FanDraft.Fixed(channel, limits = currentDraft.limits)
+                                        }
 
                                     CurveMode.AUTO_CURVE ->
-                                        currentDraft as? FanDraft.AutoCurve ?: FanDraft.AutoCurve(channel)
+                                        when {
+                                            currentDraft is FanDraft.AutoCurve ->
+                                                currentDraft.copy(limits = currentDraft.limits)
+                                            else -> FanDraft.AutoCurve(channel, limits = currentDraft.limits)
+                                        }
 
                                     CurveMode.TARGET_TEMP ->
-                                        currentDraft as? FanDraft.TargetTemp ?: FanDraft.TargetTemp(channel)
+                                        when {
+                                            currentDraft is FanDraft.TargetTemp ->
+                                                currentDraft.copy(limits = currentDraft.limits)
+                                            else -> FanDraft.TargetTemp(channel, limits = currentDraft.limits)
+                                        }
 
                                     CurveMode.COPY_FAN ->
-                                        currentDraft as? FanDraft.Copy ?: FanDraft.Copy(channel)
+                                        when {
+                                            currentDraft is FanDraft.Copy ->
+                                                currentDraft.copy(limits = currentDraft.limits)
+                                            else -> FanDraft.Copy(channel, limits = currentDraft.limits)
+                                        }
                                 }
 
                             is CurveStudioEvent.ChangeFixedPwm ->
                                 if (currentDraft is FanDraft.Fixed) {
                                     currentDraft.copy(powerPercent = event.pwm)
                                 } else {
-                                    FanDraft.Fixed(channel, event.pwm)
+                                    FanDraft.Fixed(channel, event.pwm, limits = currentDraft.limits)
                                 }
 
                             is CurveStudioEvent.ChangeSensorIndex ->
@@ -203,23 +221,82 @@ class FansViewModel(
                                 }
 
                             is CurveStudioEvent.ChangePMin ->
-                                if (currentDraft is FanDraft.AutoCurve) currentDraft.copy(pMin = event.pMin) else currentDraft
+                                when (currentDraft) {
+                                    is FanDraft.AutoCurve -> currentDraft.copy(pMin = event.pMin)
+                                    else -> currentDraft
+                                }
 
                             is CurveStudioEvent.ChangePMax ->
-                                if (currentDraft is FanDraft.AutoCurve) currentDraft.copy(pMax = event.pMax) else currentDraft
+                                when (currentDraft) {
+                                    is FanDraft.AutoCurve -> currentDraft.copy(pMax = event.pMax)
+                                    else -> currentDraft
+                                }
 
                             is CurveStudioEvent.ChangeShape ->
-                                if (currentDraft is FanDraft.AutoCurve) currentDraft.copy(shape = event.shape) else currentDraft
+                                when (currentDraft) {
+                                    is FanDraft.AutoCurve -> currentDraft.copy(shape = event.shape)
+                                    else -> currentDraft
+                                }
 
                             is CurveStudioEvent.ChangeCopySource ->
-                                if (currentDraft is FanDraft.Copy) {
-                                    currentDraft.copy(
-                                        sourceChannel = event.sourceChannel,
-                                    )
-                                } else {
-                                    FanDraft.Copy(channel, event.sourceChannel)
+                                when (currentDraft) {
+                                    is FanDraft.Copy ->
+                                        currentDraft.copy(
+                                            sourceChannel = event.sourceChannel,
+                                        )
+
+                                    else -> FanDraft.Copy(channel, event.sourceChannel, limits = currentDraft.limits)
                                 }
                         }
+                    }
+
+                is FanLimitsEvent ->
+                    updateSelectedFanDraft { currentDraft, channel ->
+                        val currentLimits =
+                            currentDraft.limits
+                                ?: (state.value as? FansUiState.Ready)
+                                    ?.fans
+                                    ?.firstOrNull { it.channel == channel }
+                                    ?.config
+                                    ?.limits
+                                ?: io.github.lamba92.openaqua.model.device.FanLimits(
+                                    minPowerPercent = 0.0,
+                                    maxPowerPercent = 100.0,
+                                )
+
+                        val updatedLimits =
+                            when (event) {
+                                is FanLimitsEvent.ChangeMinPower -> {
+                                    val newMin = event.minPowerPercent.coerceIn(0.0, 100.0)
+                                    val newMax = currentLimits.maxPowerPercent.coerceAtLeast(newMin)
+                                    currentLimits.copy(minPowerPercent = newMin, maxPowerPercent = newMax)
+                                }
+
+                                is FanLimitsEvent.ChangeMaxPower -> {
+                                    val newMax = event.maxPowerPercent.coerceIn(0.0, 100.0)
+                                    val newMin = currentLimits.minPowerPercent.coerceAtMost(newMax)
+                                    currentLimits.copy(minPowerPercent = newMin, maxPowerPercent = newMax)
+                                }
+
+                                is FanLimitsEvent.ChangeFallbackPower ->
+                                    currentLimits.copy(fallbackPowerPercent = event.fallbackPowerPercent.coerceIn(0.0, 100.0))
+
+                                is FanLimitsEvent.ChangeStartBoost ->
+                                    currentLimits.copy(startBoost = event.startBoost)
+
+                                is FanLimitsEvent.ChangeHoldMinPower ->
+                                    currentLimits.copy(holdMinPower = event.holdMinPower)
+
+                                FanLimitsEvent.ResetToStandardLimits ->
+                                    io.github.lamba92.openaqua.model.device.FanLimits(
+                                        minPowerPercent = 0.0,
+                                        maxPowerPercent = 100.0,
+                                        startBoost = true,
+                                        holdMinPower = false,
+                                        fallbackPowerPercent = 100.0,
+                                    )
+                            }
+                        currentDraft.withLimits(updatedLimits)
                     }
 
                 is FansUiEvent.DiscardFanDraft ->
@@ -260,27 +337,36 @@ class FansViewModel(
                     }
 
                     viewModelScope.launch {
-                        logger.i { "Flashing fan configuration for device '$deviceId' (channels: ${updates.keys})..." }
-                        val initialConfig = (cacheService.getAquaDeviceStateFlow(deviceId).first() as? DeviceState.Aqua.Ready)?.config
-                        cacheService.flashConfig(
-                            deviceId = deviceId,
-                            config = FlashConfigRequest(fans = updates),
-                        )
+                        try {
+                            logger.i { "Flashing fan configuration for device '$deviceId' (channels: ${updates.keys})..." }
+                            val initialConfig = (cacheService.getAquaDeviceStateFlow(deviceId).first() as? DeviceState.Aqua.Ready)?.config
+                            cacheService.flashConfig(
+                                deviceId = deviceId,
+                                config = FlashConfigRequest(fans = updates),
+                            )
 
-                        // Await next config change from cacheService where updates are applied
-                        cacheService
-                            .getReadyAquaDeviceStateFlow(deviceId)
-                            .first { readyState -> readyState.config != initialConfig }
-                        logger.i { "Flashed configuration active and verified for device '$deviceId'" }
-                        state.update { current ->
-                            when (current) {
-                                is FansUiState.Ready ->
-                                    current.copy(
-                                        fanDrafts = current.fanDrafts - updates.keys,
-                                        flashDialogState = FlashDialogState.NotShown,
-                                    )
+                            // Await next config change from cacheService where updates are applied (with timeout guard)
+                            if (initialConfig != null) {
+                                withTimeoutOrNull(3.seconds) {
+                                    cacheService
+                                        .getReadyAquaDeviceStateFlow(deviceId)
+                                        .first { readyState -> readyState.config != initialConfig }
+                                }
+                            }
+                            logger.i { "Flashed configuration active and verified for device '$deviceId'" }
+                        } catch (e: Exception) {
+                            logger.e(e) { "Failed to flash fan configuration for device '$deviceId': ${e.message}" }
+                        } finally {
+                            state.update { current ->
+                                when (current) {
+                                    is FansUiState.Ready ->
+                                        current.copy(
+                                            fanDrafts = current.fanDrafts - updates.keys,
+                                            flashDialogState = FlashDialogState.NotShown,
+                                        )
 
-                                else -> current
+                                    else -> current
+                                }
                             }
                         }
                     }

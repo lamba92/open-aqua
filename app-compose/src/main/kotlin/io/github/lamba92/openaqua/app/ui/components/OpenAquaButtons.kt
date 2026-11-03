@@ -152,6 +152,8 @@ fun OpenAquaOutlinedButton(
             text = text,
             fontSize = 15.sp,
             fontWeight = FontWeight.Medium,
+            maxLines = 1,
+            softWrap = false,
         )
     }
 }
@@ -206,6 +208,8 @@ fun OpenAquaTextButton(
             text = text,
             fontSize = 15.sp,
             fontWeight = FontWeight.Medium,
+            maxLines = 1,
+            softWrap = false,
         )
     }
 }

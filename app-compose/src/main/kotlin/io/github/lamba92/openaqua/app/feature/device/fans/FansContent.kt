@@ -4,6 +4,7 @@ import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -14,6 +15,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -66,6 +69,7 @@ import open_aqua.app_compose.generated.resources.fan_channels_header
 import open_aqua.app_compose.generated.resources.fan_current_value
 import open_aqua.app_compose.generated.resources.fan_disconnected
 import open_aqua.app_compose.generated.resources.fan_hardware_pin
+import open_aqua.app_compose.generated.resources.fan_limits_badge_modified
 import open_aqua.app_compose.generated.resources.fan_power_value
 import open_aqua.app_compose.generated.resources.fan_pwm_value
 import open_aqua.app_compose.generated.resources.fan_rpm_short_disconnected
@@ -194,6 +198,7 @@ fun FansContent(
                     pendingFansCount = state.pendingFans.size,
                     hideDisconnectedSensors = state.hideDisconnectedSensors,
                     onCurveStudioEvent = onEvent,
+                    onLimitsEvent = onEvent,
                     onDiscard = { onEvent(FansUiEvent.DiscardFanDraft) },
                     onRequestFlash = { onEvent(FansUiEvent.RequestFlash) },
                     onRenameClick = { onEvent(FansUiEvent.StartRenamingFan(selectedFan.channel)) },
@@ -227,10 +232,11 @@ fun FansContent(
             loadingText = stringResource(Res.string.curve_action_flashing),
             onConfirm = { onEvent(FansUiEvent.ConfirmFlash) },
             onDismiss = { onEvent(FansUiEvent.DismissFlashDialog) },
-            width = 480.dp,
+            width = 680.dp,
+            maxHeight = 560.dp,
             content = {
                 Column(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     Text(
@@ -365,6 +371,7 @@ fun FanChannelDetailCard(
     isModified: Boolean,
     pendingFansCount: Int,
     onCurveStudioEvent: (CurveStudioEvent) -> Unit,
+    onLimitsEvent: (FanLimitsEvent) -> Unit,
     onDiscard: () -> Unit,
     onRequestFlash: () -> Unit,
     modifier: Modifier = Modifier,
@@ -478,6 +485,13 @@ fun FanChannelDetailCard(
             onEvent = onCurveStudioEvent,
             hideDisconnectedSensors = hideDisconnectedSensors,
         )
+
+        // Hardware Power Limits
+        FanLimitsCard(
+            fan = fan,
+            draft = draft,
+            onLimitsEvent = onLimitsEvent,
+        )
     }
 }
 
@@ -532,7 +546,7 @@ private fun PendingFanDiffCard(
     targetConfig: FanChannelConfig,
     sensors: List<SensorItem>,
     hasPump: Boolean = false,
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier.fillMaxWidth(),
 ) {
     val colors = OpenAquaTheme.colors
     val metrics = OpenAquaTheme.metrics
@@ -570,36 +584,117 @@ private fun PendingFanDiffCard(
             else -> "Custom Config"
         }
 
-    Row(
+    val limits = targetConfig.limits
+    val initialLimits = fan.config.limits
+    val limitsModified = initialLimits != limits
+
+    Column(
         modifier =
             modifier
-                .fillMaxWidth()
                 .clip(RoundedCornerShape(metrics.radiusSmall))
                 .background(colors.surfaceLowest)
                 .border(metrics.strokeThin, colors.borderOutline, RoundedCornerShape(metrics.radiusSmall))
                 .padding(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Icon(
-            painter = icon,
-            contentDescription = null,
-            tint = colors.primaryBright,
-            modifier = Modifier.size(20.dp),
-        )
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Icon(
+                painter = icon,
+                contentDescription = null,
+                tint = colors.primaryBright,
+                modifier = Modifier.size(16.dp),
+            )
             Text(
                 text = fanName,
                 color = colors.textPrimary,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
             )
-            Text(
-                text = summary,
-                color = colors.textMuted,
-                fontSize = 13.sp,
-                fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
+            if (limitsModified) {
+                Box(
+                    modifier =
+                        Modifier
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(colors.surfaceHigh)
+                            .border(metrics.strokeThin, colors.primaryBright, RoundedCornerShape(4.dp))
+                            .padding(horizontal = 6.dp, vertical = 2.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = stringResource(Res.string.fan_limits_badge_modified),
+                        color = colors.primaryBright,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        lineHeight = 12.sp,
+                    )
+                }
+            }
+        }
+
+        Text(
+            text = summary,
+            color = colors.textMuted,
+            fontSize = 13.sp,
+            fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
+            modifier = Modifier.padding(start = 24.dp),
+            softWrap = true,
+        )
+
+        if (limitsModified && limits != null) {
+            HorizontalDivider(
+                color = colors.borderOutline.copy(alpha = 0.5f),
+                modifier = Modifier.padding(start = 24.dp),
             )
+
+            val limitsPowerSummary =
+                buildString {
+                    append("Hardware Limits: ")
+                    if (initialLimits != null && initialLimits.minPowerPercent != limits.minPowerPercent) {
+                        append("Min ${initialLimits.minPowerPercent.roundToInt()}% → ${limits.minPowerPercent.roundToInt()}%")
+                    } else {
+                        append("Min ${limits.minPowerPercent.roundToInt()}%")
+                    }
+                    append(" • ")
+                    if (initialLimits != null && initialLimits.maxPowerPercent != limits.maxPowerPercent) {
+                        append("Max ${initialLimits.maxPowerPercent.roundToInt()}% → ${limits.maxPowerPercent.roundToInt()}%")
+                    } else {
+                        append("Max ${limits.maxPowerPercent.roundToInt()}%")
+                    }
+                }
+
+            val limitsSafetySummary =
+                buildString {
+                    if (initialLimits != null && initialLimits.fallbackPowerPercent != limits.fallbackPowerPercent) {
+                        append("Fallback ${initialLimits.fallbackPowerPercent.roundToInt()}% → ${limits.fallbackPowerPercent.roundToInt()}%")
+                    } else {
+                        append("Fallback ${limits.fallbackPowerPercent.roundToInt()}%")
+                    }
+                    if (limits.startBoost) append(" • Boost")
+                    if (limits.holdMinPower) append(" • Hold min")
+                }
+
+            Column(
+                modifier = Modifier.padding(start = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Text(
+                    text = limitsPowerSummary,
+                    color = colors.primaryBright,
+                    fontSize = 12.sp,
+                    fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
+                    softWrap = true,
+                )
+                Text(
+                    text = limitsSafetySummary,
+                    color = colors.primaryBright,
+                    fontSize = 12.sp,
+                    fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
+                    softWrap = true,
+                )
+            }
         }
     }
 }

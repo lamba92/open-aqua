@@ -81,6 +81,7 @@ class OpenAquaDeviceEngineApi(
                 "flash",
                 "--device=${deviceId.value}",
                 "--request=${json.encodeToString(FlashConfigRequest.serializer(), config)}",
+                timeout = 10.seconds,
             )
         logger.i { "Configuration flashed successfully to device '${deviceId.value}'" }
         return result
@@ -127,7 +128,7 @@ class OpenAquaDeviceEngineApi(
 
     private suspend inline fun <reified T> executeAndDecodeWithTimeout(
         vararg command: String,
-        timeout: Duration = 2.seconds,
+        timeout: Duration = 5.seconds,
     ): T =
         executeAndDecodeWithTimeout(
             command = arrayOf(enginePath.absolutePathString(), *command),
