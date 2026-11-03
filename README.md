@@ -11,7 +11,7 @@
 > **An open-source, cross-platform thermal management and telemetry suite for Aquacomputer devices, designed for Linux and Windows.**
 
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.2.0--Beta-7F52FF.svg?logo=kotlin&logoColor=white)](https://kotlinlang.org)
-[![Platform](https://img.shields.io/badge/Platform-Linux%20%7C%20Windows-blue.svg)](https://github.com/lamba92/openaqua)
+[![Platform](https://img.shields.io/badge/Platform-Linux%20%7C%20Windows-blue.svg)](https://github.com/lamba92/open-aqua)
 [![License](https://img.shields.io/badge/License-Apache%202.0-green.svg)](LICENSE)
 
 ---

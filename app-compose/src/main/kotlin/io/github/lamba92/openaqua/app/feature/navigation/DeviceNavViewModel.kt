@@ -76,6 +76,7 @@ class DeviceNavViewModel(
 
                             null,
                             DeviceNavState.SelectedItem.Host,
+                            DeviceNavState.SelectedItem.About,
                             DeviceNavState.SelectedItem.Settings,
                             -> item
                         },
@@ -99,6 +100,7 @@ class DeviceNavViewModel(
                     val initialSelection =
                         when (savedSelection) {
                             NavigationSelectionStoredData.Host -> DeviceNavState.SelectedItem.Host
+                            NavigationSelectionStoredData.About -> DeviceNavState.SelectedItem.About
                             NavigationSelectionStoredData.Settings -> DeviceNavState.SelectedItem.Settings
                             is NavigationSelectionStoredData.Device -> {
                                 val aquaDevices: List<DeviceState.Aqua> =
@@ -135,6 +137,7 @@ class DeviceNavViewModel(
                 DeviceNavEvent.SelectHost -> selectHost()
                 is DeviceNavEvent.SelectDevice -> selectDevice(event.deviceId)
                 is DeviceNavEvent.SelectTab -> selectTab(event.tab)
+                DeviceNavEvent.SelectAbout -> selectAbout()
                 DeviceNavEvent.SelectSettings -> selectSettings()
             }
         }
@@ -174,10 +177,19 @@ class DeviceNavViewModel(
 
                 null,
                 DeviceNavState.SelectedItem.Host,
+                DeviceNavState.SelectedItem.About,
                 DeviceNavState.SelectedItem.Settings,
                 -> currentState
             }
         }
+    }
+
+    private fun selectAbout() {
+        viewModelLogger.i { "Navigating to About screen" }
+        state.update { currentState ->
+            currentState.copy(selectedItem = DeviceNavState.SelectedItem.About)
+        }
+        appDataRepository.setNavigationSelection(NavigationSelectionStoredData.About)
     }
 
     private fun selectSettings() {

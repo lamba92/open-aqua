@@ -51,6 +51,10 @@ sealed interface NavigationSelectionStoredData {
     ) : NavigationSelectionStoredData
 
     @Serializable
+    @SerialName("about")
+    data object About : NavigationSelectionStoredData
+
+    @Serializable
     @SerialName("settings")
     data object Settings : NavigationSelectionStoredData
 }

@@ -40,6 +40,7 @@ import io.github.lamba92.openaqua.app.coroutine.DefaultCoroutineScopeProvider
 import io.github.lamba92.openaqua.app.di.LocalDI
 import io.github.lamba92.openaqua.app.di.createOpenAquaDI
 import io.github.lamba92.openaqua.app.di.rememberInstance
+import io.github.lamba92.openaqua.app.feature.about.AboutScreen
 import io.github.lamba92.openaqua.app.feature.device.DeviceScreen
 import io.github.lamba92.openaqua.app.feature.host.HostScreen
 import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavEvent
@@ -198,6 +199,9 @@ fun OpenAquaApp(navViewModel: DeviceNavViewModel = rememberInstance()) {
         ) {
             when (val item = navState.selectedItem) {
                 null -> SelectADeviceScreen()
+                DeviceNavState.SelectedItem.About ->
+                    AboutScreen()
+
                 DeviceNavState.SelectedItem.Settings ->
                     SettingsScreen(viewModel = rememberInstance())
 

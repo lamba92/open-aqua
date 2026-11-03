@@ -16,6 +16,7 @@
     <string name="nav_device_info">Info dispositivo</string>
     <string name="nav_fans">Ventole</string>
     <string name="nav_sensors">Sensori</string>
+    <string name="nav_about">Informazioni</string>
     <string name="nav_settings">Impostazioni</string>
 
     <!-- Device Info Screen -->

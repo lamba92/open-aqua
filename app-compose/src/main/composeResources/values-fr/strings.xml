@@ -16,6 +16,7 @@
     <string name="nav_device_info">Infos appareil</string>
     <string name="nav_fans">Ventilateurs</string>
     <string name="nav_sensors">Capteurs</string>
+    <string name="nav_about">À propos</string>
     <string name="nav_settings">Paramètres</string>
 
     <!-- Device Info Screen -->
