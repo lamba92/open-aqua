@@ -201,9 +201,9 @@
     <string name="sensor_feeder_status_idle">Feeder Idle</string>
     <string name="sensor_feeder_error_title">Feed Error Details</string>
     <string name="sensor_feeder_error_host_disconnected">Host engine is disconnected or telemetry unavailable</string>
-    <string name="sensor_feeder_error_source_device_unavailable">Source device '%1' is unavailable or disconnected</string>
-    <string name="sensor_feeder_error_host_sensor_disconnected">Host sensor '%1' is disconnected or not reporting data</string>
-    <string name="sensor_feeder_error_source_sensor_disconnected">Sensor channel %1 on device '%2' is disconnected</string>
+    <string name="sensor_feeder_error_source_device_unavailable">Source device '%1$s' is unavailable or disconnected</string>
+    <string name="sensor_feeder_error_host_sensor_disconnected">Host sensor '%1$s' is disconnected or not reporting data</string>
+    <string name="sensor_feeder_error_source_sensor_disconnected">Sensor channel %1$d on device '%2$s' is disconnected</string>
     <string name="sensor_feeder_error_target_disconnected">Target Aqua device is disconnected</string>
     <string name="sensor_feeder_error_generic">An unexpected error occurred while feeding this virtual sensor</string>
     <string name="sensor_feeder_idle_desc">This virtual sensor channel is currently idle and will report disconnected on hardware.</string>

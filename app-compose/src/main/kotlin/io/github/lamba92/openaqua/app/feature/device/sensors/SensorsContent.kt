@@ -776,7 +776,11 @@ fun VirtualSensorFeederCard(
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = feedError.resolveMessage(),
+                        text =
+                            feedError.resolveMessage(
+                                availableHostSensors = availableHostSensors,
+                                availableAquaDevices = availableAquaDevices,
+                            ),
                         color = colors.textPrimary,
                         fontSize = 12.sp,
                     )
@@ -1144,28 +1148,43 @@ fun VirtualSensorFeederCard(
 }
 
 @Composable
-private fun VirtualSensorFeedError.resolveMessage(): String =
+private fun VirtualSensorFeedError.resolveMessage(
+    availableHostSensors: List<HostSensorOption> = emptyList(),
+    availableAquaDevices: List<AquaDeviceOption> = emptyList(),
+): String =
     when (this) {
         is VirtualSensorFeedError.SourceDeviceUnavailable ->
             when (source) {
                 is VirtualSensorFeedSource.Host ->
                     stringResource(Res.string.sensor_feeder_error_host_disconnected)
 
-                is VirtualSensorFeedSource.Device ->
-                    stringResource(Res.string.sensor_feeder_error_source_device_unavailable, source.deviceId.toString())
+                is VirtualSensorFeedSource.Device -> {
+                    val deviceName =
+                        availableAquaDevices.firstOrNull { it.deviceId == source.deviceId }?.name
+                            ?: source.deviceId.toString()
+                    stringResource(Res.string.sensor_feeder_error_source_device_unavailable, deviceName)
+                }
             }
 
         is VirtualSensorFeedError.SourceSensorDisconnected ->
             when (source) {
-                is VirtualSensorFeedSource.Host ->
-                    stringResource(Res.string.sensor_feeder_error_host_sensor_disconnected, source.sensorId)
+                is VirtualSensorFeedSource.Host -> {
+                    val sensorNameOrId =
+                        availableHostSensors.firstOrNull { it.id == source.sensorId }?.name
+                            ?: source.sensorId.value
+                    stringResource(Res.string.sensor_feeder_error_host_sensor_disconnected, sensorNameOrId)
+                }
 
-                is VirtualSensorFeedSource.Device ->
+                is VirtualSensorFeedSource.Device -> {
+                    val deviceName =
+                        availableAquaDevices.firstOrNull { it.deviceId == source.deviceId }?.name
+                            ?: source.deviceId.toString()
                     stringResource(
                         Res.string.sensor_feeder_error_source_sensor_disconnected,
                         source.channel + 1,
-                        source.deviceId.toString(),
+                        deviceName,
                     )
+                }
             }
 
         is VirtualSensorFeedError.DestinationDeviceDisconnected ->
