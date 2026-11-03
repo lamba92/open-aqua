@@ -88,8 +88,6 @@ class MockHardwareController : HardwareController {
                 val merged =
                     if (config is LimitsOnlyFanConfig) {
                         existing.withLimits(config.limits)
-                    } else if (config.limits == null) {
-                        config.withLimits(existing.limits)
                     } else {
                         config
                     }

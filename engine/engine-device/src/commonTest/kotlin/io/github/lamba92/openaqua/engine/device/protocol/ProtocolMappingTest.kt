@@ -5,6 +5,7 @@ import io.github.lamba92.openaqua.model.device.CurveFanConfig
 import io.github.lamba92.openaqua.model.device.CurvePoint
 import io.github.lamba92.openaqua.model.device.DetectedHardwareDevice
 import io.github.lamba92.openaqua.model.device.DeviceAlias
+import io.github.lamba92.openaqua.model.device.DeviceConfig
 import io.github.lamba92.openaqua.model.device.DeviceId
 import io.github.lamba92.openaqua.model.device.DeviceRegistry
 import io.github.lamba92.openaqua.model.device.DeviceType
@@ -22,6 +23,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
 class ProtocolMappingTest {
     @Test
@@ -345,5 +347,88 @@ class ProtocolMappingTest {
             )
         assertEquals(51, reportFromChannels.size)
         assertEquals(0x04u.toUByte(), reportFromChannels[0])
+    }
+
+    @Test
+    fun testParseConfigFailsWhenFanLacksSetupOffset() {
+        val octo = DeviceRegistry.OCTO
+        val badDescriptor =
+            octo.copy(
+                fanChannels =
+                    octo.fanChannels.map {
+                        if (it.channel == 0) it.copy(setupOffset = null) else it
+                    },
+            )
+        val report = UByteArray(badDescriptor.ctrlReportLength)
+        val device =
+            DetectedHardwareDevice(
+                id = DeviceId.from("test"),
+                alias = DeviceAlias.from("test"),
+                type = DeviceType.OCTO,
+                name = badDescriptor.name,
+            )
+
+        val ex =
+            assertFailsWith<IllegalStateException> {
+                ConfigParser.parseConfig(device, badDescriptor, report)
+            }
+        assertEquals("Fan channel 0 on Aquacomputer OCTO lacks setupOffset for required limits", ex.message)
+    }
+
+    @Test
+    fun testApplyFlashConfigFailsWhenFanLacksSetupOffset() {
+        val octo = DeviceRegistry.OCTO
+        val badDescriptor =
+            octo.copy(
+                fanChannels =
+                    octo.fanChannels.map {
+                        if (it.channel == 0) it.copy(setupOffset = null) else it
+                    },
+            )
+        val report = UByteArray(badDescriptor.ctrlReportLength)
+        val request =
+            FlashConfigRequest(
+                fans = mapOf(0 to FixedFanConfig(channel = 0, powerPercent = 50.0)),
+            )
+
+        val ex =
+            assertFailsWith<IllegalArgumentException> {
+                ConfigWriter.applyFlashConfig(report, badDescriptor, request)
+            }
+        assertEquals("Fan channel 0 does not support fan limits on Aquacomputer OCTO", ex.message)
+    }
+
+    @Test
+    fun testVerifyFlashConfigFailsOnLimitsMismatch() {
+        val octo = DeviceRegistry.OCTO
+        val expected =
+            FlashConfigRequest(
+                fans =
+                    mapOf(
+                        0 to
+                            FixedFanConfig(
+                                channel = 0,
+                                powerPercent = 50.0,
+                                limits = FanLimits(minPowerPercent = 10.0, maxPowerPercent = 90.0),
+                            ),
+                    ),
+            )
+        val actual =
+            DeviceConfig(
+                fans =
+                    listOf(
+                        FixedFanConfig(
+                            channel = 0,
+                            powerPercent = 50.0,
+                            limits = FanLimits(minPowerPercent = 20.0, maxPowerPercent = 90.0),
+                        ),
+                    ),
+            )
+
+        val ex =
+            assertFailsWith<IllegalStateException> {
+                ConfigWriter.verifyFlashConfig(expected, actual)
+            }
+        assertTrue(ex.message?.contains("Verification failed on fan 0 minPower: expected 10.0%, read 20.0%") == true)
     }
 }

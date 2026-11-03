@@ -251,18 +251,8 @@ class FansViewModel(
                     }
 
                 is FanLimitsEvent ->
-                    updateSelectedFanDraft { currentDraft, channel ->
-                        val currentLimits =
-                            currentDraft.limits
-                                ?: (state.value as? FansUiState.Ready)
-                                    ?.fans
-                                    ?.firstOrNull { it.channel == channel }
-                                    ?.config
-                                    ?.limits
-                                ?: io.github.lamba92.openaqua.model.device.FanLimits(
-                                    minPowerPercent = 0.0,
-                                    maxPowerPercent = 100.0,
-                                )
+                    updateSelectedFanDraft { currentDraft, _ ->
+                        val currentLimits = currentDraft.limits
 
                         val updatedLimits =
                             when (event) {
@@ -288,13 +278,7 @@ class FansViewModel(
                                     currentLimits.copy(holdMinPower = event.holdMinPower)
 
                                 FanLimitsEvent.ResetToStandardLimits ->
-                                    io.github.lamba92.openaqua.model.device.FanLimits(
-                                        minPowerPercent = 0.0,
-                                        maxPowerPercent = 100.0,
-                                        startBoost = true,
-                                        holdMinPower = false,
-                                        fallbackPowerPercent = 100.0,
-                                    )
+                                    io.github.lamba92.openaqua.model.device.FanLimits.Standard
                             }
                         currentDraft.withLimits(updatedLimits)
                     }

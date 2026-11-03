@@ -170,12 +170,10 @@ object ConfigWriter {
             if (config !is LimitsOnlyFanConfig) {
                 encodeFanChannelConfig(report, fan.ctrlOffset, config, descriptor)
             }
-            config.limits?.let { limits ->
-                val setupOffset =
-                    fan.setupOffset
-                        ?: error("${descriptor.name} does not support fan limits configuration for channel $channel")
-                encodeFanLimits(report, setupOffset, limits)
-            }
+            val setupOffset =
+                fan.setupOffset
+                    ?: error("${descriptor.name} does not support fan limits configuration for channel $channel")
+            encodeFanLimits(report, setupOffset, config.limits)
         }
         request.sensorOffsets?.let { offsets ->
             val baseOffset =
@@ -214,25 +212,22 @@ object ConfigWriter {
             if (expConfig !is LimitsOnlyFanConfig) {
                 verifyFanChannelConfig(expected = expConfig, actual = actConfig)
             }
-            expConfig.limits?.let { expLimits ->
-                val actLimits =
-                    actConfig.limits
-                        ?: error("Readback missing fan limits for channel $channel")
-                check(abs(actLimits.minPowerPercent - expLimits.minPowerPercent) <= 0.2) {
-                    "Verification failed on fan $channel minPower: expected ${expLimits.minPowerPercent}%, read ${actLimits.minPowerPercent}%"
-                }
-                check(abs(actLimits.maxPowerPercent - expLimits.maxPowerPercent) <= 0.2) {
-                    "Verification failed on fan $channel maxPower: expected ${expLimits.maxPowerPercent}%, read ${actLimits.maxPowerPercent}%"
-                }
-                check(abs(actLimits.fallbackPowerPercent - expLimits.fallbackPowerPercent) <= 0.2) {
-                    "Verification failed on fan $channel fallbackPower: expected ${expLimits.fallbackPowerPercent}%, read ${actLimits.fallbackPowerPercent}%"
-                }
-                check(actLimits.startBoost == expLimits.startBoost) {
-                    "Verification failed on fan $channel startBoost: expected ${expLimits.startBoost}, read ${actLimits.startBoost}"
-                }
-                check(actLimits.holdMinPower == expLimits.holdMinPower) {
-                    "Verification failed on fan $channel holdMinPower: expected ${expLimits.holdMinPower}, read ${actLimits.holdMinPower}"
-                }
+            val expLimits = expConfig.limits
+            val actLimits = actConfig.limits
+            check(abs(actLimits.minPowerPercent - expLimits.minPowerPercent) <= 0.2) {
+                "Verification failed on fan $channel minPower: expected ${expLimits.minPowerPercent}%, read ${actLimits.minPowerPercent}%"
+            }
+            check(abs(actLimits.maxPowerPercent - expLimits.maxPowerPercent) <= 0.2) {
+                "Verification failed on fan $channel maxPower: expected ${expLimits.maxPowerPercent}%, read ${actLimits.maxPowerPercent}%"
+            }
+            check(abs(actLimits.fallbackPowerPercent - expLimits.fallbackPowerPercent) <= 0.2) {
+                "Verification failed on fan $channel fallbackPower: expected ${expLimits.fallbackPowerPercent}%, read ${actLimits.fallbackPowerPercent}%"
+            }
+            check(actLimits.startBoost == expLimits.startBoost) {
+                "Verification failed on fan $channel startBoost: expected ${expLimits.startBoost}, read ${actLimits.startBoost}"
+            }
+            check(actLimits.holdMinPower == expLimits.holdMinPower) {
+                "Verification failed on fan $channel holdMinPower: expected ${expLimits.holdMinPower}, read ${actLimits.holdMinPower}"
             }
         }
         expected.sensorOffsets?.forEach { (channel, expOffset) ->

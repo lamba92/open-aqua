@@ -29,12 +29,12 @@ sealed interface FlashDialogState {
 sealed interface FanDraft {
     val channel: Int
     val mode: CurveMode
-    val limits: FanLimits?
+    val limits: FanLimits
 
     data class Fixed(
         override val channel: Int,
         val powerPercent: Double = 50.0,
-        override val limits: FanLimits? = null,
+        override val limits: FanLimits = FanLimits.Standard,
     ) : FanDraft {
         override val mode: CurveMode get() = CurveMode.FIXED
     }
@@ -47,7 +47,7 @@ sealed interface FanDraft {
         val pMin: Double = 25.0,
         val pMax: Double = 100.0,
         val shape: Double = 0.0,
-        override val limits: FanLimits? = null,
+        override val limits: FanLimits = FanLimits.Standard,
     ) : FanDraft {
         override val mode: CurveMode get() = CurveMode.AUTO_CURVE
     }
@@ -56,7 +56,7 @@ sealed interface FanDraft {
         override val channel: Int,
         val sensorIndex: Int = 0,
         val targetTempCelsius: Double = 35.0,
-        override val limits: FanLimits? = null,
+        override val limits: FanLimits = FanLimits.Standard,
     ) : FanDraft {
         override val mode: CurveMode get() = CurveMode.TARGET_TEMP
     }
@@ -64,13 +64,13 @@ sealed interface FanDraft {
     data class Copy(
         override val channel: Int,
         val sourceChannel: Int = 0,
-        override val limits: FanLimits? = null,
+        override val limits: FanLimits = FanLimits.Standard,
     ) : FanDraft {
         override val mode: CurveMode get() = CurveMode.COPY_FAN
     }
 }
 
-fun FanDraft.withLimits(limits: FanLimits?): FanDraft =
+fun FanDraft.withLimits(limits: FanLimits): FanDraft =
     when (this) {
         is FanDraft.Fixed -> copy(limits = limits)
         is FanDraft.AutoCurve -> copy(limits = limits)
@@ -82,8 +82,7 @@ fun FanDraft.toFanChannelConfig(
     allFans: List<FanItem>,
     allDrafts: Map<Int, FanDraft> = emptyMap(),
 ): FanChannelConfig {
-    val existingLimits = allFans.firstOrNull { it.channel == channel }?.config?.limits
-    val targetLimits = limits ?: existingLimits
+    val targetLimits = limits
     return when (this) {
         is FanDraft.Fixed ->
             FixedFanConfig(
@@ -184,7 +183,7 @@ fun FanChannelConfig?.toInitialDraft(
                 pMin = 25.0,
                 pMax = 100.0,
                 shape = 0.0,
-                limits = this?.limits,
+                limits = this?.limits ?: FanLimits.Standard,
             )
     }
 

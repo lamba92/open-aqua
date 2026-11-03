@@ -29,7 +29,6 @@ import androidx.compose.ui.unit.sp
 import io.github.lamba92.openaqua.app.feature.device.common.FanItem
 import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
 import io.github.lamba92.openaqua.app.ui.components.OpenAquaOutlinedButton
-import io.github.lamba92.openaqua.model.device.FanLimits
 import open_aqua.app_compose.generated.resources.Res
 import open_aqua.app_compose.generated.resources.fan_limits_desc
 import open_aqua.app_compose.generated.resources.fan_limits_fallback_power
@@ -62,7 +61,7 @@ fun FanLimitsCard(
     val colors = OpenAquaTheme.colors
     val metrics = OpenAquaTheme.metrics
 
-    val currentLimits = draft.limits ?: fan.config.limits ?: FanLimits(minPowerPercent = 0.0, maxPowerPercent = 100.0)
+    val currentLimits = draft.limits
 
     Column(
         modifier =

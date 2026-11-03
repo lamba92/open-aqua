@@ -49,7 +49,7 @@ object ConfigParser {
         baseOffset: Int,
         channel: Int,
         descriptor: DeviceDescriptor? = null,
-        limits: FanLimits? = null,
+        limits: FanLimits = FanLimits.Standard,
     ): FanChannelConfig {
         val mode = report[baseOffset].toInt() and 0xFF
         val rawSensor = ((report[baseOffset + 3].toInt() and 0xFF shl 8) or (report[baseOffset + 4].toInt() and 0xFF))
@@ -154,7 +154,10 @@ object ConfigParser {
         descriptor: DeviceDescriptor,
     ): List<FanChannelConfig> =
         descriptor.fanChannels.map { fan ->
-            val limits = fan.setupOffset?.let { parseFanLimits(report, it) }
+            val setupOffset =
+                fan.setupOffset
+                    ?: error("Fan channel ${fan.channel} on ${descriptor.name} lacks setupOffset for required limits")
+            val limits = parseFanLimits(report, setupOffset)
             parseFanChannelConfig(report, fan.ctrlOffset, fan.channel, descriptor, limits)
         }
 

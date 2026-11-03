@@ -199,10 +199,8 @@ fun DeviceDescriptor.validateRequestMatchesDevice(request: FlashConfigRequest) {
         requireNotNull(fan) {
             "Invalid fan channel $ch for $name"
         }
-        if (config.limits != null) {
-            require(fan.setupOffset != null) {
-                "Fan channel $ch does not support fan limits on $name"
-            }
+        require(fan.setupOffset != null) {
+            "Fan channel $ch does not support fan limits on $name"
         }
     }
     request.sensorOffsets?.keys?.forEach { ch ->
