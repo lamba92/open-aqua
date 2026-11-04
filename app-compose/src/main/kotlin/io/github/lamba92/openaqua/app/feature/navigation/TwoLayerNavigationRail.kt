@@ -32,6 +32,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -46,12 +47,14 @@ import io.github.lamba92.openaqua.app.ui.components.FeederStatusBadge
 import io.github.lamba92.openaqua.app.ui.components.OpenAquaVerticalScrollbar
 import io.github.lamba92.openaqua.model.device.DeviceId
 import open_aqua.app_compose.generated.resources.Res
+import open_aqua.app_compose.generated.resources.ic_bug_report
 import open_aqua.app_compose.generated.resources.ic_computer
 import open_aqua.app_compose.generated.resources.ic_device
 import open_aqua.app_compose.generated.resources.ic_info
 import open_aqua.app_compose.generated.resources.ic_openaqua
 import open_aqua.app_compose.generated.resources.ic_settings
 import open_aqua.app_compose.generated.resources.nav_about
+import open_aqua.app_compose.generated.resources.nav_bug_report
 import open_aqua.app_compose.generated.resources.nav_host
 import open_aqua.app_compose.generated.resources.nav_settings
 import org.jetbrains.compose.resources.painterResource
@@ -119,8 +122,10 @@ fun DeviceNavigationRailScaffold(
                 modifier = Modifier.weight(1f).fillMaxWidth(),
             )
 
-            // Pinned Footer (About + Settings)
+            // Pinned Footer (Bug Report + About + Settings)
             NavigationRailFooter(
+                isBugReportSelected = state.selectedItem is DeviceNavState.SelectedItem.BugReport,
+                onBugReportClick = { onEvent(DeviceNavEvent.SelectBugReport) },
                 isAboutSelected = state.selectedItem is DeviceNavState.SelectedItem.About,
                 onAboutClick = { onEvent(DeviceNavEvent.SelectAbout) },
                 isSettingsSelected = state.selectedItem is DeviceNavState.SelectedItem.Settings,
@@ -251,8 +256,17 @@ private fun NavigationRailHeader(
     }
 }
 
+private data class FooterItemData(
+    val icon: Painter,
+    val label: String,
+    val isSelected: Boolean,
+    val onClick: () -> Unit,
+)
+
 @Composable
 private fun NavigationRailFooter(
+    isBugReportSelected: Boolean,
+    onBugReportClick: () -> Unit,
     isAboutSelected: Boolean,
     onAboutClick: () -> Unit,
     isSettingsSelected: Boolean,
@@ -261,28 +275,48 @@ private fun NavigationRailFooter(
     metrics: NavigationRailMetrics,
     modifier: Modifier = Modifier,
 ) {
+    val items =
+        listOf(
+            FooterItemData(
+                icon = painterResource(Res.drawable.ic_bug_report),
+                label = stringResource(Res.string.nav_bug_report),
+                isSelected = isBugReportSelected,
+                onClick = onBugReportClick,
+            ),
+            FooterItemData(
+                icon = painterResource(Res.drawable.ic_info),
+                label = stringResource(Res.string.nav_about),
+                isSelected = isAboutSelected,
+                onClick = onAboutClick,
+            ),
+            FooterItemData(
+                icon = painterResource(Res.drawable.ic_settings),
+                label = stringResource(Res.string.nav_settings),
+                isSelected = isSettingsSelected,
+                onClick = onSettingsClick,
+            ),
+        )
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier.padding(bottom = 14.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         HorizontalDivider(
             color = OpenAquaTheme.colors.borderOutline,
             modifier = Modifier.width(metrics.dividerWidth),
         )
-        Spacer(modifier = Modifier.height(10.dp))
-        AboutNavigationRailItem(
-            isSelected = isAboutSelected,
-            onClick = onAboutClick,
-            colors = colors,
-            metrics = metrics,
-        )
-        Spacer(modifier = Modifier.height(6.dp))
-        SettingsNavigationRailItem(
-            isSelected = isSettingsSelected,
-            onClick = onSettingsClick,
-            colors = colors,
-            metrics = metrics,
-        )
+        Spacer(modifier = Modifier.height(4.dp))
+        items.forEach { item ->
+            SimpleNavigationRailItem(
+                icon = item.icon,
+                label = item.label,
+                isSelected = item.isSelected,
+                onClick = item.onClick,
+                colors = colors,
+                metrics = metrics,
+            )
+        }
     }
 }
 
@@ -307,6 +341,95 @@ private fun HostLoadingItem(
 }
 
 @Composable
+private fun BaseNavigationRailItem(
+    icon: @Composable () -> Unit,
+    label: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    colors: NavigationRailItemColors,
+    metrics: NavigationRailMetrics,
+    modifier: Modifier = Modifier,
+) {
+    NavigationRailItem(
+        modifier = modifier.fillMaxWidth(),
+        selected = isSelected,
+        onClick = onClick,
+        icon = icon,
+        label = {
+            Text(
+                text = label,
+                fontSize = metrics.labelTextSize,
+                fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        },
+        colors = colors,
+    )
+}
+
+@Composable
+private fun SimpleNavigationRailItem(
+    icon: Painter,
+    label: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    colors: NavigationRailItemColors,
+    metrics: NavigationRailMetrics,
+    modifier: Modifier = Modifier,
+) {
+    BaseNavigationRailItem(
+        icon = {
+            Icon(
+                painter = icon,
+                contentDescription = label,
+                modifier = Modifier.size(metrics.itemIconSize),
+            )
+        },
+        label = label,
+        isSelected = isSelected,
+        onClick = onClick,
+        colors = colors,
+        metrics = metrics,
+        modifier = modifier,
+    )
+}
+
+@Composable
+private fun StatusNavigationRailItem(
+    icon: Painter,
+    label: String,
+    status: FeederStatus,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    colors: NavigationRailItemColors,
+    metrics: NavigationRailMetrics,
+    modifier: Modifier = Modifier,
+) {
+    BaseNavigationRailItem(
+        icon = {
+            Box(contentAlignment = Alignment.TopEnd) {
+                Icon(
+                    painter = icon,
+                    contentDescription = label,
+                    modifier = Modifier.size(metrics.itemIconSize),
+                )
+                FeederStatusBadge(
+                    status = status,
+                    size = metrics.statusDotSize,
+                )
+            }
+        },
+        label = label,
+        isSelected = isSelected,
+        onClick = onClick,
+        colors = colors,
+        metrics = metrics,
+        modifier = modifier,
+    )
+}
+
+@Composable
 private fun HostNavigationRailItem(
     host: DeviceState.Host,
     isSelected: Boolean,
@@ -326,33 +449,15 @@ private fun HostNavigationRailItem(
             -> FeederStatus.NONE
         }
 
-    NavigationRailItem(
-        modifier = modifier.fillMaxWidth(),
-        selected = isSelected,
+    StatusNavigationRailItem(
+        icon = painterResource(Res.drawable.ic_computer),
+        label = stringResource(Res.string.nav_host),
+        status = status,
+        isSelected = isSelected,
         onClick = onClick,
-        icon = {
-            Box(contentAlignment = Alignment.TopEnd) {
-                Icon(
-                    painter = painterResource(Res.drawable.ic_computer),
-                    contentDescription = stringResource(Res.string.nav_host),
-                    modifier = Modifier.size(metrics.itemIconSize),
-                )
-                FeederStatusBadge(
-                    status = status,
-                    size = metrics.statusDotSize,
-                )
-            }
-        },
-        label = {
-            Text(
-                text = stringResource(Res.string.nav_host),
-                fontSize = metrics.labelTextSize,
-                fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        },
         colors = colors,
+        metrics = metrics,
+        modifier = modifier,
     )
 }
 
@@ -374,99 +479,15 @@ private fun AquaDeviceNavigationRailItem(
             else -> FeederStatus.NONE
         }
 
-    NavigationRailItem(
-        modifier = modifier.fillMaxWidth(),
-        selected = isSelected,
+    StatusNavigationRailItem(
+        icon = painterResource(Res.drawable.ic_device),
+        label = device.type.name,
+        status = status,
+        isSelected = isSelected,
         onClick = onClick,
-        icon = {
-            Box(contentAlignment = Alignment.TopEnd) {
-                Icon(
-                    painter = painterResource(Res.drawable.ic_device),
-                    contentDescription = device.name,
-                    modifier = Modifier.size(metrics.itemIconSize),
-                )
-                FeederStatusBadge(
-                    status = status,
-                    size = metrics.statusDotSize,
-                )
-            }
-        },
-        label = {
-            Text(
-                text = device.type.name,
-                fontSize = metrics.labelTextSize,
-                fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        },
         colors = colors,
-    )
-}
-
-@Composable
-private fun AboutNavigationRailItem(
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    colors: NavigationRailItemColors,
-    metrics: NavigationRailMetrics,
-    modifier: Modifier = Modifier,
-) {
-    val aboutLabel = stringResource(Res.string.nav_about)
-    NavigationRailItem(
-        modifier = modifier.fillMaxWidth(),
-        selected = isSelected,
-        onClick = onClick,
-        icon = {
-            Icon(
-                painter = painterResource(Res.drawable.ic_info),
-                contentDescription = aboutLabel,
-                modifier = Modifier.size(metrics.itemIconSize),
-            )
-        },
-        label = {
-            Text(
-                text = aboutLabel,
-                fontSize = metrics.labelTextSize,
-                fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        },
-        colors = colors,
-    )
-}
-
-@Composable
-private fun SettingsNavigationRailItem(
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    colors: NavigationRailItemColors,
-    metrics: NavigationRailMetrics,
-    modifier: Modifier = Modifier,
-) {
-    val settingsLabel = stringResource(Res.string.nav_settings)
-    NavigationRailItem(
-        modifier = modifier.fillMaxWidth(),
-        selected = isSelected,
-        onClick = onClick,
-        icon = {
-            Icon(
-                painter = painterResource(Res.drawable.ic_settings),
-                contentDescription = settingsLabel,
-                modifier = Modifier.size(metrics.itemIconSize),
-            )
-        },
-        label = {
-            Text(
-                text = settingsLabel,
-                fontSize = metrics.labelTextSize,
-                fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        },
-        colors = colors,
+        metrics = metrics,
+        modifier = modifier,
     )
 }
 

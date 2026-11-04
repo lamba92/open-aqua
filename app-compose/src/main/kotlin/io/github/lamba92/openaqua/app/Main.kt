@@ -41,6 +41,7 @@ import io.github.lamba92.openaqua.app.di.LocalDI
 import io.github.lamba92.openaqua.app.di.createOpenAquaDI
 import io.github.lamba92.openaqua.app.di.rememberInstance
 import io.github.lamba92.openaqua.app.feature.about.AboutScreen
+import io.github.lamba92.openaqua.app.feature.bugreport.BugReportScreen
 import io.github.lamba92.openaqua.app.feature.device.DeviceScreen
 import io.github.lamba92.openaqua.app.feature.host.HostScreen
 import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavEvent
@@ -48,6 +49,7 @@ import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavState
 import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavViewModel
 import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavigationRailScaffold
 import io.github.lamba92.openaqua.app.feature.settings.SettingsScreen
+import io.github.lamba92.openaqua.app.feature.settings.SettingsTab
 import io.github.lamba92.openaqua.app.i18n.AppLocaleProvider
 import io.github.lamba92.openaqua.app.instance.ForegroundRequestService
 import io.github.lamba92.openaqua.app.instance.acquireOrNotify
@@ -205,6 +207,12 @@ fun OpenAquaApp(navViewModel: DeviceNavViewModel = rememberInstance()) {
             when (val item = navState.selectedItem) {
                 null -> {
                     SelectADeviceScreen()
+                }
+
+                DeviceNavState.SelectedItem.BugReport -> {
+                    BugReportScreen(
+                        onNavigateToLogs = { navViewModel.onEvent(DeviceNavEvent.SelectSettingsTab(SettingsTab.LOGS)) },
+                    )
                 }
 
                 DeviceNavState.SelectedItem.About -> {

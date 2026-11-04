@@ -20,6 +20,8 @@ data class DeviceNavState(
             val selectedTab: CommonDeviceTab = CommonDeviceTab.DEVICE_INFO,
         ) : SelectedItem
 
+        data object BugReport : SelectedItem
+
         data object About : SelectedItem
 
         data class Settings(
@@ -32,6 +34,7 @@ fun DeviceNavState.SelectedItem.toStoredData(): NavigationSelectionStoredData =
     when (this) {
         DeviceNavState.SelectedItem.Host -> NavigationSelectionStoredData.Host
         is DeviceNavState.SelectedItem.Device -> NavigationSelectionStoredData.Device(deviceId, selectedTab)
+        DeviceNavState.SelectedItem.BugReport -> NavigationSelectionStoredData.BugReport
         DeviceNavState.SelectedItem.About -> NavigationSelectionStoredData.About
         is DeviceNavState.SelectedItem.Settings -> NavigationSelectionStoredData.Settings(selectedTab)
     }
@@ -40,6 +43,7 @@ fun NavigationSelectionStoredData.toSelectedItem(): DeviceNavState.SelectedItem 
     when (this) {
         NavigationSelectionStoredData.Host -> DeviceNavState.SelectedItem.Host
         is NavigationSelectionStoredData.Device -> DeviceNavState.SelectedItem.Device(deviceId, tab)
+        NavigationSelectionStoredData.BugReport -> DeviceNavState.SelectedItem.BugReport
         NavigationSelectionStoredData.About -> DeviceNavState.SelectedItem.About
         is NavigationSelectionStoredData.Settings -> DeviceNavState.SelectedItem.Settings(tab)
     }
@@ -54,6 +58,8 @@ sealed interface DeviceNavEvent {
     data class SelectTab(
         val tab: CommonDeviceTab,
     ) : DeviceNavEvent
+
+    data object SelectBugReport : DeviceNavEvent
 
     data object SelectAbout : DeviceNavEvent
 

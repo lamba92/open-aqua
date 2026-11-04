@@ -78,6 +78,7 @@ class DeviceNavViewModel(
 
                             null,
                             DeviceNavState.SelectedItem.Host,
+                            DeviceNavState.SelectedItem.BugReport,
                             DeviceNavState.SelectedItem.About,
                             is DeviceNavState.SelectedItem.Settings,
                             -> {
@@ -105,6 +106,10 @@ class DeviceNavViewModel(
                         when (savedSelection) {
                             NavigationSelectionStoredData.Host -> {
                                 DeviceNavState.SelectedItem.Host
+                            }
+
+                            NavigationSelectionStoredData.BugReport -> {
+                                DeviceNavState.SelectedItem.BugReport
                             }
 
                             NavigationSelectionStoredData.About -> {
@@ -150,6 +155,7 @@ class DeviceNavViewModel(
                 DeviceNavEvent.SelectHost -> selectHost()
                 is DeviceNavEvent.SelectDevice -> selectDevice(event.deviceId)
                 is DeviceNavEvent.SelectTab -> selectTab(event.tab)
+                DeviceNavEvent.SelectBugReport -> selectBugReport()
                 DeviceNavEvent.SelectAbout -> selectAbout()
                 DeviceNavEvent.SelectSettings -> selectSettings()
                 is DeviceNavEvent.SelectSettingsTab -> selectSettingsTab(event.tab)
@@ -191,6 +197,7 @@ class DeviceNavViewModel(
 
                 null,
                 DeviceNavState.SelectedItem.Host,
+                DeviceNavState.SelectedItem.BugReport,
                 DeviceNavState.SelectedItem.About,
                 is DeviceNavState.SelectedItem.Settings,
                 -> {
@@ -198,6 +205,14 @@ class DeviceNavViewModel(
                 }
             }
         }
+    }
+
+    private fun selectBugReport() {
+        viewModelLogger.i { "Navigating to Bug Report screen" }
+        state.update { currentState ->
+            currentState.copy(selectedItem = DeviceNavState.SelectedItem.BugReport)
+        }
+        appDataRepository.setNavigationSelection(NavigationSelectionStoredData.BugReport)
     }
 
     private fun selectAbout() {

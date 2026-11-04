@@ -10,6 +10,7 @@ import co.touchlab.kermit.io.RollingFileLogWriterConfig
 import co.touchlab.kermit.loggerConfigInit
 import io.github.lamba92.openaqua.app.coroutine.CoroutineScopeProvider
 import io.github.lamba92.openaqua.app.coroutine.DefaultCoroutineScopeProvider
+import io.github.lamba92.openaqua.app.feature.bugreport.BugReportViewModel
 import io.github.lamba92.openaqua.app.feature.device.DeviceViewModel
 import io.github.lamba92.openaqua.app.feature.device.fans.FansViewModel
 import io.github.lamba92.openaqua.app.feature.device.sensors.SensorsViewModel
@@ -32,7 +33,6 @@ import io.github.lamba92.openaqua.app.util.nameWithoutExtension
 import io.github.lamba92.openaqua.model.device.DeviceId
 import org.kodein.di.DI
 import org.kodein.di.bindEagerSingleton
-import org.kodein.di.bindFactory
 import org.kodein.di.bindMultiton
 import org.kodein.di.bindSingleton
 import org.kodein.di.direct
@@ -113,6 +113,12 @@ val appModule =
                 dataCacheService = instance(),
                 appDataRepository = instance(),
                 feederService = instance(),
+                scopeProvider = instance(),
+            )
+        }
+        bindSingleton {
+            BugReportViewModel(
+                appLogService = instance(),
                 scopeProvider = instance(),
             )
         }

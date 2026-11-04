@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
@@ -32,6 +33,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -179,7 +181,6 @@ fun ScreenHeader(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ChannelPageScaffold(
     title: String,
@@ -294,6 +295,96 @@ fun ChannelPageScaffold(
             )
         }
     }
+}
+
+@Composable
+fun StandardScreenScaffold(
+    title: String,
+    subtitle: String,
+    modifier: Modifier = Modifier,
+    scrollState: ScrollState = rememberSaveable(saver = ScrollState.Saver) { ScrollState(0) },
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    val colors = OpenAquaTheme.colors
+    val metrics = OpenAquaTheme.metrics
+
+    Box(modifier = modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = metrics.spacingXxl)
+                            .padding(top = metrics.spacingXxl, bottom = metrics.spacingLg),
+                    verticalArrangement = Arrangement.spacedBy(metrics.spacingLg),
+                ) {
+                    ScreenHeader(
+                        title = title,
+                        subtitle = subtitle,
+                    )
+                }
+
+                HorizontalDivider(
+                    color = colors.borderOutline,
+                    modifier = Modifier.padding(horizontal = metrics.spacingXxl),
+                )
+            }
+
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .scrollFadingEdge(
+                            color = colors.background,
+                            scrollState = scrollState,
+                            height = 36.dp,
+                        ),
+            ) {
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .verticalScroll(scrollState)
+                            .padding(horizontal = metrics.spacingXxl)
+                            .padding(top = metrics.spacingLg, bottom = metrics.spacingXxl),
+                    verticalArrangement = Arrangement.spacedBy(metrics.spacingXl),
+                    content = content,
+                )
+
+                OpenAquaVerticalScrollbar(
+                    scrollState = scrollState,
+                    modifier =
+                        Modifier
+                            .align(Alignment.CenterEnd)
+                            .fillMaxHeight()
+                            .padding(vertical = 4.dp),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun ScreenCard(
+    modifier: Modifier = Modifier,
+    padding: Dp = OpenAquaTheme.metrics.spacingXl,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    val colors = OpenAquaTheme.colors
+    val metrics = OpenAquaTheme.metrics
+    val shape = RoundedCornerShape(metrics.radiusLarge)
+    Column(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clip(shape)
+                .background(colors.surfaceLow)
+                .border(metrics.strokeThin, colors.borderOutline, shape)
+                .padding(padding),
+        verticalArrangement = Arrangement.spacedBy(metrics.spacingLg),
+        content = content,
+    )
 }
 
 @Composable

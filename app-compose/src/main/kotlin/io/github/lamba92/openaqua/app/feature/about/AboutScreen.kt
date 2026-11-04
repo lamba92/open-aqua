@@ -342,7 +342,7 @@ fun AboutScreen(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun BuildInfoRow(
+fun BuildInfoRow(
     label: String,
     value: String,
     modifier: Modifier = Modifier,

@@ -15,6 +15,7 @@
     <string name="nav_device_info">Info dispositivo</string>
     <string name="nav_fans">Ventiladores</string>
     <string name="nav_sensors">Sensores</string>
+    <string name="nav_bug_report">Reportar error</string>
     <string name="nav_about">Acerca de</string>
     <string name="nav_settings">Ajustes</string>
 
@@ -297,6 +298,15 @@
     <string name="sensor_type_set">Establecer tipo de sensor</string>
     <string name="sensor_type_die">Die (Chip)</string>
     <string name="sensor_type_water">Líquido refrigerante</string>
+    <!-- Bug Report Screen -->
+    <string name="bug_report_screen_title">Reportar un error</string>
+    <string name="bug_report_screen_subtitle">Ayuda a mejorar OpenAqua informando sobre problemas o fallos</string>
+    <string name="bug_report_card_title">¿Encontraste un error? ¡Repórtalo!</string>
+    <string name="bug_report_card_desc">Abre un problema en GitHub con los detalles de tu entorno y registros para ayudarnos a diagnosticarlo y resolverlo.</string>
+    <string name="bug_report_github_button">Abrir problema en GitHub</string>
+    <string name="bug_report_attach_hint">Por favor, adjunta registros y/o capturas de pantalla a tu reporte de error.</string>
+    <string name="bug_report_environment_title">Información del entorno</string>
+    <string name="bug_report_view_logs">Ver registros en la aplicación</string>
     <string name="about_screen_title">Acerca de OpenAqua</string>
     <string name="about_screen_subtitle">Información del proyecto, creador y repositorio</string>
     <string name="about_project_title">Acerca de este proyecto</string>

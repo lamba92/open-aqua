@@ -17,6 +17,7 @@
     <string name="nav_device_info">Device Info</string>
     <string name="nav_fans">Fans</string>
     <string name="nav_sensors">Sensors</string>
+    <string name="nav_bug_report">Report Bug</string>
     <string name="nav_about">About</string>
     <string name="nav_settings">Settings</string>
     <string name="select_a_device_title">Select a Device</string>
@@ -302,6 +303,15 @@
     <string name="sensor_type_set">Set sensor type</string>
     <string name="sensor_type_die">Die</string>
     <string name="sensor_type_water">Water</string>
+    <!-- Bug Report Screen -->
+    <string name="bug_report_screen_title">Report a Bug</string>
+    <string name="bug_report_screen_subtitle">Help improve OpenAqua by reporting issues or unexpected behavior</string>
+    <string name="bug_report_card_title">Found a bug? Report it!</string>
+    <string name="bug_report_card_desc">Open an issue on GitHub with your environment details and logs to help us diagnose and resolve the problem.</string>
+    <string name="bug_report_github_button">Open GitHub Issue</string>
+    <string name="bug_report_attach_hint">Please attach logs and/or screenshots to your issue report.</string>
+    <string name="bug_report_environment_title">Environment Information</string>
+    <string name="bug_report_view_logs">View in-app logs</string>
     <!-- About Screen -->
     <string name="about_screen_title">About OpenAqua</string>
     <string name="about_screen_subtitle">Project information, creator, and repository</string>
