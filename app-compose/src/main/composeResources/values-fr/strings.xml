@@ -1,5 +1,4 @@
 <resources>
-    <string name="app_name">OpenAqua</string>
     <string name="window_title">OpenAqua - Poste de télémétrie hydraulique</string>
     <string name="scanning_hardware">Recherche du matériel Aquacomputer...</string>
     <string name="retry_scan">Réessayer</string>
@@ -305,8 +304,6 @@
     <string name="about_build_info_title">Informations de compilation</string>
     <string name="about_dependencies_title">Dépendances &amp; Bibliothèques</string>
     <string name="about_author_title">Créateur</string>
-    <string name="about_author_name">Lamberto Basti</string>
-    <string name="about_author_handle">@lamba92</string>
     <string name="about_author_desc">Créateur et mainteneur principal d'OpenAqua.</string>
     <string name="about_github_title">Dépôt GitHub</string>
     <string name="about_github_desc">Consultez le code source, signalez des problèmes et suivez le développement sur GitHub.</string>

@@ -1,5 +1,4 @@
 <resources>
-    <string name="app_name">OpenAqua</string>
     <string name="window_title">OpenAqua - Cabina de Hidrotelemetría</string>
     <string name="scanning_hardware">Buscando hardware Aquacomputer...</string>
     <string name="retry_scan">Reintentar búsqueda</string>
@@ -305,8 +304,6 @@
     <string name="about_build_info_title">Información de compilación</string>
     <string name="about_dependencies_title">Dependencias &amp; Bibliotecas</string>
     <string name="about_author_title">Creador</string>
-    <string name="about_author_name">Lamberto Basti</string>
-    <string name="about_author_handle">@lamba92</string>
     <string name="about_author_desc">Creador y mantenedor principal de OpenAqua.</string>
     <string name="about_github_title">Repositorio GitHub</string>
     <string name="about_github_desc">Vea el código fuente, reporte problemas y siga el desarrollo en GitHub.</string>

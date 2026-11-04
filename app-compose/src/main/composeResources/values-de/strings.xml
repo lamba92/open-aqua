@@ -1,5 +1,4 @@
 <resources>
-    <string name="app_name">OpenAqua</string>
     <string name="window_title">OpenAqua - Hydro-Telemetrie-Cockpit</string>
     <string name="scanning_hardware">Aquacomputer-Hardware wird gescannt...</string>
     <string name="retry_scan">Scan wiederholen</string>
@@ -305,8 +304,6 @@
     <string name="about_build_info_title">Build-Informationen</string>
     <string name="about_dependencies_title">Abhängigkeiten &amp; Bibliotheken</string>
     <string name="about_author_title">Entwickler</string>
-    <string name="about_author_name">Lamberto Basti</string>
-    <string name="about_author_handle">@lamba92</string>
     <string name="about_author_desc">Schöpfer und Hauptentwickler von OpenAqua.</string>
     <string name="about_github_title">GitHub-Repository</string>
     <string name="about_github_desc">Quellcode ansehen, Fehler melden und Entwicklung auf GitHub verfolgen.</string>
