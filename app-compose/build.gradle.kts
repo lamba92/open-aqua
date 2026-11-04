@@ -1,14 +1,16 @@
 plugins {
-    id(libs.plugins.kotlin.jvm)
-    id(libs.plugins.kotlin.serialization)
+    openaqua.convention.jvm
+    openaqua.buildinfo
     id(libs.plugins.kotlin.compose)
     id(libs.plugins.compose.multiplatform)
     id(libs.plugins.compose.hot.reload)
-    id(libs.plugins.ktlint)
+}
+
+compose.resources {
+    packageOfResClass = "open_aqua.app_compose.generated.resources"
 }
 
 kotlin {
-    jvmToolchain(21)
     compilerOptions {
         freeCompilerArgs.add("-XXLanguage:+FullValueClasses")
     }
@@ -16,9 +18,11 @@ kotlin {
 
 ktlint {
     filter {
-        exclude("**/build/**")
-        exclude("**/generated/**")
-        exclude("**/CoroutineScopeProvider.kt")
+        exclude {
+            it.file.path.contains("/build/") ||
+                it.file.path.contains("/generated/") ||
+                it.file.name == "CoroutineScopeProvider.kt"
+        }
     }
 }
 

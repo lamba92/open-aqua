@@ -91,6 +91,7 @@ fun main() {
             tag = "OpenAqua",
         )
     val mainLogger = appLogger.withTag("Main")
+    mainLogger.i { "-------------------------------------------------------------------" }
     mainLogger.i { "Starting OpenAqua..." }
     val engines = EngineExtractor.extract()
     mainLogger.i { "Extracted engine binaries: device='${engines.deviceEngine.fileName}', host='${engines.hostEngine.fileName}'" }

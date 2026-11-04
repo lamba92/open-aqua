@@ -643,7 +643,7 @@ private fun PendingFanDiffCard(
             softWrap = true,
         )
 
-        if (limitsModified && limits != null) {
+        if (limitsModified) {
             HorizontalDivider(
                 color = colors.borderOutline.copy(alpha = 0.5f),
                 modifier = Modifier.padding(start = 24.dp),
@@ -652,13 +652,13 @@ private fun PendingFanDiffCard(
             val limitsPowerSummary =
                 buildString {
                     append("Hardware Limits: ")
-                    if (initialLimits != null && initialLimits.minPowerPercent != limits.minPowerPercent) {
+                    if (initialLimits.minPowerPercent != limits.minPowerPercent) {
                         append("Min ${initialLimits.minPowerPercent.roundToInt()}% → ${limits.minPowerPercent.roundToInt()}%")
                     } else {
                         append("Min ${limits.minPowerPercent.roundToInt()}%")
                     }
                     append(" • ")
-                    if (initialLimits != null && initialLimits.maxPowerPercent != limits.maxPowerPercent) {
+                    if (initialLimits.maxPowerPercent != limits.maxPowerPercent) {
                         append("Max ${initialLimits.maxPowerPercent.roundToInt()}% → ${limits.maxPowerPercent.roundToInt()}%")
                     } else {
                         append("Max ${limits.maxPowerPercent.roundToInt()}%")
@@ -667,7 +667,7 @@ private fun PendingFanDiffCard(
 
             val limitsSafetySummary =
                 buildString {
-                    if (initialLimits != null && initialLimits.fallbackPowerPercent != limits.fallbackPowerPercent) {
+                    if (initialLimits.fallbackPowerPercent != limits.fallbackPowerPercent) {
                         append("Fallback ${initialLimits.fallbackPowerPercent.roundToInt()}% → ${limits.fallbackPowerPercent.roundToInt()}%")
                     } else {
                         append("Fallback ${limits.fallbackPowerPercent.roundToInt()}%")

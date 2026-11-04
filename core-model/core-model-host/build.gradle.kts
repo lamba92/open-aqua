@@ -1,11 +1,8 @@
 plugins {
-    id(libs.plugins.kotlin.multiplatform)
-    id(libs.plugins.kotlin.serialization)
-    id(libs.plugins.ktlint)
+    openaqua.convention.multiplatform
 }
 
 kotlin {
-    jvmToolchain(21)
     jvm()
     linuxX64()
     linuxArm64()

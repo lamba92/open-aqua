@@ -1,5 +1,5 @@
 plugins {
-    openaqua.engine
+    openaqua.convention.multiplatform
 }
 
 kotlin {

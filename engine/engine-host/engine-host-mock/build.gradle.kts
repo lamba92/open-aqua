@@ -3,8 +3,8 @@
 import org.jetbrains.kotlin.gradle.plugin.mpp.DisableCacheInKotlinVersion
 
 plugins {
-    openaqua.engine
-    id("openaqua.engine.producer")
+    openaqua.convention.multiplatform
+    openaqua.engine.producer
 }
 
 kotlin {

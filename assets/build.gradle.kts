@@ -1,22 +1,10 @@
 plugins {
-    id(libs.plugins.kotlin.jvm)
-    id(libs.plugins.ktlint)
+    openaqua.convention.jvm
     application
-}
-
-kotlin {
-    jvmToolchain(21)
 }
 
 application {
     mainClass = "io.github.lamba92.openaqua.brand.BrandAssetGeneratorKt"
-}
-
-ktlint {
-    filter {
-        exclude("**/build/**")
-        exclude("**/generated/**")
-    }
 }
 
 dependencies {

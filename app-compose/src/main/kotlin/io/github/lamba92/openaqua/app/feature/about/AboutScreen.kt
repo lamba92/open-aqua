@@ -28,6 +28,7 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import io.github.lamba92.openaqua.app.build.OpenAquaBuildInfo
 import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
 import io.github.lamba92.openaqua.app.ui.components.OpenAquaButton
 import io.github.lamba92.openaqua.app.ui.components.OpenAquaVerticalScrollbar
@@ -135,12 +136,23 @@ fun AboutScreen(modifier: Modifier = Modifier) {
                                 )
                             }
                             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                                Text(
-                                    text = "OpenAqua",
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = colors.textPrimary,
-                                )
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(metrics.spacingSm),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Text(
+                                        text = "OpenAqua",
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = colors.textPrimary,
+                                    )
+                                    Text(
+                                        text = "v${OpenAquaBuildInfo.VERSION}",
+                                        fontSize = 12.sp,
+                                        fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
+                                        color = colors.primaryBright,
+                                    )
+                                }
                                 Text(
                                     text = stringResource(Res.string.about_project_title),
                                     fontSize = 12.sp,
@@ -155,6 +167,38 @@ fun AboutScreen(modifier: Modifier = Modifier) {
                             fontSize = 13.sp,
                             lineHeight = 20.sp,
                         )
+                    }
+
+                    // Build Info Card
+                    Column(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(metrics.radiusLarge))
+                                .background(colors.surfaceLow)
+                                .border(metrics.strokeThin, colors.borderOutline, RoundedCornerShape(metrics.radiusLarge))
+                                .padding(metrics.spacingXl),
+                        verticalArrangement = Arrangement.spacedBy(metrics.spacingLg),
+                    ) {
+                        SectionHeader(
+                            icon = painterResource(Res.drawable.ic_info),
+                            title = "Build Information",
+                        )
+
+                        Column(verticalArrangement = Arrangement.spacedBy(metrics.spacingSm)) {
+                            BuildInfoRow(label = "Version", value = OpenAquaBuildInfo.VERSION)
+                            BuildInfoRow(label = "Build Date", value = OpenAquaBuildInfo.BUILD_TIMESTAMP)
+                            BuildInfoRow(label = "Gradle Version", value = OpenAquaBuildInfo.GRADLE_VERSION)
+                            BuildInfoRow(label = "Kotlin Version", value = OpenAquaBuildInfo.KOTLIN_VERSION)
+                            BuildInfoRow(
+                                label = "JVM",
+                                value = "${OpenAquaBuildInfo.JVM_VERSION} (${OpenAquaBuildInfo.JVM_VENDOR})",
+                            )
+                            BuildInfoRow(
+                                label = "Target OS",
+                                value = "${OpenAquaBuildInfo.OS_NAME} (${OpenAquaBuildInfo.OS_ARCH})",
+                            )
+                        }
                     }
 
                     // Author Card
@@ -248,5 +292,31 @@ fun AboutScreen(modifier: Modifier = Modifier) {
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun BuildInfoRow(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+) {
+    val colors = OpenAquaTheme.colors
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            fontSize = 13.sp,
+            color = colors.textMuted,
+        )
+        Text(
+            text = value,
+            fontSize = 12.sp,
+            fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
+            color = colors.textPrimary,
+        )
     }
 }

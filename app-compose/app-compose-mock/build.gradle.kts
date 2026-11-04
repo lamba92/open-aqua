@@ -1,24 +1,11 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
 plugins {
-    id(libs.plugins.kotlin.jvm)
-    id(libs.plugins.kotlin.serialization)
+    openaqua.convention.jvm
     id(libs.plugins.kotlin.compose)
     id(libs.plugins.compose.multiplatform)
     id(libs.plugins.compose.hot.reload)
-    id(libs.plugins.ktlint)
-    id("openaqua.engine.consumer")
-}
-
-kotlin {
-    jvmToolchain(21)
-}
-
-ktlint {
-    filter {
-        exclude("**/build/**")
-        exclude("**/generated/**")
-    }
+    openaqua.engine.consumer
 }
 
 dependencies {

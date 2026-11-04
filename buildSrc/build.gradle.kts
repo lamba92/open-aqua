@@ -17,7 +17,8 @@ dependencies {
     implementation(pluginMarker(libs.plugins.compose.multiplatform))
     implementation(pluginMarker(libs.plugins.compose.hot.reload))
     implementation(pluginMarker(libs.plugins.ktlint))
-    implementation("org.tukaani:xz:1.10")
+    implementation(libs.xz)
+    implementation(libs.kotlinpoet)
 }
 
 gradlePlugin {

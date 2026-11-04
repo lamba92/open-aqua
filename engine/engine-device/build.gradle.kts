@@ -4,7 +4,7 @@ import org.jetbrains.kotlin.gradle.plugin.mpp.DisableCacheInKotlinVersion
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 
 plugins {
-    openaqua.engine
+    openaqua.convention.multiplatform
 }
 
 kotlin {

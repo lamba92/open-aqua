@@ -4,9 +4,9 @@ import io.github.lamba92.gradle.plugins.upx.UpxTask
 import org.jetbrains.kotlin.gradle.plugin.mpp.DisableCacheInKotlinVersion
 
 plugins {
-    openaqua.engine
+    openaqua.convention.multiplatform
     id("io.github.lamba92.upx")
-    id("openaqua.engine.producer")
+    openaqua.engine.producer
 }
 
 upx {
