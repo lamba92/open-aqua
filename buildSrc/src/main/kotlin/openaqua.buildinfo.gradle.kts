@@ -227,3 +227,7 @@ plugins.withId("org.jetbrains.kotlin.multiplatform") {
 tasks.withType<KotlinCompilationTask<*>>().configureEach {
     dependsOn(generateOpenAquaBuildInfo)
 }
+
+tasks.matching { it.name.startsWith("runKtlintCheckOver") }.configureEach {
+    mustRunAfter(generateOpenAquaBuildInfo)
+}
