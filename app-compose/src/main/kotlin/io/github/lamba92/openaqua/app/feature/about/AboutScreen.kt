@@ -40,6 +40,8 @@ import open_aqua.app_compose.generated.resources.about_author_desc
 import open_aqua.app_compose.generated.resources.about_author_handle
 import open_aqua.app_compose.generated.resources.about_author_name
 import open_aqua.app_compose.generated.resources.about_author_title
+import open_aqua.app_compose.generated.resources.about_build_info_title
+import open_aqua.app_compose.generated.resources.about_dependencies_title
 import open_aqua.app_compose.generated.resources.about_github_button
 import open_aqua.app_compose.generated.resources.about_github_desc
 import open_aqua.app_compose.generated.resources.about_github_title
@@ -182,7 +184,7 @@ fun AboutScreen(modifier: Modifier = Modifier) {
                     ) {
                         SectionHeader(
                             icon = painterResource(Res.drawable.ic_info),
-                            title = "Build Information",
+                            title = stringResource(Res.string.about_build_info_title),
                         )
 
                         Column(verticalArrangement = Arrangement.spacedBy(metrics.spacingSm)) {
@@ -280,6 +282,29 @@ fun AboutScreen(modifier: Modifier = Modifier) {
                             },
                         )
                     }
+
+                    // Dependencies Card
+                    Column(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(metrics.radiusLarge))
+                                .background(colors.surfaceLow)
+                                .border(metrics.strokeThin, colors.borderOutline, RoundedCornerShape(metrics.radiusLarge))
+                                .padding(metrics.spacingXl),
+                        verticalArrangement = Arrangement.spacedBy(metrics.spacingLg),
+                    ) {
+                        SectionHeader(
+                            icon = painterResource(Res.drawable.ic_info),
+                            title = stringResource(Res.string.about_dependencies_title),
+                        )
+
+                        Column(verticalArrangement = Arrangement.spacedBy(metrics.spacingSm)) {
+                            OpenAquaBuildInfo.LIBRARIES.forEach { library ->
+                                LibraryRow(library = library)
+                            }
+                        }
+                    }
                 }
 
                 OpenAquaVerticalScrollbar(
@@ -317,6 +342,43 @@ private fun BuildInfoRow(
             fontSize = 12.sp,
             fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
             color = colors.textPrimary,
+        )
+    }
+}
+
+@Composable
+private fun LibraryRow(
+    library: OpenAquaBuildInfo.Library,
+    modifier: Modifier = Modifier,
+) {
+    val colors = OpenAquaTheme.colors
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Text(
+                text = library.artifact,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium,
+                color = colors.textPrimary,
+            )
+            Text(
+                text = library.coordinates,
+                fontSize = 11.sp,
+                fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
+                color = colors.textMuted,
+            )
+        }
+        Text(
+            text = library.version,
+            fontSize = 12.sp,
+            fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
+            color = colors.primaryBright,
         )
     }
 }

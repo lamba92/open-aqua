@@ -307,6 +307,8 @@
     <string name="about_screen_subtitle">Project information, creator, and repository</string>
     <string name="about_project_title">About This Project</string>
     <string name="about_project_desc">OpenAqua is an open-source, cross-platform thermal management and telemetry suite for Aquacomputer devices, designed for Linux and Windows.</string>
+    <string name="about_build_info_title">Build Information</string>
+    <string name="about_dependencies_title">Dependencies &amp; Libraries</string>
     <string name="about_author_title">Creator</string>
     <string name="about_author_name">Lamberto Basti</string>
     <string name="about_author_handle">@lamba92</string>

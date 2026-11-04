@@ -1,7 +1,15 @@
+import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FileSpec
+import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
+import com.squareup.kotlinpoet.asTypeName
+import org.gradle.api.artifacts.VersionCatalogsExtension
+import org.gradle.kotlin.dsl.findByType
+import org.gradle.kotlin.dsl.getByType
 import org.gradle.kotlin.dsl.property
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
@@ -28,12 +36,33 @@ extension.outputDirectory.convention(
 )
 extension.buildTimestamp.convention(provider { Instant.now().toString() })
 
+private data class ResolvedCatalogLibrary(
+    val alias: String,
+    val group: String,
+    val artifact: String,
+    val version: String,
+)
+
 val generateOpenAquaBuildInfo by tasks.registering {
     val jvmVer = System.getProperty("java.version") ?: "unknown"
     val jvmVend = System.getProperty("java.vendor") ?: "unknown"
     val osName = System.getProperty("os.name") ?: "unknown"
     val osArch = System.getProperty("os.arch") ?: "unknown"
     val kotlinVer = libs.versions.kotlin.get()
+
+    val versionCatalogs = project.extensions.findByType<VersionCatalogsExtension>()
+        ?: project.rootProject.extensions.getByType<VersionCatalogsExtension>()
+    val catalog = versionCatalogs.named("libs")
+    val catalogLibraries = catalog.libraryAliases.mapNotNull { alias ->
+        catalog.findLibrary(alias).orElse(null)?.get()?.let { dep ->
+            ResolvedCatalogLibrary(
+                alias = alias,
+                group = dep.module.group,
+                artifact = dep.module.name,
+                version = dep.versionConstraint.displayName.ifBlank { "unspecified" },
+            )
+        }
+    }.sortedBy { it.alias }
 
     inputs.property("packageName", extension.packageName)
     inputs.property("className", extension.className)
@@ -45,12 +74,73 @@ val generateOpenAquaBuildInfo by tasks.registering {
     inputs.property("osName", osName)
     inputs.property("osArch", osArch)
     inputs.property("kotlinVersion", kotlinVer)
+    inputs.property("catalogLibraries", catalogLibraries.map { "${it.alias}=${it.group}:${it.artifact}:${it.version}" })
     outputs.dir(extension.outputDirectory)
 
     doLast {
         val targetDir = extension.outputDirectory.get().asFile
         targetDir.deleteRecursively()
         targetDir.mkdirs()
+
+        val libraryClassName = ClassName(extension.packageName.get(), extension.className.get(), "Library")
+
+        val libraryTypeSpec = TypeSpec.classBuilder("Library")
+            .addModifiers(KModifier.DATA)
+            .primaryConstructor(
+                FunSpec.constructorBuilder()
+                    .addParameter("alias", String::class)
+                    .addParameter("group", String::class)
+                    .addParameter("artifact", String::class)
+                    .addParameter("version", String::class)
+                    .build(),
+            )
+            .addProperty(
+                PropertySpec.builder("alias", String::class)
+                    .initializer("alias")
+                    .build(),
+            )
+            .addProperty(
+                PropertySpec.builder("group", String::class)
+                    .initializer("group")
+                    .build(),
+            )
+            .addProperty(
+                PropertySpec.builder("artifact", String::class)
+                    .initializer("artifact")
+                    .build(),
+            )
+            .addProperty(
+                PropertySpec.builder("version", String::class)
+                    .initializer("version")
+                    .build(),
+            )
+            .addProperty(
+                PropertySpec.builder("coordinates", String::class)
+                    .getter(
+                        FunSpec.getterBuilder()
+                            .addStatement("return \"\$group:\$artifact\"")
+                            .build(),
+                    )
+                    .build(),
+            )
+            .build()
+
+        val listType = List::class.asTypeName().parameterizedBy(libraryClassName)
+        val librariesCodeBlock = CodeBlock.builder()
+            .add("listOf(\n")
+            .indent()
+
+        catalogLibraries.forEach { lib ->
+            librariesCodeBlock.add(
+                "%T(alias = %S, group = %S, artifact = %S, version = %S),\n",
+                libraryClassName,
+                lib.alias,
+                lib.group,
+                lib.artifact,
+                lib.version,
+            )
+        }
+        librariesCodeBlock.unindent().add(")")
 
         val typeSpec = TypeSpec.objectBuilder(extension.className.get())
             .addProperty(
@@ -99,6 +189,12 @@ val generateOpenAquaBuildInfo by tasks.registering {
                 PropertySpec.builder("OS_ARCH", String::class)
                     .addModifiers(KModifier.CONST)
                     .initializer("%S", osArch)
+                    .build(),
+            )
+            .addType(libraryTypeSpec)
+            .addProperty(
+                PropertySpec.builder("LIBRARIES", listType)
+                    .initializer(librariesCodeBlock.build())
                     .build(),
             )
             .build()
