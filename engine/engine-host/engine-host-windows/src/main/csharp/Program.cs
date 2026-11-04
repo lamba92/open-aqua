@@ -39,7 +39,8 @@ public static class Program
         }
         catch (Exception ex)
         {
-            var err = new EngineErrorResponse(ex.Message);
+            var stackTraceLines = ex.ToString().Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+            var err = new EngineErrorResponse(ex.Message, stackTraceLines);
             Console.WriteLine(JsonSerializer.Serialize(err, HostJsonContext.Default.EngineErrorResponse));
             return 1;
         }

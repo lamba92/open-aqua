@@ -24,11 +24,8 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
+            api(projects.engine)
             api(projects.coreModel.coreModelDevice)
-            api(libs.kotlinx.serialization.json)
-            api(libs.kotlinx.coroutines.core)
-            api(libs.kotlinx.io.core)
-            api(libs.clikt)
             api(libs.kodein.di)
         }
         commonTest.dependencies {

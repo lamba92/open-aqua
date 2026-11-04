@@ -2,6 +2,7 @@ package io.github.lamba92.openaqua.engine.host.command
 
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.Context
+import io.github.lamba92.openaqua.engine.command.printSuccessResponse
 import io.github.lamba92.openaqua.engine.host.hardware.HostHardwareController
 import kotlinx.coroutines.runBlocking
 

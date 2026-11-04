@@ -2,6 +2,7 @@ package io.github.lamba92.openaqua.app.repository
 
 import io.github.lamba92.openaqua.app.coroutine.getLogger
 import io.github.lamba92.openaqua.model.EngineResponse
+import io.github.lamba92.openaqua.model.formatWithStackTrace
 import io.github.lamba92.openaqua.model.host.HostInfo
 import io.github.lamba92.openaqua.model.host.HostTelemetry
 import kotlinx.coroutines.Dispatchers
@@ -41,7 +42,7 @@ class OpenAquaHostEngineApi(
                     while (true) {
                         val line = reader.readLine() ?: error("Host telemetry stream process closed unexpectedly")
                         when (val telemetry = json.decodeFromString<EngineResponse<HostTelemetry>>(line)) {
-                            is EngineResponse.Error -> error(telemetry.message)
+                            is EngineResponse.Error -> error(telemetry.formatWithStackTrace())
                             is EngineResponse.Success<HostTelemetry> -> send(telemetry.value)
                         }
                     }

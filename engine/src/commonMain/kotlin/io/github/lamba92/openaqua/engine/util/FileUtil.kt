@@ -1,4 +1,4 @@
-package io.github.lamba92.openaqua.engine.device.util
+package io.github.lamba92.openaqua.engine.util
 
 import kotlinx.io.buffered
 import kotlinx.io.files.FileSystem

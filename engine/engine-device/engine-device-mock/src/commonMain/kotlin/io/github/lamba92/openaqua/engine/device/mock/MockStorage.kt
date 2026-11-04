@@ -1,7 +1,7 @@
 package io.github.lamba92.openaqua.engine.device.mock
 
-import io.github.lamba92.openaqua.engine.device.util.atomicWriteText
-import io.github.lamba92.openaqua.engine.device.util.readText
+import io.github.lamba92.openaqua.engine.util.atomicWriteText
+import io.github.lamba92.openaqua.engine.util.readText
 import io.github.lamba92.openaqua.model.FeatureState
 import io.github.lamba92.openaqua.model.device.AutoCurveFanConfig
 import io.github.lamba92.openaqua.model.device.CurveFanConfig

@@ -5,8 +5,8 @@ import io.github.lamba92.openaqua.engine.device.protocol.ConfigParser
 import io.github.lamba92.openaqua.engine.device.protocol.ConfigWriter
 import io.github.lamba92.openaqua.engine.device.protocol.StatusReportParser
 import io.github.lamba92.openaqua.engine.device.protocol.VirtualSensorsWriter
-import io.github.lamba92.openaqua.engine.device.util.listDirectory
-import io.github.lamba92.openaqua.engine.device.util.readTextOrNull
+import io.github.lamba92.openaqua.engine.util.listDirectory
+import io.github.lamba92.openaqua.engine.util.readTextOrNull
 import io.github.lamba92.openaqua.model.device.DetectedHardwareDevice
 import io.github.lamba92.openaqua.model.device.DeviceAlias
 import io.github.lamba92.openaqua.model.device.DeviceConfig

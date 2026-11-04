@@ -9,6 +9,7 @@ import io.github.lamba92.openaqua.model.device.DeviceTelemetry
 import io.github.lamba92.openaqua.model.device.DevicesResponse
 import io.github.lamba92.openaqua.model.device.FeedVirtualSensorsRequest
 import io.github.lamba92.openaqua.model.device.FlashConfigRequest
+import io.github.lamba92.openaqua.model.formatWithStackTrace
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
@@ -56,7 +57,7 @@ class OpenAquaDeviceEngineApi(
                     while (true) {
                         val line = reader.readLine() ?: error("Device telemetry stream process closed unexpectedly for device '${deviceId.value}'")
                         when (val telemetry = json.decodeFromString<EngineResponse<DeviceTelemetry>>(line)) {
-                            is EngineResponse.Error -> error(telemetry.message)
+                            is EngineResponse.Error -> error(telemetry.formatWithStackTrace())
                             is EngineResponse.Success<DeviceTelemetry> -> send(telemetry.value)
                         }
                     }

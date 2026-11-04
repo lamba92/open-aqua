@@ -1,6 +1,7 @@
 package io.github.lamba92.openaqua.app.repository
 
 import io.github.lamba92.openaqua.model.EngineResponse
+import io.github.lamba92.openaqua.model.formatWithStackTrace
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
@@ -27,7 +28,7 @@ suspend inline fun <reified T> executeAndDecodeWithTimeout(
                         .buffered()
                         .readLineStrict()
                 when (val response = json.decodeFromString<EngineResponse<T>>(input)) {
-                    is EngineResponse.Error -> error(response.message)
+                    is EngineResponse.Error -> error(response.formatWithStackTrace())
                     is EngineResponse.Success<T> -> response.value
                 }
             }

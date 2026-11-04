@@ -8,7 +8,8 @@ public record EngineSuccessResponse<T>(
 );
 
 public record EngineErrorResponse(
-    [property: JsonPropertyName("error")] string Error,
+    [property: JsonPropertyName("message")] string Message,
+    [property: JsonPropertyName("stacktrace")] IReadOnlyList<string>? Stacktrace = null,
     [property: JsonPropertyName("type")] string Type = "error"
 );
 
@@ -64,6 +65,8 @@ public record HostTelemetry(
 [JsonSerializable(typeof(EngineSuccessResponse<HostInfo>))]
 [JsonSerializable(typeof(EngineSuccessResponse<HostTelemetry>))]
 [JsonSerializable(typeof(EngineErrorResponse))]
+[JsonSerializable(typeof(string[]))]
+[JsonSerializable(typeof(IReadOnlyList<string>))]
 [JsonSerializable(typeof(HostInfo))]
 [JsonSerializable(typeof(HostTelemetry))]
 [JsonSerializable(typeof(HostDevice))]
@@ -79,6 +82,7 @@ public partial class HostJsonContext : JsonSerializerContext
     WriteIndented = true,
     GenerationMode = JsonSourceGenerationMode.Default)]
 [JsonSerializable(typeof(EngineSuccessResponse<HostInfo>))]
+[JsonSerializable(typeof(EngineErrorResponse))]
 public partial class PrettyHostJsonContext : JsonSerializerContext
 {
 }

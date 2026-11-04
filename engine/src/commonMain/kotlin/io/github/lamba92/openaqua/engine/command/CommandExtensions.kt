@@ -1,9 +1,12 @@
-package io.github.lamba92.openaqua.engine.device.command
+package io.github.lamba92.openaqua.engine.command
 
-import io.github.lamba92.openaqua.engine.device.util.readTextOrNull
+import com.github.ajalt.clikt.core.CliktError
+import com.github.ajalt.clikt.core.CoreCliktCommand
+import com.github.ajalt.clikt.core.parse
+import io.github.lamba92.openaqua.engine.util.readTextOrNull
 import io.github.lamba92.openaqua.model.EngineResponse
+import io.github.lamba92.openaqua.model.EngineResponse.Error
 import kotlinx.io.files.Path
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 val defaultJson =
@@ -30,12 +33,14 @@ inline fun <reified T : Any> printSuccessResponse(
 }
 
 fun printErrorResponse(
-    message: String,
+    throwable: Throwable,
     pretty: Boolean,
 ) {
-    val response: EngineResponse<Nothing> = EngineResponse.Error(message)
+    val message = throwable.message ?: "Unknown error"
+    val stacktrace = throwable.stackTraceToString().lines()
+    val response: EngineResponse<Nothing> = Error(message = message, stacktrace = stacktrace)
     val serializer = if (pretty) prettyJson else defaultJson
-    println(serializer.encodeToString(response))
+    println(serializer.encodeToString<EngineResponse<Nothing>>(response))
 }
 
 fun readInputPayload(
@@ -50,3 +55,12 @@ fun readInputPayload(
         allowEmpty -> null
         else -> error("Must specify either inline argument or --file")
     }
+
+fun CoreCliktCommand.safeParse(argv: Array<String>) {
+    try {
+        parse(argv)
+    } catch (e: CliktError) {
+        echoFormattedHelp(e)
+        currentContext.exitProcess(e.statusCode)
+    }
+}
