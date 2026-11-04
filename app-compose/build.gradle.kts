@@ -35,6 +35,8 @@ dependencies {
     implementation(libs.kotlinx.io.core)
     implementation(libs.kermit)
     implementation(libs.kermit.io)
+    implementation(libs.ktor.server.cio)
+    implementation(libs.ktor.client.cio)
 }
 
 fun getCurrentPlatformComposeRuntime() =

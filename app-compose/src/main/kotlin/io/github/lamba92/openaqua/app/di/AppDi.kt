@@ -16,6 +16,7 @@ import io.github.lamba92.openaqua.app.feature.device.sensors.SensorsViewModel
 import io.github.lamba92.openaqua.app.feature.host.HostViewModel
 import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavViewModel
 import io.github.lamba92.openaqua.app.feature.settings.SettingsViewModel
+import io.github.lamba92.openaqua.app.instance.ForegroundRequestService
 import io.github.lamba92.openaqua.app.logging.AppLogService
 import io.github.lamba92.openaqua.app.logging.SharedLogSource
 import io.github.lamba92.openaqua.app.model.BaseAppDataDir
@@ -31,6 +32,7 @@ import io.github.lamba92.openaqua.app.util.nameWithoutExtension
 import io.github.lamba92.openaqua.model.device.DeviceId
 import org.kodein.di.DI
 import org.kodein.di.bindEagerSingleton
+import org.kodein.di.bindFactory
 import org.kodein.di.bindMultiton
 import org.kodein.di.bindSingleton
 import org.kodein.di.direct
@@ -41,6 +43,8 @@ val appModule =
         bindSingleton { BaseAppDataDir.default() }
         bindSingleton { instance<BaseAppDataDir>().configFile }
         bindSingleton { instance<BaseAppDataDir>().logsDirectory }
+        bindSingleton { instance<BaseAppDataDir>().lockFile }
+        bindSingleton { instance<BaseAppDataDir>().portFile }
         bindSingleton { SharedLogSource() }
         bindMultiton { tag: String -> di.direct.instance<Logger>().withTag(tag) }
         bindSingleton<Logger>(tag = "Main") { instance<Logger>().withTag("Main") }
@@ -75,6 +79,12 @@ val appModule =
                 logsDirectory = instance(),
                 scopeProvider = instance(),
                 logSource = instance(),
+            )
+        }
+        bindSingleton {
+            ForegroundRequestService(
+                portFile = instance<BaseAppDataDir>().portFile,
+                scopeProvider = instance(),
             )
         }
         bindSingleton { EngineExtractor.extract(logger = instance()) }

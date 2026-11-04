@@ -10,6 +10,16 @@ value class AppConfigFile(
 )
 
 @JvmInline
+value class AppLockFile(
+    val path: Path,
+)
+
+@JvmInline
+value class AppPortFile(
+    val path: Path,
+)
+
+@JvmInline
 value class BaseAppDataDir(
     val path: Path,
 ) {
@@ -18,6 +28,12 @@ value class BaseAppDataDir(
 
     val configFile: AppConfigFile
         get() = AppConfigFile(path.resolve("config.json"))
+
+    val lockFile: AppLockFile
+        get() = AppLockFile(path.resolve("open-aqua.lock"))
+
+    val portFile: AppPortFile
+        get() = AppPortFile(path.resolve("open-aqua.port"))
 
     init {
         path.createDirectories()

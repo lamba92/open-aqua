@@ -49,6 +49,8 @@ import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavViewModel
 import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavigationRailScaffold
 import io.github.lamba92.openaqua.app.feature.settings.SettingsScreen
 import io.github.lamba92.openaqua.app.i18n.AppLocaleProvider
+import io.github.lamba92.openaqua.app.instance.ForegroundRequestService
+import io.github.lamba92.openaqua.app.instance.acquireOrNotify
 import io.github.lamba92.openaqua.app.model.AppStoredData
 import io.github.lamba92.openaqua.app.model.locale
 import io.github.lamba92.openaqua.app.model.toPosition
@@ -57,6 +59,7 @@ import io.github.lamba92.openaqua.app.model.toStoredData
 import io.github.lamba92.openaqua.app.repository.AppDataRepository
 import io.github.lamba92.openaqua.app.theme.AppMetrics
 import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
+import io.github.lamba92.openaqua.app.util.restoreAndFocus
 import io.github.lamba92.openaqua.theme.ThemePalette
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
@@ -76,9 +79,12 @@ import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(FlowPreview::class)
 fun main() {
+    acquireOrNotify()
+
     val di = createOpenAquaDI()
     val appDataRepository by di.instance<AppDataRepository>()
     val scopeProvider by di.instance<CoroutineScopeProvider>()
+    val foregroundRequestService by di.instance<ForegroundRequestService>()
     val mainLogger by di.instance<Logger>(tag = "Main")
 
     configureTaskbarIcon()
@@ -121,12 +127,20 @@ fun main() {
                     mainLogger.i { "Application closing, cancelling active scopes..." }
                     appDataRepository.saveWindowStateSync(windowState.toStoredData(storedData.windowState))
                     scopeProvider.cancelAll()
+                    foregroundRequestService.close()
                     exitApplication()
                 },
                 state = windowState,
                 title = stringResource(Res.string.window_title),
                 icon = painterResource(Res.drawable.ic_app_icon),
             ) {
+                LaunchedEffect(Unit) {
+                    foregroundRequestService.focusRequests.collect {
+                        mainLogger.i { "Focus requested by secondary instance, restoring window..." }
+                        window.restoreAndFocus(windowState)
+                    }
+                }
+
                 CompositionLocalProvider(LocalDI provides di) {
                     OpenAquaThemedApp(storedData)
                 }
