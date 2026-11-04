@@ -6,6 +6,7 @@ import io.github.lamba92.openaqua.app.coroutine.getScope
 import io.github.lamba92.openaqua.app.coroutine.logger
 import io.github.lamba92.openaqua.app.feature.device.common.ChannelName
 import io.github.lamba92.openaqua.app.model.AppStoredData
+import io.github.lamba92.openaqua.app.model.BaseAppDataDir
 import io.github.lamba92.openaqua.app.model.DeviceStoredData
 import io.github.lamba92.openaqua.app.model.FanStoredData
 import io.github.lamba92.openaqua.app.model.NavigationSelectionStoredData
@@ -13,6 +14,12 @@ import io.github.lamba92.openaqua.app.model.SensorStoredData
 import io.github.lamba92.openaqua.app.model.VirtualSensorFeedSource
 import io.github.lamba92.openaqua.app.model.WindowStateStoredData
 import io.github.lamba92.openaqua.app.model.withVirtualSensorFeed
+import io.github.lamba92.openaqua.app.util.atomicMove
+import io.github.lamba92.openaqua.app.util.deleteIfExists
+import io.github.lamba92.openaqua.app.util.openInDesktopEnvironment
+import io.github.lamba92.openaqua.app.util.readText
+import io.github.lamba92.openaqua.app.util.resolveSibling
+import io.github.lamba92.openaqua.app.util.writeText
 import io.github.lamba92.openaqua.model.device.DeviceId
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,20 +33,10 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
-import java.awt.Desktop
-import java.nio.file.AtomicMoveNotSupportedException
-import java.nio.file.Files
-import java.nio.file.Path
-import java.nio.file.StandardCopyOption
-import kotlin.io.path.absolutePathString
-import kotlin.io.path.createDirectories
-import kotlin.io.path.deleteIfExists
-import kotlin.io.path.readText
-import kotlin.io.path.writeText
 
 class AppDataRepository(
     coroutineScopeProvider: CoroutineScopeProvider,
-    private val storagePath: Path = defaultAppDataPath(),
+    val baseAppDataDir: BaseAppDataDir,
 ) {
     sealed interface State {
         data object Loading : State
@@ -60,9 +57,6 @@ class AppDataRepository(
         saveToDisk(current)
     }
 
-    val storageDirectory: Path
-        get() = storagePath.parent ?: storagePath.toAbsolutePath().parent
-
     private val json =
         Json {
             prettyPrint = true
@@ -78,7 +72,7 @@ class AppDataRepository(
     init {
         coroutineScope.launch {
             val initial = loadFromDisk()
-            logger.i { "Loaded configuration from $storagePath" }
+            logger.i { "Loaded configuration from ${baseAppDataDir.configFile.path}" }
             state.value = State.Ready(initial)
             state
                 .filterIsInstance<State.Ready>()
@@ -87,7 +81,7 @@ class AppDataRepository(
                 .flowOn(Dispatchers.Default)
                 .onEach {
                     saveToDisk(it)
-                    getLogger().d { "Saved updated configuration to $storagePath" }
+                    getLogger().d { "Saved updated configuration to ${baseAppDataDir.configFile.path}" }
                 }.collect()
         }
     }
@@ -123,20 +117,7 @@ class AppDataRepository(
 
     fun openDataFolder() {
         coroutineScope.launch {
-            val dir = storageDirectory
-            dir.createDirectories()
-            if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.OPEN)) {
-                Desktop.getDesktop().open(dir.toFile())
-            } else {
-                val os = System.getProperty("os.name").lowercase()
-                val cmd =
-                    when {
-                        os.contains("mac") -> listOf("open", dir.absolutePathString())
-                        os.contains("win") -> listOf("explorer", dir.absolutePathString())
-                        else -> listOf("xdg-open", dir.absolutePathString())
-                    }
-                ProcessBuilder(cmd).start()
-            }
+            baseAppDataDir.path.openInDesktopEnvironment()
         }
     }
 
@@ -206,53 +187,17 @@ class AppDataRepository(
 
     private fun loadFromDisk(): AppStoredData =
         try {
-            json.decodeFromString<AppStoredData>(storagePath.readText())
+            json.decodeFromString<AppStoredData>(baseAppDataDir.configFile.path.readText())
         } catch (_: Exception) {
-            storagePath.deleteIfExists()
+            baseAppDataDir.configFile.path.deleteIfExists()
             AppStoredData()
         }
 
     private fun saveToDisk(storedData: AppStoredData) {
-        storagePath.parent?.createDirectories()
-        val tmpPath = storagePath.resolveSibling("${storagePath.fileName}.tmp")
+        val configFile = baseAppDataDir.configFile.path
+        val tmpPath = configFile.resolveSibling("${configFile.name}.tmp")
         val encoded = json.encodeToString(storedData)
         tmpPath.writeText(encoded)
-        try {
-            Files.move(
-                tmpPath,
-                storagePath,
-                StandardCopyOption.REPLACE_EXISTING,
-                StandardCopyOption.ATOMIC_MOVE,
-            )
-        } catch (_: AtomicMoveNotSupportedException) {
-            Files.move(tmpPath, storagePath, StandardCopyOption.REPLACE_EXISTING)
-        }
-    }
-
-    companion object {
-        private const val APP_DIR_NAME = "open-aqua"
-        private const val APP_DATA_FILE_NAME = "app-data.json"
-
-        fun defaultAppDataPath(): Path {
-            val os = System.getProperty("os.name").lowercase()
-            val userHome = System.getProperty("user.home")
-            val baseDir =
-                when {
-                    os.contains("win") -> {
-                        val appData = System.getenv("APPDATA")?.takeIf { it.isNotBlank() }
-                        if (appData != null) Path.of(appData) else Path.of(userHome, "AppData", "Roaming")
-                    }
-
-                    os.contains("mac") -> {
-                        Path.of(userHome, "Library", "Application Support")
-                    }
-
-                    else -> {
-                        val xdgConfig = System.getenv("XDG_CONFIG_HOME")?.takeIf { it.isNotBlank() }
-                        if (xdgConfig != null) Path.of(xdgConfig) else Path.of(userHome, ".config")
-                    }
-                }
-            return baseDir.resolve(APP_DIR_NAME).resolve(APP_DATA_FILE_NAME)
-        }
+        tmpPath.atomicMove(configFile)
     }
 }

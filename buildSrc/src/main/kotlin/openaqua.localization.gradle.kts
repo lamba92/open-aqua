@@ -5,19 +5,19 @@ import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
+import org.w3c.dom.Element
 import java.io.File
 import javax.xml.parsers.DocumentBuilderFactory
-import org.w3c.dom.Element
 
 abstract class VerifyLocalizationConsistencyTask : DefaultTask() {
-
     @get:InputDirectory
     @get:PathSensitive(PathSensitivity.RELATIVE)
     abstract val composeResourcesDirectory: DirectoryProperty
 
     init {
         group = "verification"
-        description = "Verifies that all localized strings.xml resource files define the same keys as the total keyset (union of all languages)."
+        description =
+            "Verifies that all localized strings.xml resource files define the same keys as the total keyset (union of all languages)."
     }
 
     @TaskAction
@@ -29,9 +29,11 @@ abstract class VerifyLocalizationConsistencyTask : DefaultTask() {
         }
 
         // Collect all directories containing strings.xml: values and all values-*
-        val languageDirs = rootDir.listFiles { file ->
-            file.isDirectory && (file.name == "values" || file.name.startsWith("values-"))
-        }?.sortedBy { it.name } ?: emptyList()
+        val languageDirs =
+            rootDir
+                .listFiles { file ->
+                    file.isDirectory && (file.name == "values" || file.name.startsWith("values-"))
+                }?.sortedBy { it.name } ?: emptyList()
 
         if (languageDirs.isEmpty()) {
             logger.info("No values or values-* directories found in $rootDir.")
@@ -40,10 +42,11 @@ abstract class VerifyLocalizationConsistencyTask : DefaultTask() {
 
         // Parse non-translatable keys from default values/strings.xml
         val baseStringsFile = File(rootDir, "values/strings.xml")
-        val nonTranslatableKeys: Set<String> = when {
-            baseStringsFile.exists() -> parseNonTranslatableKeys(baseStringsFile)
-            else -> emptySet()
-        }
+        val nonTranslatableKeys: Set<String> =
+            when {
+                baseStringsFile.exists() -> parseNonTranslatableKeys(baseStringsFile)
+                else -> emptySet()
+            }
 
         val rawLanguageKeys = mutableMapOf<String, Set<String>>()
         val languageKeys = mutableMapOf<String, Set<String>>()
@@ -83,40 +86,43 @@ abstract class VerifyLocalizationConsistencyTask : DefaultTask() {
         }
 
         if (missingPerLanguage.isNotEmpty() || illegalNonTranslatablePerLanguage.isNotEmpty()) {
-            val message = buildString {
-                appendLine("Localization consistency check failed!")
-                appendLine("Total keys across all languages (union, excluding non-translatable): ${totalKeySet.size}")
-                if (nonTranslatableKeys.isNotEmpty()) {
-                    appendLine("Non-translatable keys defined: ${nonTranslatableKeys.sorted().joinToString(", ")}")
-                }
-                appendLine()
+            val message =
+                buildString {
+                    appendLine("Localization consistency check failed!")
+                    appendLine("Total keys across all languages (union, excluding non-translatable): ${totalKeySet.size}")
+                    if (nonTranslatableKeys.isNotEmpty()) {
+                        appendLine("Non-translatable keys defined: ${nonTranslatableKeys.sorted().joinToString(", ")}")
+                    }
+                    appendLine()
 
-                if (illegalNonTranslatablePerLanguage.isNotEmpty()) {
-                    appendLine("--- ILLEGAL NON-TRANSLATABLE KEYS (Must be removed from localized files) ---")
-                    illegalNonTranslatablePerLanguage.forEach { (lang, keys) ->
-                        appendLine("[$lang] Contains ${keys.size} non-translatable key(s):")
-                        keys.forEach { key ->
-                            appendLine("  - $key")
+                    if (illegalNonTranslatablePerLanguage.isNotEmpty()) {
+                        appendLine("--- ILLEGAL NON-TRANSLATABLE KEYS (Must be removed from localized files) ---")
+                        illegalNonTranslatablePerLanguage.forEach { (lang, keys) ->
+                            appendLine("[$lang] Contains ${keys.size} non-translatable key(s):")
+                            keys.forEach { key ->
+                                appendLine("  - $key")
+                            }
+                            appendLine()
                         }
-                        appendLine()
+                    }
+
+                    if (missingPerLanguage.isNotEmpty()) {
+                        appendLine("--- MISSING KEYS ---")
+                        missingPerLanguage.forEach { (lang, missing) ->
+                            appendLine("[$lang] Missing ${missing.size} key(s):")
+                            missing.forEach { key ->
+                                appendLine("  - $key")
+                            }
+                            appendLine()
+                        }
                     }
                 }
-
-                if (missingPerLanguage.isNotEmpty()) {
-                    appendLine("--- MISSING KEYS ---")
-                    missingPerLanguage.forEach { (lang, missing) ->
-                        appendLine("[$lang] Missing ${missing.size} key(s):")
-                        missing.forEach { key ->
-                            appendLine("  - $key")
-                        }
-                        appendLine()
-                    }
-                }
-            }
             throw GradleException(message.trimEnd())
         }
 
-        logger.lifecycle("Localization consistency check passed: all ${languageDirs.size} language(s) have all ${totalKeySet.size} keys and 0 redundant non-translatable keys.")
+        logger.lifecycle(
+            "Localization consistency check passed: all ${languageDirs.size} language(s) have all ${totalKeySet.size} keys and 0 redundant non-translatable keys.",
+        )
     }
 
     private fun parseStringKeys(file: File): Set<String> {
@@ -157,11 +163,12 @@ abstract class VerifyLocalizationConsistencyTask : DefaultTask() {
     }
 }
 
-val verifyLocalization = tasks.register<VerifyLocalizationConsistencyTask>("verifyLocalizationConsistency") {
-    composeResourcesDirectory.convention(
-        layout.projectDirectory.dir("src/main/composeResources"),
-    )
-}
+val verifyLocalization =
+    tasks.register<VerifyLocalizationConsistencyTask>("verifyLocalizationConsistency") {
+        composeResourcesDirectory.convention(
+            layout.projectDirectory.dir("src/main/composeResources"),
+        )
+    }
 
 tasks
     .matching { it.name == "check" }

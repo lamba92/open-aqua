@@ -25,13 +25,20 @@ sealed interface VirtualSensorFeedDraft {
 
 fun VirtualSensorFeedDraft.toFeedSource(): VirtualSensorFeedSource? =
     when (this) {
-        VirtualSensorFeedDraft.None -> null
-        is VirtualSensorFeedDraft.Host -> sensorId?.let { VirtualSensorFeedSource.Host(it) }
-        is VirtualSensorFeedDraft.Device ->
+        VirtualSensorFeedDraft.None -> {
+            null
+        }
+
+        is VirtualSensorFeedDraft.Host -> {
+            sensorId?.let { VirtualSensorFeedSource.Host(it) }
+        }
+
+        is VirtualSensorFeedDraft.Device -> {
             when {
                 deviceId != null && channel != null -> VirtualSensorFeedSource.Device(deviceId, channel)
                 else -> null
             }
+        }
     }
 
 fun VirtualSensorFeedSource?.toDraft(): VirtualSensorFeedDraft =

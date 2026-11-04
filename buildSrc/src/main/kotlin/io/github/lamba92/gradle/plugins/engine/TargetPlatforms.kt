@@ -5,7 +5,9 @@ import org.gradle.api.attributes.Attribute
 import org.jetbrains.kotlin.konan.target.Family
 import org.jetbrains.kotlin.konan.target.KonanTarget
 
-enum class Os(private val id: String) : Named {
+enum class Os(
+    private val id: String,
+) : Named {
     LINUX("linux"),
     MACOS("macos"),
     WINDOWS("windows"),
@@ -29,7 +31,9 @@ enum class Os(private val id: String) : Named {
     }
 }
 
-enum class Arch(private val id: String) : Named {
+enum class Arch(
+    private val id: String,
+) : Named {
     X64("x64"),
     ARM64("arm64"),
     ;

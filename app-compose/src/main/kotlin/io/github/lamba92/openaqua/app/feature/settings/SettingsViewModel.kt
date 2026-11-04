@@ -17,7 +17,6 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlin.io.path.absolutePathString
 
 class SettingsViewModel(
     private val appDataRepository: AppDataRepository,
@@ -27,7 +26,7 @@ class SettingsViewModel(
     override val viewModelScope: LoggingScope = scopeProvider.getScope()
 
     override val state: StateFlow<SettingsState>
-        field = MutableStateFlow(SettingsState(dataFolderPath = appDataRepository.storageDirectory.absolutePathString()))
+        field = MutableStateFlow(SettingsState(dataFolderPath = appDataRepository.baseAppDataDir.path.toString()))
 
     override val effects: SharedFlow<SettingsEffect>
         field = MutableSharedFlow<SettingsEffect>()
@@ -64,18 +63,19 @@ class SettingsViewModel(
                     appDataRepository.openDataFolder()
                 }
 
-                SettingsEvent.ClearLogs -> {
-                    viewModelLogger.i { "Clearing application logs" }
-                    appLogService.clearLogs()
-                }
-
                 SettingsEvent.OpenLogsFolder -> {
-                    viewModelLogger.i { "Opening logs folder: ${appLogService.logsDirectory}" }
+                    viewModelLogger.i { "Opening logs folder: ${appLogService.logsDirectory.value}" }
                     appLogService.openLogsFolder()
                 }
 
-                SettingsEvent.RequestRestoreDefaults -> state.update { it.copy(showResetConfirmationDialog = true) }
-                SettingsEvent.DismissRestoreDefaults -> state.update { it.copy(showResetConfirmationDialog = false) }
+                SettingsEvent.RequestRestoreDefaults -> {
+                    state.update { it.copy(showResetConfirmationDialog = true) }
+                }
+
+                SettingsEvent.DismissRestoreDefaults -> {
+                    state.update { it.copy(showResetConfirmationDialog = false) }
+                }
+
                 SettingsEvent.ConfirmRestoreDefaults -> {
                     viewModelLogger.i { "Restored settings to defaults" }
                     appDataRepository.resetToDefaults()

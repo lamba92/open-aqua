@@ -2,9 +2,9 @@ import io.github.lamba92.gradle.plugins.engine.ARCH_ATTRIBUTE
 import io.github.lamba92.gradle.plugins.engine.EngineBinarySpec
 import io.github.lamba92.gradle.plugins.engine.OS_ATTRIBUTE
 import org.gradle.api.attributes.Usage
-import org.gradle.kotlin.dsl.*
 
-val binaries = container(EngineBinarySpec::class.java)
+
+val binaries = container<EngineBinarySpec>()
 extensions.add("engineBinaries", binaries)
 
 val prepareEngineBinariesAll =
@@ -18,7 +18,7 @@ configurations.create("engineBinariesAll") {
     isCanBeConsumed = true
     isCanBeResolved = false
     attributes {
-        attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage::class.java, "all-engine-binaries"))
+        attribute(Usage.USAGE_ATTRIBUTE, objects.named<Usage>("all-engine-binaries"))
     }
     outgoing.artifact(prepareEngineBinariesAll)
 }
@@ -47,7 +47,7 @@ afterEvaluate {
             isCanBeConsumed = true
             isCanBeResolved = false
             attributes {
-                attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage::class.java, "engine-binaries"))
+                attribute(Usage.USAGE_ATTRIBUTE, objects.named<Usage>("engine-binaries"))
                 attribute(OS_ATTRIBUTE, spec.os.get())
                 attribute(ARCH_ATTRIBUTE, spec.arch.get())
             }

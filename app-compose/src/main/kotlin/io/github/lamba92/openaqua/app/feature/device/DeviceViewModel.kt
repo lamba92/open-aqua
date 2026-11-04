@@ -63,12 +63,16 @@ class DeviceViewModel(
             hasVirtualFeedsFlow,
         ) { deviceState, errors, hasVirtualFeeds ->
             when (deviceState) {
-                is DeviceState.Aqua.Connecting -> DeviceUiState.Loading
-                is DeviceState.Aqua.Error ->
+                is DeviceState.Aqua.Connecting -> {
+                    DeviceUiState.Loading
+                }
+
+                is DeviceState.Aqua.Error -> {
                     DeviceUiState.Error(
                         device = deviceState.device,
                         errorType = deviceState.errorType,
                     )
+                }
 
                 is DeviceState.Aqua.Ready -> {
                     val status =

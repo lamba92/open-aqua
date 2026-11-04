@@ -68,18 +68,21 @@ class DeviceNavViewModel(
                     devicesWithFeedErrors = errorDeviceIds,
                     selectedItem =
                         when (val item = currentState.selectedItem) {
-                            is DeviceNavState.SelectedItem.Device ->
+                            is DeviceNavState.SelectedItem.Device -> {
                                 if (aqua.any { it.device.id == item.deviceId }) {
                                     item
                                 } else {
                                     null
                                 }
+                            }
 
                             null,
                             DeviceNavState.SelectedItem.Host,
                             DeviceNavState.SelectedItem.About,
                             is DeviceNavState.SelectedItem.Settings,
-                            -> item
+                            -> {
+                                item
+                            }
                         },
                 )
             }
@@ -100,9 +103,18 @@ class DeviceNavViewModel(
 
                     val initialSelection =
                         when (savedSelection) {
-                            NavigationSelectionStoredData.Host -> DeviceNavState.SelectedItem.Host
-                            NavigationSelectionStoredData.About -> DeviceNavState.SelectedItem.About
-                            is NavigationSelectionStoredData.Settings -> DeviceNavState.SelectedItem.Settings(savedSelection.tab)
+                            NavigationSelectionStoredData.Host -> {
+                                DeviceNavState.SelectedItem.Host
+                            }
+
+                            NavigationSelectionStoredData.About -> {
+                                DeviceNavState.SelectedItem.About
+                            }
+
+                            is NavigationSelectionStoredData.Settings -> {
+                                DeviceNavState.SelectedItem.Settings(savedSelection.tab)
+                            }
+
                             is NavigationSelectionStoredData.Device -> {
                                 val aquaDevices: List<DeviceState.Aqua> =
                                     dataCacheService.state
@@ -181,7 +193,9 @@ class DeviceNavViewModel(
                 DeviceNavState.SelectedItem.Host,
                 DeviceNavState.SelectedItem.About,
                 is DeviceNavState.SelectedItem.Settings,
-                -> currentState
+                -> {
+                    currentState
+                }
             }
         }
     }

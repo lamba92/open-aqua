@@ -124,13 +124,17 @@ fun ChannelName.resolveSensorName(
     kind: SensorChannelKind,
 ): String =
     when (this) {
-        is ChannelName.Custom -> value
-        ChannelName.Default ->
+        is ChannelName.Custom -> {
+            value
+        }
+
+        ChannelName.Default -> {
             when (kind) {
                 SensorChannelKind.PHYSICAL_NTC -> stringResource(Res.string.sensor_channel_name, channel + 1)
                 SensorChannelKind.VIRTUAL -> stringResource(Res.string.sensor_virtual_name, virtualSensorIndexFor(channel))
                 SensorChannelKind.INTEGRATED_COOLANT -> stringResource(Res.string.sensor_coolant_name)
             }
+        }
     }
 
 @Composable
@@ -143,17 +147,25 @@ fun ChannelName.resolveFanName(
     hasPump: Boolean = false,
 ): String =
     when (this) {
-        is ChannelName.Custom -> value
-        ChannelName.Default ->
+        is ChannelName.Custom -> {
+            value
+        }
+
+        ChannelName.Default -> {
             when (kind) {
-                CoolingChannelKind.PUMP -> stringResource(Res.string.d5_pump_name)
-                CoolingChannelKind.FAN ->
+                CoolingChannelKind.PUMP -> {
+                    stringResource(Res.string.d5_pump_name)
+                }
+
+                CoolingChannelKind.FAN -> {
                     if (channel == 1 && hasPump) {
                         stringResource(Res.string.d5_fan_name)
                     } else {
                         stringResource(Res.string.fan_channel_name, channel + 1)
                     }
+                }
             }
+        }
     }
 
 @Composable
@@ -170,11 +182,21 @@ val SensorItem.effectiveTempCelsius: Double?
 val SensorItem.feederStatus: FeederStatus
     get() =
         when {
-            telemetry.kind != SensorChannelKind.VIRTUAL -> FeederStatus.NONE
-            feedError != null -> FeederStatus.ERROR
-            virtualFeedSource != null ->
+            telemetry.kind != SensorChannelKind.VIRTUAL -> {
+                FeederStatus.NONE
+            }
+
+            feedError != null -> {
+                FeederStatus.ERROR
+            }
+
+            virtualFeedSource != null -> {
                 if (telemetry is SensorTelemetry.Connected) FeederStatus.OPERATIONAL else FeederStatus.ERROR
-            else -> FeederStatus.NONE
+            }
+
+            else -> {
+                FeederStatus.NONE
+            }
         }
 
 val SensorItem.canBeHidden: Boolean
@@ -210,14 +232,21 @@ fun List<SensorTelemetry>.toSensorItems(
         val feedSource = storedData.sensors[tel.channel]?.virtualFeedSource
         val targetType =
             when {
-                tel.kind == SensorChannelKind.VIRTUAL ->
+                tel.kind == SensorChannelKind.VIRTUAL -> {
                     when (feedSource) {
                         is VirtualSensorFeedSource.Host -> sensorTypes.targetTypeFor(feedSource.sensorId)
                         is VirtualSensorFeedSource.Device -> sensorTypes.targetTypeFor(feedSource.deviceId, feedSource.channel)
                         null -> deviceId?.let { sensorTypes.targetTypeFor(it, tel.channel) } ?: SensorTargetType.DIE
                     }
-                deviceId != null -> sensorTypes.targetTypeFor(deviceId, tel.channel)
-                else -> SensorTargetType.DIE
+                }
+
+                deviceId != null -> {
+                    sensorTypes.targetTypeFor(deviceId, tel.channel)
+                }
+
+                else -> {
+                    SensorTargetType.DIE
+                }
             }
         SensorItem(
             channel = tel.channel,

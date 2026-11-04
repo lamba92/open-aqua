@@ -32,13 +32,11 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
-import co.touchlab.kermit.CommonWriter
 import co.touchlab.kermit.Logger
-import co.touchlab.kermit.loggerConfigInit
 import coil3.ImageLoader
 import coil3.compose.setSingletonImageLoaderFactory
 import coil3.svg.SvgDecoder
-import io.github.lamba92.openaqua.app.coroutine.DefaultCoroutineScopeProvider
+import io.github.lamba92.openaqua.app.coroutine.CoroutineScopeProvider
 import io.github.lamba92.openaqua.app.di.LocalDI
 import io.github.lamba92.openaqua.app.di.createOpenAquaDI
 import io.github.lamba92.openaqua.app.di.rememberInstance
@@ -51,7 +49,6 @@ import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavViewModel
 import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavigationRailScaffold
 import io.github.lamba92.openaqua.app.feature.settings.SettingsScreen
 import io.github.lamba92.openaqua.app.i18n.AppLocaleProvider
-import io.github.lamba92.openaqua.app.logging.AppLogService
 import io.github.lamba92.openaqua.app.model.AppStoredData
 import io.github.lamba92.openaqua.app.model.locale
 import io.github.lamba92.openaqua.app.model.toPosition
@@ -60,7 +57,6 @@ import io.github.lamba92.openaqua.app.model.toStoredData
 import io.github.lamba92.openaqua.app.repository.AppDataRepository
 import io.github.lamba92.openaqua.app.theme.AppMetrics
 import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
-import io.github.lamba92.openaqua.app.util.EngineExtractor
 import io.github.lamba92.openaqua.theme.ThemePalette
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
@@ -76,35 +72,14 @@ import org.jetbrains.compose.resources.stringResource
 import org.kodein.di.instance
 import java.awt.Taskbar
 import javax.imageio.ImageIO
-import kotlin.io.path.Path
 import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(FlowPreview::class)
 fun main() {
-    val baseAppDataDir = AppDataRepository.defaultAppDataPath().parent ?: Path(".")
-    val logsDir = baseAppDataDir.resolve("logs")
-    val rootScopeProvider = DefaultCoroutineScopeProvider()
-    val appLogService = AppLogService(logsDirectory = logsDir, scopeProvider = rootScopeProvider)
-    val appLogger =
-        Logger(
-            config = loggerConfigInit(CommonWriter(), appLogService.logWriter),
-            tag = "OpenAqua",
-        )
-    val mainLogger = appLogger.withTag("Main")
-    mainLogger.i { "-------------------------------------------------------------------" }
-    mainLogger.i { "Starting OpenAqua..." }
-    val engines = EngineExtractor.extract()
-    mainLogger.i { "Extracted engine binaries: device='${engines.deviceEngine.fileName}', host='${engines.hostEngine.fileName}'" }
-    val appScopeProvider = DefaultCoroutineScopeProvider(baseLogger = appLogger)
-    val di =
-        createOpenAquaDI(
-            deviceEnginePath = engines.deviceEngine,
-            hostEnginePath = engines.hostEngine,
-            appLogService = appLogService,
-            scopeProvider = appScopeProvider,
-            logger = appLogger,
-        )
+    val di = createOpenAquaDI()
     val appDataRepository by di.instance<AppDataRepository>()
+    val scopeProvider by di.instance<CoroutineScopeProvider>()
+    val mainLogger by di.instance<Logger>(tag = "Main")
 
     configureTaskbarIcon()
 
@@ -145,8 +120,7 @@ fun main() {
                 onCloseRequest = {
                     mainLogger.i { "Application closing, cancelling active scopes..." }
                     appDataRepository.saveWindowStateSync(windowState.toStoredData(storedData.windowState))
-                    appScopeProvider.cancelAll()
-                    rootScopeProvider.cancelAll()
+                    scopeProvider.cancelAll()
                     exitApplication()
                 },
                 state = windowState,
@@ -215,26 +189,33 @@ fun OpenAquaApp(navViewModel: DeviceNavViewModel = rememberInstance()) {
             onEvent = navViewModel::onEvent,
         ) {
             when (val item = navState.selectedItem) {
-                null -> SelectADeviceScreen()
-                DeviceNavState.SelectedItem.About ->
-                    AboutScreen()
+                null -> {
+                    SelectADeviceScreen()
+                }
 
-                is DeviceNavState.SelectedItem.Settings ->
+                DeviceNavState.SelectedItem.About -> {
+                    AboutScreen()
+                }
+
+                is DeviceNavState.SelectedItem.Settings -> {
                     SettingsScreen(
                         selectedTab = item.selectedTab,
                         onSelectTab = { navViewModel.onEvent(DeviceNavEvent.SelectSettingsTab(it)) },
                         viewModel = rememberInstance(),
                     )
+                }
 
-                DeviceNavState.SelectedItem.Host ->
+                DeviceNavState.SelectedItem.Host -> {
                     HostScreen(viewModel = rememberInstance())
+                }
 
-                is DeviceNavState.SelectedItem.Device ->
+                is DeviceNavState.SelectedItem.Device -> {
                     DeviceScreen(
                         deviceId = item.deviceId,
                         selectedTab = item.selectedTab,
                         onSelectTab = { navViewModel.onEvent(DeviceNavEvent.SelectTab(it)) },
                     )
+                }
             }
         }
     }

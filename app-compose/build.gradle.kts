@@ -17,16 +17,6 @@ kotlin {
     }
 }
 
-ktlint {
-    filter {
-        exclude {
-            it.file.path.contains("/build/") ||
-                it.file.path.contains("/generated/") ||
-                it.file.name == "CoroutineScopeProvider.kt"
-        }
-    }
-}
-
 dependencies {
     implementation(projects.coreModel.coreModelDevice)
     implementation(projects.coreModel.coreModelHost)
@@ -40,9 +30,11 @@ dependencies {
     implementation(libs.kodein.di)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.swing)
+    implementation(libs.kotlinx.datetime)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.io.core)
     implementation(libs.kermit)
+    implementation(libs.kermit.io)
 }
 
 fun getCurrentPlatformComposeRuntime() =

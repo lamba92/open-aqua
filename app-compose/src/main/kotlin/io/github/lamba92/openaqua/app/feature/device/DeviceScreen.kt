@@ -42,8 +42,14 @@ fun DeviceScreen(
         }
 
     when (val s = state) {
-        DeviceUiState.Loading -> DeviceLoadingContent(modifier)
-        is DeviceUiState.Error -> DeviceErrorContent(s.errorType, modifier)
+        DeviceUiState.Loading -> {
+            DeviceLoadingContent(modifier)
+        }
+
+        is DeviceUiState.Error -> {
+            DeviceErrorContent(s.errorType, modifier)
+        }
+
         is DeviceUiState.Ready -> {
             DeviceDrawerScaffold(
                 device = s.deviceState.device,
@@ -54,23 +60,26 @@ fun DeviceScreen(
             ) {
                 saveableStateHolder.SaveableStateProvider(selectedTab) {
                     when (selectedTab) {
-                        CommonDeviceTab.DEVICE_INFO ->
+                        CommonDeviceTab.DEVICE_INFO -> {
                             DeviceInfoContent(
                                 deviceState = s.deviceState,
                                 scrollState = infoScrollState,
                             )
+                        }
 
-                        CommonDeviceTab.FANS ->
+                        CommonDeviceTab.FANS -> {
                             FansTabContent(
                                 deviceId = deviceId,
                                 scrollState = fansScrollState,
                             )
+                        }
 
-                        CommonDeviceTab.SENSORS ->
+                        CommonDeviceTab.SENSORS -> {
                             SensorsTabContent(
                                 deviceId = deviceId,
                                 scrollState = sensorsScrollState,
                             )
+                        }
                     }
                 }
             }

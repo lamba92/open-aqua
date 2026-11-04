@@ -14,7 +14,6 @@ import java.net.http.HttpResponse
 
 @CacheableTask
 abstract class DownloadTask : DefaultTask() {
-
     @get:Input
     abstract val url: Property<String>
 
@@ -24,13 +23,15 @@ abstract class DownloadTask : DefaultTask() {
     @TaskAction
     fun download() {
         val request =
-            HttpRequest.newBuilder()
+            HttpRequest
+                .newBuilder()
                 .uri(URI.create(url.get()))
                 .GET()
                 .build()
 
         val client =
-            HttpClient.newBuilder()
+            HttpClient
+                .newBuilder()
                 .followRedirects(HttpClient.Redirect.ALWAYS)
                 .build()
 

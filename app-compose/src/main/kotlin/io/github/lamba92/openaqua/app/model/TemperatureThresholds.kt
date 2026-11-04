@@ -55,7 +55,10 @@ fun TemperatureThresholds.progressFraction(tempCelsius: Double?): Float {
 fun TemperatureThresholds.color(tempCelsius: Double?): Color {
     if (tempCelsius == null) return Color(0xFF0288D1)
     return when {
-        tempCelsius <= cool -> Color(0xFF0288D1)
+        tempCelsius <= cool -> {
+            Color(0xFF0288D1)
+        }
+
         tempCelsius <= nominal -> {
             val f = ((tempCelsius - cool) / (nominal - cool)).toFloat().coerceIn(0f, 1f)
             if (f < 0.5f) {
@@ -64,14 +67,19 @@ fun TemperatureThresholds.color(tempCelsius: Double?): Color {
                 lerpColor(Color(0xFF00B4D8), Color(0xFF10B981), (f - 0.5f) * 2f)
             }
         }
+
         tempCelsius <= warm -> {
             val f = ((tempCelsius - nominal) / (warm - nominal)).toFloat().coerceIn(0f, 1f)
             lerpColor(Color(0xFF10B981), Color(0xFFFFB703), f)
         }
+
         tempCelsius <= hot -> {
             val f = ((tempCelsius - warm) / (hot - warm)).toFloat().coerceIn(0f, 1f)
             lerpColor(Color(0xFFFFB703), Color(0xFFE63946), f)
         }
-        else -> Color(0xFFE63946)
+
+        else -> {
+            Color(0xFFE63946)
+        }
     }
 }

@@ -130,13 +130,17 @@ class VirtualSensorFeederService(
         feedErrorsState
             .onEach { allErrors ->
                 when {
-                    allErrors.isEmpty() -> logger.d { "All virtual sensor feeds are operational" }
-                    else ->
+                    allErrors.isEmpty() -> {
+                        logger.d { "All virtual sensor feeds are operational" }
+                    }
+
+                    else -> {
                         allErrors.forEach { (deviceId, deviceErrors) ->
                             deviceErrors.forEach { (channel, error) ->
                                 logger.e { "Virtual feed error on device '$deviceId' channel $channel: $error" }
                             }
                         }
+                    }
                 }
             }.launchIn(coroutineScope)
     }
@@ -184,31 +188,36 @@ class VirtualSensorFeederService(
         readyHost: DeviceState.Host.Ready?,
     ): VirtualSensorFeedError? =
         when (destinationDeviceId) {
-            !in readyAquaDevices ->
+            !in readyAquaDevices -> {
                 VirtualSensorFeedError.DestinationDeviceDisconnected(destinationDeviceId, destinationChannel)
+            }
 
-            else ->
+            else -> {
                 when (source) {
                     is VirtualSensorFeedSource.Device -> {
                         when (val sourceDevice = readyAquaDevices[source.deviceId]) {
-                            null ->
+                            null -> {
                                 VirtualSensorFeedError.SourceDeviceUnavailable(
                                     destinationDeviceId = destinationDeviceId,
                                     destinationChannel = destinationChannel,
                                     source = source,
                                 )
+                            }
 
                             else -> {
                                 val sensor = sourceDevice.telemetry.sensors.firstOrNull { it.channel == source.channel }
                                 when (sensor) {
-                                    null, is SensorTelemetry.Disconnected ->
+                                    null, is SensorTelemetry.Disconnected -> {
                                         VirtualSensorFeedError.SourceSensorDisconnected(
                                             destinationDeviceId = destinationDeviceId,
                                             destinationChannel = destinationChannel,
                                             source = source,
                                         )
+                                    }
 
-                                    is SensorTelemetry.Connected -> null
+                                    is SensorTelemetry.Connected -> {
+                                        null
+                                    }
                                 }
                             }
                         }
@@ -216,29 +225,34 @@ class VirtualSensorFeederService(
 
                     is VirtualSensorFeedSource.Host -> {
                         when (readyHost) {
-                            null ->
+                            null -> {
                                 VirtualSensorFeedError.SourceDeviceUnavailable(
                                     destinationDeviceId = destinationDeviceId,
                                     destinationChannel = destinationChannel,
                                     source = source,
                                 )
+                            }
 
                             else -> {
                                 val sensor = readyHost.telemetry.sensors.firstOrNull { it.id == source.sensorId }
                                 when (sensor) {
-                                    null, is HostSensorTelemetry.Disconnected ->
+                                    null, is HostSensorTelemetry.Disconnected -> {
                                         VirtualSensorFeedError.SourceSensorDisconnected(
                                             destinationDeviceId = destinationDeviceId,
                                             destinationChannel = destinationChannel,
                                             source = source,
                                         )
+                                    }
 
-                                    is HostSensorTelemetry.Connected -> null
+                                    is HostSensorTelemetry.Connected -> {
+                                        null
+                                    }
                                 }
                             }
                         }
                     }
                 }
+            }
         }
 
     private fun buildFeedVirtualSensorsRequest(

@@ -1,7 +1,10 @@
 import io.github.lamba92.gradle.plugins.engine.Arch
 import io.github.lamba92.gradle.plugins.engine.Os
 
-enum class SupportedTargets(val os: Os, val arch: Arch) {
+enum class SupportedTargets(
+    val os: Os,
+    val arch: Arch,
+) {
     LinuxX64(Os.LINUX, Arch.X64),
     LinuxArm64(Os.LINUX, Arch.ARM64),
     WindowsX64(Os.WINDOWS, Arch.X64),

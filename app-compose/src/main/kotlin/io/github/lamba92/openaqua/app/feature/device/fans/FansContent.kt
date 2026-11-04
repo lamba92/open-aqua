@@ -264,13 +264,17 @@ private fun defaultCoolingPin(
     hasPump: Boolean,
 ): String =
     when (fan.telemetry.kind) {
-        CoolingChannelKind.PUMP -> stringResource(Res.string.d5_pump_pin)
-        CoolingChannelKind.FAN ->
+        CoolingChannelKind.PUMP -> {
+            stringResource(Res.string.d5_pump_pin)
+        }
+
+        CoolingChannelKind.FAN -> {
             if (fan.channel == 1 && hasPump) {
                 stringResource(Res.string.d5_fan_pin)
             } else {
                 stringResource(Res.string.fan_channel_pin, fan.channel + 1)
             }
+        }
     }
 
 @Composable
@@ -528,7 +532,10 @@ fun FansTabContent(
     val state by viewModel.state.collectAsState()
 
     when (val s = state) {
-        FansUiState.Loading -> DeviceLoadingContent(modifier)
+        FansUiState.Loading -> {
+            DeviceLoadingContent(modifier)
+        }
+
         is FansUiState.Ready -> {
             FansContent(
                 state = s,
@@ -562,26 +569,34 @@ private fun PendingFanDiffCard(
 
     val summary =
         when (targetConfig) {
-            is FixedFanConfig -> "Fixed PWM: ${targetConfig.powerPercent.roundToInt()}%"
+            is FixedFanConfig -> {
+                "Fixed PWM: ${targetConfig.powerPercent.roundToInt()}%"
+            }
+
             is AutoCurveFanConfig -> {
                 val sensorName =
                     sensors.firstOrNull { it.channel == targetConfig.sensorIndex }?.resolveName()
                         ?: stringResource(Res.string.sensor_channel_name, targetConfig.sensorIndex + 1)
                 "Auto Curve • $sensorName • ${targetConfig.tMin.roundToInt()}°C - ${targetConfig.tMax.roundToInt()}°C (${targetConfig.pMin.roundToInt()}% - ${targetConfig.pMax.roundToInt()}%)"
             }
+
             is CurveFanConfig -> {
                 val sensorName =
                     sensors.firstOrNull { it.channel == targetConfig.sensorIndex }?.resolveName()
                         ?: stringResource(Res.string.sensor_channel_name, targetConfig.sensorIndex + 1)
                 "Custom Curve • $sensorName • 16 points"
             }
+
             is TargetTempFanConfig -> {
                 val sensorName =
                     sensors.firstOrNull { it.channel == targetConfig.sensorIndex }?.resolveName()
                         ?: stringResource(Res.string.sensor_channel_name, targetConfig.sensorIndex + 1)
                 "Target Temp • $sensorName • ${"%.1f".format(targetConfig.targetTempCelsius)}°C"
             }
-            else -> "Custom Config"
+
+            else -> {
+                "Custom Config"
+            }
         }
 
     val limits = targetConfig.limits

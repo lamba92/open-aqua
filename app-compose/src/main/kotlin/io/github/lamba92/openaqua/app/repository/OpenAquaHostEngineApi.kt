@@ -1,6 +1,7 @@
 package io.github.lamba92.openaqua.app.repository
 
 import io.github.lamba92.openaqua.app.coroutine.getLogger
+import io.github.lamba92.openaqua.app.util.HostEnginePath
 import io.github.lamba92.openaqua.model.EngineResponse
 import io.github.lamba92.openaqua.model.formatWithStackTrace
 import io.github.lamba92.openaqua.model.host.HostInfo
@@ -19,8 +20,11 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 class OpenAquaHostEngineApi(
-    private val enginePath: Path,
+    private val hostEnginePath: HostEnginePath,
 ) {
+    private val enginePath: Path
+        get() = hostEnginePath.path
+
     private val json: Json =
         Json {
             ignoreUnknownKeys = true

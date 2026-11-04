@@ -1,24 +1,24 @@
 package io.github.lamba92.openaqua.app.feature.settings
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.ContentCopy
-import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Surface
@@ -32,6 +32,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -43,7 +44,6 @@ import io.github.lamba92.openaqua.app.ui.components.ScreenHeader
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import open_aqua.app_compose.generated.resources.Res
-import open_aqua.app_compose.generated.resources.settings_logs_clear
 import open_aqua.app_compose.generated.resources.settings_logs_copied
 import open_aqua.app_compose.generated.resources.settings_logs_copy
 import open_aqua.app_compose.generated.resources.settings_logs_empty
@@ -58,7 +58,6 @@ import java.awt.datatransfer.StringSelection
 @Composable
 fun LogsContent(
     logs: List<String>,
-    onClearLogs: () -> Unit,
     onOpenLogsFolder: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -108,12 +107,6 @@ fun LogsContent(
                 horizontalArrangement = Arrangement.spacedBy(metrics.spacingMd),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                OpenAquaOutlinedButton(
-                    text = stringResource(Res.string.settings_logs_clear),
-                    onClick = onClearLogs,
-                    icon = rememberVectorPainter(Icons.Outlined.DeleteOutline),
-                )
-
                 OpenAquaOutlinedButton(
                     text = stringResource(Res.string.settings_logs_open_folder),
                     onClick = onOpenLogsFolder,
@@ -190,13 +183,17 @@ fun LogsContent(
                     SelectionContainer(modifier = Modifier.fillMaxSize()) {
                         LazyColumn(
                             state = lazyListState,
-                            modifier =
-                                Modifier
-                                    .fillMaxSize()
-                                    .padding(horizontal = 14.dp, vertical = 10.dp),
-                            verticalArrangement = Arrangement.spacedBy(2.dp),
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(vertical = 4.dp),
                         ) {
-                            items(logs) { line ->
+                            itemsIndexed(logs) { index, line ->
+                                val rowBackground =
+                                    if (index % 2 == 1) {
+                                        colors.surfaceLowest
+                                    } else {
+                                        Color.Transparent
+                                    }
+
                                 val textColor =
                                     when {
                                         line.contains("[ERROR") -> colors.statusCritical
@@ -206,13 +203,21 @@ fun LogsContent(
                                         else -> colors.textSecondary
                                     }
 
-                                Text(
-                                    text = line,
-                                    fontFamily = FontFamily.Monospace,
-                                    fontSize = 12.sp,
-                                    lineHeight = 17.sp,
-                                    color = textColor,
-                                )
+                                Box(
+                                    modifier =
+                                        Modifier
+                                            .fillMaxWidth()
+                                            .background(rowBackground)
+                                            .padding(horizontal = 14.dp, vertical = 2.dp),
+                                ) {
+                                    Text(
+                                        text = line,
+                                        fontFamily = FontFamily.Monospace,
+                                        fontSize = 12.sp,
+                                        lineHeight = 17.sp,
+                                        color = textColor,
+                                    )
+                                }
                             }
                         }
                     }

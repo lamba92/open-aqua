@@ -112,7 +112,7 @@ fun OpenAquaTheme(
     val appTypography =
         remember(fontFamilyPreference, fontSp, fontScaleFactor, jetBrainsMono) {
             when (fontFamilyPreference) {
-                AppFontFamily.JETBRAINS_MONO ->
+                AppFontFamily.JETBRAINS_MONO -> {
                     AppTypography(
                         fontPreference = fontFamilyPreference,
                         fontSp = fontSp,
@@ -120,8 +120,9 @@ fun OpenAquaTheme(
                         defaultFontFamily = jetBrainsMono,
                         monospaceFontFamily = jetBrainsMono,
                     )
+                }
 
-                AppFontFamily.SYSTEM_DEFAULT ->
+                AppFontFamily.SYSTEM_DEFAULT -> {
                     AppTypography(
                         fontPreference = fontFamilyPreference,
                         fontSp = fontSp,
@@ -129,6 +130,7 @@ fun OpenAquaTheme(
                         defaultFontFamily = FontFamily.Default,
                         monospaceFontFamily = FontFamily.Monospace,
                     )
+                }
             }
         }
 

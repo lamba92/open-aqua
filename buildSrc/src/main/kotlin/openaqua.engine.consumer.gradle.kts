@@ -5,21 +5,22 @@ import io.github.lamba92.gradle.plugins.engine.Os
 import org.gradle.api.attributes.Usage
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.Property
-import org.gradle.kotlin.dsl.*
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 import javax.inject.Inject
 
-open class EngineBinariesConsumerExtension @Inject constructor(
-    objects: ObjectFactory,
-) {
-    val os: Property<Os> = objects.property(Os::class.java).convention(Os.current())
-    val arch: Property<Arch> = objects.property(Arch::class.java).convention(Arch.current())
-    val bundleAll: Property<Boolean> = objects.property(Boolean::class.java).convention(false)
+open class EngineBinariesConsumerExtension
+    @Inject
+    constructor(
+        objects: ObjectFactory,
+    ) {
+        val os: Property<Os> = objects.property<Os>().convention(Os.current())
+        val arch: Property<Arch> = objects.property<Arch>().convention(Arch.current())
+        val bundleAll: Property<Boolean> = objects.property<Boolean>().convention(false)
 
-    fun all() {
-        bundleAll = true
+        fun all() {
+            bundleAll = true
+        }
     }
-}
 
 val engineBinariesExtension =
     extensions.create<EngineBinariesConsumerExtension>("engineBinaries")
@@ -33,9 +34,9 @@ val engineBinaries =
 afterEvaluate {
     engineBinaries.attributes {
         if (engineBinariesExtension.bundleAll.get()) {
-            attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage::class.java, "all-engine-binaries"))
+            attribute(Usage.USAGE_ATTRIBUTE, objects.named<Usage>("all-engine-binaries"))
         } else {
-            attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage::class.java, "engine-binaries"))
+            attribute(Usage.USAGE_ATTRIBUTE, objects.named<Usage>("engine-binaries"))
             attribute(OS_ATTRIBUTE, engineBinariesExtension.os.get())
             attribute(ARCH_ATTRIBUTE, engineBinariesExtension.arch.get())
         }

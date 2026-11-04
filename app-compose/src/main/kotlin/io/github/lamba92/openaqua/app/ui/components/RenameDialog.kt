@@ -104,19 +104,27 @@ fun RenameDialog(
                     .padding(24.dp)
                     .onPreviewKeyEvent { event ->
                         when (event.type) {
-                            KeyEventType.KeyDown ->
+                            KeyEventType.KeyDown -> {
                                 when (event.key) {
                                     Key.Escape -> {
                                         onDismiss()
                                         true
                                     }
+
                                     Key.Enter, Key.NumPadEnter -> {
                                         submit()
                                         true
                                     }
-                                    else -> false
+
+                                    else -> {
+                                        false
+                                    }
                                 }
-                            else -> false
+                            }
+
+                            else -> {
+                                false
+                            }
                         }
                     },
             verticalArrangement = Arrangement.spacedBy(16.dp),

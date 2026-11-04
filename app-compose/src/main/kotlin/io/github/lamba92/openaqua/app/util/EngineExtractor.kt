@@ -1,16 +1,27 @@
 package io.github.lamba92.openaqua.app.util
 
+import co.touchlab.kermit.Logger
 import java.nio.file.Path
 import kotlin.io.path.createTempDirectory
 import kotlin.io.path.writeBytes
 
+@JvmInline
+value class DeviceEnginePath(
+    val path: Path,
+)
+
+@JvmInline
+value class HostEnginePath(
+    val path: Path,
+)
+
 data class ExtractedEngines(
-    val deviceEngine: Path,
-    val hostEngine: Path,
+    val deviceEngine: DeviceEnginePath,
+    val hostEngine: HostEnginePath,
 )
 
 object EngineExtractor {
-    fun extract(): ExtractedEngines {
+    fun extract(logger: Logger): ExtractedEngines {
         val os = System.getProperty("os.name").lowercase()
         val arch = System.getProperty("os.arch").lowercase()
 
@@ -33,9 +44,13 @@ object EngineExtractor {
         val deviceBinary = extractBinary("open-aqua-device-engine", isWindows, targetSuffix)
         val hostBinary = extractBinary("open-aqua-host-engine", isWindows, targetSuffix)
 
+        logger.i {
+            "Extracted engine binaries: device='${deviceBinary.fileName}', host='${hostBinary.fileName}'"
+        }
+
         return ExtractedEngines(
-            deviceEngine = deviceBinary,
-            hostEngine = hostBinary,
+            deviceEngine = DeviceEnginePath(deviceBinary),
+            hostEngine = HostEnginePath(hostBinary),
         )
     }
 

@@ -16,7 +16,13 @@ import org.gradle.api.tasks.Sync
 import org.gradle.api.tasks.TaskContainer
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.internal.os.OperatingSystem
-import org.gradle.kotlin.dsl.*
+import org.gradle.kotlin.dsl.assign
+import org.gradle.kotlin.dsl.create
+import org.gradle.kotlin.dsl.getByType
+import org.gradle.kotlin.dsl.listProperty
+import org.gradle.kotlin.dsl.property
+import org.gradle.kotlin.dsl.register
+import org.gradle.kotlin.dsl.withType
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.plugin.mpp.Executable
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
@@ -63,24 +69,27 @@ class UpxPlugin : Plugin<Project> {
             val os = OperatingSystem.current()
             if (os.isMacOsX || os.isLinux) {
                 val upxFromSystem =
-                    providers.exec {
-                        commandLine("whereis", "upx")
-                        isIgnoreExitValue = true
-                    }.standardOutput.asText.flatMap { output ->
-                        val file =
-                            output.lines()
-                                .firstOrNull { it.startsWith("upx: ") }
-                                ?.removePrefix("upx: ")
-                                ?.split(" ")
-                                ?.firstOrNull { it.isNotBlank() }
-                                ?.let { File(it) }
-                                ?.takeIf { it.exists() }
-                        if (file != null) {
-                            layout.file(provider { file })
-                        } else {
-                            providers.provider { null }
+                    providers
+                        .exec {
+                            commandLine("whereis", "upx")
+                            isIgnoreExitValue = true
+                        }.standardOutput.asText
+                        .flatMap { output ->
+                            val file =
+                                output
+                                    .lines()
+                                    .firstOrNull { it.startsWith("upx: ") }
+                                    ?.removePrefix("upx: ")
+                                    ?.split(" ")
+                                    ?.firstOrNull { it.isNotBlank() }
+                                    ?.let { File(it) }
+                                    ?.takeIf { it.exists() }
+                            if (file != null) {
+                                layout.file(provider { file })
+                            } else {
+                                providers.provider { null }
+                            }
                         }
-                    }
                 localUpxPath.convention(upxFromSystem)
             }
 
@@ -180,7 +189,6 @@ class UpxPlugin : Plugin<Project> {
                             tasks.register<UpxTask>("compress$taskSuffix") {
                                 dependsOn(linkTaskProvider)
                                 inputExecutable.fileProvider(linkTaskProvider.flatMap { it.outputFile })
-
 
                                 val isWindows = konanTarget.family == Family.MINGW
                                 val binaryExtension = if (isWindows) ".exe" else ""

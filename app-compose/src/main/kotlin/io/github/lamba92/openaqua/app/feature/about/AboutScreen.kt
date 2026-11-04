@@ -24,6 +24,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -299,9 +300,29 @@ fun AboutScreen(modifier: Modifier = Modifier) {
                             title = stringResource(Res.string.about_dependencies_title),
                         )
 
-                        Column(verticalArrangement = Arrangement.spacedBy(metrics.spacingSm)) {
-                            OpenAquaBuildInfo.LIBRARIES.forEach { library ->
-                                LibraryRow(library = library)
+                        Column(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(metrics.radiusMedium))
+                                    .border(metrics.strokeThin, colors.borderOutline, RoundedCornerShape(metrics.radiusMedium)),
+                        ) {
+                            OpenAquaBuildInfo.LIBRARIES.forEachIndexed { index, library ->
+                                val rowBackground =
+                                    if (index % 2 == 1) {
+                                        colors.surfaceLowest
+                                    } else {
+                                        Color.Transparent
+                                    }
+
+                                LibraryRow(
+                                    library = library,
+                                    modifier =
+                                        Modifier
+                                            .fillMaxWidth()
+                                            .background(rowBackground)
+                                            .padding(horizontal = metrics.spacingLg, vertical = metrics.spacingMd),
+                                )
                             }
                         }
                     }

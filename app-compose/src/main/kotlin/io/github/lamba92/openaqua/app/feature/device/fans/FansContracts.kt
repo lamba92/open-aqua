@@ -84,14 +84,15 @@ fun FanDraft.toFanChannelConfig(
 ): FanChannelConfig {
     val targetLimits = limits
     return when (this) {
-        is FanDraft.Fixed ->
+        is FanDraft.Fixed -> {
             FixedFanConfig(
                 channel = channel,
                 powerPercent = powerPercent,
                 limits = targetLimits,
             )
+        }
 
-        is FanDraft.AutoCurve ->
+        is FanDraft.AutoCurve -> {
             AutoCurveFanConfig(
                 channel = channel,
                 sensorIndex = sensorIndex,
@@ -102,14 +103,16 @@ fun FanDraft.toFanChannelConfig(
                 shape = shape,
                 limits = targetLimits,
             )
+        }
 
-        is FanDraft.TargetTemp ->
+        is FanDraft.TargetTemp -> {
             TargetTempFanConfig(
                 channel = channel,
                 sensorIndex = sensorIndex,
                 targetTempCelsius = targetTempCelsius,
                 limits = targetLimits,
             )
+        }
 
         is FanDraft.Copy -> {
             val sourceDraft = allDrafts[sourceChannel]
@@ -135,14 +138,15 @@ fun FanChannelConfig?.toInitialDraft(
     defaultSensorIndex: Int = 0,
 ): FanDraft =
     when (this) {
-        is FixedFanConfig ->
+        is FixedFanConfig -> {
             FanDraft.Fixed(
                 channel = channel,
                 powerPercent = powerPercent,
                 limits = limits,
             )
+        }
 
-        is AutoCurveFanConfig ->
+        is AutoCurveFanConfig -> {
             FanDraft.AutoCurve(
                 channel = channel,
                 sensorIndex = sensorIndex,
@@ -153,8 +157,9 @@ fun FanChannelConfig?.toInitialDraft(
                 shape = shape,
                 limits = limits,
             )
+        }
 
-        is CurveFanConfig ->
+        is CurveFanConfig -> {
             FanDraft.AutoCurve(
                 channel = channel,
                 sensorIndex = sensorIndex,
@@ -165,16 +170,18 @@ fun FanChannelConfig?.toInitialDraft(
                 shape = CurveMath.inferShape(points),
                 limits = limits,
             )
+        }
 
-        is TargetTempFanConfig ->
+        is TargetTempFanConfig -> {
             FanDraft.TargetTemp(
                 channel = channel,
                 sensorIndex = sensorIndex,
                 targetTempCelsius = targetTempCelsius,
                 limits = limits,
             )
+        }
 
-        else ->
+        else -> {
             FanDraft.AutoCurve(
                 channel = channel,
                 sensorIndex = defaultSensorIndex,
@@ -185,6 +192,7 @@ fun FanChannelConfig?.toInitialDraft(
                 shape = 0.0,
                 limits = this?.limits ?: FanLimits.Standard,
             )
+        }
     }
 
 sealed interface FansUiState {

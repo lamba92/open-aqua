@@ -153,13 +153,19 @@ fun SensorsContent(
         remember<(SensorItem) -> Boolean>(state.hideDisconnectedSensors, state.hideUnconfiguredVirtualSensors) {
             { item ->
                 when (item.telemetry.kind) {
-                    SensorChannelKind.INTEGRATED_COOLANT -> false
-                    SensorChannelKind.PHYSICAL_NTC ->
+                    SensorChannelKind.INTEGRATED_COOLANT -> {
+                        false
+                    }
+
+                    SensorChannelKind.PHYSICAL_NTC -> {
                         state.hideDisconnectedSensors && item.telemetry is SensorTelemetry.Disconnected
-                    SensorChannelKind.VIRTUAL ->
+                    }
+
+                    SensorChannelKind.VIRTUAL -> {
                         state.hideUnconfiguredVirtualSensors &&
                             item.effectiveTempCelsius == null &&
                             item.virtualFeedSource == null
+                    }
                 }
             }
         }
@@ -665,19 +671,30 @@ fun VirtualSensorFeederCard(
 
     val activeSourceTemp =
         when (draft) {
-            is VirtualSensorFeedDraft.None -> null
-            is VirtualSensorFeedDraft.Host ->
+            is VirtualSensorFeedDraft.None -> {
+                null
+            }
+
+            is VirtualSensorFeedDraft.Host -> {
                 availableHostSensors.firstOrNull { it.id == draft.sensorId }?.liveTemp
-            is VirtualSensorFeedDraft.Device ->
+            }
+
+            is VirtualSensorFeedDraft.Device -> {
                 currentSelectedDevice?.sensors?.firstOrNull { it.channel == draft.channel }?.liveTemp
+            }
         }
 
     val activeSourceName =
         when (draft) {
-            is VirtualSensorFeedDraft.None -> stringResource(Res.string.sensor_feeder_source_none)
-            is VirtualSensorFeedDraft.Host ->
+            is VirtualSensorFeedDraft.None -> {
+                stringResource(Res.string.sensor_feeder_source_none)
+            }
+
+            is VirtualSensorFeedDraft.Host -> {
                 availableHostSensors.firstOrNull { it.id == draft.sensorId }?.name
                     ?: draft.sensorId?.value ?: ""
+            }
+
             is VirtualSensorFeedDraft.Device -> {
                 val resolvedSensorName =
                     currentSelectedDevice
@@ -1153,10 +1170,11 @@ private fun VirtualSensorFeedError.resolveMessage(
     availableAquaDevices: List<AquaDeviceOption> = emptyList(),
 ): String =
     when (this) {
-        is VirtualSensorFeedError.SourceDeviceUnavailable ->
+        is VirtualSensorFeedError.SourceDeviceUnavailable -> {
             when (source) {
-                is VirtualSensorFeedSource.Host ->
+                is VirtualSensorFeedSource.Host -> {
                     stringResource(Res.string.sensor_feeder_error_host_disconnected)
+                }
 
                 is VirtualSensorFeedSource.Device -> {
                     val deviceName =
@@ -1165,8 +1183,9 @@ private fun VirtualSensorFeedError.resolveMessage(
                     stringResource(Res.string.sensor_feeder_error_source_device_unavailable, deviceName)
                 }
             }
+        }
 
-        is VirtualSensorFeedError.SourceSensorDisconnected ->
+        is VirtualSensorFeedError.SourceSensorDisconnected -> {
             when (source) {
                 is VirtualSensorFeedSource.Host -> {
                     val sensorNameOrId =
@@ -1186,12 +1205,15 @@ private fun VirtualSensorFeedError.resolveMessage(
                     )
                 }
             }
+        }
 
-        is VirtualSensorFeedError.DestinationDeviceDisconnected ->
+        is VirtualSensorFeedError.DestinationDeviceDisconnected -> {
             stringResource(Res.string.sensor_feeder_error_target_disconnected)
+        }
 
-        is VirtualSensorFeedError.Other ->
+        is VirtualSensorFeedError.Other -> {
             stringResource(Res.string.sensor_feeder_error_generic)
+        }
     }
 
 @Composable
@@ -1304,7 +1326,10 @@ fun SensorsTabContent(
     val state by viewModel.state.collectAsState()
 
     when (val s = state) {
-        SensorsUiState.Loading -> DeviceLoadingContent(modifier)
+        SensorsUiState.Loading -> {
+            DeviceLoadingContent(modifier)
+        }
+
         is SensorsUiState.Ready -> {
             SensorsContent(
                 state = s,

@@ -4,11 +4,14 @@ import io.github.lamba92.openaqua.model.retryAtLeast
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
+import kotlinx.io.files.Path
+import java.util.LinkedList
 import kotlin.time.Clock
 import kotlin.time.Duration
 import kotlin.time.Instant
@@ -28,6 +31,7 @@ fun <T> Flow<T>.throttleLatest(period: Duration): Flow<T> =
                     lastEmission = now
                     emit(value)
                 }
+
                 else -> {
                     delay(period - timeSinceLast)
                     lastEmission = Clock.System.now()
@@ -116,3 +120,28 @@ fun <T, K, R> Flow<List<T>>.combineByKey(
             }
         }
     }
+
+context(collector: FlowCollector<String>)
+suspend fun Path.emitLines() {
+    runCatching {
+        useLines { lines ->
+            lines.forEach { line -> collector.emit(line) }
+        }
+    }
+}
+
+fun <T> Flow<T>.windowed(
+    min: Int,
+    max: Int,
+) = flow {
+    val buffer = LinkedList<T>()
+    collect { value ->
+        buffer.add(value)
+        if (buffer.size > max) {
+            buffer.removeAt(0)
+        }
+        if (buffer.size >= min) {
+            emit(buffer.toList())
+        }
+    }
+}

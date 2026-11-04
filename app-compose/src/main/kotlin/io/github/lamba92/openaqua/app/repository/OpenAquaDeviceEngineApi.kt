@@ -1,6 +1,7 @@
 package io.github.lamba92.openaqua.app.repository
 
 import io.github.lamba92.openaqua.app.coroutine.getLogger
+import io.github.lamba92.openaqua.app.util.DeviceEnginePath
 import io.github.lamba92.openaqua.model.EngineResponse
 import io.github.lamba92.openaqua.model.device.DescriptorsResponse
 import io.github.lamba92.openaqua.model.device.DeviceConfig
@@ -32,8 +33,11 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 class OpenAquaDeviceEngineApi(
-    private val enginePath: Path,
+    private val deviceEnginePath: DeviceEnginePath,
 ) : OpenAquaDeviceFlasher {
+    private val enginePath: Path
+        get() = deviceEnginePath.path
+
     private val json: Json =
         Json {
             ignoreUnknownKeys = true

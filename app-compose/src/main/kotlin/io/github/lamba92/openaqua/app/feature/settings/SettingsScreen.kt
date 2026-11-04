@@ -143,19 +143,20 @@ fun SettingsScreen(
     ) {
         saveableStateHolder.SaveableStateProvider(selectedTab) {
             when (selectedTab) {
-                SettingsTab.GENERAL ->
+                SettingsTab.GENERAL -> {
                     GeneralSettingsContent(
                         state = state,
                         viewModel = viewModel,
                         scrollState = generalScrollState,
                     )
+                }
 
-                SettingsTab.LOGS ->
+                SettingsTab.LOGS -> {
                     LogsContent(
                         logs = state.logs,
-                        onClearLogs = { viewModel.onEvent(SettingsEvent.ClearLogs) },
                         onOpenLogsFolder = { viewModel.onEvent(SettingsEvent.OpenLogsFolder) },
                     )
+                }
             }
         }
     }

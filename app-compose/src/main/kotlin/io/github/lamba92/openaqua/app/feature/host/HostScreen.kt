@@ -203,14 +203,17 @@ private fun HostStatusBadge(hostState: DeviceState.Host) {
 
     val (badgeText, statusColor) =
         when (hostState) {
-            DeviceState.Host.Loading, is DeviceState.Host.Connecting ->
+            DeviceState.Host.Loading, is DeviceState.Host.Connecting -> {
                 stringResource(Res.string.host_status_connecting) to colors.primary
+            }
 
-            is DeviceState.Host.Error ->
+            is DeviceState.Host.Error -> {
                 stringResource(Res.string.host_status_error) to colors.statusWarning
+            }
 
-            is DeviceState.Host.Ready ->
+            is DeviceState.Host.Ready -> {
                 stringResource(Res.string.host_status_connected) to colors.statusNominal
+            }
         }
 
     Row(

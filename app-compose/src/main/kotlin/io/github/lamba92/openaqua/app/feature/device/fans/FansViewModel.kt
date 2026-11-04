@@ -72,7 +72,10 @@ class FansViewModel(
         ) { deviceState, preferences, allDevices ->
             state.update { current ->
                 when (deviceState) {
-                    is DeviceState.Aqua.Connecting, is DeviceState.Aqua.Error -> FansUiState.Loading
+                    is DeviceState.Aqua.Connecting, is DeviceState.Aqua.Error -> {
+                        FansUiState.Loading
+                    }
+
                     is DeviceState.Aqua.Ready -> {
                         val fans = deviceState.telemetry.fans.toPwmFanItems(deviceState.config.fans, preferences.storedData)
                         val sensors =
@@ -110,20 +113,23 @@ class FansViewModel(
     override fun onEvent(event: FansUiEvent): Job =
         viewModelScope.launch {
             when (event) {
-                is FansUiEvent.SelectFan ->
+                is FansUiEvent.SelectFan -> {
                     state.update { current ->
                         if (current is FansUiState.Ready) current.copy(selectedFanChannel = event.channel) else current
                     }
+                }
 
-                is FansUiEvent.StartRenamingFan ->
+                is FansUiEvent.StartRenamingFan -> {
                     state.update { current ->
                         if (current is FansUiState.Ready) current.copy(renamingChannel = event.channel) else current
                     }
+                }
 
-                is FansUiEvent.DismissRenameDialog ->
+                is FansUiEvent.DismissRenameDialog -> {
                     state.update { current ->
                         if (current is FansUiState.Ready) current.copy(renamingChannel = null) else current
                     }
+                }
 
                 is FansUiEvent.RenameFan -> {
                     logger.i { "Renamed fan channel ${event.channel} on device '$deviceId' to '${event.name}'" }
@@ -147,62 +153,86 @@ class FansViewModel(
                     appDataRepository.setHideDisconnectedSensorsInFans(!currentHide)
                 }
 
-                is CurveStudioEvent ->
+                is CurveStudioEvent -> {
                     updateSelectedFanDraft { currentDraft, channel ->
                         when (event) {
-                            is CurveStudioEvent.ChangeMode ->
+                            is CurveStudioEvent.ChangeMode -> {
                                 when (event.mode) {
-                                    CurveMode.FIXED ->
+                                    CurveMode.FIXED -> {
                                         when {
-                                            currentDraft is FanDraft.Fixed ->
+                                            currentDraft is FanDraft.Fixed -> {
                                                 currentDraft.copy(limits = currentDraft.limits)
-                                            else -> FanDraft.Fixed(channel, limits = currentDraft.limits)
-                                        }
+                                            }
 
-                                    CurveMode.AUTO_CURVE ->
-                                        when {
-                                            currentDraft is FanDraft.AutoCurve ->
-                                                currentDraft.copy(limits = currentDraft.limits)
-                                            else -> FanDraft.AutoCurve(channel, limits = currentDraft.limits)
+                                            else -> {
+                                                FanDraft.Fixed(channel, limits = currentDraft.limits)
+                                            }
                                         }
+                                    }
 
-                                    CurveMode.TARGET_TEMP ->
+                                    CurveMode.AUTO_CURVE -> {
                                         when {
-                                            currentDraft is FanDraft.TargetTemp ->
+                                            currentDraft is FanDraft.AutoCurve -> {
                                                 currentDraft.copy(limits = currentDraft.limits)
-                                            else -> FanDraft.TargetTemp(channel, limits = currentDraft.limits)
-                                        }
+                                            }
 
-                                    CurveMode.COPY_FAN ->
-                                        when {
-                                            currentDraft is FanDraft.Copy ->
-                                                currentDraft.copy(limits = currentDraft.limits)
-                                            else -> FanDraft.Copy(channel, limits = currentDraft.limits)
+                                            else -> {
+                                                FanDraft.AutoCurve(channel, limits = currentDraft.limits)
+                                            }
                                         }
+                                    }
+
+                                    CurveMode.TARGET_TEMP -> {
+                                        when {
+                                            currentDraft is FanDraft.TargetTemp -> {
+                                                currentDraft.copy(limits = currentDraft.limits)
+                                            }
+
+                                            else -> {
+                                                FanDraft.TargetTemp(channel, limits = currentDraft.limits)
+                                            }
+                                        }
+                                    }
+
+                                    CurveMode.COPY_FAN -> {
+                                        when {
+                                            currentDraft is FanDraft.Copy -> {
+                                                currentDraft.copy(limits = currentDraft.limits)
+                                            }
+
+                                            else -> {
+                                                FanDraft.Copy(channel, limits = currentDraft.limits)
+                                            }
+                                        }
+                                    }
                                 }
+                            }
 
-                            is CurveStudioEvent.ChangeFixedPwm ->
+                            is CurveStudioEvent.ChangeFixedPwm -> {
                                 if (currentDraft is FanDraft.Fixed) {
                                     currentDraft.copy(powerPercent = event.pwm)
                                 } else {
                                     FanDraft.Fixed(channel, event.pwm, limits = currentDraft.limits)
                                 }
+                            }
 
-                            is CurveStudioEvent.ChangeSensorIndex ->
+                            is CurveStudioEvent.ChangeSensorIndex -> {
                                 when (currentDraft) {
                                     is FanDraft.AutoCurve -> currentDraft.copy(sensorIndex = event.sensorIndex)
                                     is FanDraft.TargetTemp -> currentDraft.copy(sensorIndex = event.sensorIndex)
                                     else -> currentDraft
                                 }
+                            }
 
-                            is CurveStudioEvent.ChangeTargetTemp ->
+                            is CurveStudioEvent.ChangeTargetTemp -> {
                                 if (currentDraft is FanDraft.TargetTemp) {
                                     currentDraft.copy(targetTempCelsius = event.targetTemp)
                                 } else {
                                     currentDraft
                                 }
+                            }
 
-                            is CurveStudioEvent.ChangeTMin ->
+                            is CurveStudioEvent.ChangeTMin -> {
                                 if (currentDraft is FanDraft.AutoCurve) {
                                     val newTMin = event.tMin
                                     val newTMax = if (currentDraft.tMax <= newTMin) (newTMin + 1.0).coerceAtMost(85.0) else currentDraft.tMax
@@ -210,8 +240,9 @@ class FansViewModel(
                                 } else {
                                     currentDraft
                                 }
+                            }
 
-                            is CurveStudioEvent.ChangeTMax ->
+                            is CurveStudioEvent.ChangeTMax -> {
                                 if (currentDraft is FanDraft.AutoCurve) {
                                     val newTMax = event.tMax
                                     val newTMin = if (currentDraft.tMin >= newTMax) (newTMax - 1.0).coerceAtLeast(10.0) else currentDraft.tMin
@@ -219,38 +250,47 @@ class FansViewModel(
                                 } else {
                                     currentDraft
                                 }
+                            }
 
-                            is CurveStudioEvent.ChangePMin ->
+                            is CurveStudioEvent.ChangePMin -> {
                                 when (currentDraft) {
                                     is FanDraft.AutoCurve -> currentDraft.copy(pMin = event.pMin)
                                     else -> currentDraft
                                 }
+                            }
 
-                            is CurveStudioEvent.ChangePMax ->
+                            is CurveStudioEvent.ChangePMax -> {
                                 when (currentDraft) {
                                     is FanDraft.AutoCurve -> currentDraft.copy(pMax = event.pMax)
                                     else -> currentDraft
                                 }
+                            }
 
-                            is CurveStudioEvent.ChangeShape ->
+                            is CurveStudioEvent.ChangeShape -> {
                                 when (currentDraft) {
                                     is FanDraft.AutoCurve -> currentDraft.copy(shape = event.shape)
                                     else -> currentDraft
                                 }
+                            }
 
-                            is CurveStudioEvent.ChangeCopySource ->
+                            is CurveStudioEvent.ChangeCopySource -> {
                                 when (currentDraft) {
-                                    is FanDraft.Copy ->
+                                    is FanDraft.Copy -> {
                                         currentDraft.copy(
                                             sourceChannel = event.sourceChannel,
                                         )
+                                    }
 
-                                    else -> FanDraft.Copy(channel, event.sourceChannel, limits = currentDraft.limits)
+                                    else -> {
+                                        FanDraft.Copy(channel, event.sourceChannel, limits = currentDraft.limits)
+                                    }
                                 }
+                            }
                         }
                     }
+                }
 
-                is FanLimitsEvent ->
+                is FanLimitsEvent -> {
                     updateSelectedFanDraft { currentDraft, _ ->
                         val currentLimits = currentDraft.limits
 
@@ -268,22 +308,27 @@ class FansViewModel(
                                     currentLimits.copy(minPowerPercent = newMin, maxPowerPercent = newMax)
                                 }
 
-                                is FanLimitsEvent.ChangeFallbackPower ->
+                                is FanLimitsEvent.ChangeFallbackPower -> {
                                     currentLimits.copy(fallbackPowerPercent = event.fallbackPowerPercent.coerceIn(0.0, 100.0))
+                                }
 
-                                is FanLimitsEvent.ChangeStartBoost ->
+                                is FanLimitsEvent.ChangeStartBoost -> {
                                     currentLimits.copy(startBoost = event.startBoost)
+                                }
 
-                                is FanLimitsEvent.ChangeHoldMinPower ->
+                                is FanLimitsEvent.ChangeHoldMinPower -> {
                                     currentLimits.copy(holdMinPower = event.holdMinPower)
+                                }
 
-                                FanLimitsEvent.ResetToStandardLimits ->
+                                FanLimitsEvent.ResetToStandardLimits -> {
                                     io.github.lamba92.openaqua.model.device.FanLimits.Standard
+                                }
                             }
                         currentDraft.withLimits(updatedLimits)
                     }
+                }
 
-                is FansUiEvent.DiscardFanDraft ->
+                is FansUiEvent.DiscardFanDraft -> {
                     state.update { current ->
                         if (current is FansUiState.Ready) {
                             current.copy(fanDrafts = current.fanDrafts - current.selectedFanChannel)
@@ -291,13 +336,15 @@ class FansViewModel(
                             current
                         }
                     }
+                }
 
-                is FansUiEvent.RequestFlash ->
+                is FansUiEvent.RequestFlash -> {
                     state.update { current ->
                         if (current is FansUiState.Ready) current.copy(flashDialogState = FlashDialogState.Shown) else current
                     }
+                }
 
-                is FansUiEvent.DismissFlashDialog ->
+                is FansUiEvent.DismissFlashDialog -> {
                     state.update { current ->
                         if (current is FansUiState.Ready && current.flashDialogState !is FlashDialogState.Flashing) {
                             current.copy(flashDialogState = FlashDialogState.NotShown)
@@ -305,6 +352,7 @@ class FansViewModel(
                             current
                         }
                     }
+                }
 
                 is FansUiEvent.ConfirmFlash -> {
                     val currentState = state.value as? FansUiState.Ready ?: return@launch
@@ -343,13 +391,16 @@ class FansViewModel(
                         } finally {
                             state.update { current ->
                                 when (current) {
-                                    is FansUiState.Ready ->
+                                    is FansUiState.Ready -> {
                                         current.copy(
                                             fanDrafts = current.fanDrafts - updates.keys,
                                             flashDialogState = FlashDialogState.NotShown,
                                         )
+                                    }
 
-                                    else -> current
+                                    else -> {
+                                        current
+                                    }
                                 }
                             }
                         }

@@ -3,11 +3,12 @@ clikt = "5.0.3"
 coil = "3.1.0"
 compose-hot-reload = "1.1.1"
 compose-plugin = "1.9.0"
-kermit = "2.0.5"
+kermit = "2.2.0"
 kodein = "7.33.0"
 kotlin = "2.4.0"
 kotlinpoet = "2.1.0"
 kotlinx-coroutines = "1.10.1"
+kotlinx-datetime = "0.8.0"
 kotlinx-io = "0.7.0"
 kotlinx-serialization = "1.8.0"
 ktlint = "14.2.0"
@@ -26,10 +27,12 @@ compose-desktop-windows-x64 = { module = "org.jetbrains.compose.desktop:desktop-
 compose-material-icons-extended = { module = "org.jetbrains.compose.material:material-icons-extended", version = "1.7.3" }
 compose-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "compose-plugin" }
 kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
+kermit-io = { module = "co.touchlab:kermit-io", version.ref = "kermit" }
 kodein-di = { module = "org.kodein.di:kodein-di", version.ref = "kodein" }
 kotlinpoet = { module = "com.squareup:kotlinpoet", version.ref = "kotlinpoet" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
 kotlinx-coroutines-swing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "kotlinx-coroutines" }
+kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
 kotlinx-io-core = { module = "org.jetbrains.kotlinx:kotlinx-io-core", version.ref = "kotlinx-io" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 xz = { module = "org.tukaani:xz", version.ref = "xz" }

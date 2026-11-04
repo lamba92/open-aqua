@@ -82,7 +82,10 @@ class SensorsViewModel(
         ) { deviceState, preferences, feedErrors, allDevices ->
             state.update { current ->
                 when (deviceState) {
-                    is DeviceState.Aqua.Connecting, is DeviceState.Aqua.Error -> SensorsUiState.Loading
+                    is DeviceState.Aqua.Connecting, is DeviceState.Aqua.Error -> {
+                        SensorsUiState.Loading
+                    }
+
                     is DeviceState.Aqua.Ready -> {
                         val sensors =
                             deviceState.telemetry.sensors.toSensorItems(
@@ -172,20 +175,23 @@ class SensorsViewModel(
     override fun onEvent(event: SensorsUiEvent): Job =
         viewModelScope.launch {
             when (event) {
-                is SensorsUiEvent.SelectSensor ->
+                is SensorsUiEvent.SelectSensor -> {
                     state.update { current ->
                         if (current is SensorsUiState.Ready) current.copy(selectedSensorChannel = event.channel) else current
                     }
+                }
 
-                is SensorsUiEvent.StartRenamingSensor ->
+                is SensorsUiEvent.StartRenamingSensor -> {
                     state.update { current ->
                         if (current is SensorsUiState.Ready) current.copy(renamingChannel = event.channel) else current
                     }
+                }
 
-                is SensorsUiEvent.DismissRenameDialog ->
+                is SensorsUiEvent.DismissRenameDialog -> {
                     state.update { current ->
                         if (current is SensorsUiState.Ready) current.copy(renamingChannel = null) else current
                     }
+                }
 
                 is SensorsUiEvent.RenameSensor -> {
                     viewModelLogger.i { "Renamed sensor channel ${event.channel} on device '$deviceId' to '${event.name}'" }
@@ -224,7 +230,7 @@ class SensorsViewModel(
                     }
                 }
 
-                is SensorsUiEvent.UpdateVirtualFeedDraft ->
+                is SensorsUiEvent.UpdateVirtualFeedDraft -> {
                     state.update { current ->
                         if (current is SensorsUiState.Ready) {
                             current.copy(virtualFeedDrafts = current.virtualFeedDrafts + (event.channel to event.draft))
@@ -232,8 +238,9 @@ class SensorsViewModel(
                             current
                         }
                     }
+                }
 
-                is SensorsUiEvent.DiscardVirtualFeedDraft ->
+                is SensorsUiEvent.DiscardVirtualFeedDraft -> {
                     state.update { current ->
                         if (current is SensorsUiState.Ready) {
                             current.copy(virtualFeedDrafts = current.virtualFeedDrafts - event.channel)
@@ -241,6 +248,7 @@ class SensorsViewModel(
                             current
                         }
                     }
+                }
 
                 is SensorsUiEvent.ApplyVirtualFeed -> {
                     val currentState = state.value as? SensorsUiState.Ready ?: return@launch
@@ -267,7 +275,7 @@ class SensorsViewModel(
                     }
                 }
 
-                is SensorsUiEvent.UpdateOffsetDraft ->
+                is SensorsUiEvent.UpdateOffsetDraft -> {
                     state.update { current ->
                         if (current is SensorsUiState.Ready) {
                             current.copy(offsetDrafts = current.offsetDrafts + (event.channel to event.offset))
@@ -275,8 +283,9 @@ class SensorsViewModel(
                             current
                         }
                     }
+                }
 
-                is SensorsUiEvent.DiscardOffsetDraft ->
+                is SensorsUiEvent.DiscardOffsetDraft -> {
                     state.update { current ->
                         if (current is SensorsUiState.Ready) {
                             current.copy(offsetDrafts = current.offsetDrafts - event.channel)
@@ -284,6 +293,7 @@ class SensorsViewModel(
                             current
                         }
                     }
+                }
 
                 is SensorsUiEvent.FlashOffset -> {
                     val currentState = state.value as? SensorsUiState.Ready ?: return@launch

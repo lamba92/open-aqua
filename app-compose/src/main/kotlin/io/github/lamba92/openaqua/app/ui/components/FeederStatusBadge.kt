@@ -72,7 +72,10 @@ fun FeederStatusBadge(
     style: FeederStatusBadgeStyle = FeederStatusBadgeStyle.forStatus(status),
 ) {
     when (status) {
-        FeederStatus.NONE -> Unit
+        FeederStatus.NONE -> {
+            // No badge rendered for NONE
+        }
+
         FeederStatus.OPERATIONAL,
         FeederStatus.ERROR,
         -> {

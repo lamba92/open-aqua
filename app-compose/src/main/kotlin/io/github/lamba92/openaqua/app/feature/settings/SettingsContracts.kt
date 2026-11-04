@@ -31,8 +31,6 @@ sealed interface SettingsEvent {
 
     data object RequestRestoreDefaults : SettingsEvent
 
-    data object ClearLogs : SettingsEvent
-
     data object OpenLogsFolder : SettingsEvent
 
     data object DismissRestoreDefaults : SettingsEvent

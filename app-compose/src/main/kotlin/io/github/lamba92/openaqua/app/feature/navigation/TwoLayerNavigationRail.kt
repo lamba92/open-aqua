@@ -145,13 +145,14 @@ private fun HostItem(
     modifier: Modifier = Modifier,
 ) {
     when (val host = state.host) {
-        is DeviceState.Host.Loading ->
+        is DeviceState.Host.Loading -> {
             HostLoadingItem(metrics = metrics, modifier = modifier)
+        }
 
         is DeviceState.Host.Connecting,
         is DeviceState.Host.Error,
         is DeviceState.Host.Ready,
-        ->
+        -> {
             HostNavigationRailItem(
                 host = host,
                 isSelected = state.selectedItem is DeviceNavState.SelectedItem.Host,
@@ -160,6 +161,7 @@ private fun HostItem(
                 metrics = metrics,
                 modifier = modifier,
             )
+        }
     }
 }
 
@@ -316,7 +318,9 @@ private fun HostNavigationRailItem(
     val status =
         when (host) {
             is DeviceState.Host.Error -> FeederStatus.ERROR
+
             is DeviceState.Host.Ready -> FeederStatus.OPERATIONAL
+
             is DeviceState.Host.Connecting,
             DeviceState.Host.Loading,
             -> FeederStatus.NONE

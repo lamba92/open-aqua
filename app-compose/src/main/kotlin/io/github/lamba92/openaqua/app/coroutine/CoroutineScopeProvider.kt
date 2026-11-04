@@ -13,7 +13,9 @@ import kotlinx.coroutines.currentCoroutineContext
 import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.coroutines.CoroutineContext
 
-class CoroutineLogger(val logger: Logger) : CoroutineContext.Element {
+class CoroutineLogger(
+    val logger: Logger,
+) : CoroutineContext.Element {
     companion object Key : CoroutineContext.Key<CoroutineLogger>
 
     override val key: CoroutineContext.Key<*> get() = Key
@@ -29,9 +31,11 @@ private class LoggingScopeImpl(
 ) : LoggingScope
 
 val CoroutineScope.logger: Logger
-    get() = (this as? LoggingScope)?.logger
-        ?: coroutineContext[CoroutineLogger]?.logger
-        ?: error("No CoroutineLogger found in CoroutineScope")
+    get() =
+        when (this) {
+            is LoggingScope -> logger
+            else -> coroutineContext[CoroutineLogger]?.logger ?: error("No CoroutineLogger found in CoroutineScope")
+        }
 
 suspend fun getLogger(): Logger =
     currentCoroutineContext()[CoroutineLogger]?.logger
@@ -51,8 +55,7 @@ context(context: T)
 fun <T : Any> CoroutineScopeProvider.getScope(
     dispatcher: CoroutineDispatcher = Dispatchers.Default,
     onException: ((CoroutineContext, Throwable) -> Unit)? = null,
-): LoggingScope =
-    getScope(name = context::class.qualifiedName!!, dispatcher = dispatcher, onException = onException)
+): LoggingScope = getScope(name = context::class.qualifiedName!!, dispatcher = dispatcher, onException = onException)
 
 class DefaultCoroutineScopeProvider(
     private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default,
@@ -71,10 +74,11 @@ class DefaultCoroutineScopeProvider(
         val childJob = SupervisorJob(rootSupervisor)
         val effectiveDispatcher = if (dispatcher == Dispatchers.Default && defaultDispatcher != Dispatchers.Default) defaultDispatcher else dispatcher
         val coroutineLogger = CoroutineLogger(logger)
-        val exceptionHandler = CoroutineExceptionHandler { ctx, throwable ->
-            logger.e(throwable) { "Uncaught exception in '$name': ${throwable.message}" }
-            onException?.invoke(ctx, throwable)
-        }
+        val exceptionHandler =
+            CoroutineExceptionHandler { ctx, throwable ->
+                logger.e(throwable) { "Uncaught exception in '$name': ${throwable.message}" }
+                onException?.invoke(ctx, throwable)
+            }
         val context = childJob + effectiveDispatcher + coroutineLogger + exceptionHandler + CoroutineName(name)
         val scope = LoggingScopeImpl(context, logger)
         scopes.add(scope)

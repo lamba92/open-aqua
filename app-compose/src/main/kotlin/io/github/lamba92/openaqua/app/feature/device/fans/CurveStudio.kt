@@ -123,8 +123,14 @@ fun CurveStudio(
     val activeSensor =
         remember(sensors, draft, draftConfig) {
             when (draft) {
-                is FanDraft.AutoCurve -> sensors.firstOrNull { it.channel == draft.sensorIndex }
-                is FanDraft.TargetTemp -> sensors.firstOrNull { it.channel == draft.sensorIndex }
+                is FanDraft.AutoCurve -> {
+                    sensors.firstOrNull { it.channel == draft.sensorIndex }
+                }
+
+                is FanDraft.TargetTemp -> {
+                    sensors.firstOrNull { it.channel == draft.sensorIndex }
+                }
+
                 is FanDraft.Copy -> {
                     val sensorIdx =
                         when (draftConfig) {
@@ -135,7 +141,10 @@ fun CurveStudio(
                         }
                     sensors.firstOrNull { it.channel == sensorIdx }
                 }
-                is FanDraft.Fixed -> null
+
+                is FanDraft.Fixed -> {
+                    null
+                }
             }
         }
 
@@ -217,6 +226,7 @@ fun CurveStudio(
                 )
                 visualizerGraph()
             }
+
             is FanDraft.AutoCurve -> {
                 AutoCurveModeControls(
                     sensors = sensors,
@@ -237,6 +247,7 @@ fun CurveStudio(
                     onToggleHideSensors = { onEvent(CurveStudioEvent.ToggleHideDisconnectedSensors) },
                 )
             }
+
             is FanDraft.TargetTemp -> {
                 TargetTempModeControls(
                     sensors = sensors,
@@ -248,6 +259,7 @@ fun CurveStudio(
                     onToggleHideSensors = { onEvent(CurveStudioEvent.ToggleHideDisconnectedSensors) },
                 )
             }
+
             is FanDraft.Copy -> {
                 CopyFanModeControls(
                     otherFans = otherFans,
@@ -1328,17 +1340,27 @@ private fun evaluatePwmAt(
     temp: Double,
 ): Double =
     when (config) {
-        is FixedFanConfig -> config.powerPercent
+        is FixedFanConfig -> {
+            config.powerPercent
+        }
+
         is AutoCurveFanConfig -> {
             val points = config.toCurveFanConfig().points
             evaluatePointsAt(points, temp)
         }
-        is CurveFanConfig -> evaluatePointsAt(config.points, temp)
+
+        is CurveFanConfig -> {
+            evaluatePointsAt(config.points, temp)
+        }
+
         is TargetTempFanConfig -> {
             val diff = temp - config.targetTempCelsius
             (50.0 + diff * 15.0).coerceIn(0.0, 100.0)
         }
-        else -> 0.0
+
+        else -> {
+            0.0
+        }
     }.coerceIn(0.0, 100.0)
 
 private fun evaluatePointsAt(
