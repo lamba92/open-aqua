@@ -1,6 +1,7 @@
 plugins {
     openaqua.convention.jvm
     openaqua.buildinfo
+    openaqua.localization
     id(libs.plugins.kotlin.compose)
     id(libs.plugins.compose.multiplatform)
     id(libs.plugins.compose.hot.reload)
