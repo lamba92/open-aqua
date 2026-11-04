@@ -314,4 +314,17 @@
     <string name="about_github_title">GitHub Repository</string>
     <string name="about_github_desc">View source code, report issues, and follow development on GitHub.</string>
     <string name="about_github_button">Open on GitHub</string>
+
+    <!-- Settings Tabs & Logs -->
+    <string name="settings_tab_general">General</string>
+    <string name="settings_tab_logs">Logs</string>
+    <string name="settings_tab_subtitle">Preferences &amp; Diagnostics</string>
+    <string name="settings_logs_title">Application Logs</string>
+    <string name="settings_logs_subtitle">Live diagnostic output and engine communication logs</string>
+    <string name="settings_logs_clear">Clear logs</string>
+    <string name="settings_logs_open_folder">Open logs folder</string>
+    <string name="settings_logs_copy">Copy all</string>
+    <string name="settings_logs_copied">Copied!</string>
+    <string name="settings_logs_empty">No logs recorded yet</string>
+    <string name="settings_logs_lines_count">%1$d lines</string>
 </resources>

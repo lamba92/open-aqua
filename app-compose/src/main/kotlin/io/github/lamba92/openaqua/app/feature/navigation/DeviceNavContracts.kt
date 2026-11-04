@@ -1,6 +1,7 @@
 package io.github.lamba92.openaqua.app.feature.navigation
 
 import io.github.lamba92.openaqua.app.feature.device.common.CommonDeviceTab
+import io.github.lamba92.openaqua.app.feature.settings.SettingsTab
 import io.github.lamba92.openaqua.app.model.NavigationSelectionStoredData
 import io.github.lamba92.openaqua.app.repository.DeviceState
 import io.github.lamba92.openaqua.model.device.DeviceId
@@ -21,7 +22,9 @@ data class DeviceNavState(
 
         data object About : SelectedItem
 
-        data object Settings : SelectedItem
+        data class Settings(
+            val selectedTab: SettingsTab = SettingsTab.GENERAL,
+        ) : SelectedItem
     }
 }
 
@@ -30,7 +33,7 @@ fun DeviceNavState.SelectedItem.toStoredData(): NavigationSelectionStoredData =
         DeviceNavState.SelectedItem.Host -> NavigationSelectionStoredData.Host
         is DeviceNavState.SelectedItem.Device -> NavigationSelectionStoredData.Device(deviceId, selectedTab)
         DeviceNavState.SelectedItem.About -> NavigationSelectionStoredData.About
-        DeviceNavState.SelectedItem.Settings -> NavigationSelectionStoredData.Settings
+        is DeviceNavState.SelectedItem.Settings -> NavigationSelectionStoredData.Settings(selectedTab)
     }
 
 fun NavigationSelectionStoredData.toSelectedItem(): DeviceNavState.SelectedItem =
@@ -38,7 +41,7 @@ fun NavigationSelectionStoredData.toSelectedItem(): DeviceNavState.SelectedItem 
         NavigationSelectionStoredData.Host -> DeviceNavState.SelectedItem.Host
         is NavigationSelectionStoredData.Device -> DeviceNavState.SelectedItem.Device(deviceId, tab)
         NavigationSelectionStoredData.About -> DeviceNavState.SelectedItem.About
-        NavigationSelectionStoredData.Settings -> DeviceNavState.SelectedItem.Settings
+        is NavigationSelectionStoredData.Settings -> DeviceNavState.SelectedItem.Settings(tab)
     }
 
 sealed interface DeviceNavEvent {
@@ -55,6 +58,10 @@ sealed interface DeviceNavEvent {
     data object SelectAbout : DeviceNavEvent
 
     data object SelectSettings : DeviceNavEvent
+
+    data class SelectSettingsTab(
+        val tab: SettingsTab,
+    ) : DeviceNavEvent
 }
 
 sealed interface DeviceNavEffect

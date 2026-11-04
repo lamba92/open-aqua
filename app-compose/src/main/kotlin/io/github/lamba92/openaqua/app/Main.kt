@@ -32,7 +32,9 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
+import co.touchlab.kermit.CommonWriter
 import co.touchlab.kermit.Logger
+import co.touchlab.kermit.loggerConfigInit
 import coil3.ImageLoader
 import coil3.compose.setSingletonImageLoaderFactory
 import coil3.svg.SvgDecoder
@@ -49,6 +51,7 @@ import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavViewModel
 import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavigationRailScaffold
 import io.github.lamba92.openaqua.app.feature.settings.SettingsScreen
 import io.github.lamba92.openaqua.app.i18n.AppLocaleProvider
+import io.github.lamba92.openaqua.app.logging.AppLogService
 import io.github.lamba92.openaqua.app.model.AppStoredData
 import io.github.lamba92.openaqua.app.model.locale
 import io.github.lamba92.openaqua.app.model.toPosition
@@ -73,20 +76,32 @@ import org.jetbrains.compose.resources.stringResource
 import org.kodein.di.instance
 import java.awt.Taskbar
 import javax.imageio.ImageIO
+import kotlin.io.path.Path
 import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(FlowPreview::class)
 fun main() {
-    val logger = Logger.withTag("Main")
-    logger.i { "Starting OpenAqua..." }
+    val baseAppDataDir = AppDataRepository.defaultAppDataPath().parent ?: Path(".")
+    val logsDir = baseAppDataDir.resolve("logs")
+    val rootScopeProvider = DefaultCoroutineScopeProvider()
+    val appLogService = AppLogService(logsDirectory = logsDir, scopeProvider = rootScopeProvider)
+    val appLogger =
+        Logger(
+            config = loggerConfigInit(CommonWriter(), appLogService.logWriter),
+            tag = "OpenAqua",
+        )
+    val mainLogger = appLogger.withTag("Main")
+    mainLogger.i { "Starting OpenAqua..." }
     val engines = EngineExtractor.extract()
-    logger.i { "Extracted engine binaries: device='${engines.deviceEngine.fileName}', host='${engines.hostEngine.fileName}'" }
-    val scopeProvider = DefaultCoroutineScopeProvider()
+    mainLogger.i { "Extracted engine binaries: device='${engines.deviceEngine.fileName}', host='${engines.hostEngine.fileName}'" }
+    val appScopeProvider = DefaultCoroutineScopeProvider(baseLogger = appLogger)
     val di =
         createOpenAquaDI(
             deviceEnginePath = engines.deviceEngine,
             hostEnginePath = engines.hostEngine,
-            scopeProvider = scopeProvider,
+            appLogService = appLogService,
+            scopeProvider = appScopeProvider,
+            logger = appLogger,
         )
     val appDataRepository by di.instance<AppDataRepository>()
 
@@ -127,9 +142,10 @@ fun main() {
         AppLocaleProvider(storedData.language.locale) {
             Window(
                 onCloseRequest = {
-                    logger.i { "Application closing, cancelling active scopes..." }
+                    mainLogger.i { "Application closing, cancelling active scopes..." }
                     appDataRepository.saveWindowStateSync(windowState.toStoredData(storedData.windowState))
-                    scopeProvider.cancelAll()
+                    appScopeProvider.cancelAll()
+                    rootScopeProvider.cancelAll()
                     exitApplication()
                 },
                 state = windowState,
@@ -202,8 +218,12 @@ fun OpenAquaApp(navViewModel: DeviceNavViewModel = rememberInstance()) {
                 DeviceNavState.SelectedItem.About ->
                     AboutScreen()
 
-                DeviceNavState.SelectedItem.Settings ->
-                    SettingsScreen(viewModel = rememberInstance())
+                is DeviceNavState.SelectedItem.Settings ->
+                    SettingsScreen(
+                        selectedTab = item.selectedTab,
+                        onSelectTab = { navViewModel.onEvent(DeviceNavEvent.SelectSettingsTab(it)) },
+                        viewModel = rememberInstance(),
+                    )
 
                 DeviceNavState.SelectedItem.Host ->
                     HostScreen(viewModel = rememberInstance())

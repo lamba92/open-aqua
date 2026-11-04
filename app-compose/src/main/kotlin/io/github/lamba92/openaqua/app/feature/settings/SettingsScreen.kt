@@ -8,15 +8,19 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Article
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Remove
@@ -25,6 +29,10 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.NavigationDrawerItem
+import androidx.compose.material3.NavigationDrawerItemDefaults
+import androidx.compose.material3.PermanentDrawerSheet
+import androidx.compose.material3.PermanentNavigationDrawer
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Switch
@@ -36,12 +44,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.lamba92.openaqua.app.model.AppLanguage
@@ -107,6 +118,9 @@ import open_aqua.app_compose.generated.resources.settings_restore_defaults_desc
 import open_aqua.app_compose.generated.resources.settings_restore_defaults_title
 import open_aqua.app_compose.generated.resources.settings_screen_subtitle
 import open_aqua.app_compose.generated.resources.settings_screen_title
+import open_aqua.app_compose.generated.resources.settings_tab_general
+import open_aqua.app_compose.generated.resources.settings_tab_logs
+import open_aqua.app_compose.generated.resources.settings_tab_subtitle
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import kotlin.math.roundToInt
@@ -114,12 +128,49 @@ import kotlin.math.roundToInt
 @Composable
 fun SettingsScreen(
     viewModel: SettingsViewModel,
+    selectedTab: SettingsTab = SettingsTab.GENERAL,
+    onSelectTab: (SettingsTab) -> Unit = {},
+    modifier: Modifier = Modifier,
+) {
+    val state by viewModel.state.collectAsState()
+    val saveableStateHolder = rememberSaveableStateHolder()
+    val generalScrollState = rememberSaveable(saver = ScrollState.Saver) { ScrollState(0) }
+
+    SettingsDrawerScaffold(
+        selectedTab = selectedTab,
+        onSelectTab = onSelectTab,
+        modifier = modifier,
+    ) {
+        saveableStateHolder.SaveableStateProvider(selectedTab) {
+            when (selectedTab) {
+                SettingsTab.GENERAL ->
+                    GeneralSettingsContent(
+                        state = state,
+                        viewModel = viewModel,
+                        scrollState = generalScrollState,
+                    )
+
+                SettingsTab.LOGS ->
+                    LogsContent(
+                        logs = state.logs,
+                        onClearLogs = { viewModel.onEvent(SettingsEvent.ClearLogs) },
+                        onOpenLogsFolder = { viewModel.onEvent(SettingsEvent.OpenLogsFolder) },
+                    )
+            }
+        }
+    }
+}
+
+@Composable
+private fun GeneralSettingsContent(
+    state: SettingsState,
+    viewModel: SettingsViewModel,
+    scrollState: ScrollState,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsState()
     val colors = OpenAquaTheme.colors
     val metrics = OpenAquaTheme.metrics
-
     Box(
         modifier = modifier.fillMaxSize(),
     ) {
@@ -149,8 +200,6 @@ fun SettingsScreen(
                     modifier = Modifier.padding(horizontal = metrics.spacingXxl),
                 )
             }
-
-            val scrollState = rememberSaveable(saver = ScrollState.Saver) { ScrollState(0) }
 
             // Scrolling content with internal padding and top fading edge
             Box(
@@ -241,6 +290,114 @@ fun SettingsScreen(
             )
         }
     }
+}
+
+@Composable
+private fun SettingsDrawerScaffold(
+    selectedTab: SettingsTab,
+    onSelectTab: (SettingsTab) -> Unit,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    val colors = OpenAquaTheme.colors
+    PermanentNavigationDrawer(
+        drawerContent = {
+            PermanentDrawerSheet(
+                modifier =
+                    Modifier
+                        .width(220.dp)
+                        .fillMaxHeight(),
+                drawerContainerColor = colors.surfaceLow,
+                drawerContentColor = colors.textPrimary,
+                drawerShape = RoundedCornerShape(0.dp),
+            ) {
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxHeight()
+                            .padding(horizontal = 12.dp, vertical = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        text = stringResource(Res.string.settings_screen_title),
+                        color = colors.textPrimary,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(horizontal = 12.dp),
+                    )
+                    Text(
+                        text = stringResource(Res.string.settings_tab_subtitle),
+                        color = colors.primary,
+                        fontSize = 13.sp,
+                        fontFamily = FontFamily.Monospace,
+                        modifier = Modifier.padding(horizontal = 12.dp),
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    HorizontalDivider(color = colors.borderOutline)
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    val drawerColors =
+                        NavigationDrawerItemDefaults.colors(
+                            selectedContainerColor = colors.surfaceHigh,
+                            unselectedContainerColor = Color.Transparent,
+                            selectedIconColor = colors.primaryBright,
+                            unselectedIconColor = colors.textSecondary,
+                            selectedTextColor = colors.textPrimary,
+                            unselectedTextColor = colors.textSecondary,
+                        )
+
+                    NavigationDrawerItem(
+                        label = {
+                            Text(
+                                text = stringResource(Res.string.settings_tab_general),
+                                fontSize = 15.sp,
+                                lineHeight = 22.sp,
+                                fontWeight = if (selectedTab == SettingsTab.GENERAL) FontWeight.SemiBold else FontWeight.Medium,
+                            )
+                        },
+                        icon = {
+                            Icon(
+                                painter = painterResource(Res.drawable.ic_tune),
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        },
+                        selected = selectedTab == SettingsTab.GENERAL,
+                        onClick = { onSelectTab(SettingsTab.GENERAL) },
+                        colors = drawerColors,
+                        shape = RoundedCornerShape(8.dp),
+                    )
+
+                    NavigationDrawerItem(
+                        label = {
+                            Text(
+                                text = stringResource(Res.string.settings_tab_logs),
+                                fontSize = 15.sp,
+                                lineHeight = 22.sp,
+                                fontWeight = if (selectedTab == SettingsTab.LOGS) FontWeight.SemiBold else FontWeight.Medium,
+                            )
+                        },
+                        icon = {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Outlined.Article,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        },
+                        selected = selectedTab == SettingsTab.LOGS,
+                        onClick = { onSelectTab(SettingsTab.LOGS) },
+                        colors = drawerColors,
+                        shape = RoundedCornerShape(8.dp),
+                    )
+                }
+            }
+        },
+        modifier = modifier.fillMaxSize(),
+        content = content,
+    )
 }
 
 @Composable

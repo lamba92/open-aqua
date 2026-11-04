@@ -12,6 +12,7 @@ import io.github.lamba92.openaqua.app.feature.device.sensors.SensorsViewModel
 import io.github.lamba92.openaqua.app.feature.host.HostViewModel
 import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavViewModel
 import io.github.lamba92.openaqua.app.feature.settings.SettingsViewModel
+import io.github.lamba92.openaqua.app.logging.AppLogService
 import io.github.lamba92.openaqua.app.repository.AppDataRepository
 import io.github.lamba92.openaqua.app.repository.DeviceDataCacheService
 import io.github.lamba92.openaqua.app.repository.OpenAquaDeviceEngineApi
@@ -29,9 +30,11 @@ import java.nio.file.Path
 fun createAppModule(
     deviceEnginePath: Path,
     hostEnginePath: Path,
+    appLogService: AppLogService,
     logger: Logger = Logger,
     scopeProvider: CoroutineScopeProvider = DefaultCoroutineScopeProvider(baseLogger = logger),
 ) = DI.Module("appModule") {
+    bindSingleton { appLogService }
     bindSingleton<Logger> { logger }
     bindSingleton<CoroutineScopeProvider> { scopeProvider }
     bindSingleton<OpenAquaDeviceEngineApi> { OpenAquaDeviceEngineApi(enginePath = deviceEnginePath) }
@@ -60,7 +63,7 @@ fun createAppModule(
             scopeProvider = instance(),
         )
     }
-    bindSingleton { SettingsViewModel(appDataRepository = instance(), scopeProvider = instance()) }
+    bindSingleton { SettingsViewModel(appDataRepository = instance(), appLogService = instance(), scopeProvider = instance()) }
     bindSingleton {
         HostViewModel(
             dataCacheService = instance(),
@@ -99,11 +102,12 @@ fun createAppModule(
 fun createOpenAquaDI(
     deviceEnginePath: Path,
     hostEnginePath: Path,
+    appLogService: AppLogService,
     logger: Logger = Logger,
     scopeProvider: CoroutineScopeProvider = DefaultCoroutineScopeProvider(baseLogger = logger),
 ): DI =
     DI {
-        import(createAppModule(deviceEnginePath, hostEnginePath, logger, scopeProvider))
+        import(createAppModule(deviceEnginePath, hostEnginePath, appLogService, logger, scopeProvider))
     }
 
 val LocalDI = staticCompositionLocalOf<DI> { error("No DI container provided") }

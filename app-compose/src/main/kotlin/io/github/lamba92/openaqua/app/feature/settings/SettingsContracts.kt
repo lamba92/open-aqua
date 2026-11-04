@@ -6,6 +6,11 @@ import io.github.lamba92.openaqua.app.theme.AppMetricsScale
 import io.github.lamba92.openaqua.app.theme.FontScaleConstants
 import io.github.lamba92.openaqua.theme.AppColorScheme
 
+enum class SettingsTab {
+    GENERAL,
+    LOGS,
+}
+
 data class SettingsState(
     val showResetConfirmationDialog: Boolean = false,
     val dataFolderPath: String,
@@ -18,12 +23,17 @@ data class SettingsState(
     val hideDisconnectedSensorsInFans: Boolean = false,
     val hideDisconnectedSensors: Boolean = false,
     val hideUnconfiguredVirtualSensors: Boolean = false,
+    val logs: List<String> = emptyList(),
 )
 
 sealed interface SettingsEvent {
     data object OpenDataFolder : SettingsEvent
 
     data object RequestRestoreDefaults : SettingsEvent
+
+    data object ClearLogs : SettingsEvent
+
+    data object OpenLogsFolder : SettingsEvent
 
     data object DismissRestoreDefaults : SettingsEvent
 

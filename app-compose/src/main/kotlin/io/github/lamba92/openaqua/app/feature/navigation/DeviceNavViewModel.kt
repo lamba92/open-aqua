@@ -4,6 +4,7 @@ import io.github.lamba92.openaqua.app.coroutine.CoroutineScopeProvider
 import io.github.lamba92.openaqua.app.coroutine.LoggingScope
 import io.github.lamba92.openaqua.app.coroutine.getScope
 import io.github.lamba92.openaqua.app.feature.device.common.CommonDeviceTab
+import io.github.lamba92.openaqua.app.feature.settings.SettingsTab
 import io.github.lamba92.openaqua.app.model.NavigationSelectionStoredData
 import io.github.lamba92.openaqua.app.mvi.MVIViewModel
 import io.github.lamba92.openaqua.app.mvi.viewModelLogger
@@ -77,7 +78,7 @@ class DeviceNavViewModel(
                             null,
                             DeviceNavState.SelectedItem.Host,
                             DeviceNavState.SelectedItem.About,
-                            DeviceNavState.SelectedItem.Settings,
+                            is DeviceNavState.SelectedItem.Settings,
                             -> item
                         },
                 )
@@ -101,7 +102,7 @@ class DeviceNavViewModel(
                         when (savedSelection) {
                             NavigationSelectionStoredData.Host -> DeviceNavState.SelectedItem.Host
                             NavigationSelectionStoredData.About -> DeviceNavState.SelectedItem.About
-                            NavigationSelectionStoredData.Settings -> DeviceNavState.SelectedItem.Settings
+                            is NavigationSelectionStoredData.Settings -> DeviceNavState.SelectedItem.Settings(savedSelection.tab)
                             is NavigationSelectionStoredData.Device -> {
                                 val aquaDevices: List<DeviceState.Aqua> =
                                     dataCacheService.state
@@ -139,6 +140,7 @@ class DeviceNavViewModel(
                 is DeviceNavEvent.SelectTab -> selectTab(event.tab)
                 DeviceNavEvent.SelectAbout -> selectAbout()
                 DeviceNavEvent.SelectSettings -> selectSettings()
+                is DeviceNavEvent.SelectSettingsTab -> selectSettingsTab(event.tab)
             }
         }
 
@@ -178,7 +180,7 @@ class DeviceNavViewModel(
                 null,
                 DeviceNavState.SelectedItem.Host,
                 DeviceNavState.SelectedItem.About,
-                DeviceNavState.SelectedItem.Settings,
+                is DeviceNavState.SelectedItem.Settings,
                 -> currentState
             }
         }
@@ -194,9 +196,21 @@ class DeviceNavViewModel(
 
     private fun selectSettings() {
         viewModelLogger.i { "Navigating to Settings screen" }
+        val target =
+            when (val current = state.value.selectedItem) {
+                is DeviceNavState.SelectedItem.Settings -> current
+                else -> DeviceNavState.SelectedItem.Settings()
+            }
         state.update { currentState ->
-            currentState.copy(selectedItem = DeviceNavState.SelectedItem.Settings)
+            currentState.copy(selectedItem = target)
         }
-        appDataRepository.setNavigationSelection(NavigationSelectionStoredData.Settings)
+        appDataRepository.setNavigationSelection(target.toStoredData())
+    }
+
+    private fun selectSettingsTab(tab: SettingsTab) {
+        viewModelLogger.i { "Selected settings tab '$tab'" }
+        val updated = DeviceNavState.SelectedItem.Settings(selectedTab = tab)
+        state.update { currentState -> currentState.copy(selectedItem = updated) }
+        appDataRepository.setNavigationSelection(updated.toStoredData())
     }
 }

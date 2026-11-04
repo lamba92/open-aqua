@@ -229,4 +229,17 @@
     <string name="settings_reset_dialog_confirm">Ripristina dati</string>
     <string name="curve_target_temp_range_error">La temperatura target deve essere compresa tra %1$s°C e %2$s°C</string>
     <string name="curve_target_temp_explanation">Il dispositivo esegue un regolatore PID autonomo ad anello chiuso direttamente sul proprio microcontrollore. La velocità della ventola viene continuamente regolata per stabilizzare il sensore selezionato su questo setpoint target senza richiedere software o punti curva.</string>
+
+    <!-- Settings Tabs & Logs -->
+    <string name="settings_tab_general">Generale</string>
+    <string name="settings_tab_logs">Log</string>
+    <string name="settings_tab_subtitle">Preferenze &amp; Diagnostica</string>
+    <string name="settings_logs_title">Log dell\'Applicazione</string>
+    <string name="settings_logs_subtitle">Output diagnostico in tempo reale e log di comunicazione con i motori</string>
+    <string name="settings_logs_clear">Cancella log</string>
+    <string name="settings_logs_open_folder">Apri cartella log</string>
+    <string name="settings_logs_copy">Copia tutto</string>
+    <string name="settings_logs_copied">Copiato!</string>
+    <string name="settings_logs_empty">Nessun log registrato finora</string>
+    <string name="settings_logs_lines_count">%1$d righe</string>
 </resources>

@@ -7,6 +7,7 @@ import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.WindowState
 import io.github.lamba92.openaqua.app.feature.device.common.ChannelName
 import io.github.lamba92.openaqua.app.feature.device.common.CommonDeviceTab
+import io.github.lamba92.openaqua.app.feature.settings.SettingsTab
 import io.github.lamba92.openaqua.app.theme.AppFontFamily
 import io.github.lamba92.openaqua.app.theme.AppMetricsScale
 import io.github.lamba92.openaqua.app.theme.FontScaleConstants
@@ -56,7 +57,9 @@ sealed interface NavigationSelectionStoredData {
 
     @Serializable
     @SerialName("settings")
-    data object Settings : NavigationSelectionStoredData
+    data class Settings(
+        val tab: SettingsTab = SettingsTab.GENERAL,
+    ) : NavigationSelectionStoredData
 }
 
 @Serializable

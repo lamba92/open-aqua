@@ -3,6 +3,7 @@ package io.github.lamba92.openaqua.app.feature.settings
 import io.github.lamba92.openaqua.app.coroutine.CoroutineScopeProvider
 import io.github.lamba92.openaqua.app.coroutine.LoggingScope
 import io.github.lamba92.openaqua.app.coroutine.getScope
+import io.github.lamba92.openaqua.app.logging.AppLogService
 import io.github.lamba92.openaqua.app.mvi.MVIViewModel
 import io.github.lamba92.openaqua.app.mvi.viewModelLogger
 import io.github.lamba92.openaqua.app.repository.AppDataRepository
@@ -20,6 +21,7 @@ import kotlin.io.path.absolutePathString
 
 class SettingsViewModel(
     private val appDataRepository: AppDataRepository,
+    private val appLogService: AppLogService,
     scopeProvider: CoroutineScopeProvider,
 ) : MVIViewModel<SettingsState, SettingsEvent, SettingsEffect> {
     override val viewModelScope: LoggingScope = scopeProvider.getScope()
@@ -48,6 +50,10 @@ class SettingsViewModel(
                     )
                 }
             }.launchIn(viewModelScope)
+
+        appLogService.logLines
+            .onEach { lines -> state.update { it.copy(logs = lines) } }
+            .launchIn(viewModelScope)
     }
 
     override fun onEvent(event: SettingsEvent): Job =
@@ -56,6 +62,16 @@ class SettingsViewModel(
                 SettingsEvent.OpenDataFolder -> {
                     viewModelLogger.i { "Opening app data folder: ${state.value.dataFolderPath}" }
                     appDataRepository.openDataFolder()
+                }
+
+                SettingsEvent.ClearLogs -> {
+                    viewModelLogger.i { "Clearing application logs" }
+                    appLogService.clearLogs()
+                }
+
+                SettingsEvent.OpenLogsFolder -> {
+                    viewModelLogger.i { "Opening logs folder: ${appLogService.logsDirectory}" }
+                    appLogService.openLogsFolder()
                 }
 
                 SettingsEvent.RequestRestoreDefaults -> state.update { it.copy(showResetConfirmationDialog = true) }
