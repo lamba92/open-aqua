@@ -277,6 +277,7 @@
     <string name="sensor_feeder_source_host">Sensor del host</string>
     <string name="sensor_feeder_source_device">Sensor del dispositivo</string>
     <string name="sensor_feeder_apply">Aplicar flujo</string>
+    <string name="sensor_feeder_stop">Detener flujo</string>
     <string name="sensor_feeder_status_streaming">Transmitiendo (1.0 Hz)</string>
     <string name="sensor_feeder_status_error">Error de flujo</string>
     <string name="sensor_feeder_status_idle">Alimentador inactivo</string>

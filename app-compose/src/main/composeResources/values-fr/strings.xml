@@ -277,6 +277,7 @@
     <string name="sensor_feeder_source_host">Capteur hôte</string>
     <string name="sensor_feeder_source_device">Capteur appareil</string>
     <string name="sensor_feeder_apply">Appliquer le flux</string>
+    <string name="sensor_feeder_stop">Arrêter le flux</string>
     <string name="sensor_feeder_status_streaming">Diffusion active (1.0 Hz)</string>
     <string name="sensor_feeder_status_error">Erreur de flux</string>
     <string name="sensor_feeder_status_idle">Injecteur inactif</string>

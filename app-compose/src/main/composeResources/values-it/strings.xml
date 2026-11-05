@@ -290,6 +290,7 @@
     <string name="sensor_feeder_source_host">Sensore Host</string>
     <string name="sensor_feeder_source_device">Sensore Dispositivo</string>
     <string name="sensor_feeder_apply">Applica Flusso Sensore</string>
+    <string name="sensor_feeder_stop">Interrompi Flusso Sensore</string>
     <string name="sensor_feeder_status_streaming">In trasmissione (1.0 Hz)</string>
     <string name="sensor_feeder_status_error">Errore Trasmissione</string>
     <string name="sensor_feeder_status_idle">Inoltro Inattivo</string>

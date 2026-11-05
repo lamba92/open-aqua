@@ -200,6 +200,7 @@
     <string name="sensor_feeder_source_host">Host Sensor</string>
     <string name="sensor_feeder_source_device">Device Sensor</string>
     <string name="sensor_feeder_apply">Apply Feeder Stream</string>
+    <string name="sensor_feeder_stop">Stop Feeder Stream</string>
     <string name="sensor_feeder_status_streaming">Streaming (1.0 Hz)</string>
     <string name="sensor_feeder_status_error">Feed Error</string>
     <string name="sensor_feeder_status_idle">Feeder Idle</string>

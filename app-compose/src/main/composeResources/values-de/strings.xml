@@ -277,6 +277,7 @@
     <string name="sensor_feeder_source_host">Host-Sensor</string>
     <string name="sensor_feeder_source_device">Geräte-Sensor</string>
     <string name="sensor_feeder_apply">Feeder-Stream anwenden</string>
+    <string name="sensor_feeder_stop">Feeder-Stream stoppen</string>
     <string name="sensor_feeder_status_streaming">Übertragung aktiv (1.0 Hz)</string>
     <string name="sensor_feeder_status_error">Feeder-Fehler</string>
     <string name="sensor_feeder_status_idle">Feeder inaktiv</string>

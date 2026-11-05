@@ -113,6 +113,7 @@ import open_aqua.app_compose.generated.resources.sensor_feeder_source_none
 import open_aqua.app_compose.generated.resources.sensor_feeder_status_error
 import open_aqua.app_compose.generated.resources.sensor_feeder_status_idle
 import open_aqua.app_compose.generated.resources.sensor_feeder_status_streaming
+import open_aqua.app_compose.generated.resources.sensor_feeder_stop
 import open_aqua.app_compose.generated.resources.sensor_feeder_target_label
 import open_aqua.app_compose.generated.resources.sensor_feeder_title
 import open_aqua.app_compose.generated.resources.sensor_hardware_channel
@@ -1107,7 +1108,13 @@ fun VirtualSensorFeederCard(
                 }
 
                 OpenAquaButton(
-                    text = stringResource(Res.string.sensor_feeder_apply),
+                    text =
+                        stringResource(
+                            when (draft) {
+                                is VirtualSensorFeedDraft.None -> Res.string.sensor_feeder_stop
+                                else -> Res.string.sensor_feeder_apply
+                            },
+                        ),
                     isLoading = isApplying,
                     enabled = isModified && !isApplying,
                     onClick = onApply,
