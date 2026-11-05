@@ -154,6 +154,14 @@ fun defaultMockStorage(): MockConfigStorage =
                     serial = "13237-54069-MOCK",
                     firmwareVersion = 1015,
                 ),
+                DetectedHardwareDevice(
+                    id = DeviceId.from("mock_broken_octo_0"),
+                    alias = DeviceAlias.from("broken-octo-1"),
+                    type = DeviceType.OCTO,
+                    name = "Broken OCTO",
+                    serial = "13235-54067-BROKEN",
+                    firmwareVersion = 1020,
+                ),
             ),
         configs =
             mapOf(

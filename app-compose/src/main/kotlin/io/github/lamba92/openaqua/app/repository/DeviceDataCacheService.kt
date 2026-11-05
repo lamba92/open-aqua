@@ -165,19 +165,23 @@ class DeviceDataCacheService(
                 isFirstReady = false
                 getLogger().i { "Aqua device '$name' (id=$id) is ready with ${state.config.fans.size} fan(s)" }
             }
-        }.retryAtLeast(3)
-            .catch { cause ->
-                getLogger().e(cause) { "Error reading device '$id' ($name): ${cause.message}" }
-                emit(DeviceState.Aqua.Error(this@getStateFlow, descriptor, cause.toDeviceErrorType()))
-            }
+        }.catch { cause ->
+            getLogger().e(cause) { "Error reading device '$id' ($name): ${cause.message}" }
+            emit(DeviceState.Aqua.Error(this@getStateFlow, descriptor, cause.toDeviceErrorType()))
+        }
     }
 }
 
 private fun Throwable.toDeviceErrorType(): DeviceErrorType =
-    when (this) {
-        is TimeoutCancellationException -> DeviceErrorType.CommunicationTimeout
-        is SerializationException -> DeviceErrorType.ProtocolMismatch
-        is IOException -> DeviceErrorType.IoFailure
+    when {
+        this is TimeoutCancellationException -> DeviceErrorType.CommunicationTimeout
+        this is SerializationException -> DeviceErrorType.ProtocolMismatch
+        this is IOException -> DeviceErrorType.IoFailure
+        message?.contains("open", ignoreCase = true) == true ||
+            message?.contains("permission", ignoreCase = true) == true ||
+            message?.contains("access", ignoreCase = true) == true ||
+            message?.contains("hidraw", ignoreCase = true) == true ||
+            message?.contains("device", ignoreCase = true) == true -> DeviceErrorType.IoFailure
         else -> DeviceErrorType.Unknown
     }
 

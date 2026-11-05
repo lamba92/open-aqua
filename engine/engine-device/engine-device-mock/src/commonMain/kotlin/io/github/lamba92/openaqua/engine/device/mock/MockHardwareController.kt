@@ -42,7 +42,17 @@ import kotlin.time.Duration.Companion.milliseconds
 class MockHardwareController : HardwareController {
     override fun scanDevices(): List<DetectedHardwareDevice> = loadMockStorage().devices
 
+    private fun checkDeviceAccessible(device: DetectedHardwareDevice) {
+        if (device.id.value.contains("broken", ignoreCase = true) ||
+            device.alias.value.contains("broken", ignoreCase = true) ||
+            device.name.contains("broken", ignoreCase = true)
+        ) {
+            error("Cannot open /dev/hidraw for reading")
+        }
+    }
+
     override fun readConfig(device: DetectedHardwareDevice): DeviceConfig {
+        checkDeviceAccessible(device)
         val storage = loadMockStorage()
         return storage.configs[device.alias.value]
             ?: storage.configs[device.id.value]
@@ -53,6 +63,7 @@ class MockHardwareController : HardwareController {
         device: DetectedHardwareDevice,
         request: FlashConfigRequest,
     ): DeviceConfig {
+        checkDeviceAccessible(device)
         val descriptor = DeviceRegistry.findByType(device.type)
         descriptor.validateRequestMatchesDevice(request)
 
@@ -120,6 +131,7 @@ class MockHardwareController : HardwareController {
         device: DetectedHardwareDevice,
         sensors: Map<Int, Double>,
     ) {
+        checkDeviceAccessible(device)
         val descriptor = DeviceRegistry.findByType(device.type)
         check(descriptor.virtualSensorsCount > 0) {
             "${device.name} does not support virtual sensors"
@@ -144,6 +156,7 @@ class MockHardwareController : HardwareController {
 
     override fun streamTelemetry(device: DetectedHardwareDevice): Flow<DeviceTelemetry> =
         flow {
+            checkDeviceAccessible(device)
             val descriptor = DeviceRegistry.findByType(device.type)
             while (currentCoroutineContext().isActive) {
                 val config = readConfig(device)
