@@ -81,15 +81,24 @@ data class FeaturePlaceholderBoxMetrics(
 )
 
 data class NavigationRailMetrics(
-    val width: Dp = 108.dp,
-    val itemIconSize: Dp = 36.dp,
-    val labelTextSize: TextUnit = 15.sp,
-    val itemSpacing: Dp = 12.dp,
-    val headerLogoSize: Dp = 64.dp,
-    val headerIconSize: Dp = 38.dp,
-    val headerCornerRadius: Dp = 16.dp,
-    val statusDotSize: Dp = 9.dp,
-    val dividerWidth: Dp = 72.dp,
+    val collapsedWidth: Dp = 80.dp,
+    val expandedWidth: Dp = 250.dp,
+    val width: Dp = collapsedWidth,
+    val itemIconSize: Dp = 32.dp,
+    val labelTextSize: TextUnit = 14.sp,
+    val itemSpacing: Dp = 8.dp,
+    val headerLogoSize: Dp = 48.dp,
+    val headerIconSize: Dp = 28.dp,
+    val headerCornerRadius: Dp = 12.dp,
+    val statusDotSize: Dp = 8.dp,
+    val dividerWidth: Dp = 56.dp,
+)
+
+data class NavigationDrawerMetrics(
+    val width: Dp = 250.dp,
+    val itemSpacing: Dp = 8.dp,
+    val headerPaddingHorizontal: Dp = 12.dp,
+    val headerPaddingVertical: Dp = 16.dp,
 )
 
 data class DropdownMenuMetrics(
@@ -135,6 +144,7 @@ data class AppMetrics(
     val channelDetailHeader: ChannelDetailHeaderMetrics = ChannelDetailHeaderMetrics(),
     val featurePlaceholderBox: FeaturePlaceholderBoxMetrics = FeaturePlaceholderBoxMetrics(),
     val navigationRail: NavigationRailMetrics = NavigationRailMetrics(),
+    val navigationDrawer: NavigationDrawerMetrics = NavigationDrawerMetrics(),
     val dropdownMenu: DropdownMenuMetrics = DropdownMenuMetrics(),
 ) {
     companion object {
@@ -172,15 +182,24 @@ data class AppMetrics(
                     ),
                 navigationRail =
                     NavigationRailMetrics(
-                        width = 92.dp,
-                        itemIconSize = 30.dp,
+                        collapsedWidth = 72.dp,
+                        expandedWidth = 220.dp,
+                        width = 72.dp,
+                        itemIconSize = 28.dp,
                         labelTextSize = 13.sp,
-                        itemSpacing = 8.dp,
-                        headerLogoSize = 54.dp,
-                        headerIconSize = 32.dp,
-                        headerCornerRadius = 14.dp,
+                        itemSpacing = 6.dp,
+                        headerLogoSize = 40.dp,
+                        headerIconSize = 24.dp,
+                        headerCornerRadius = 10.dp,
                         statusDotSize = 7.dp,
-                        dividerWidth = 60.dp,
+                        dividerWidth = 48.dp,
+                    ),
+                navigationDrawer =
+                    NavigationDrawerMetrics(
+                        width = 220.dp,
+                        itemSpacing = 6.dp,
+                        headerPaddingHorizontal = 10.dp,
+                        headerPaddingVertical = 14.dp,
                     ),
                 dropdownMenu =
                     DropdownMenuMetrics(
@@ -209,6 +228,7 @@ data class AppMetrics(
                 channelDetailHeader = ChannelDetailHeaderMetrics(),
                 featurePlaceholderBox = FeaturePlaceholderBoxMetrics(),
                 navigationRail = NavigationRailMetrics(),
+                navigationDrawer = NavigationDrawerMetrics(),
                 dropdownMenu = DropdownMenuMetrics(),
             )
 
@@ -274,15 +294,24 @@ data class AppMetrics(
                     ),
                 navigationRail =
                     NavigationRailMetrics(
-                        width = 124.dp,
-                        itemIconSize = 42.dp,
+                        collapsedWidth = 92.dp,
+                        expandedWidth = 280.dp,
+                        width = 92.dp,
+                        itemIconSize = 36.dp,
                         labelTextSize = 16.sp,
-                        itemSpacing = 16.dp,
-                        headerLogoSize = 74.dp,
-                        headerIconSize = 44.dp,
-                        headerCornerRadius = 18.dp,
+                        itemSpacing = 12.dp,
+                        headerLogoSize = 56.dp,
+                        headerIconSize = 34.dp,
+                        headerCornerRadius = 14.dp,
                         statusDotSize = 10.dp,
-                        dividerWidth = 84.dp,
+                        dividerWidth = 68.dp,
+                    ),
+                navigationDrawer =
+                    NavigationDrawerMetrics(
+                        width = 280.dp,
+                        itemSpacing = 10.dp,
+                        headerPaddingHorizontal = 14.dp,
+                        headerPaddingVertical = 18.dp,
                     ),
                 dropdownMenu =
                     DropdownMenuMetrics(

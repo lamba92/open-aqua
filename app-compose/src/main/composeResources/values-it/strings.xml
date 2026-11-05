@@ -18,6 +18,8 @@
     <string name="nav_bug_report">Segnala bug</string>
     <string name="nav_about">Informazioni</string>
     <string name="nav_settings">Impostazioni</string>
+    <string name="nav_expand_menu">Espandi menu di navigazione</string>
+    <string name="nav_collapse_menu">Comprimi menu di navigazione</string>
 
     <!-- Device Info Screen -->
     <string name="device_telemetry_identity_subtitle">Telemetria hardware &amp; identità del dispositivo</string>

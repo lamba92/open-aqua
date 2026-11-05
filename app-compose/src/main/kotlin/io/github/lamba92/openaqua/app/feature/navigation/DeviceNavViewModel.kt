@@ -50,6 +50,7 @@ class DeviceNavViewModel(
         // Wait for devices to settle, then restore the saved navigation selection once
         initializeNavigationSelection()
         observeDeviceStates()
+        observeNavigationRailExpanded()
     }
 
     private fun observeDeviceStates() {
@@ -159,6 +160,7 @@ class DeviceNavViewModel(
                 DeviceNavEvent.SelectAbout -> selectAbout()
                 DeviceNavEvent.SelectSettings -> selectSettings()
                 is DeviceNavEvent.SelectSettingsTab -> selectSettingsTab(event.tab)
+                DeviceNavEvent.ToggleNavigationRailExpanded -> toggleNavigationRailExpanded()
             }
         }
 
@@ -241,5 +243,20 @@ class DeviceNavViewModel(
         val updated = DeviceNavState.SelectedItem.Settings(selectedTab = tab)
         state.update { currentState -> currentState.copy(selectedItem = updated) }
         appDataRepository.setNavigationSelection(updated.toStoredData())
+    }
+
+    private fun toggleNavigationRailExpanded() {
+        val next = !state.value.isExpanded
+        viewModelLogger.i { "Toggling navigation rail expanded: $next" }
+        state.update { it.copy(isExpanded = next) }
+        appDataRepository.update { it.copy(navigationRailExpanded = next) }
+    }
+
+    private fun observeNavigationRailExpanded() {
+        appDataRepository.state
+            .filterIsInstance<AppDataRepository.State.Ready>()
+            .onEach { ready ->
+                state.update { it.copy(isExpanded = ready.data.navigationRailExpanded) }
+            }.launchIn(viewModelScope)
     }
 }

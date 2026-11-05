@@ -55,6 +55,8 @@ val LocalFeaturePlaceholderBoxColors = staticCompositionLocalOf { AppColors.from
 val LocalNavigationRailMetrics = staticCompositionLocalOf { AppMetrics.Standard.navigationRail }
 val LocalNavigationRailColors = staticCompositionLocalOf { AppColors.fromPalette(ThemePalette.HydroDark).navigationRail }
 
+val LocalNavigationDrawerMetrics = staticCompositionLocalOf { AppMetrics.Standard.navigationDrawer }
+
 val LocalDropdownMenuMetrics = staticCompositionLocalOf { AppMetrics.Standard.dropdownMenu }
 val LocalDropdownMenuColors = staticCompositionLocalOf { AppColors.fromPalette(ThemePalette.HydroDark).dropdownMenu }
 
@@ -203,6 +205,7 @@ fun OpenAquaTheme(
         LocalFeaturePlaceholderBoxColors provides appColors.featurePlaceholderBox,
         LocalNavigationRailMetrics provides metrics.navigationRail,
         LocalNavigationRailColors provides appColors.navigationRail,
+        LocalNavigationDrawerMetrics provides metrics.navigationDrawer,
         LocalDropdownMenuMetrics provides metrics.dropdownMenu,
         LocalDropdownMenuColors provides appColors.dropdownMenu,
         LocalScrollbarStyle provides scrollbarStyle,

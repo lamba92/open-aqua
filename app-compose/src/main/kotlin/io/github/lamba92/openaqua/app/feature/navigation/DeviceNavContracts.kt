@@ -11,6 +11,7 @@ data class DeviceNavState(
     val devices: List<DeviceState.Aqua> = emptyList(),
     val devicesWithFeedErrors: Set<DeviceId> = emptySet(),
     val selectedItem: SelectedItem? = null,
+    val isExpanded: Boolean = false,
 ) {
     sealed interface SelectedItem {
         data object Host : SelectedItem
@@ -68,6 +69,8 @@ sealed interface DeviceNavEvent {
     data class SelectSettingsTab(
         val tab: SettingsTab,
     ) : DeviceNavEvent
+
+    data object ToggleNavigationRailExpanded : DeviceNavEvent
 }
 
 sealed interface DeviceNavEffect

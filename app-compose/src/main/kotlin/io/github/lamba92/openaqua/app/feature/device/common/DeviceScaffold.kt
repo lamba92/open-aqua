@@ -69,12 +69,13 @@ fun DeviceDrawerScaffold(
     content: @Composable () -> Unit,
 ) {
     val colors = OpenAquaTheme.colors
+    val drawerMetrics = OpenAquaTheme.metrics.navigationDrawer
     PermanentNavigationDrawer(
         drawerContent = {
             PermanentDrawerSheet(
                 modifier =
                     Modifier
-                        .width(220.dp)
+                        .width(drawerMetrics.width)
                         .fillMaxHeight(),
                 drawerContainerColor = colors.surfaceLow,
                 drawerContentColor = colors.textPrimary,
@@ -84,8 +85,11 @@ fun DeviceDrawerScaffold(
                     modifier =
                         Modifier
                             .fillMaxHeight()
-                            .padding(horizontal = 12.dp, vertical = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                            .padding(
+                                horizontal = drawerMetrics.headerPaddingHorizontal,
+                                vertical = drawerMetrics.headerPaddingVertical,
+                            ),
+                    verticalArrangement = Arrangement.spacedBy(drawerMetrics.itemSpacing),
                 ) {
                     val displayName = device.name.removePrefix("Aquacomputer").trim()
                     Text(
@@ -102,6 +106,9 @@ fun DeviceDrawerScaffold(
                         color = colors.primary,
                         fontSize = 13.sp,
                         fontFamily = FontFamily.Monospace,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.padding(horizontal = 12.dp),
                     )
 
@@ -174,6 +181,9 @@ private fun DeviceDrawerTabItem(
                 lineHeight = 22.sp,
                 fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
                 style = LocalTextStyle.current.copy(lineHeightStyle = DrawerLineHeightStyle),
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Ellipsis,
             )
         },
         icon = {

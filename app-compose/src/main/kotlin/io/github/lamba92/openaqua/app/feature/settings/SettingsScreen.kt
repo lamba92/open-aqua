@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -301,12 +302,13 @@ private fun SettingsDrawerScaffold(
     content: @Composable () -> Unit,
 ) {
     val colors = OpenAquaTheme.colors
+    val drawerMetrics = OpenAquaTheme.metrics.navigationDrawer
     PermanentNavigationDrawer(
         drawerContent = {
             PermanentDrawerSheet(
                 modifier =
                     Modifier
-                        .width(220.dp)
+                        .width(drawerMetrics.width)
                         .fillMaxHeight(),
                 drawerContainerColor = colors.surfaceLow,
                 drawerContentColor = colors.textPrimary,
@@ -316,8 +318,11 @@ private fun SettingsDrawerScaffold(
                     modifier =
                         Modifier
                             .fillMaxHeight()
-                            .padding(horizontal = 12.dp, vertical = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                            .padding(
+                                horizontal = drawerMetrics.headerPaddingHorizontal,
+                                vertical = drawerMetrics.headerPaddingVertical,
+                            ),
+                    verticalArrangement = Arrangement.spacedBy(drawerMetrics.itemSpacing),
                 ) {
                     Text(
                         text = stringResource(Res.string.settings_screen_title),
@@ -325,6 +330,7 @@ private fun SettingsDrawerScaffold(
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
+                        softWrap = false,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.padding(horizontal = 12.dp),
                     )
@@ -333,6 +339,9 @@ private fun SettingsDrawerScaffold(
                         color = colors.primary,
                         fontSize = 13.sp,
                         fontFamily = FontFamily.Monospace,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.padding(horizontal = 12.dp),
                     )
 
@@ -357,6 +366,9 @@ private fun SettingsDrawerScaffold(
                                 fontSize = 15.sp,
                                 lineHeight = 22.sp,
                                 fontWeight = if (selectedTab == SettingsTab.GENERAL) FontWeight.SemiBold else FontWeight.Medium,
+                                maxLines = 1,
+                                softWrap = false,
+                                overflow = TextOverflow.Ellipsis,
                             )
                         },
                         icon = {
@@ -379,6 +391,9 @@ private fun SettingsDrawerScaffold(
                                 fontSize = 15.sp,
                                 lineHeight = 22.sp,
                                 fontWeight = if (selectedTab == SettingsTab.LOGS) FontWeight.SemiBold else FontWeight.Medium,
+                                maxLines = 1,
+                                softWrap = false,
+                                overflow = TextOverflow.Ellipsis,
                             )
                         },
                         icon = {
@@ -452,9 +467,10 @@ private fun AppearanceSection(
                 color = colors.textMuted,
                 fontSize = 14.sp,
             )
-            Row(
+            FlowRow(
                 modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(metrics.spacingSm),
+                verticalArrangement = Arrangement.spacedBy(metrics.spacingSm),
             ) {
                 AppColorScheme.entries.forEach { scheme ->
                     val palette = ThemePalette.fromColorScheme(scheme)
@@ -489,9 +505,10 @@ private fun AppearanceSection(
                 color = colors.textMuted,
                 fontSize = 14.sp,
             )
-            Row(
+            FlowRow(
                 modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(metrics.spacingSm),
+                verticalArrangement = Arrangement.spacedBy(metrics.spacingSm),
             ) {
                 AppMetricsScale.entries.forEach { scale ->
                     val isSelected = scale == selectedMetricsScale
@@ -519,9 +536,10 @@ private fun AppearanceSection(
                 color = colors.textMuted,
                 fontSize = 14.sp,
             )
-            Row(
+            FlowRow(
                 modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(metrics.spacingSm),
+                verticalArrangement = Arrangement.spacedBy(metrics.spacingSm),
             ) {
                 AppFontFamily.entries.forEach { family ->
                     val isSelected = family == selectedFontFamily
@@ -816,9 +834,10 @@ private fun FontSizeSection(
         }
 
         // Quick presets
-        Row(
+        FlowRow(
             modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
             horizontalArrangement = Arrangement.spacedBy(metrics.spacingSm),
+            verticalArrangement = Arrangement.spacedBy(metrics.spacingSm),
         ) {
             val presets =
                 listOf(

@@ -30,6 +30,7 @@ data class AppStoredData(
     val hideUnconfiguredVirtualSensors: Boolean = false,
     val sensorTypes: SensorTypesStoredData = SensorTypesStoredData.DEFAULT,
     val windowState: WindowStateStoredData = WindowStateStoredData.DEFAULT,
+    val navigationRailExpanded: Boolean = false,
     val navigationSelection: NavigationSelectionStoredData? = null,
     val devices: Map<DeviceId, DeviceStoredData> = emptyMap(),
 ) {
