@@ -1,5 +1,6 @@
 package io.github.lamba92.openaqua.app.feature.settings
 
+import co.touchlab.kermit.Severity
 import io.github.lamba92.openaqua.app.model.AppLanguage
 import io.github.lamba92.openaqua.app.theme.AppFontFamily
 import io.github.lamba92.openaqua.app.theme.AppMetricsScale
@@ -10,6 +11,11 @@ enum class SettingsTab {
     GENERAL,
     LOGS,
 }
+
+data class LogLine(
+    val text: String,
+    val severity: Severity? = null,
+)
 
 data class SettingsState(
     val showResetConfirmationDialog: Boolean = false,
@@ -23,7 +29,7 @@ data class SettingsState(
     val hideDisconnectedSensorsInFans: Boolean = false,
     val hideDisconnectedSensors: Boolean = false,
     val hideUnconfiguredVirtualSensors: Boolean = false,
-    val logs: List<String> = emptyList(),
+    val logs: List<LogLine> = emptyList(),
 )
 
 sealed interface SettingsEvent {

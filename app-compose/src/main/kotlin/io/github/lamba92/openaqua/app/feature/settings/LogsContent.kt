@@ -38,9 +38,11 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import co.touchlab.kermit.Severity
 import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
 import io.github.lamba92.openaqua.app.ui.components.OpenAquaOutlinedButton
 import io.github.lamba92.openaqua.app.ui.components.ScreenHeader
+import io.github.lamba92.openaqua.theme.AppColorScheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import open_aqua.app_compose.generated.resources.Res
@@ -57,7 +59,7 @@ import java.awt.datatransfer.StringSelection
 
 @Composable
 fun LogsContent(
-    logs: List<String>,
+    logs: List<LogLine>,
     onOpenLogsFolder: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -65,6 +67,13 @@ fun LogsContent(
     val metrics = OpenAquaTheme.metrics
     val coroutineScope = rememberCoroutineScope()
     var isCopied by remember { mutableStateOf(false) }
+
+    val debugColor =
+        if (colors.palette.colorScheme == AppColorScheme.SOLAR_AMBER) {
+            colors.secondary
+        } else {
+            colors.accent
+        }
 
     Column(
         modifier = modifier.fillMaxSize(),
@@ -122,7 +131,7 @@ fun LogsContent(
                         },
                     onClick = {
                         if (logs.isNotEmpty()) {
-                            val text = logs.joinToString("\n")
+                            val text = logs.joinToString("\n") { it.text }
                             Toolkit.getDefaultToolkit().systemClipboard.setContents(StringSelection(text), null)
                             isCopied = true
                             coroutineScope.launch {
@@ -186,21 +195,46 @@ fun LogsContent(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(vertical = 4.dp),
                         ) {
-                            itemsIndexed(logs) { index, line ->
+                            itemsIndexed(logs) { index, logLine ->
                                 val rowBackground =
-                                    if (index % 2 == 1) {
-                                        colors.surfaceLowest
-                                    } else {
-                                        Color.Transparent
+                                    when (logLine.severity) {
+                                        Severity.Error,
+                                        Severity.Assert,
+                                        -> {
+                                            colors.statusCritical.copy(alpha = if (index % 2 == 1) 0.20f else 0.14f)
+                                        }
+
+                                        Severity.Warn -> {
+                                            colors.statusWarning.copy(alpha = if (index % 2 == 1) 0.20f else 0.14f)
+                                        }
+
+                                        Severity.Debug -> {
+                                            debugColor.copy(alpha = if (index % 2 == 1) 0.20f else 0.14f)
+                                        }
+
+                                        Severity.Info,
+                                        Severity.Verbose,
+                                        null,
+                                        -> {
+                                            if (index % 2 == 1) colors.surfaceLowest else Color.Transparent
+                                        }
                                     }
 
                                 val textColor =
-                                    when {
-                                        line.contains("[ERROR") -> colors.statusCritical
-                                        line.contains("[WARN") -> colors.statusWarning
-                                        line.contains("[INFO") -> colors.textPrimary
-                                        line.contains("[DEBUG") -> colors.textSecondary.copy(alpha = 0.85f)
-                                        else -> colors.textSecondary
+                                    when (logLine.severity) {
+                                        Severity.Error,
+                                        Severity.Assert,
+                                        -> colors.statusCritical
+
+                                        Severity.Warn -> colors.statusWarning
+
+                                        Severity.Debug -> debugColor
+
+                                        Severity.Info -> colors.textPrimary
+
+                                        Severity.Verbose,
+                                        null,
+                                        -> colors.textSecondary
                                     }
 
                                 Box(
@@ -211,7 +245,7 @@ fun LogsContent(
                                             .padding(horizontal = 14.dp, vertical = 2.dp),
                                 ) {
                                     Text(
-                                        text = line,
+                                        text = logLine.text,
                                         fontFamily = FontFamily.Monospace,
                                         fontSize = 12.sp,
                                         lineHeight = 17.sp,
