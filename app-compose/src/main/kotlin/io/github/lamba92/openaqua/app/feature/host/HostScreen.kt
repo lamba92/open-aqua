@@ -6,7 +6,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -29,7 +28,6 @@ import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material.icons.outlined.Tv
 import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -51,7 +49,7 @@ import io.github.lamba92.openaqua.app.model.progressFraction
 import io.github.lamba92.openaqua.app.repository.DeviceState
 import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
 import io.github.lamba92.openaqua.app.ui.components.OpenAquaVerticalScrollbar
-import io.github.lamba92.openaqua.app.ui.components.ScreenHeader
+import io.github.lamba92.openaqua.app.ui.components.ScreenHeaderSection
 import io.github.lamba92.openaqua.app.ui.components.SensorTargetTypeMenuButton
 import io.github.lamba92.openaqua.app.ui.components.gaugeProgress
 import io.github.lamba92.openaqua.app.ui.components.scrollFadingEdge
@@ -99,33 +97,18 @@ fun HostScreen(
     scrollState: ScrollState = rememberScrollState(),
 ) {
     val colors = OpenAquaTheme.colors
-    val metrics = OpenAquaTheme.metrics
 
     Column(
         modifier = modifier.fillMaxSize(),
     ) {
         // Fixed Top Header
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Column(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = metrics.spacingXxl)
-                        .padding(top = metrics.spacingXxl, bottom = metrics.spacingLg),
-            ) {
-                ScreenHeader(
-                    title = stringResource(Res.string.host_telemetry_title),
-                    subtitle = stringResource(Res.string.host_telemetry_subtitle),
-                    trailingContent = {
-                        HostStatusBadge(state.hostState)
-                    },
-                )
-            }
-            HorizontalDivider(
-                color = colors.borderOutline,
-                modifier = Modifier.padding(horizontal = metrics.spacingXxl),
-            )
-        }
+        ScreenHeaderSection(
+            title = stringResource(Res.string.host_telemetry_title),
+            subtitle = stringResource(Res.string.host_telemetry_subtitle),
+            trailingContent = {
+                HostStatusBadge(state.hostState)
+            },
+        )
 
         // Scrollable Body
         Box(
@@ -287,7 +270,6 @@ private fun HostContent(
     scrollState: ScrollState,
 ) {
     val metrics = OpenAquaTheme.metrics
-
     val groupedDevices =
         remember(devices) {
             devices.groupBy { it.type }
@@ -389,7 +371,6 @@ private fun HostDeviceTypeSection(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun HostDeviceCard(
     device: HostDevice,

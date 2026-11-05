@@ -20,7 +20,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -34,7 +33,7 @@ import io.github.lamba92.openaqua.app.repository.DeviceState
 import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
 import io.github.lamba92.openaqua.app.ui.components.DeviceIllustration
 import io.github.lamba92.openaqua.app.ui.components.OpenAquaVerticalScrollbar
-import io.github.lamba92.openaqua.app.ui.components.ScreenHeader
+import io.github.lamba92.openaqua.app.ui.components.ScreenHeaderSection
 import io.github.lamba92.openaqua.app.ui.components.SectionHeader
 import io.github.lamba92.openaqua.app.ui.components.scrollFadingEdge
 import open_aqua.app_compose.generated.resources.Res
@@ -92,55 +91,37 @@ fun DeviceInfoContent(
         modifier = modifier.fillMaxSize(),
     ) {
         // Top-level fixed header
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Column(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = metrics.spacingXxl)
-                        .padding(top = metrics.spacingXxl, bottom = metrics.spacingLg),
-                verticalArrangement = Arrangement.spacedBy(metrics.spacingLg),
-            ) {
-                ScreenHeader(
-                    title = device.name,
-                    subtitle = stringResource(Res.string.device_telemetry_identity_subtitle),
-                    trailingContent = {
-                        Row(
-                            modifier =
-                                Modifier
-                                    .clip(RoundedCornerShape(20.dp))
-                                    .background(colors.surfaceHigh)
-                                    .border(metrics.strokeThin, colors.borderOutline, RoundedCornerShape(20.dp))
-                                    .padding(horizontal = 12.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        ) {
-                            Box(
-                                modifier =
-                                    Modifier
-                                        .size(8.dp)
-                                        .clip(CircleShape)
-                                        .background(colors.statusNominal),
-                            )
-                            Text(
-                                text = stringResource(Res.string.usb_hid_connected),
-                                color = colors.textPrimary,
-                                fontSize = 14.sp,
-                                lineHeight = 18.sp,
-                                fontWeight = FontWeight.Medium,
-                            )
-                        }
-                    },
-                )
-            }
-
-            HorizontalDivider(
-                color = colors.borderOutline,
-                modifier = Modifier.padding(horizontal = metrics.spacingXxl),
-            )
-        }
+        ScreenHeaderSection(
+            title = device.name,
+            subtitle = stringResource(Res.string.device_telemetry_identity_subtitle),
+            trailingContent = {
+                Row(
+                    modifier =
+                        Modifier
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(colors.surfaceHigh)
+                            .border(metrics.strokeThin, colors.borderOutline, RoundedCornerShape(20.dp))
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .size(8.dp)
+                                .clip(CircleShape)
+                                .background(colors.statusNominal),
+                    )
+                    Text(
+                        text = stringResource(Res.string.usb_hid_connected),
+                        color = colors.textPrimary,
+                        fontSize = 14.sp,
+                        lineHeight = 18.sp,
+                        fontWeight = FontWeight.Medium,
+                    )
+                }
+            },
+        )
 
         // Scrolling content with internal padding and top fading edge
         Box(

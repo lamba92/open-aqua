@@ -20,7 +20,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.FolderOpen
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -41,7 +40,7 @@ import androidx.compose.ui.unit.sp
 import co.touchlab.kermit.Severity
 import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
 import io.github.lamba92.openaqua.app.ui.components.OpenAquaOutlinedButton
-import io.github.lamba92.openaqua.app.ui.components.ScreenHeader
+import io.github.lamba92.openaqua.app.ui.components.ScreenHeaderSection
 import io.github.lamba92.openaqua.theme.AppColorScheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -56,6 +55,7 @@ import open_aqua.app_compose.generated.resources.settings_logs_title
 import org.jetbrains.compose.resources.stringResource
 import java.awt.Toolkit
 import java.awt.datatransfer.StringSelection
+import kotlin.time.Duration.Companion.seconds
 
 @Composable
 fun LogsContent(
@@ -66,7 +66,7 @@ fun LogsContent(
     val colors = OpenAquaTheme.colors
     val metrics = OpenAquaTheme.metrics
     val coroutineScope = rememberCoroutineScope()
-    var isCopied by remember { mutableStateOf(false) }
+    var hasJustCupiedMomentAgo by remember { mutableStateOf(false) }
 
     val debugColor =
         if (colors.palette.colorScheme == AppColorScheme.SOLAR_AMBER) {
@@ -78,29 +78,10 @@ fun LogsContent(
     Column(
         modifier = modifier.fillMaxSize(),
     ) {
-        // Header
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Column(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = metrics.spacingXxl)
-                        .padding(top = metrics.spacingXxl, bottom = metrics.spacingLg),
-                verticalArrangement = Arrangement.spacedBy(metrics.spacingLg),
-            ) {
-                ScreenHeader(
-                    title = stringResource(Res.string.settings_logs_title),
-                    subtitle = stringResource(Res.string.settings_logs_subtitle),
-                )
-            }
-
-            HorizontalDivider(
-                color = colors.borderOutline,
-                modifier = Modifier.padding(horizontal = metrics.spacingXxl),
-            )
-        }
+        ScreenHeaderSection(
+            title = stringResource(Res.string.settings_logs_title),
+            subtitle = stringResource(Res.string.settings_logs_subtitle),
+        )
 
         // Action bar and log viewer container
         Column(
@@ -124,7 +105,7 @@ fun LogsContent(
 
                 OpenAquaOutlinedButton(
                     text =
-                        if (isCopied) {
+                        if (hasJustCupiedMomentAgo) {
                             stringResource(Res.string.settings_logs_copied)
                         } else {
                             stringResource(Res.string.settings_logs_copy)
@@ -133,17 +114,17 @@ fun LogsContent(
                         if (logs.isNotEmpty()) {
                             val text = logs.joinToString("\n") { it.text }
                             Toolkit.getDefaultToolkit().systemClipboard.setContents(StringSelection(text), null)
-                            isCopied = true
+                            hasJustCupiedMomentAgo = true
                             coroutineScope.launch {
-                                delay(2000)
-                                isCopied = false
+                                delay(2.seconds)
+                                hasJustCupiedMomentAgo = false
                             }
                         }
                     },
-                    enabled = logs.isNotEmpty(),
+                    enabled = logs.isNotEmpty() && !hasJustCupiedMomentAgo,
                     icon =
                         rememberVectorPainter(
-                            if (isCopied) Icons.Outlined.Check else Icons.Outlined.ContentCopy,
+                            if (hasJustCupiedMomentAgo) Icons.Outlined.Check else Icons.Outlined.ContentCopy,
                         ),
                 )
 

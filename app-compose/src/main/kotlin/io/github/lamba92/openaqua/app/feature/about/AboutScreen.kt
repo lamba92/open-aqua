@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,7 +32,7 @@ import io.github.lamba92.openaqua.app.build.OpenAquaBuildInfo
 import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
 import io.github.lamba92.openaqua.app.ui.components.OpenAquaButton
 import io.github.lamba92.openaqua.app.ui.components.OpenAquaVerticalScrollbar
-import io.github.lamba92.openaqua.app.ui.components.ScreenHeader
+import io.github.lamba92.openaqua.app.ui.components.ScreenHeaderSection
 import io.github.lamba92.openaqua.app.ui.components.SectionHeader
 import io.github.lamba92.openaqua.app.ui.components.scrollFadingEdge
 import open_aqua.app_compose.generated.resources.Res
@@ -66,26 +65,10 @@ fun AboutScreen(modifier: Modifier = Modifier) {
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             // Header
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Column(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = metrics.spacingXxl)
-                            .padding(top = metrics.spacingXxl, bottom = metrics.spacingLg),
-                    verticalArrangement = Arrangement.spacedBy(metrics.spacingLg),
-                ) {
-                    ScreenHeader(
-                        title = stringResource(Res.string.about_screen_title),
-                        subtitle = stringResource(Res.string.about_screen_subtitle),
-                    )
-                }
-
-                HorizontalDivider(
-                    color = colors.borderOutline,
-                    modifier = Modifier.padding(horizontal = metrics.spacingXxl),
-                )
-            }
+            ScreenHeaderSection(
+                title = stringResource(Res.string.about_screen_title),
+                subtitle = stringResource(Res.string.about_screen_subtitle),
+            )
 
             val scrollState = rememberSaveable(saver = ScrollState.Saver) { ScrollState(0) }
 

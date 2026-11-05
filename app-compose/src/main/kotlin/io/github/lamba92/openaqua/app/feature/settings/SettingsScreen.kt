@@ -68,7 +68,7 @@ import io.github.lamba92.openaqua.app.theme.toComposeColor
 import io.github.lamba92.openaqua.app.ui.components.ConfirmationDialog
 import io.github.lamba92.openaqua.app.ui.components.OpenAquaOutlinedButton
 import io.github.lamba92.openaqua.app.ui.components.OpenAquaVerticalScrollbar
-import io.github.lamba92.openaqua.app.ui.components.ScreenHeader
+import io.github.lamba92.openaqua.app.ui.components.ScreenHeaderSection
 import io.github.lamba92.openaqua.app.ui.components.SectionHeader
 import io.github.lamba92.openaqua.app.ui.components.scrollFadingEdge
 import io.github.lamba92.openaqua.theme.AppColorScheme
@@ -180,28 +180,10 @@ private fun GeneralSettingsContent(
             modifier = Modifier.fillMaxSize(),
         ) {
             // Top-level fixed header
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Column(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = metrics.spacingXxl)
-                            .padding(top = metrics.spacingXxl, bottom = metrics.spacingLg),
-                    verticalArrangement = Arrangement.spacedBy(metrics.spacingLg),
-                ) {
-                    ScreenHeader(
-                        title = stringResource(Res.string.settings_screen_title),
-                        subtitle = stringResource(Res.string.settings_screen_subtitle),
-                    )
-                }
-
-                HorizontalDivider(
-                    color = colors.borderOutline,
-                    modifier = Modifier.padding(horizontal = metrics.spacingXxl),
-                )
-            }
+            ScreenHeaderSection(
+                title = stringResource(Res.string.settings_screen_title),
+                subtitle = stringResource(Res.string.settings_screen_subtitle),
+            )
 
             // Scrolling content with internal padding and top fading edge
             Box(

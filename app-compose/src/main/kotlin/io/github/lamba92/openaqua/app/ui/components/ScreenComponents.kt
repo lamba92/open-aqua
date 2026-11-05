@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -147,6 +146,39 @@ object MetricCardDefaults {
 }
 
 @Composable
+fun ScreenHeaderSection(
+    title: String,
+    subtitle: String,
+    modifier: Modifier = Modifier,
+    trailingContent: (@Composable RowScope.() -> Unit)? = null,
+) {
+    val colors = OpenAquaTheme.colors
+    val metrics = OpenAquaTheme.metrics
+
+    Column(modifier = modifier.fillMaxWidth()) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = metrics.spacingXxl)
+                    .padding(top = metrics.spacingXxl, bottom = metrics.spacingLg),
+            verticalArrangement = Arrangement.spacedBy(metrics.spacingLg),
+        ) {
+            ScreenHeader(
+                title = title,
+                subtitle = subtitle,
+                trailingContent = trailingContent,
+            )
+        }
+
+        HorizontalDivider(
+            color = colors.borderOutline,
+            modifier = Modifier.padding(horizontal = metrics.spacingXxl),
+        )
+    }
+}
+
+@Composable
 fun ScreenHeader(
     title: String,
     subtitle: String,
@@ -198,28 +230,10 @@ fun ChannelPageScaffold(
     Column(
         modifier = modifier.fillMaxSize(),
     ) {
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Column(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = metrics.spacingXxl)
-                        .padding(top = metrics.spacingXxl, bottom = metrics.spacingLg),
-                verticalArrangement = Arrangement.spacedBy(metrics.spacingLg),
-            ) {
-                ScreenHeader(
-                    title = title,
-                    subtitle = subtitle,
-                )
-            }
-
-            HorizontalDivider(
-                color = colors.borderOutline,
-                modifier = Modifier.padding(horizontal = metrics.spacingXxl),
-            )
-        }
+        ScreenHeaderSection(
+            title = title,
+            subtitle = subtitle,
+        )
 
         Box(
             modifier =
@@ -310,26 +324,10 @@ fun StandardScreenScaffold(
 
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Column(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = metrics.spacingXxl)
-                            .padding(top = metrics.spacingXxl, bottom = metrics.spacingLg),
-                    verticalArrangement = Arrangement.spacedBy(metrics.spacingLg),
-                ) {
-                    ScreenHeader(
-                        title = title,
-                        subtitle = subtitle,
-                    )
-                }
-
-                HorizontalDivider(
-                    color = colors.borderOutline,
-                    modifier = Modifier.padding(horizontal = metrics.spacingXxl),
-                )
-            }
+            ScreenHeaderSection(
+                title = title,
+                subtitle = subtitle,
+            )
 
             Box(
                 modifier =
