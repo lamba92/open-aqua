@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -20,10 +21,15 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.lamba92.openaqua.app.feature.device.common.FanItem
@@ -139,6 +145,9 @@ fun FanLimitsCard(
             )
         }
 
+        val sliderHeaderHeights = remember { mutableStateMapOf<Int, Dp>() }
+        val maxSliderHeaderHeight = sliderHeaderHeights.values.maxOrNull() ?: Dp.Unspecified
+
         // Sliders Grid
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
@@ -152,6 +161,8 @@ fun FanLimitsCard(
                     description = stringResource(Res.string.fan_limits_min_power_desc),
                     value = currentLimits.minPowerPercent.toFloat(),
                     onValueChange = { onLimitsEvent(FanLimitsEvent.ChangeMinPower(it.toDouble())) },
+                    minHeaderHeight = maxSliderHeaderHeight,
+                    onHeaderHeightMeasured = { if (sliderHeaderHeights[0] != it) sliderHeaderHeights[0] = it },
                 )
             }
 
@@ -162,6 +173,8 @@ fun FanLimitsCard(
                     description = stringResource(Res.string.fan_limits_max_power_desc),
                     value = currentLimits.maxPowerPercent.toFloat(),
                     onValueChange = { onLimitsEvent(FanLimitsEvent.ChangeMaxPower(it.toDouble())) },
+                    minHeaderHeight = maxSliderHeaderHeight,
+                    onHeaderHeightMeasured = { if (sliderHeaderHeights[1] != it) sliderHeaderHeights[1] = it },
                 )
             }
 
@@ -172,6 +185,8 @@ fun FanLimitsCard(
                     description = stringResource(Res.string.fan_limits_fallback_power_desc),
                     value = currentLimits.fallbackPowerPercent.toFloat(),
                     onValueChange = { onLimitsEvent(FanLimitsEvent.ChangeFallbackPower(it.toDouble())) },
+                    minHeaderHeight = maxSliderHeaderHeight,
+                    onHeaderHeightMeasured = { if (sliderHeaderHeights[2] != it) sliderHeaderHeights[2] = it },
                 )
             }
         }
@@ -214,39 +229,65 @@ private fun LimitSlider(
     value: Float,
     onValueChange: (Float) -> Unit,
     modifier: Modifier = Modifier,
+    minHeaderHeight: Dp = Dp.Unspecified,
+    onHeaderHeightMeasured: ((Dp) -> Unit)? = null,
 ) {
     val colors = OpenAquaTheme.colors
+    val density = LocalDensity.current
 
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .then(
+                        if (minHeaderHeight != Dp.Unspecified && minHeaderHeight > 0.dp) {
+                            Modifier.defaultMinSize(minHeight = minHeaderHeight)
+                        } else {
+                            Modifier
+                        },
+                    ),
         ) {
-            Text(
-                text = label,
-                color = colors.textPrimary,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Text(
-                text = "${value.roundToInt()}%",
-                color = colors.primaryBright,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
-            )
-        }
+            Column(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .onSizeChanged { size ->
+                            onHeaderHeightMeasured?.invoke(with(density) { size.height.toDp() })
+                        },
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = label,
+                        color = colors.textPrimary,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        text = "${value.roundToInt()}%",
+                        color = colors.primaryBright,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
+                    )
+                }
 
-        Text(
-            text = description,
-            color = colors.textMuted,
-            fontSize = 11.sp,
-            lineHeight = 14.sp,
-        )
+                Text(
+                    text = description,
+                    color = colors.textMuted,
+                    fontSize = 11.sp,
+                    lineHeight = 14.sp,
+                )
+            }
+        }
 
         Slider(
             value = value,
