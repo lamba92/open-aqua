@@ -1,13 +1,6 @@
-import io.github.lamba92.gradle.plugins.upx.UpxTask
-
 plugins {
-    id("base")
-    id("openaqua.engine.producer")
-    id("io.github.lamba92.upx")
-}
-
-upx {
-    bruteLevel = UpxTask.BruteLevel.ULTRA_BRUTE
+    base
+    openaqua.engine.producer
 }
 
 val executablePath = layout.buildDirectory.file("publish/win-x64/open-aqua-host-engine.exe")
@@ -34,16 +27,9 @@ val publishWindowsExecutable by tasks.registering(Exec::class) {
     outputs.file(executablePath)
 }
 
-val compressReleaseExecutableWindowsX64 by tasks.registering(UpxTask::class) {
-    inputExecutable = publishWindowsExecutable.map { executablePath.get() }
-    outputExecutable = layout.buildDirectory.file("upx/windowsX64/open-aqua-host-engine.exe")
-    strip = false
-    additionalOptions.add("--force")
-}
-
 engineBinaries {
     register("windowsX64") {
         binaryPrefix = "open-aqua-host-engine"
-        binaryFile = compressReleaseExecutableWindowsX64.flatMap { it.outputExecutable }
+        binaryFile = publishWindowsExecutable.map { executablePath.get() }
     }
 }

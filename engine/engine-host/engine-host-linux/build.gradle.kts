@@ -1,16 +1,10 @@
 @file:OptIn(org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeCacheApi::class)
 
-import io.github.lamba92.gradle.plugins.upx.UpxTask
 import org.jetbrains.kotlin.gradle.plugin.mpp.DisableCacheInKotlinVersion
 
 plugins {
     openaqua.convention.multiplatform
-    id("io.github.lamba92.upx")
     openaqua.engine.producer
-}
-
-upx {
-    bruteLevel = UpxTask.BruteLevel.ULTRA_BRUTE
 }
 
 kotlin {
@@ -47,16 +41,10 @@ kotlin {
 engineBinaries {
     register("linuxX64") {
         binaryPrefix = "open-aqua-host-engine"
-        fromUpx(
-            kotlin.linuxX64().binaries.getExecutable("release"),
-            tasks.named<UpxTask>("compressReleaseExecutableLinuxX64"),
-        )
+        fromExecutable(kotlin.linuxX64().binaries.getExecutable("release"))
     }
     register("linuxArm64") {
         binaryPrefix = "open-aqua-host-engine"
-        fromUpx(
-            kotlin.linuxArm64().binaries.getExecutable("release"),
-            tasks.named<UpxTask>("compressReleaseExecutableLinuxArm64"),
-        )
+        fromExecutable(kotlin.linuxArm64().binaries.getExecutable("release"))
     }
 }
