@@ -3,12 +3,26 @@ package io.github.lamba92.openaqua.app.feature.navigation
 import io.github.lamba92.openaqua.app.feature.device.common.CommonDeviceTab
 import io.github.lamba92.openaqua.app.feature.settings.SettingsTab
 import io.github.lamba92.openaqua.app.model.NavigationSelectionStoredData
+import io.github.lamba92.openaqua.app.permission.DevicePermissionState
 import io.github.lamba92.openaqua.app.repository.DeviceState
 import io.github.lamba92.openaqua.model.device.DeviceId
 
+sealed interface NavigationTargets {
+    data object Loading : NavigationTargets
+
+    @JvmInline
+    value class PermissionError(
+        val error: DevicePermissionState.Denied,
+    ) : NavigationTargets
+
+    data class Ready(
+        val host: DeviceState.Host = DeviceState.Host.Loading,
+        val devices: List<DeviceState.Aqua> = emptyList(),
+    ) : NavigationTargets
+}
+
 data class DeviceNavState(
-    val host: DeviceState.Host = DeviceState.Host.Loading,
-    val devices: List<DeviceState.Aqua> = emptyList(),
+    val targets: NavigationTargets = NavigationTargets.Loading,
     val devicesWithFeedErrors: Set<DeviceId> = emptySet(),
     val selectedItem: SelectedItem? = null,
     val isExpanded: Boolean = false,
@@ -21,6 +35,8 @@ data class DeviceNavState(
             val selectedTab: CommonDeviceTab = CommonDeviceTab.DEVICE_INFO,
         ) : SelectedItem
 
+        data object PermissionError : SelectedItem
+
         data object BugReport : SelectedItem
 
         data object About : SelectedItem
@@ -31,13 +47,14 @@ data class DeviceNavState(
     }
 }
 
-fun DeviceNavState.SelectedItem.toStoredData(): NavigationSelectionStoredData =
+fun DeviceNavState.SelectedItem.toStoredData(): NavigationSelectionStoredData? =
     when (this) {
         DeviceNavState.SelectedItem.Host -> NavigationSelectionStoredData.Host
         is DeviceNavState.SelectedItem.Device -> NavigationSelectionStoredData.Device(deviceId, selectedTab)
         DeviceNavState.SelectedItem.BugReport -> NavigationSelectionStoredData.BugReport
         DeviceNavState.SelectedItem.About -> NavigationSelectionStoredData.About
         is DeviceNavState.SelectedItem.Settings -> NavigationSelectionStoredData.Settings(selectedTab)
+        DeviceNavState.SelectedItem.PermissionError -> null
     }
 
 fun NavigationSelectionStoredData.toSelectedItem(): DeviceNavState.SelectedItem =
@@ -59,6 +76,8 @@ sealed interface DeviceNavEvent {
     data class SelectTab(
         val tab: CommonDeviceTab,
     ) : DeviceNavEvent
+
+    data object SelectPermissionError : DeviceNavEvent
 
     data object SelectBugReport : DeviceNavEvent
 

@@ -16,12 +16,17 @@ import io.github.lamba92.openaqua.app.feature.device.fans.FansViewModel
 import io.github.lamba92.openaqua.app.feature.device.sensors.SensorsViewModel
 import io.github.lamba92.openaqua.app.feature.host.HostViewModel
 import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavViewModel
+import io.github.lamba92.openaqua.app.feature.permission.PermissionViewModel
 import io.github.lamba92.openaqua.app.feature.settings.SettingsViewModel
 import io.github.lamba92.openaqua.app.instance.ForegroundRequestService
 import io.github.lamba92.openaqua.app.logging.AppLogService
 import io.github.lamba92.openaqua.app.logging.SharedLogSource
 import io.github.lamba92.openaqua.app.model.BaseAppDataDir
 import io.github.lamba92.openaqua.app.model.LogsDirectory
+import io.github.lamba92.openaqua.app.permission.AlwaysGrantedDevicePermissionService
+import io.github.lamba92.openaqua.app.permission.DevicePermissionService
+import io.github.lamba92.openaqua.app.permission.LinuxDevicePermissionService
+import io.github.lamba92.openaqua.app.permission.WindowsDevicePermissionService
 import io.github.lamba92.openaqua.app.repository.AppDataRepository
 import io.github.lamba92.openaqua.app.repository.DeviceDataCacheService
 import io.github.lamba92.openaqua.app.repository.OpenAquaDeviceEngineApi
@@ -98,6 +103,7 @@ val appModule =
                 openAquaDeviceEngineApi = instance(),
                 openAquaHostEngineApi = instance(),
                 coroutineScopeProvider = instance(),
+                permissionService = instance(),
             )
         }
         bindEagerSingleton {
@@ -108,11 +114,39 @@ val appModule =
                 coroutineScopeProvider = instance(),
             )
         }
+        bindSingleton<DevicePermissionService> {
+            val os = System.getProperty("os.name").lowercase()
+            when {
+                "linux" in os -> {
+                    LinuxDevicePermissionService(
+                        scopeProvider = instance(),
+                        logger = instance<Logger>().withTag("LinuxDevicePermissionService"),
+                    )
+                }
+
+                "win" in os -> {
+                    WindowsDevicePermissionService(
+                        scopeProvider = instance(),
+                    )
+                }
+
+                else -> {
+                    AlwaysGrantedDevicePermissionService
+                }
+            }
+        }
         bindSingleton {
             DeviceNavViewModel(
                 dataCacheService = instance(),
                 appDataRepository = instance(),
                 feederService = instance(),
+                permissionService = instance(),
+                scopeProvider = instance(),
+            )
+        }
+        bindSingleton {
+            PermissionViewModel(
+                permissionService = instance(),
                 scopeProvider = instance(),
             )
         }
@@ -126,7 +160,9 @@ val appModule =
             SettingsViewModel(
                 appDataRepository = instance(),
                 appLogService = instance(),
+                permissionService = instance(),
                 scopeProvider = instance(),
+                baseAppDataDir = instance(),
             )
         }
         bindSingleton {

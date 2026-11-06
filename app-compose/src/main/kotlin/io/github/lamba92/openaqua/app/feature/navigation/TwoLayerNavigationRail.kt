@@ -76,12 +76,15 @@ import open_aqua.app_compose.generated.resources.ic_menu
 import open_aqua.app_compose.generated.resources.ic_menu_open
 import open_aqua.app_compose.generated.resources.ic_openaqua
 import open_aqua.app_compose.generated.resources.ic_settings
+import open_aqua.app_compose.generated.resources.ic_warning
 import open_aqua.app_compose.generated.resources.nav_about
 import open_aqua.app_compose.generated.resources.nav_bug_report
 import open_aqua.app_compose.generated.resources.nav_collapse_menu
 import open_aqua.app_compose.generated.resources.nav_expand_menu
 import open_aqua.app_compose.generated.resources.nav_host
 import open_aqua.app_compose.generated.resources.nav_settings
+import open_aqua.app_compose.generated.resources.permission_loading_desc
+import open_aqua.app_compose.generated.resources.permission_warning_tooltip
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
@@ -141,35 +144,57 @@ fun DeviceNavigationRailScaffold(
                 )
             },
         ) {
-            // First slot: Pinned Host Machine or Loading Indicator
-            HostItem(
-                state = state,
-                metrics = metrics,
-                onEvent = onEvent,
-                railItemColors = railItemColors,
-                drawerItemColors = drawerItemColors,
-                isExpanded = state.isExpanded,
-            )
+            when (val targets = state.targets) {
+                NavigationTargets.Loading -> {
+                    DeviceNavigationLoadingItem(
+                        metrics = metrics,
+                        isExpanded = state.isExpanded,
+                        modifier = Modifier.weight(1f).fillMaxWidth(),
+                    )
+                }
 
-            if (state.devices.isNotEmpty()) {
-                HorizontalDivider(
-                    color = OpenAquaTheme.colors.borderOutline,
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
-                )
+                is NavigationTargets.PermissionError -> {
+                    DeviceNavigationWarningItem(
+                        isSelected = state.selectedItem is DeviceNavState.SelectedItem.PermissionError,
+                        onClick = { onEvent(DeviceNavEvent.SelectPermissionError) },
+                        metrics = metrics,
+                        isExpanded = state.isExpanded,
+                        modifier = Modifier.weight(1f).fillMaxWidth(),
+                    )
+                }
+
+                is NavigationTargets.Ready -> {
+                    HostItem(
+                        host = targets.host,
+                        isSelected = state.selectedItem is DeviceNavState.SelectedItem.Host,
+                        metrics = metrics,
+                        onEvent = onEvent,
+                        railItemColors = railItemColors,
+                        drawerItemColors = drawerItemColors,
+                        isExpanded = state.isExpanded,
+                    )
+
+                    if (targets.devices.isNotEmpty()) {
+                        HorizontalDivider(
+                            color = OpenAquaTheme.colors.borderOutline,
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+                        )
+                    }
+
+                    DeviceNavigationRailList(
+                        devices = targets.devices,
+                        devicesWithFeedErrors = state.devicesWithFeedErrors,
+                        selectedItem = state.selectedItem,
+                        onSelectDevice = { onEvent(DeviceNavEvent.SelectDevice(it)) },
+                        railItemColors = railItemColors,
+                        drawerItemColors = drawerItemColors,
+                        containerColor = colors.container,
+                        metrics = metrics,
+                        isExpanded = state.isExpanded,
+                        modifier = Modifier.weight(1f).fillMaxWidth(),
+                    )
+                }
             }
-
-            DeviceNavigationRailList(
-                devices = state.devices,
-                devicesWithFeedErrors = state.devicesWithFeedErrors,
-                selectedItem = state.selectedItem,
-                onSelectDevice = { onEvent(DeviceNavEvent.SelectDevice(it)) },
-                railItemColors = railItemColors,
-                drawerItemColors = drawerItemColors,
-                containerColor = colors.container,
-                metrics = metrics,
-                isExpanded = state.isExpanded,
-                modifier = Modifier.weight(1f).fillMaxWidth(),
-            )
 
             // Pinned Footer (Bug Report + About + Settings)
             NavigationRailFooter(
@@ -194,7 +219,8 @@ fun DeviceNavigationRailScaffold(
 
 @Composable
 private fun HostItem(
-    state: DeviceNavState,
+    host: DeviceState.Host,
+    isSelected: Boolean,
     metrics: NavigationRailMetrics,
     onEvent: (DeviceNavEvent) -> Unit,
     railItemColors: NavigationRailItemColors,
@@ -202,7 +228,7 @@ private fun HostItem(
     isExpanded: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    when (val host = state.host) {
+    when (host) {
         is DeviceState.Host.Loading -> {
             HostLoadingItem(
                 metrics = metrics,
@@ -217,7 +243,7 @@ private fun HostItem(
         -> {
             HostNavigationRailItem(
                 host = host,
-                isSelected = state.selectedItem is DeviceNavState.SelectedItem.Host,
+                isSelected = isSelected,
                 onClick = { onEvent(DeviceNavEvent.SelectHost) },
                 railColors = railItemColors,
                 drawerColors = drawerItemColors,
@@ -492,6 +518,132 @@ private fun HostLoadingItem(
                     softWrap = false,
                     overflow = TextOverflow.Ellipsis,
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DeviceNavigationLoadingItem(
+    metrics: NavigationRailMetrics,
+    isExpanded: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val fixedSlotWidth = metrics.collapsedWidth - 16.dp
+
+    Row(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .height(metrics.itemIconSize + 16.dp)
+                .padding(horizontal = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier.width(fixedSlotWidth),
+            contentAlignment = Alignment.Center,
+        ) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(metrics.itemIconSize),
+                strokeWidth = 2.dp,
+                color = OpenAquaTheme.colors.primaryBright,
+            )
+        }
+        AnimatedVisibility(
+            visible = isExpanded,
+            enter = fadeIn(animationSpec = tween(durationMillis = 200, delayMillis = 50)),
+            exit = fadeOut(animationSpec = tween(durationMillis = 150)),
+        ) {
+            Row(
+                modifier = Modifier.padding(start = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = stringResource(Res.string.permission_loading_desc),
+                    fontSize = metrics.labelTextSize,
+                    fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
+                    color = OpenAquaTheme.colors.textMuted,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DeviceNavigationWarningItem(
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    metrics: NavigationRailMetrics,
+    isExpanded: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val fixedSlotWidth = metrics.collapsedWidth - 16.dp
+    val warningColor = OpenAquaTheme.colors.statusWarning
+    val containerColor =
+        if (isSelected) {
+            NavigationRailDefaults.colors().itemIndicator
+        } else {
+            Color.Transparent
+        }
+
+    Box(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp)
+                .semantics {
+                    role = Role.Tab
+                    selected = isSelected
+                },
+    ) {
+        val shape = RoundedCornerShape(10.dp)
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(metrics.itemIconSize + 16.dp)
+                    .clip(shape)
+                    .background(containerColor)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = ripple(color = warningColor),
+                        onClick = onClick,
+                    ),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier = Modifier.width(fixedSlotWidth),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    painter = painterResource(Res.drawable.ic_warning),
+                    contentDescription = stringResource(Res.string.permission_warning_tooltip),
+                    tint = warningColor,
+                    modifier = Modifier.size(metrics.itemIconSize),
+                )
+            }
+            AnimatedVisibility(
+                visible = isExpanded,
+                enter = fadeIn(animationSpec = tween(durationMillis = 200, delayMillis = 50)),
+                exit = fadeOut(animationSpec = tween(durationMillis = 150)),
+            ) {
+                Row(
+                    modifier = Modifier.padding(start = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = stringResource(Res.string.permission_warning_tooltip),
+                        color = warningColor,
+                        fontSize = metrics.labelTextSize,
+                        fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
         }
     }

@@ -71,7 +71,7 @@ class SensorsViewModel(
                 }.distinctUntilChanged()
 
         val deviceFeedErrorsFlow =
-            feederService.feedErrorsState
+            feederService.state
                 .map { it[deviceId].orEmpty() }
 
         combine(

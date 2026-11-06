@@ -8,6 +8,8 @@ import io.github.lamba92.openaqua.app.feature.settings.SettingsTab
 import io.github.lamba92.openaqua.app.model.NavigationSelectionStoredData
 import io.github.lamba92.openaqua.app.mvi.MVIViewModel
 import io.github.lamba92.openaqua.app.mvi.viewModelLogger
+import io.github.lamba92.openaqua.app.permission.DevicePermissionService
+import io.github.lamba92.openaqua.app.permission.DevicePermissionState
 import io.github.lamba92.openaqua.app.repository.AppDataRepository
 import io.github.lamba92.openaqua.app.repository.DeviceDataCacheService
 import io.github.lamba92.openaqua.app.repository.DeviceState
@@ -36,6 +38,7 @@ class DeviceNavViewModel(
     private val dataCacheService: DeviceDataCacheService,
     private val appDataRepository: AppDataRepository,
     private val feederService: VirtualSensorFeederService,
+    private val permissionService: DevicePermissionService,
     scopeProvider: CoroutineScopeProvider,
 ) : MVIViewModel<DeviceNavState, DeviceNavEvent, DeviceNavEffect> {
     override val viewModelScope: LoggingScope = scopeProvider.getScope()
@@ -47,49 +50,96 @@ class DeviceNavViewModel(
         field = MutableSharedFlow()
 
     init {
-        // Wait for devices to settle, then restore the saved navigation selection once
         initializeNavigationSelection()
-        observeDeviceStates()
+        observeNavigationState()
         observeNavigationRailExpanded()
     }
 
-    private fun observeDeviceStates() {
+    private fun observeNavigationState() {
         combine(
+            permissionService.state,
             dataCacheService.state,
-            feederService.feedErrorsState,
-        ) { deviceStates, feedErrors ->
-            deviceStates to feedErrors
-        }.onEach { (deviceStates, feedErrors) ->
-            val aqua = deviceStates.filterIsInstance<DeviceState.Aqua>()
-            val errorDeviceIds = feedErrors.filterValues { it.isNotEmpty() }.keys
-            state.update { currentState ->
-                currentState.copy(
-                    host = deviceStates.filterIsInstance<DeviceState.Host>().firstOrNull() ?: DeviceState.Host.Loading,
-                    devices = aqua,
-                    devicesWithFeedErrors = errorDeviceIds,
-                    selectedItem =
-                        when (val item = currentState.selectedItem) {
-                            is DeviceNavState.SelectedItem.Device -> {
-                                if (aqua.any { it.device.id == item.deviceId }) {
-                                    item
-                                } else {
-                                    null
-                                }
-                            }
+            feederService.state,
+        ) { permState, deviceStates, feedErrors ->
+            val newTargets = resolveNavigationTargets(permState, deviceStates)
 
-                            null,
-                            DeviceNavState.SelectedItem.Host,
-                            DeviceNavState.SelectedItem.BugReport,
-                            DeviceNavState.SelectedItem.About,
-                            is DeviceNavState.SelectedItem.Settings,
-                            -> {
-                                item
-                            }
-                        },
+            state.update { currentState ->
+                val newSelectedItem = resolveSelectedItem(newTargets, currentState.selectedItem)
+                currentState.copy(
+                    targets = newTargets,
+                    devicesWithFeedErrors = feedErrors.filterValues { it.isNotEmpty() }.keys,
+                    selectedItem = newSelectedItem,
                 )
             }
         }.launchIn(viewModelScope)
     }
+
+    private fun resolveNavigationTargets(
+        permState: DevicePermissionState,
+        deviceStates: List<DeviceState>,
+    ): NavigationTargets =
+        when (permState) {
+            DevicePermissionState.Initializing -> {
+                NavigationTargets.Loading
+            }
+
+            is DevicePermissionState.Denied -> {
+                NavigationTargets.PermissionError(permState)
+            }
+
+            DevicePermissionState.Granted -> {
+                val host =
+                    deviceStates.filterIsInstance<DeviceState.Host>().firstOrNull()
+                        ?: DeviceState.Host.Loading
+                val aqua = deviceStates.filterIsInstance<DeviceState.Aqua>()
+                NavigationTargets.Ready(host = host, devices = aqua)
+            }
+        }
+
+    private fun resolveSelectedItem(
+        newTargets: NavigationTargets,
+        currentSelection: DeviceNavState.SelectedItem?,
+    ): DeviceNavState.SelectedItem? =
+        when (newTargets) {
+            is NavigationTargets.PermissionError -> {
+                when (currentSelection) {
+                    null,
+                    DeviceNavState.SelectedItem.Host,
+                    is DeviceNavState.SelectedItem.Device,
+                    -> DeviceNavState.SelectedItem.PermissionError
+
+                    else -> currentSelection
+                }
+            }
+
+            is NavigationTargets.Ready -> {
+                when (currentSelection) {
+                    DeviceNavState.SelectedItem.PermissionError -> {
+                        DeviceNavState.SelectedItem.Host
+                    }
+
+                    is DeviceNavState.SelectedItem.Device -> {
+                        if (newTargets.devices.any { it.device.id == currentSelection.deviceId }) {
+                            currentSelection
+                        } else {
+                            null
+                        }
+                    }
+
+                    else -> {
+                        currentSelection
+                    }
+                }
+            }
+
+            NavigationTargets.Loading -> {
+                if (currentSelection is DeviceNavState.SelectedItem.PermissionError) {
+                    null
+                } else {
+                    currentSelection
+                }
+            }
+        }
 
     private fun initializeNavigationSelection() {
         viewModelScope.launch {
@@ -139,7 +189,11 @@ class DeviceNavViewModel(
                     if (initialSelection != null) {
                         viewModelLogger.i { "Restored navigation selection: $initialSelection" }
                         state.update { currentState ->
-                            currentState.copy(selectedItem = currentState.selectedItem ?: initialSelection)
+                            if (currentState.selectedItem == null) {
+                                currentState.copy(selectedItem = initialSelection)
+                            } else {
+                                currentState
+                            }
                         }
                     }
                 }
@@ -156,6 +210,7 @@ class DeviceNavViewModel(
                 DeviceNavEvent.SelectHost -> selectHost()
                 is DeviceNavEvent.SelectDevice -> selectDevice(event.deviceId)
                 is DeviceNavEvent.SelectTab -> selectTab(event.tab)
+                DeviceNavEvent.SelectPermissionError -> selectPermissionError()
                 DeviceNavEvent.SelectBugReport -> selectBugReport()
                 DeviceNavEvent.SelectAbout -> selectAbout()
                 DeviceNavEvent.SelectSettings -> selectSettings()
@@ -184,7 +239,7 @@ class DeviceNavViewModel(
                         },
                 )
             }
-        appDataRepository.setNavigationSelection(finalState.selectedItem?.toStoredData())
+        finalState.selectedItem?.toStoredData()?.let { appDataRepository.setNavigationSelection(it) }
     }
 
     private fun selectTab(tab: CommonDeviceTab) {
@@ -193,12 +248,13 @@ class DeviceNavViewModel(
             when (val currentItem = currentState.selectedItem) {
                 is DeviceNavState.SelectedItem.Device -> {
                     val updated = currentItem.copy(selectedTab = tab)
-                    appDataRepository.setNavigationSelection(updated.toStoredData())
+                    updated.toStoredData()?.let { appDataRepository.setNavigationSelection(it) }
                     currentState.copy(selectedItem = updated)
                 }
 
                 null,
                 DeviceNavState.SelectedItem.Host,
+                DeviceNavState.SelectedItem.PermissionError,
                 DeviceNavState.SelectedItem.BugReport,
                 DeviceNavState.SelectedItem.About,
                 is DeviceNavState.SelectedItem.Settings,
@@ -206,6 +262,13 @@ class DeviceNavViewModel(
                     currentState
                 }
             }
+        }
+    }
+
+    private fun selectPermissionError() {
+        viewModelLogger.i { "Navigating to Permission Error screen" }
+        state.update { currentState ->
+            currentState.copy(selectedItem = DeviceNavState.SelectedItem.PermissionError)
         }
     }
 
@@ -227,36 +290,35 @@ class DeviceNavViewModel(
 
     private fun selectSettings() {
         viewModelLogger.i { "Navigating to Settings screen" }
-        val target =
-            when (val current = state.value.selectedItem) {
-                is DeviceNavState.SelectedItem.Settings -> current
-                else -> DeviceNavState.SelectedItem.Settings()
-            }
         state.update { currentState ->
-            currentState.copy(selectedItem = target)
+            currentState.copy(selectedItem = DeviceNavState.SelectedItem.Settings(SettingsTab.GENERAL))
         }
-        appDataRepository.setNavigationSelection(target.toStoredData())
+        appDataRepository.setNavigationSelection(NavigationSelectionStoredData.Settings(SettingsTab.GENERAL))
     }
 
     private fun selectSettingsTab(tab: SettingsTab) {
-        viewModelLogger.i { "Selected settings tab '$tab'" }
-        val updated = DeviceNavState.SelectedItem.Settings(selectedTab = tab)
-        state.update { currentState -> currentState.copy(selectedItem = updated) }
-        appDataRepository.setNavigationSelection(updated.toStoredData())
+        viewModelLogger.i { "Navigating to Settings tab '$tab'" }
+        state.update { currentState ->
+            currentState.copy(selectedItem = DeviceNavState.SelectedItem.Settings(tab))
+        }
+        appDataRepository.setNavigationSelection(NavigationSelectionStoredData.Settings(tab))
     }
 
     private fun toggleNavigationRailExpanded() {
-        val next = !state.value.isExpanded
-        viewModelLogger.i { "Toggling navigation rail expanded: $next" }
-        state.update { it.copy(isExpanded = next) }
-        appDataRepository.update { it.copy(navigationRailExpanded = next) }
+        val newState = !state.value.isExpanded
+        viewModelLogger.i { "Toggling navigation rail expanded: $newState" }
+        state.update { currentState ->
+            currentState.copy(isExpanded = newState)
+        }
+        appDataRepository.update { it.copy(navigationRailExpanded = newState) }
     }
 
     private fun observeNavigationRailExpanded() {
         appDataRepository.state
             .filterIsInstance<AppDataRepository.State.Ready>()
-            .onEach { ready ->
-                state.update { it.copy(isExpanded = ready.data.navigationRailExpanded) }
+            .map { it.data.navigationRailExpanded }
+            .onEach { expanded ->
+                state.update { it.copy(isExpanded = expanded) }
             }.launchIn(viewModelScope)
     }
 }

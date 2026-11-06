@@ -36,6 +36,13 @@ inline fun <T> Path.useLines(
         block(generateSequence { source.readLine() })
     }
 
+fun Path.listDirectory(fileSystem: FileSystem = SystemFileSystem): List<Path> =
+    if (!fileSystem.exists(this)) {
+        emptyList()
+    } else {
+        runCatching { fileSystem.list(this).toList() }.getOrDefault(emptyList())
+    }
+
 fun Path.openInDesktopEnvironment() {
     if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.OPEN)) {
         Desktop.getDesktop().open(File(toString()))

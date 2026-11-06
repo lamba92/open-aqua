@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -383,6 +384,36 @@ fun ScreenCard(
         verticalArrangement = Arrangement.spacedBy(metrics.spacingLg),
         content = content,
     )
+}
+
+@Composable
+fun CenteredScreenCard(
+    modifier: Modifier = Modifier,
+    cardModifier: Modifier = Modifier.widthIn(max = 480.dp),
+    contentPadding: Dp = OpenAquaTheme.metrics.spacingXxl,
+    horizontalAlignment: Alignment.Horizontal = Alignment.CenterHorizontally,
+    verticalArrangement: Arrangement.Vertical = Arrangement.spacedBy(OpenAquaTheme.metrics.spacingLg),
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    val colors = OpenAquaTheme.colors
+    val metrics = OpenAquaTheme.metrics
+    val shape = RoundedCornerShape(metrics.radiusLarge)
+    Box(
+        modifier = modifier.fillMaxSize().padding(metrics.spacingXxl),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            modifier =
+                cardModifier
+                    .clip(shape)
+                    .background(colors.surfaceLow)
+                    .border(metrics.strokeThin, colors.borderOutline, shape)
+                    .padding(contentPadding),
+            horizontalAlignment = horizontalAlignment,
+            verticalArrangement = verticalArrangement,
+            content = content,
+        )
+    }
 }
 
 @Composable

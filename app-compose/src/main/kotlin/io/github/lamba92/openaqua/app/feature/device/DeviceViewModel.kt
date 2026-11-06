@@ -54,7 +54,7 @@ class DeviceViewModel(
 
         val deviceErrorsFlow =
             feederService
-                .feedErrorsState
+                .state
                 .map { it[deviceId].orEmpty() }
 
         combine(

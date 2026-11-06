@@ -332,4 +332,27 @@
     <string name="settings_logs_copied">Copié !</string>
     <string name="settings_logs_empty">Aucun journal enregistré pour l'instant</string>
     <string name="settings_logs_lines_count">%1$d lignes</string>
+<!-- Permissions Dialog & Banners -->
+    <string name="permission_dialog_linux_title">Autorisations de périphérique requises</string>
+    <string name="permission_dialog_linux_desc">OpenAqua nécessite des autorisations udev pour communiquer avec les périphériques Aqua Computer via USB et hidraw. L'installation d'une règle udev dans /etc/udev/rules.d/60-open-aqua.rules accordera l'accès à votre compte utilisateur sans nécessiter les droits root.</string>
+    <string name="permission_dialog_linux_install">Installer</string>
+    <string name="permission_dialog_windows_title">Privilèges d'administrateur requis</string>
+    <string name="permission_dialog_windows_desc">L'application nécessite des privilèges d'administrateur.</string>
+    <string name="permission_dialog_windows_elevate">Élever</string>
+    <string name="permission_dialog_cancel">Annuler</string>
+    <string name="permission_loading_desc">Vérification des autorisations du périphérique...</string>
+    <string name="permission_warning_tooltip">Autorisations du périphérique non accordées</string>
+    <string name="permission_installing">Application des autorisations...</string>
+    <string name="permission_show_script">Afficher le script</string>
+    <string name="permission_hide_script">Masquer le script</string>
+    <!-- Linux Permissions Settings -->
+    <string name="settings_linux_permissions_title">Autorisations de périphériques Linux</string>
+    <string name="settings_linux_permissions_desc">Gérer les règles udev nécessaires pour accéder aux périphériques Aqua Computer sans privilèges root</string>
+    <string name="settings_linux_permissions_rule_installed">La règle udev est installée (/etc/udev/rules.d/60-open-aqua.rules)</string>
+    <string name="settings_linux_permissions_rule_not_installed">La règle udev n'est pas installée</string>
+    <string name="settings_linux_permissions_remove_button">Supprimer la règle</string>
+    <string name="settings_linux_permissions_removing">Suppression de la règle...</string>
+    <string name="settings_linux_permissions_dialog_title">Supprimer la règle udev ?</string>
+    <string name="settings_linux_permissions_dialog_desc">La suppression de la règle udev révoquera l'accès sans root aux périphériques Aqua Computer. Vous aurez besoin de privilèges administrateur pour la supprimer.</string>
+    <string name="settings_linux_permissions_dialog_confirm">Supprimer</string>
 </resources>

@@ -1,34 +1,10 @@
 package io.github.lamba92.openaqua.app
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.TouchApp
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
@@ -39,38 +15,22 @@ import coil3.svg.SvgDecoder
 import io.github.lamba92.openaqua.app.coroutine.CoroutineScopeProvider
 import io.github.lamba92.openaqua.app.di.LocalDI
 import io.github.lamba92.openaqua.app.di.createOpenAquaDI
-import io.github.lamba92.openaqua.app.di.rememberInstance
-import io.github.lamba92.openaqua.app.feature.about.AboutScreen
-import io.github.lamba92.openaqua.app.feature.bugreport.BugReportScreen
-import io.github.lamba92.openaqua.app.feature.device.DeviceScreen
-import io.github.lamba92.openaqua.app.feature.host.HostScreen
-import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavEvent
-import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavState
-import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavViewModel
-import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavigationRailScaffold
-import io.github.lamba92.openaqua.app.feature.settings.SettingsScreen
-import io.github.lamba92.openaqua.app.feature.settings.SettingsTab
 import io.github.lamba92.openaqua.app.i18n.AppLocaleProvider
 import io.github.lamba92.openaqua.app.instance.ForegroundRequestService
 import io.github.lamba92.openaqua.app.instance.acquireOrNotify
-import io.github.lamba92.openaqua.app.model.AppStoredData
 import io.github.lamba92.openaqua.app.model.locale
 import io.github.lamba92.openaqua.app.model.toPosition
 import io.github.lamba92.openaqua.app.model.toSize
 import io.github.lamba92.openaqua.app.model.toStoredData
 import io.github.lamba92.openaqua.app.repository.AppDataRepository
-import io.github.lamba92.openaqua.app.theme.AppMetrics
-import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
+import io.github.lamba92.openaqua.app.theme.OpenAquaThemedApp
 import io.github.lamba92.openaqua.app.util.restoreAndFocus
-import io.github.lamba92.openaqua.theme.ThemePalette
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.runBlocking
 import open_aqua.app_compose.generated.resources.Res
 import open_aqua.app_compose.generated.resources.ic_app_icon
-import open_aqua.app_compose.generated.resources.select_a_device_subtitle
-import open_aqua.app_compose.generated.resources.select_a_device_title
 import open_aqua.app_compose.generated.resources.window_title
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -82,14 +42,13 @@ import kotlin.time.Duration.Companion.milliseconds
 @OptIn(FlowPreview::class)
 fun main() {
     acquireOrNotify()
+    configureTaskbarIcon()
 
     val di = createOpenAquaDI()
     val appDataRepository by di.instance<AppDataRepository>()
     val scopeProvider by di.instance<CoroutineScopeProvider>()
     val foregroundRequestService by di.instance<ForegroundRequestService>()
     val mainLogger by di.instance<Logger>(tag = "Main")
-
-    configureTaskbarIcon()
 
     application {
         setSingletonImageLoaderFactory { context ->
@@ -151,30 +110,6 @@ fun main() {
     }
 }
 
-@Composable
-private fun OpenAquaThemedApp(storedData: AppStoredData) {
-    val palette =
-        remember(storedData.colorScheme) {
-            ThemePalette.fromColorScheme(storedData.colorScheme)
-        }
-    val metrics =
-        remember(storedData.metricsScale) {
-            AppMetrics.fromScale(storedData.metricsScale)
-        }
-    val fontFamily = storedData.fontFamily
-    val fontSp = storedData.fontSp
-
-    OpenAquaTheme(
-        palette = palette,
-        metrics = metrics,
-        fontFamilyPreference = fontFamily,
-        fontSp = fontSp,
-        preferences = storedData,
-    ) {
-        OpenAquaApp()
-    }
-}
-
 private fun configureTaskbarIcon() {
     runCatching {
         if (Taskbar.isTaskbarSupported()) {
@@ -186,103 +121,6 @@ private fun configureTaskbarIcon() {
                     taskbar.iconImage = awtImage
                 }
             }
-        }
-    }
-}
-
-@Composable
-fun OpenAquaApp(navViewModel: DeviceNavViewModel = rememberInstance()) {
-    val navState by navViewModel.state.collectAsState()
-
-    Box(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .background(OpenAquaTheme.colors.background),
-    ) {
-        DeviceNavigationRailScaffold(
-            state = navState,
-            onEvent = navViewModel::onEvent,
-        ) {
-            when (val item = navState.selectedItem) {
-                null -> {
-                    SelectADeviceScreen()
-                }
-
-                DeviceNavState.SelectedItem.BugReport -> {
-                    BugReportScreen(
-                        onNavigateToLogs = { navViewModel.onEvent(DeviceNavEvent.SelectSettingsTab(SettingsTab.LOGS)) },
-                    )
-                }
-
-                DeviceNavState.SelectedItem.About -> {
-                    AboutScreen()
-                }
-
-                is DeviceNavState.SelectedItem.Settings -> {
-                    SettingsScreen(
-                        selectedTab = item.selectedTab,
-                        onSelectTab = { navViewModel.onEvent(DeviceNavEvent.SelectSettingsTab(it)) },
-                        viewModel = rememberInstance(),
-                    )
-                }
-
-                DeviceNavState.SelectedItem.Host -> {
-                    HostScreen(viewModel = rememberInstance())
-                }
-
-                is DeviceNavState.SelectedItem.Device -> {
-                    DeviceScreen(
-                        deviceId = item.deviceId,
-                        selectedTab = item.selectedTab,
-                        onSelectTab = { navViewModel.onEvent(DeviceNavEvent.SelectTab(it)) },
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun SelectADeviceScreen(modifier: Modifier = Modifier) {
-    val colors = OpenAquaTheme.colors
-    val metrics = OpenAquaTheme.metrics
-
-    Box(
-        modifier = modifier.fillMaxSize().padding(metrics.spacingXxl),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(metrics.spacingMd),
-            modifier =
-                Modifier
-                    .clip(RoundedCornerShape(metrics.radiusLarge))
-                    .background(colors.surfaceLow)
-                    .border(metrics.strokeThin, colors.borderOutline, RoundedCornerShape(metrics.radiusLarge))
-                    .padding(metrics.spacingXxl),
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.TouchApp,
-                contentDescription = null,
-                tint = colors.primaryBright,
-                modifier = Modifier.size(48.dp),
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = stringResource(Res.string.select_a_device_title),
-                color = colors.textPrimary,
-                fontSize = 18.sp,
-                lineHeight = 24.sp,
-                fontWeight = FontWeight.Bold,
-            )
-            Text(
-                text = stringResource(Res.string.select_a_device_subtitle),
-                color = colors.textSecondary,
-                fontSize = 13.sp,
-                lineHeight = 18.sp,
-                textAlign = TextAlign.Center,
-            )
         }
     }
 }

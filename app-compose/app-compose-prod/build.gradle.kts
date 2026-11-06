@@ -52,6 +52,7 @@ compose.desktop {
             }
             windows {
                 iconFile = rootProject.file("assets/generated/favicon.ico")
+                perUserInstall = false
             }
             macOS {
                 iconFile = rootProject.file("assets/generated/icon.icns")

@@ -5,11 +5,16 @@ import io.github.lamba92.openaqua.app.coroutine.CoroutineScopeProvider
 import io.github.lamba92.openaqua.app.coroutine.LoggingScope
 import io.github.lamba92.openaqua.app.coroutine.getScope
 import io.github.lamba92.openaqua.app.logging.AppLogService
+import io.github.lamba92.openaqua.app.model.BaseAppDataDir
 import io.github.lamba92.openaqua.app.mvi.MVIViewModel
 import io.github.lamba92.openaqua.app.mvi.viewModelLogger
+import io.github.lamba92.openaqua.app.permission.DevicePermissionService
+import io.github.lamba92.openaqua.app.permission.DevicePermissionState
 import io.github.lamba92.openaqua.app.repository.AppDataRepository
+import io.github.lamba92.openaqua.app.util.exists
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -21,16 +26,20 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.io.files.Path
+import kotlin.time.Duration.Companion.seconds
 
 class SettingsViewModel(
     private val appDataRepository: AppDataRepository,
     private val appLogService: AppLogService,
+    private val permissionService: DevicePermissionService,
+    val baseAppDataDir: BaseAppDataDir,
     scopeProvider: CoroutineScopeProvider,
 ) : MVIViewModel<SettingsState, SettingsEvent, SettingsEffect> {
     override val viewModelScope: LoggingScope = scopeProvider.getScope()
 
     override val state: StateFlow<SettingsState>
-        field = MutableStateFlow(SettingsState(dataFolderPath = appDataRepository.baseAppDataDir.path.toString()))
+        field = MutableStateFlow<SettingsState>(SettingsState.Loading)
 
     override val effects: SharedFlow<SettingsEffect>
         field = MutableSharedFlow<SettingsEffect>()
@@ -48,20 +57,28 @@ class SettingsViewModel(
         combine(
             readyFlow,
             logsFlow,
-        ) { ready, logs ->
-            state.update {
-                it.copy(
-                    colorScheme = ready.data.colorScheme,
-                    metricsScale = ready.data.metricsScale,
-                    fontSp = ready.data.fontSp,
-                    fontFamily = ready.data.fontFamily,
-                    language = ready.data.language,
-                    hideDisconnectedFans = ready.data.hideDisconnectedFans,
-                    hideDisconnectedSensorsInFans = ready.data.hideDisconnectedSensorsInFans,
-                    hideDisconnectedSensors = ready.data.hideDisconnectedSensors,
-                    hideUnconfiguredVirtualSensors = ready.data.hideUnconfiguredVirtualSensors,
-                    logs = logs,
-                )
+            permissionService.state,
+        ) { ready, logs, permissions ->
+            state.update { current ->
+                when (current) {
+                    SettingsState.Loading -> {
+                        SettingsState.Ready(
+                            osSettings = permissions.toCurrentOSSettings(),
+                            storedData = ready.data,
+                            logs = logs,
+                            dataFolderPath = baseAppDataDir.path.toString(),
+                        )
+                    }
+
+                    is SettingsState.Ready -> {
+                        val isRemoving = (current.osSettings as? CurrentOSSettings.Linux)?.isRemovingPermissions ?: false
+                        current.copy(
+                            osSettings = permissions.toCurrentOSSettings(isRemoving),
+                            storedData = ready.data,
+                            logs = logs,
+                        )
+                    }
+                }
             }
         }.launchIn(viewModelScope)
     }
@@ -70,7 +87,8 @@ class SettingsViewModel(
         viewModelScope.launch {
             when (event) {
                 SettingsEvent.OpenDataFolder -> {
-                    viewModelLogger.i { "Opening app data folder: ${state.value.dataFolderPath}" }
+                    val current = state.value as? SettingsState.Ready ?: return@launch
+                    viewModelLogger.i { "Opening app data folder: ${current.dataFolderPath}" }
                     appDataRepository.openDataFolder()
                 }
 
@@ -80,17 +98,72 @@ class SettingsViewModel(
                 }
 
                 SettingsEvent.RequestRestoreDefaults -> {
-                    state.update { it.copy(showResetConfirmationDialog = true) }
+                    state.update { current ->
+                        if (current is SettingsState.Ready) current.copy(showResetConfirmationDialog = true) else current
+                    }
                 }
 
                 SettingsEvent.DismissRestoreDefaults -> {
-                    state.update { it.copy(showResetConfirmationDialog = false) }
+                    state.update { current ->
+                        if (current is SettingsState.Ready) current.copy(showResetConfirmationDialog = false) else current
+                    }
                 }
 
                 SettingsEvent.ConfirmRestoreDefaults -> {
                     viewModelLogger.i { "Restored settings to defaults" }
                     appDataRepository.resetToDefaults()
-                    state.update { it.copy(showResetConfirmationDialog = false) }
+                    state.update { current ->
+                        if (current is SettingsState.Ready) current.copy(showResetConfirmationDialog = false) else current
+                    }
+                }
+
+                SettingsEvent.RequestRemoveUdevRule -> {
+                    state.update { current ->
+                        if (current is SettingsState.Ready) current.copy(showRemoveUdevRuleConfirmationDialog = true) else current
+                    }
+                }
+
+                SettingsEvent.DismissRemoveUdevRule -> {
+                    state.update { current ->
+                        if (current is SettingsState.Ready) current.copy(showRemoveUdevRuleConfirmationDialog = false) else current
+                    }
+                }
+
+                SettingsEvent.ConfirmRemoveUdevRule -> {
+                    viewModelLogger.i { "Removing Linux udev rule" }
+                    state.update { current ->
+                        when (current) {
+                            is SettingsState.Ready -> {
+                                current.copy(
+                                    showRemoveUdevRuleConfirmationDialog = false,
+                                    osSettings =
+                                        when (val currentOs = current.osSettings) {
+                                            is CurrentOSSettings.Linux -> currentOs.copy(isRemovingPermissions = true)
+                                            else -> currentOs
+                                        },
+                                )
+                            }
+
+                            else -> {
+                                current
+                            }
+                        }
+                    }
+                    permissionService.removePermissions()
+                    viewModelScope.launch {
+                        delay(2.seconds)
+                        state.update { current ->
+                            when (current) {
+                                is SettingsState.Ready if current.osSettings is CurrentOSSettings.Linux -> {
+                                    current.copy(osSettings = current.osSettings.copy(isRemovingPermissions = false))
+                                }
+
+                                else -> {
+                                    current
+                                }
+                            }
+                        }
+                    }
                 }
 
                 is SettingsEvent.SelectColorScheme -> {
@@ -140,6 +213,17 @@ class SettingsViewModel(
             }
         }
 }
+
+private fun DevicePermissionState.toCurrentOSSettings(isRemovingPermissions: Boolean = false): CurrentOSSettings =
+    when {
+        System.getProperty("os.name").contains("linux", ignoreCase = true) -> {
+            CurrentOSSettings.Linux(
+                hasUdevRule = Path("/etc/udev/rules.d/60-open-aqua.rules").exists(),
+                isRemovingPermissions = isRemovingPermissions,
+            )
+        }
+        else -> CurrentOSSettings.None
+    }
 
 private val TIMESTAMP_PREFIX_REGEX = Regex("""^\d{4}-\d{2}-\d{2}[T\s]""")
 

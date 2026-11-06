@@ -42,7 +42,7 @@ class VirtualSensorFeederService(
     private val deviceFeedSources = mutableMapOf<DeviceId, MutableStateFlow<Map<Int, VirtualSensorFeedSource>>>()
     private val deviceFeederJobs = mutableMapOf<DeviceId, Job>()
 
-    val feedErrorsState: StateFlow<Map<DeviceId, Map<Int, VirtualSensorFeedError>>> =
+    val state: StateFlow<Map<DeviceId, Map<Int, VirtualSensorFeedError>>> =
         combine(
             appDataRepository.state.filterIsInstance<AppDataRepository.State.Ready>(),
             deviceDataCacheService.state,
@@ -127,7 +127,7 @@ class VirtualSensorFeederService(
         }
 
     private fun logSensorFeedErrors() {
-        feedErrorsState
+        state
             .onEach { allErrors ->
                 when {
                     allErrors.isEmpty() -> {

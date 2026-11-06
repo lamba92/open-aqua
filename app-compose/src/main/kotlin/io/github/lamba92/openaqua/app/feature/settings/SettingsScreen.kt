@@ -25,6 +25,7 @@ import androidx.compose.material.icons.automirrored.outlined.Article
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
@@ -83,7 +84,9 @@ import open_aqua.app_compose.generated.resources.ic_restart_alt
 import open_aqua.app_compose.generated.resources.ic_sensors
 import open_aqua.app_compose.generated.resources.ic_settings
 import open_aqua.app_compose.generated.resources.ic_tune
+import open_aqua.app_compose.generated.resources.ic_usb
 import open_aqua.app_compose.generated.resources.ic_warning
+import open_aqua.app_compose.generated.resources.permission_dialog_cancel
 import open_aqua.app_compose.generated.resources.settings_app_data_title
 import open_aqua.app_compose.generated.resources.settings_appearance_desc
 import open_aqua.app_compose.generated.resources.settings_appearance_title
@@ -105,6 +108,15 @@ import open_aqua.app_compose.generated.resources.settings_hide_unconfigured_virt
 import open_aqua.app_compose.generated.resources.settings_hide_unconfigured_virtual_sensors_title
 import open_aqua.app_compose.generated.resources.settings_language_desc
 import open_aqua.app_compose.generated.resources.settings_language_title
+import open_aqua.app_compose.generated.resources.settings_linux_permissions_desc
+import open_aqua.app_compose.generated.resources.settings_linux_permissions_dialog_confirm
+import open_aqua.app_compose.generated.resources.settings_linux_permissions_dialog_desc
+import open_aqua.app_compose.generated.resources.settings_linux_permissions_dialog_title
+import open_aqua.app_compose.generated.resources.settings_linux_permissions_remove_button
+import open_aqua.app_compose.generated.resources.settings_linux_permissions_removing
+import open_aqua.app_compose.generated.resources.settings_linux_permissions_rule_installed
+import open_aqua.app_compose.generated.resources.settings_linux_permissions_rule_not_installed
+import open_aqua.app_compose.generated.resources.settings_linux_permissions_title
 import open_aqua.app_compose.generated.resources.settings_metrics_scale_desc
 import open_aqua.app_compose.generated.resources.settings_metrics_scale_title
 import open_aqua.app_compose.generated.resources.settings_open_data_folder_button
@@ -143,20 +155,36 @@ fun SettingsScreen(
         modifier = modifier,
     ) {
         saveableStateHolder.SaveableStateProvider(selectedTab) {
-            when (selectedTab) {
-                SettingsTab.GENERAL -> {
-                    GeneralSettingsContent(
-                        state = state,
-                        viewModel = viewModel,
-                        scrollState = generalScrollState,
-                    )
+            when (val currentState = state) {
+                SettingsState.Loading -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        CircularProgressIndicator(
+                            color = OpenAquaTheme.colors.primaryBright,
+                            modifier = Modifier.size(48.dp),
+                        )
+                    }
                 }
 
-                SettingsTab.LOGS -> {
-                    LogsContent(
-                        logs = state.logs,
-                        onOpenLogsFolder = { viewModel.onEvent(SettingsEvent.OpenLogsFolder) },
-                    )
+                is SettingsState.Ready -> {
+                    when (selectedTab) {
+                        SettingsTab.GENERAL -> {
+                            GeneralSettingsContent(
+                                state = currentState,
+                                viewModel = viewModel,
+                                scrollState = generalScrollState,
+                            )
+                        }
+
+                        SettingsTab.LOGS -> {
+                            LogsContent(
+                                logs = currentState.logs,
+                                onOpenLogsFolder = { viewModel.onEvent(SettingsEvent.OpenLogsFolder) },
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -165,12 +193,11 @@ fun SettingsScreen(
 
 @Composable
 private fun GeneralSettingsContent(
-    state: SettingsState,
+    state: SettingsState.Ready,
     viewModel: SettingsViewModel,
     scrollState: ScrollState,
     modifier: Modifier = Modifier,
 ) {
-    val state by viewModel.state.collectAsState()
     val colors = OpenAquaTheme.colors
     val metrics = OpenAquaTheme.metrics
     Box(
@@ -207,11 +234,11 @@ private fun GeneralSettingsContent(
                 ) {
                     // Appearance & Scaling section
                     AppearanceSection(
-                        selectedColorScheme = state.colorScheme,
-                        selectedMetricsScale = state.metricsScale,
-                        selectedFontFamily = state.fontFamily,
-                        selectedFontSp = state.fontSp,
-                        selectedLanguage = state.language,
+                        selectedColorScheme = state.storedData.colorScheme,
+                        selectedMetricsScale = state.storedData.metricsScale,
+                        selectedFontFamily = state.storedData.fontFamily,
+                        selectedFontSp = state.storedData.fontSp,
+                        selectedLanguage = state.storedData.language,
                         onSelectColorScheme = { viewModel.onEvent(SettingsEvent.SelectColorScheme(it)) },
                         onSelectMetricsScale = { viewModel.onEvent(SettingsEvent.SelectMetricsScale(it)) },
                         onSelectFontFamily = { viewModel.onEvent(SettingsEvent.SelectFontFamily(it)) },
@@ -223,10 +250,10 @@ private fun GeneralSettingsContent(
 
                     // Channel Visibility section
                     ChannelVisibilitySection(
-                        hideDisconnectedFans = state.hideDisconnectedFans,
-                        hideDisconnectedSensorsInFans = state.hideDisconnectedSensorsInFans,
-                        hideDisconnectedSensors = state.hideDisconnectedSensors,
-                        hideUnconfiguredVirtualSensors = state.hideUnconfiguredVirtualSensors,
+                        hideDisconnectedFans = state.storedData.hideDisconnectedFans,
+                        hideDisconnectedSensorsInFans = state.storedData.hideDisconnectedSensorsInFans,
+                        hideDisconnectedSensors = state.storedData.hideDisconnectedSensors,
+                        hideUnconfiguredVirtualSensors = state.storedData.hideUnconfiguredVirtualSensors,
                         onToggleHideDisconnectedFans = {
                             viewModel.onEvent(SettingsEvent.ToggleHideDisconnectedFans(it))
                         },
@@ -242,6 +269,16 @@ private fun GeneralSettingsContent(
                     )
 
                     HorizontalDivider(color = colors.borderOutline)
+
+                    val osSettings = state.osSettings
+                    if (osSettings is CurrentOSSettings.Linux) {
+                        LinuxPermissionsSection(
+                            osSettings = osSettings,
+                            onRemoveUdevRule = { viewModel.onEvent(SettingsEvent.RequestRemoveUdevRule) },
+                        )
+
+                        HorizontalDivider(color = colors.borderOutline)
+                    }
 
                     // App data vertical section
                     AppDataSection(
@@ -271,6 +308,18 @@ private fun GeneralSettingsContent(
                 icon = painterResource(Res.drawable.ic_warning),
                 onDismiss = { viewModel.onEvent(SettingsEvent.DismissRestoreDefaults) },
                 onConfirm = { viewModel.onEvent(SettingsEvent.ConfirmRestoreDefaults) },
+            )
+        }
+
+        if (state.showRemoveUdevRuleConfirmationDialog) {
+            ConfirmationDialog(
+                title = stringResource(Res.string.settings_linux_permissions_dialog_title),
+                message = stringResource(Res.string.settings_linux_permissions_dialog_desc),
+                confirmText = stringResource(Res.string.settings_linux_permissions_dialog_confirm),
+                dismissText = stringResource(Res.string.permission_dialog_cancel),
+                icon = painterResource(Res.drawable.ic_warning),
+                onDismiss = { viewModel.onEvent(SettingsEvent.DismissRemoveUdevRule) },
+                onConfirm = { viewModel.onEvent(SettingsEvent.ConfirmRemoveUdevRule) },
             )
         }
     }
@@ -1043,6 +1092,78 @@ private fun AppDataSection(
                 iconTint = colors.statusWarning,
                 onClick = onRestoreDefaults,
             )
+        }
+    }
+}
+
+@Composable
+private fun LinuxPermissionsSection(
+    osSettings: CurrentOSSettings.Linux,
+    onRemoveUdevRule: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = OpenAquaTheme.colors
+    val metrics = OpenAquaTheme.metrics
+
+    Column(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(metrics.radiusLarge))
+                .background(colors.surfaceLow)
+                .border(metrics.strokeThin, colors.borderOutline, RoundedCornerShape(metrics.radiusLarge))
+                .padding(metrics.spacingXl),
+        verticalArrangement = Arrangement.spacedBy(metrics.spacingLg),
+    ) {
+        SectionHeader(
+            icon = painterResource(Res.drawable.ic_usb),
+            title = stringResource(Res.string.settings_linux_permissions_title),
+        )
+
+        Text(
+            text = stringResource(Res.string.settings_linux_permissions_desc),
+            color = colors.textMuted,
+            fontSize = 14.sp,
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(
+                modifier = Modifier.weight(1f).padding(end = metrics.spacingLg),
+                verticalArrangement = Arrangement.spacedBy(metrics.spacingXs),
+            ) {
+                Text(
+                    text =
+                        if (osSettings.hasUdevRule) {
+                            stringResource(Res.string.settings_linux_permissions_rule_installed)
+                        } else {
+                            stringResource(Res.string.settings_linux_permissions_rule_not_installed)
+                        },
+                    color = if (osSettings.hasUdevRule) colors.statusNominal else colors.textMuted,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Medium,
+                )
+            }
+
+            if (osSettings.hasUdevRule) {
+                OpenAquaOutlinedButton(
+                    text =
+                        if (osSettings.isRemovingPermissions) {
+                            stringResource(Res.string.settings_linux_permissions_removing)
+                        } else {
+                            stringResource(Res.string.settings_linux_permissions_remove_button)
+                        },
+                    icon = painterResource(Res.drawable.ic_restart_alt),
+                    borderColor = colors.statusWarning,
+                    contentColor = colors.statusWarning,
+                    iconTint = colors.statusWarning,
+                    enabled = !osSettings.isRemovingPermissions,
+                    onClick = onRemoveUdevRule,
+                )
+            }
         }
     }
 }

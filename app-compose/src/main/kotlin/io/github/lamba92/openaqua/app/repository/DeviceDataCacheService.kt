@@ -3,6 +3,8 @@ package io.github.lamba92.openaqua.app.repository
 import io.github.lamba92.openaqua.app.coroutine.CoroutineScopeProvider
 import io.github.lamba92.openaqua.app.coroutine.getLogger
 import io.github.lamba92.openaqua.app.coroutine.getScope
+import io.github.lamba92.openaqua.app.permission.DevicePermissionService
+import io.github.lamba92.openaqua.app.permission.DevicePermissionState
 import io.github.lamba92.openaqua.app.util.combineByKey
 import io.github.lamba92.openaqua.app.util.throttleLatest
 import io.github.lamba92.openaqua.model.device.DetectedHardwareDevice
@@ -17,6 +19,7 @@ import io.github.lamba92.openaqua.model.host.HostSensorId
 import io.github.lamba92.openaqua.model.host.HostSensorTelemetry
 import io.github.lamba92.openaqua.model.host.HostTelemetry
 import io.github.lamba92.openaqua.model.retryAtLeast
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
@@ -25,7 +28,9 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.onEach
@@ -39,8 +44,9 @@ import kotlin.time.Duration.Companion.seconds
 class DeviceDataCacheService(
     private val openAquaDeviceEngineApi: OpenAquaDeviceEngineApi,
     private val openAquaHostEngineApi: OpenAquaHostEngineApi,
+    private val permissionService: DevicePermissionService,
     coroutineScopeProvider: CoroutineScopeProvider,
-    pollingIntervals: PollingIntervals = PollingIntervals.DEFAULT,
+    private val pollingIntervals: PollingIntervals = PollingIntervals.DEFAULT,
 ) : OpenAquaDeviceFlasher by openAquaDeviceEngineApi {
     data class PollingIntervals(
         val deviceConfig: Duration = 2.seconds,
@@ -88,21 +94,7 @@ class DeviceDataCacheService(
     val state: StateFlow<List<DeviceState>> =
         combine(
             getHostFlow(),
-            every(pollingIntervals.deviceConfig) { openAquaDeviceEngineApi.listDevices().devices }
-                .retryAtLeast(3)
-                .distinctUntilChanged()
-                .onEach { devices ->
-                    coroutineScope.logger.i {
-                        if (devices.isEmpty()) {
-                            "No Aqua devices detected"
-                        } else {
-                            "Detected ${devices.size} Aqua device(s): ${devices.joinToString { "${it.name} (${it.id})" }}"
-                        }
-                    }
-                }.combineByKey(
-                    keySelector = { it.id },
-                    itemFlow = { device -> device.getStateFlow(pollingIntervals) },
-                ),
+            getRestartingDevicesFlow(),
         ) { host, aquaDevices ->
             listOf(host) + aquaDevices
         }.throttleLatest(pollingIntervals.telemetry)
@@ -110,6 +102,33 @@ class DeviceDataCacheService(
                 scope = coroutineScope,
                 started = SharingStarted.Eagerly,
                 initialValue = listOf(DeviceState.Host.Loading),
+            )
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private fun getRestartingDevicesFlow(): Flow<List<DeviceState.Aqua>> =
+        permissionService
+            .state
+            .flatMapLatest { permState ->
+                when (permState) {
+                    is DevicePermissionState.Granted -> getDevicesFlow()
+                    else -> flowOf(emptyList())
+                }
+            }
+
+    private fun getDevicesFlow(): Flow<List<DeviceState.Aqua>> =
+        every(pollingIntervals.deviceConfig) { openAquaDeviceEngineApi.listDevices().devices }
+            .retryAtLeast(3)
+            .distinctUntilChanged()
+            .onEach { devices ->
+                coroutineScope.logger.i {
+                    when {
+                        devices.isEmpty() -> "No Aqua devices detected"
+                        else -> "Detected ${devices.size} Aqua device(s): ${devices.joinToString { "${it.name} (${it.id})" }}"
+                    }
+                }
+            }.combineByKey(
+                keySelector = { it.id },
+                itemFlow = { device -> device.getStateFlow(pollingIntervals) },
             )
 
     /**
@@ -175,13 +194,17 @@ class DeviceDataCacheService(
 private fun Throwable.toDeviceErrorType(): DeviceErrorType =
     when {
         this is TimeoutCancellationException -> DeviceErrorType.CommunicationTimeout
+
         this is SerializationException -> DeviceErrorType.ProtocolMismatch
+
         this is IOException -> DeviceErrorType.IoFailure
+
         message?.contains("open", ignoreCase = true) == true ||
-            message?.contains("permission", ignoreCase = true) == true ||
-            message?.contains("access", ignoreCase = true) == true ||
-            message?.contains("hidraw", ignoreCase = true) == true ||
-            message?.contains("device", ignoreCase = true) == true -> DeviceErrorType.IoFailure
+                message?.contains("permission", ignoreCase = true) == true ||
+                message?.contains("access", ignoreCase = true) == true ||
+                message?.contains("hidraw", ignoreCase = true) == true ||
+                message?.contains("device", ignoreCase = true) == true -> DeviceErrorType.IoFailure
+
         else -> DeviceErrorType.Unknown
     }
 

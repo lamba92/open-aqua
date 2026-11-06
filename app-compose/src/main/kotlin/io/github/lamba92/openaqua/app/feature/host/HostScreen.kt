@@ -48,6 +48,7 @@ import io.github.lamba92.openaqua.app.model.color
 import io.github.lamba92.openaqua.app.model.progressFraction
 import io.github.lamba92.openaqua.app.repository.DeviceState
 import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
+import io.github.lamba92.openaqua.app.ui.components.CenteredScreenCard
 import io.github.lamba92.openaqua.app.ui.components.OpenAquaVerticalScrollbar
 import io.github.lamba92.openaqua.app.ui.components.ScreenHeaderSection
 import io.github.lamba92.openaqua.app.ui.components.SensorTargetTypeMenuButton
@@ -229,35 +230,21 @@ private fun HostStatusBadge(hostState: DeviceState.Host) {
 @Composable
 private fun HostErrorContent(error: DeviceState.Host.Error) {
     val colors = OpenAquaTheme.colors
-    val metrics = OpenAquaTheme.metrics
 
-    Box(
-        modifier = Modifier.fillMaxSize().padding(metrics.spacingXxl),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier =
-                Modifier
-                    .clip(RoundedCornerShape(metrics.radiusLarge))
-                    .background(colors.surfaceLow)
-                    .border(metrics.strokeThin, colors.borderOutline, RoundedCornerShape(metrics.radiusLarge))
-                    .padding(metrics.spacingXxl),
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.Warning,
-                contentDescription = null,
-                tint = colors.statusWarning,
-                modifier = Modifier.size(48.dp),
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = error.message ?: stringResource(Res.string.host_status_error),
-                color = colors.textPrimary,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.SemiBold,
-            )
-        }
+    CenteredScreenCard {
+        Icon(
+            imageVector = Icons.Outlined.Warning,
+            contentDescription = null,
+            tint = colors.statusWarning,
+            modifier = Modifier.size(48.dp),
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = error.message ?: stringResource(Res.string.host_status_error),
+            color = colors.textPrimary,
+            fontSize = 15.sp,
+            fontWeight = FontWeight.SemiBold,
+        )
     }
 }
 

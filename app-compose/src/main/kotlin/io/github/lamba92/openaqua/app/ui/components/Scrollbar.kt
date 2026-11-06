@@ -1,5 +1,6 @@
 package io.github.lamba92.openaqua.app.ui.components
 
+import androidx.compose.foundation.HorizontalScrollbar
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.ScrollbarStyle
 import androidx.compose.foundation.VerticalScrollbar
@@ -45,6 +46,19 @@ fun OpenAquaVerticalScrollbar(
 ) {
     VerticalScrollbar(
         adapter = rememberScrollbarAdapter(lazyListState),
+        modifier = modifier,
+        style = style,
+    )
+}
+
+@Composable
+fun OpenAquaHorizontalScrollbar(
+    scrollState: ScrollState,
+    modifier: Modifier = Modifier,
+    style: ScrollbarStyle = openAquaScrollbarStyle(),
+) {
+    HorizontalScrollbar(
+        adapter = rememberScrollbarAdapter(scrollState),
         modifier = modifier,
         style = style,
     )
