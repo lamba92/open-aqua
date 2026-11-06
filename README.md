@@ -10,7 +10,8 @@
 
 > **An open-source, cross-platform thermal management and telemetry suite for Aquacomputer devices, designed for Linux and Windows.**
 
-[![Kotlin](https://img.shields.io/badge/Kotlin-2.2.0--Beta-7F52FF.svg?logo=kotlin&logoColor=white)](https://kotlinlang.org)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.2.0-7F52FF.svg?logo=kotlin&logoColor=white)](https://kotlinlang.org)
+[![Compose Multiplatform](https://img.shields.io/badge/Compose-Multiplatform-4285F4.svg?logo=jetpackcompose&logoColor=white)](https://www.jetbrains.com/lp/compose-multiplatform/)
 [![Platform](https://img.shields.io/badge/Platform-Linux%20%7C%20Windows-blue.svg)](https://github.com/lamba92/open-aqua)
 [![License](https://img.shields.io/badge/License-Apache%202.0-green.svg)](LICENSE)
 
@@ -18,60 +19,109 @@
 
 ## What is OpenAqua?
 
-Aquacomputer hardware (**OCTO**, **QUADRO**, **D5 NEXT**, etc.) represents the gold standard in custom PC liquid cooling and thermal control. However, the official proprietary software (**Aquasuite**) is Windows-only (WPF/.NET) and tied to licensing models. On Linux, users have historically relied on Windows virtual machines or incomplete reverse-engineered scripts.
+Aquacomputer hardware (**OCTO**, **QUADRO**, **D5 NEXT**, etc.) represents the gold standard in custom PC liquid cooling and thermal control. However, the official proprietary software (**Aquasuite**) is Windows-only (WPF/.NET) and tied to licensing models. On Linux, users have historically had to rely on Windows virtual machines or incomplete reverse-engineered scripts.
 
-**OpenAqua** provides a modern, transparent, and completely free thermal management solution built with Kotlin Multiplatform:
-- **Autonomous Hardware Operation**: Curves and static fan profiles are written directly to the device's onboard EEPROM/firmware. Once flashed, the device executes the curve in hardware—cooling remains fully active without needing any background daemon running.
+**OpenAqua** provides a modern, transparent, and completely free thermal management solution built with Kotlin and Compose Multiplatform:
+- **Autonomous Hardware Operation**: Custom curves and fixed fan profiles are flashed directly to the device's onboard EEPROM/firmware. Once flashed, the device executes the curve in hardware—cooling remains fully active even if the app is closed or the host OS crashes.
+- **Modern Compose Desktop UI**: A responsive, themeable desktop interface for visualizing fan curves, monitoring real-time telemetry, calibrating physical sensors, and streaming host temperatures into virtual sensor slots.
 - **Cross-Platform**: Designed from the ground up for both **Linux** (native HIDRAW ioctl + sysfs) and **Windows** (native Win32 HID subsystem).
-- **Stateless Native Engine**: A lightweight, standalone CLI binary (`open-aqua-engine`) that handles hardware discovery, low-level USB HID reports, CRC-16 checksums, and telemetry streaming.
+- **Stateless Native Engine**: A lightweight standalone CLI binary (`open-aqua-device-engine`) for headless monitoring, script integration, and daemonless operation.
 
 ---
 
-## ⚠️ Current Project Status
+## 📸 Interface Overview
 
-> **Important**: At this stage of development, **only the native hardware engine (`open-aqua-engine`) is implemented and fully operational**.
+### Fans & Custom Curve Studio
+Configure autonomous curve-based or fixed PWM profiles per channel with live RPM feedback and safety minimums:
+![OpenAqua Fan Curves and Speeds](docs/screenshots/fans_screen.jpg)
 
-| Component | Status | Description |
-| :--- | :---: | :--- |
-| **Native Engine CLI (`:engine:engine-prod`)** | 🟢 **Working** | Fully functional on both **Linux** (`linuxX64`) and **Windows** (`mingwX64`). Supports discovery, live telemetry snapshot, continuous NDJSON telemetry streaming, EEPROM curve reading/flashing, virtual temperature sensor feeding, and device descriptor inspection. |
-| **Mock Engine (`:engine:engine-mock`)** | 🟢 **Working** | Functional on **Linux**, **Windows**, and **macOS** (`macosArm64`) for local development without physical hardware attached. |
-| **Desktop UI (`:app-compose`)** | 🟡 **In Development** | Compose Multiplatform Desktop frontend (Interactive Curve Studio, real-time gauges, local JSON profile management). |
+### Real-Time Sensors & Temperature Offsets
+Monitor all hardware temperature channels and flow sensor rates with custom calibration offsets:
+![OpenAqua Sensors and Offsets](docs/screenshots/sensors_screen.jpg)
+
+### Virtual Temperature Sensor Feeding
+Feed host metrics (CPU package, GPU hotspot, etc.) directly into the controller's virtual sensor slots to drive custom cooling curves:
+![OpenAqua Virtual Sensor Feeding](docs/screenshots/virtual_sensor_feeding.jpg)
+
+### Device Diagnostics & Hardware Info
+Inspect USB descriptors, firmware revisions, hardware serial numbers, and channel layouts:
+![OpenAqua Device Info](docs/screenshots/device_info_screen.jpg)
 
 ---
 
-## Supported Hardware & Testing Status
+## ⚠️ Supported Hardware & Testing Status
 
-> [!WARNING]
-> **Physical Hardware Disclaimer**: The maintainer only owns an **Aquacomputer OCTO** and has only physically tested on that hardware.
->
-> While **Aquacomputer QUADRO** and **Aquacomputer D5 NEXT** have full device descriptors and protocol definitions implemented (based on reverse-engineering and driver specifications), **they have NOT been physically verified on hardware yet—expect bugs or untested edge cases on QUADRO and D5 NEXT**. Community testing, feedback, and issue reports for these devices are very welcome!
+> [!IMPORTANT]
+> **Current Testing & Hardware Verification**:
+> - **Physically Verified**: Tested on an **Aquacomputer OCTO** under **Linux (Bazzite)** and **Windows (emulated via QEMU/KVM with USB passthrough)**.
+> - **Untested Hardware**: The **Aquacomputer QUADRO** and **D5 NEXT** have full protocol and descriptor definitions implemented based on reverse engineering, but have **not been physically verified on hardware yet**. Community feedback and bug reports are welcome!
+> - **Missing LEDs**: Control of **RGB / RGBpx LEDs is currently not implemented**—LED support will arrive in a future update.
 
 | Device | USB Product ID | Fan Channels | Temp Sensors | Flow Sensor | RGBpx | Physical Testing Status |
 | :--- | :---: | :---: | :---: | :---: | :---: | :--- |
-| **Aquacomputer OCTO** | `0xF011` | 8 Channels (PWM) | 4 Physical + 16 Virtual | Yes (Dedicated port, dL/h) | 2 Ports | 🟢 **Physically Verified & Tested** (Linux & Windows) |
-| **Aquacomputer QUADRO** | `0xF00D` | 4 Channels (PWM) | 4 Physical + 16 Virtual | Yes (Dedicated port, dL/h) | 1 Port | 🟡 **Experimental / Untested on physical device** |
-| **Aquacomputer D5 NEXT** | `0xF00E` | 2 (Pump + Fan) | 1 Liquid + 8 Virtual | Calculated / Virtual | 1 Port | 🟡 **Experimental / Untested on physical device** |
+| **Aquacomputer OCTO** | `0xF011` | 8 Channels (PWM) | 4 Physical + 16 Virtual | Yes (Dedicated port, dL/h) | 2 Ports | 🟢 **Physically Verified & Tested** (Linux Bazzite & Emulated Windows) |
+| **Aquacomputer QUADRO** | `0xF00D` | 4 Channels (PWM) | 4 Physical + 16 Virtual | Yes (Dedicated port, dL/h) | 1 Port | 🟡 **Untested on physical device** |
+| **Aquacomputer D5 NEXT** | `0xF00E` | 2 (Pump + Fan) | 1 Liquid + 8 Virtual | Calculated / Virtual | 1 Port | 🟡 **Untested on physical device** |
 
 *(All devices share USB Vendor ID `0x0C70`)*
 
 ---
 
-## Engine CLI (`open-aqua-engine`)
+## 📦 Downloads & Installation
 
-The engine binary provides a clean JSON / NDJSON command interface over stdin/stdout, making it ideal both for direct scripting and as the backend for the upcoming Compose Desktop UI.
+Pre-packaged releases are available on the [**GitHub Releases**](https://github.com/lamba92/open-aqua/releases) page for each build:
+
+### Linux
+- **AppImage**: Portable, self-contained single-file bundle (`OpenAqua-<version>-x86_64.AppImage`).
+- **DEB**: Debian / Ubuntu package (`.deb`).
+- **RPM**: Fedora / openSUSE / RHEL package (`.rpm`).
+- **Tarball**: Standalone archive (`open-aqua-<version>-linux-x64.tar.gz`).
+- **Native Engine CLI**: Standalone binary `open-aqua-device-engine-linux-x64`.
+
+### Windows
+- **MSI Installer**: Windows installer package (`OpenAqua-<version>.msi`).
+- **Portable ZIP**: Standalone portable archive (`open-aqua-<version>-portable.zip`).
+- **Native Engine CLI**: Standalone executable `open-aqua-device-engine-windows-x64.exe`.
+
+---
+
+## 🔒 Platform Details & Permissions
+
+### Linux
+- **Driver**: Communicates with the kernel's `/dev/hidraw*` interface via `HIDIOCGFEATURE` and `HIDIOCSFEATURE` ioctls.
+- **Rootless USB Access (udev)**: The desktop application includes a one-click udev configuration under Settings. Alternatively, create `/etc/udev/rules.d/99-aquacomputer.rules` manually:
+  ```udev
+  SUBSYSTEM=="hidraw", ATTRS{idVendor}=="0c70", MODE="0666", TAG+="uaccess"
+  ```
+  Apply rules:
+  ```bash
+  sudo udevadm control --reload-rules && sudo udevadm trigger
+  ```
+
+### Windows
+- **Driver**: Uses native Win32 HID APIs (`hid.dll` via Kotlin/Native cinterop).
+- **Report Routing**:
+  - Control configuration (Report `0x03`): Transferred via `HidD_SetFeature`.
+  - Commit trigger (Report `0x02`): Written via `HidD_SetOutputReport` matching Windows HID report descriptors.
+- No third-party drivers (like WinUSB or libusbK) required; works out-of-the-box with Windows default HID class driver.
+
+---
+
+## 🛠️ Standalone Engine CLI (`open-aqua-device-engine`)
+
+For headless systems, automation, or integration with external scripts, the native engine CLI provides JSON / NDJSON output:
 
 ```bash
-$ open-aqua-engine --help
-Usage: open-aqua-engine [<options>] <command> [<args>]...\n
+$ open-aqua-device-engine --help
+Usage: open-aqua-device-engine [<options>] <command> [<args>]...
+
   OpenAqua native hardware engine CLI. Provides low-level USB HID hardware
-  control for Aquacomputer devices. Supported devices: OCTO (physically
-  verified), QUADRO (experimental), D5 Next (experimental).
+  control for Aquacomputer devices.
 ```
 
 ### 1. Discover Connected Devices
-Enumerate all supported Aquacomputer devices connected via USB:
 ```bash
-$ open-aqua-engine devices
+$ open-aqua-device-engine devices
 ```
 ```json
 {
@@ -88,39 +138,14 @@ $ open-aqua-engine devices
 }
 ```
 
-### 2. Inspect Supported Device Descriptors
-Inspect hardware specifications, channel offsets, report sizes, and sensor capabilities. You can optionally filter by device type (`--type OCTO`):
+### 2. Inspect Hardware Descriptors
 ```bash
-$ open-aqua-engine descriptors --type OCTO --pretty
-```
-```json
-{
-  "descriptors": [
-    {
-      "type": "OCTO",
-      "name": "Aquacomputer OCTO",
-      "productId": 61457,
-      "ctrlReportLength": 1631,
-      "statusReportLength": 327,
-      "fanChannels": [
-        {"channel": 0, "ctrlOffset": 90, "statusOffset": 125},
-        {"channel": 1, "ctrlOffset": 175, "statusOffset": 138}
-      ],
-      "tempSensors": [
-        {"channel": 0, "hwmonIndex": 1, "isVirtual": false}
-      ],
-      "hasFlowSensor": true,
-      "flowSensorOffset": 123,
-      "virtualSensorsCount": 16
-    }
-  ]
-}
+$ open-aqua-device-engine descriptors --type OCTO --pretty
 ```
 
-### 3. Snapshot Telemetry
-Read current real-time telemetry (temperatures, fan RPM, voltages, currents, power, flow rate):
+### 3. Read Snapshot Telemetry
 ```bash
-$ open-aqua-engine telemetry --device octo-1 --pretty
+$ open-aqua-device-engine telemetry --device octo-1 --pretty
 ```
 ```json
 {
@@ -147,115 +172,84 @@ $ open-aqua-engine telemetry --device octo-1 --pretty
 ```
 
 ### 4. Continuous Telemetry Streaming (NDJSON)
-Continuously stream telemetry samples as line-delimited JSON (NDJSON):
+Stream live telemetry samples as line-delimited JSON for logging or feeding into Home Assistant / Prometheus:
 ```bash
-$ open-aqua-engine stream-telemetry --device octo-1
+$ open-aqua-device-engine stream-telemetry --device octo-1
 ```
-*(Emits one self-contained JSON line per hardware report cycle)*
 
-### 5. Read Hardware Configuration
-Inspect the active curves, fixed PWM levels, and calibration offsets stored in the device's EEPROM:
+### 5. Read Hardware EEPROM Configuration
 ```bash
-$ open-aqua-engine config read --device octo-1 --pretty
-```
-```json
-{
-  "type": "octo",
-  "fans": [
-    {
-      "type": "curve",
-      "channel": 0,
-      "sensorIndex": 0,
-      "points": [
-        {"temp": 20.0, "pwm": 30.0},
-        {"temp": 50.0, "pwm": 100.0}
-      ]
-    }
-  ],
-  "sensorOffsets": [
-    {"channel": 0, "offsetCelsius": 0.0}
-  ]
-}
+$ open-aqua-device-engine config read --device octo-1 --pretty
 ```
 
 ### 6. Flash Hardware Configuration
-Atomically flash modified fan curves or fixed PWM settings into EEPROM. Unspecified channels remain untouched:
+Atomically flash modified fan curves or fixed PWM settings into EEPROM:
 ```bash
-$ open-aqua-engine config flash --device octo-1 --request '{"fans":{"0":{"type":"fixed","channel":0,"powerPercent":50.0}}}'
+$ open-aqua-device-engine config flash --device octo-1 --request '{"fans":{"0":{"type":"fixed","channel":0,"powerPercent":50.0}}}'
 ```
-Or flash from a JSON file:
+Or flash from a profile file:
 ```bash
-$ open-aqua-engine config flash --device octo-1 --file custom-profile.json
+$ open-aqua-device-engine config flash --device octo-1 --file custom-profile.json
 ```
 
 ### 7. Feed Software / Virtual Temperature Sensors
-Stream external temperature readings (e.g., CPU package, GPU hotspot) from host monitoring tools directly to the hardware's virtual sensor slots:
+Stream external temperature readings (e.g. CPU package, GPU hotspot) from host monitoring tools directly to the hardware's virtual sensor slots:
 ```bash
-$ echo '{"sensors":{"0":45.2,"1":58.0}}' | open-aqua-engine feed-virtual-sensors --device octo-1
+$ echo '{"sensors":{"0":45.2,"1":58.0}}' | open-aqua-device-engine feed-virtual-sensors --device octo-1
 ```
 
 ---
 
-## Platform Details & Permissions
-
-### Linux
-- **Driver**: Communicates with the kernel's `/dev/hidraw*` interface via `HIDIOCGFEATURE` and `HIDIOCSFEATURE` ioctls.
-- **Rootless USB Access (udev)**: To run without `sudo`, install a udev rule (e.g. `/etc/udev/rules.d/99-aquacomputer.rules`):
-  ```udev
-  SUBSYSTEM=="hidraw", ATTRS{idVendor}=="0c70", MODE="0666", TAG+="uaccess"
-  ```
-  Then reload udev:
-  ```bash
-  sudo udevadm control --reload-rules && sudo udevadm trigger
-  ```
-
-### Windows
-- **Driver**: Uses native Windows Win32 HID APIs (`hid.dll` via Kotlin/Native cinterop).
-- **Report Routing**:
-  - Control configuration (Report `0x03`): Transferred via `HidD_SetFeature`.
-  - Secondary commit trigger (Report `0x02`): Written via `HidD_SetOutputReport` matching Windows HID report descriptors.
-- No third-party drivers (like WinUSB or libusbK) required; works out-of-the-box with Windows default HID class driver.
-
----
-
-## Building & Testing
+## 🏗️ Building from Source
 
 ### Prerequisites
-- JDK 21+
-- Kotlin 2.2+ (managed by Gradle wrapper)
+- **JDK 21+** (Temurin, Corretto, etc.)
+- C compiler toolchain for native modules (GCC/Clang on Linux, MinGW on Windows)
 
-### Build Executables
+### Build Desktop Application
 ```bash
-# Build Linux production native engine
-./gradlew :engine:engine-prod:linuxX64Binaries
+# Run desktop application in development mode
+./gradlew :app-compose:app-compose-prod:run
 
-# Build Windows production native engine (cross-compiled or native)
-./gradlew :engine:engine-prod:mingwX64Binaries
+# Package AppImage (Linux)
+./gradlew :app-compose:app-compose-prod:packageReleaseAppImage
 
-# Build mock engine (for UI development without physical hardware)
-./gradlew :engine:engine-mock:assemble
+# Install AppImage to ~/.local with desktop menu integration (Linux)
+./gradlew :app-compose:app-compose-prod:installReleaseAppImage
+
+# Build all release packages for the current OS (AppImage, deb, rpm, tar.gz or MSI, zip)
+./gradlew release
 ```
-Binaries will be placed in `engine/engine-prod/build/bin/<target>/releaseExecutable/`.
 
-### Run Tests
+### Build Native Engine CLI
 ```bash
-# Run multiplatform unit tests & linter
+# Build Linux production native engine binary
+./gradlew :engine:engine-device:engine-device-prod:linkReleaseExecutableLinuxX64
+
+# Build Windows production native engine binary
+./gradlew :engine:engine-device:engine-device-prod:linkReleaseExecutableMingwX64
+```
+Binaries will be placed in `engine/engine-device/engine-device-prod/build/bin/<target>/releaseExecutable/`.
+
+### Run Tests & Quality Checks
+```bash
+# Run unit tests and ktlint checks across all modules
 ./gradlew check
 
 # Run live hardware tests on Linux (requires connected Aquacomputer OCTO)
-./gradlew :engine:engine-prod:linuxX64Test -Ptest.hardware=true
+./gradlew :engine:engine-device:engine-device-prod:linuxX64Test -Ptest.hardware=true
 
-# Run live hardware tests on Windows
-# See docker/windows-test/README.md for instructions on using the automated QEMU/KVM Windows VM
+# Re-generate screenshots
+./gradlew :app-compose:app-compose-screenshots:generateScreenshots
 ```
 
 ---
 
-## Further Documentation
+## 📚 Further Documentation
 
-- **[ARCHITECTURE.md](ARCHITECTURE.md)**: Detailed technical specification of the multi-module architecture, generic device abstraction, protocol byte offsets, CRC-16 implementation, and Aquasuite curve math replication.
-- **[FEATURES.md](FEATURES.md)**: Functional and visual specification for the upcoming Compose Desktop UI and JSON profile management.
-- **[assets/BRAND_GUIDELINES.md](assets/BRAND_GUIDELINES.md)**: Official brand color palette, typography, and icon asset specifications.
+- **[ARCHITECTURE.md](ARCHITECTURE.md)**: Multi-module design, generic device abstraction, protocol byte offsets, CRC-16 implementation, and Aquasuite curve math replication.
+- **[FEATURES.md](FEATURES.md)**: Functional and visual specification for the Compose Desktop UI and JSON profile management.
+- **[assets/BRAND_GUIDELINES.md](assets/BRAND_GUIDELINES.md)**: Brand color palette, typography, and icon asset specifications.
 - **[docker/windows-test/README.md](docker/windows-test/README.md)**: Automated Docker + QEMU/KVM Windows testing environment for validating Windows builds against physical USB devices.
 
 ---

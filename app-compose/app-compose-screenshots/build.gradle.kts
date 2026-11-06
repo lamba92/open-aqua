@@ -19,7 +19,7 @@ tasks.register<JavaExec>("generateScreenshots") {
     description = "Generates application screenshots using headless ImageComposeScene"
     mainClass.set("io.github.lamba92.openaqua.screenshots.MainKt")
     classpath = sourceSets["main"].runtimeClasspath
-    val screenshotsDir = project.file("screenshots")
+    val screenshotsDir = rootProject.file("docs/screenshots")
     outputs.dir(screenshotsDir)
     args(screenshotsDir.absolutePath)
 }
