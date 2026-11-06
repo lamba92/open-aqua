@@ -19,11 +19,13 @@ fun main(args: Array<String>) {
             ScreenshotState(
                 name = "fans_screen",
                 scene = Scene.DeviceScreen.Fans(),
+                logicalHeight = 2000,
                 storedData = AppStoredData.DEFAULT.copy(colorScheme = AppColorScheme.HYDRO_DARK),
             ),
             ScreenshotState(
                 name = "sensors_screen",
                 scene = Scene.DeviceScreen.Sensors(),
+                logicalHeight = 1000,
                 storedData = AppStoredData.DEFAULT.copy(colorScheme = AppColorScheme.MIDNIGHT_NAVY),
             ),
             ScreenshotState(
@@ -32,11 +34,13 @@ fun main(args: Array<String>) {
                     Scene.DeviceScreen.Sensors(
                         sensorsState = mockOctoVirtualSensorFeedingUiState,
                     ),
+                logicalHeight = 1000,
                 storedData = AppStoredData.DEFAULT.copy(colorScheme = AppColorScheme.SOLAR_AMBER),
             ),
             ScreenshotState(
                 name = "device_info_screen",
                 scene = Scene.DeviceScreen.DeviceInfo(),
+                logicalHeight = 1000,
                 storedData = AppStoredData.DEFAULT.copy(colorScheme = AppColorScheme.HIGH_CONTRAST_DARK),
             ),
         )

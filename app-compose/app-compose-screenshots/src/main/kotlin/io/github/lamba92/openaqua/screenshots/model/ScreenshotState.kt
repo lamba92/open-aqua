@@ -21,7 +21,7 @@ data class ScreenshotState(
     val name: String,
     val scene: Scene,
     val logicalWidth: Int = 1440,
-    val logicalHeight: Int = 2000,
+    val logicalHeight: Int = 1000,
     val scale: Float = 2f,
     val storedData: AppStoredData = AppStoredData.DEFAULT,
 ) {

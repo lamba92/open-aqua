@@ -2,10 +2,6 @@ package io.github.lamba92.openaqua.screenshots
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Density
@@ -22,29 +18,23 @@ import io.github.lamba92.openaqua.screenshots.model.Scene
 import io.github.lamba92.openaqua.screenshots.model.ScreenshotState
 import io.github.lamba92.openaqua.theme.ThemePalette
 import org.jetbrains.skia.EncodedImageFormat
-import java.io.File
 import java.nio.file.Path
-import kotlin.io.path.name
 import kotlin.io.path.writeBytes
 
-fun renderScreenshots(
-    states: List<ScreenshotState>,
+fun renderScreenshot(
+    state: ScreenshotState,
     outputDir: Path,
     quality: Int = 92,
 ) {
-    if (states.isEmpty()) return
-
-    var currentState by mutableStateOf(states.first())
-    val width = (currentState.logicalWidth * currentState.scale).toInt()
-    val height = (currentState.logicalHeight * currentState.scale).toInt()
+    val width = (state.logicalWidth * state.scale).toInt()
+    val height = (state.logicalHeight * state.scale).toInt()
 
     val scene =
         ImageComposeScene(
             width = width,
             height = height,
-            density = Density(currentState.scale),
+            density = Density(state.scale),
         ) {
-            val state = currentState
             val palette = ThemePalette.fromColorScheme(state.storedData.colorScheme)
             val metrics = AppMetrics.fromScale(state.storedData.metricsScale)
 
@@ -110,21 +100,23 @@ fun renderScreenshots(
         }
 
     try {
-        var index = 0
-        while (index < states.size) {
-            val state = states[index]
-            Snapshot.withMutableSnapshot {
-                currentState = state
-            }
-            val outputFile = outputDir.resolve(state.filename)
-            val image = scene.render()
-            val data =
-                image.encodeToData(EncodedImageFormat.JPEG, quality)
-                    ?: error("Failed to encode Skia image to JPEG")
-            outputFile.writeBytes(data.bytes)
-            index++
-        }
+        val outputFile = outputDir.resolve(state.filename)
+        val image = scene.render()
+        val data =
+            image.encodeToData(EncodedImageFormat.JPEG, quality)
+                ?: error("Failed to encode Skia image to JPEG")
+        outputFile.writeBytes(data.bytes)
     } finally {
         scene.close()
+    }
+}
+
+fun renderScreenshots(
+    states: List<ScreenshotState>,
+    outputDir: Path,
+    quality: Int = 92,
+) {
+    for (state in states) {
+        renderScreenshot(state, outputDir, quality)
     }
 }
