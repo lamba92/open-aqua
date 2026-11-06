@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       tag_name:
-        description: 'Release tag to upload to (defaults to latest published release)'
+        description: 'Release tag to upload to (defaults to current ref)'
         required: false
         type: string
 
@@ -14,22 +14,18 @@ permissions:
   contents: write
 
 jobs:
-  publish-binaries:
-    name: Build & Publish Engine (${{ matrix.os_name }})
+  release:
+    name: Build & Publish (${{ matrix.os_name }})
     strategy:
       fail-fast: false
       matrix:
         include:
           - os: ubuntu-latest
             os_name: Linux
-            task: :engine:engine-device:engine-device-prod:compressReleaseExecutableLinuxX64
-            binary_path: engine/engine-device/engine-device-prod/build/bin/upx/linuxX64/release/open-aqua-device-engine
-            asset_name: open-aqua-device-engine-linux-x64
+            task: releaseLinux
           - os: windows-latest
             os_name: Windows
-            task: :engine:engine-device:engine-device-prod:compressReleaseExecutableMingwX64
-            binary_path: engine/engine-device/engine-device-prod/build/bin/upx/mingwX64/release/open-aqua-device-engine.exe
-            asset_name: open-aqua-device-engine-windows-x64.exe
+            task: releaseWindows
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -44,30 +40,19 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
+      - name: Install Linux packaging tools
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rpm fakeroot
+
       - run: chmod +x gradlew
 
-      - name: Build and compress release binary
+      - name: Build release assets
         run: ./gradlew ${{ matrix.task }} --stacktrace
-
-      - name: Prepare release assets
-        run: |
-          mkdir -p dist
-          cp "${{ matrix.binary_path }}" "dist/${{ matrix.asset_name }}"
-          cd dist
-          sha256sum "${{ matrix.asset_name }}" > "${{ matrix.asset_name }}.sha256"
 
       - name: Upload to GitHub Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG_INPUT: ${{ github.event.release.tag_name || inputs.tag_name }}
         run: |
-          TAG="${TAG_INPUT:-$(gh release list --limit 1 --json tagName --jq '.[0].tagName')}"
-          if [ -z "$TAG" ]; then
-            echo "Error: No release tag found to upload assets to."
-            exit 1
-          fi
-          echo "Uploading assets to release $TAG..."
-          if ! gh release view "$TAG" >/dev/null 2>&1; then
-            gh release create "$TAG" --title "$TAG" --generate-notes
-          fi
-          gh release upload "$TAG" "dist/${{ matrix.asset_name }}" "dist/${{ matrix.asset_name }}.sha256" --clobber
+          gh release upload "${{ github.event.release.tag_name || inputs.tag_name || github.ref_name }}" build/releases/* --clobber

@@ -29,6 +29,8 @@ dependencies {
     }
 }
 
+val releasePackageVersion = project.version.toString().removePrefix("v").substringBefore("-")
+
 compose.desktop {
     application {
         mainClass = "io.github.lamba92.openaqua.app.MainKt"
@@ -40,13 +42,15 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Deb, TargetFormat.Rpm, TargetFormat.Msi)
             packageName = "open-aqua"
-            packageVersion = "1.0.0"
+            packageVersion = releasePackageVersion
 
             linux {
                 iconFile = rootProject.file("assets/generated/icon-512.png")
+                rpmPackageVersion = releasePackageVersion
             }
             windows {
                 iconFile = rootProject.file("assets/generated/favicon.ico")
+                msiPackageVersion = releasePackageVersion
                 perUserInstall = false
             }
             macOS {
@@ -62,7 +66,7 @@ tasks.register<Tar>("packageReleaseTarGz") {
     dependsOn("createReleaseDistributable")
 
     archiveBaseName = "open-aqua"
-    archiveVersion = "1.0.0"
+    archiveVersion = project.version.toString()
     archiveClassifier = "linux-x64"
     archiveExtension = "tar.gz"
     compression = Compression.GZIP
@@ -79,7 +83,7 @@ tasks.register<Zip>("packageReleaseZip") {
     dependsOn("createReleaseDistributable")
 
     archiveBaseName = "open-aqua"
-    archiveVersion = "1.0.0"
+    archiveVersion = project.version.toString()
     archiveClassifier = "portable"
     destinationDirectory = layout.buildDirectory.dir("compose/binaries/main-release/zip")
 
@@ -87,6 +91,9 @@ tasks.register<Zip>("packageReleaseZip") {
         from(layout.buildDirectory.dir("compose/binaries/main-release/app/open-aqua"))
     }
 }
+
+val appImageVersion = project.version.toString().removePrefix("v")
+val appImageFileName = "OpenAqua-$appImageVersion-x86_64.AppImage"
 
 tasks.register("packageReleaseAppImage") {
     group = "distribution"
@@ -105,7 +112,7 @@ tasks.register("packageReleaseAppImage") {
     inputs.dir(packagingDir)
     inputs.dir(appDistributable)
     inputs.file(icon512)
-    outputs.file(outputDir.map { it.file("OpenAqua-1.0.0-x86_64.AppImage") })
+    outputs.file(outputDir.map { it.file(appImageFileName) })
 
     doLast {
         val targetAppDir = appDir.get().asFile
@@ -183,7 +190,7 @@ tasks.register("packageReleaseAppImage") {
         // 6. Run appimagetool
         val outDir = outputDir.get().asFile
         outDir.mkdirs()
-        val finalAppImage = File(outDir, "OpenAqua-1.0.0-x86_64.AppImage")
+        val finalAppImage = File(outDir, appImageFileName)
         finalAppImage.delete()
 
         providers.exec {
@@ -205,7 +212,7 @@ tasks.register("installReleaseAppImage") {
     description = "Installs the AppImage and desktop entry into ~/.local for the current user"
     dependsOn("packageReleaseAppImage")
 
-    val appImageFile = layout.buildDirectory.file("compose/binaries/main-release/appimage/OpenAqua-1.0.0-x86_64.AppImage")
+    val appImageFile = layout.buildDirectory.file("compose/binaries/main-release/appimage/$appImageFileName")
     val desktopFile = project.file("packaging/appimage/open-aqua.desktop")
     val icon512 = rootProject.file("assets/generated/icon-512.png")
     val iconSvg = rootProject.file("assets/generated/app-icon-squircle.svg")
