@@ -72,16 +72,16 @@ Inspect USB descriptors, firmware revisions, hardware serial numbers, and channe
 Pre-packaged releases are available on the [**GitHub Releases**](https://github.com/lamba92/open-aqua/releases) page for each build:
 
 ### Linux
-- **AppImage**: Portable, self-contained single-file bundle (`OpenAqua-<version>-x86_64.AppImage`).
-- **DEB**: Debian / Ubuntu package (`.deb`).
-- **RPM**: Fedora / openSUSE / RHEL package (`.rpm`).
+- **AppImage**: Portable standalone bundle (`open-aqua-<version>-linux-x64.AppImage`).
+- **DEB**: Debian / Ubuntu package (`open-aqua_<version>_amd64.deb`).
+- **RPM**: Fedora / openSUSE / RHEL package (`open-aqua-<version>-1.x86_64.rpm`).
 - **Tarball**: Standalone archive (`open-aqua-<version>-linux-x64.tar.gz`).
-- **Native Engine CLI**: Standalone binary `open-aqua-device-engine-linux-x64`.
+- **Native Engine CLI**: Standalone binary (`open-aqua-device-engine-<version>-linux-x64`).
 
 ### Windows
-- **MSI Installer**: Windows installer package (`OpenAqua-<version>.msi`).
-- **Portable ZIP**: Standalone portable archive (`open-aqua-<version>-portable.zip`).
-- **Native Engine CLI**: Standalone executable `open-aqua-device-engine-windows-x64.exe`.
+- **MSI Installer**: Windows installer package (`open-aqua-<version>-windows-x64.msi`).
+- **Portable ZIP**: Standalone archive (`open-aqua-<version>-windows-x64.zip`).
+- **Native Engine CLI**: Standalone executable (`open-aqua-device-engine-<version>-windows-x64.exe`).
 
 ---
 

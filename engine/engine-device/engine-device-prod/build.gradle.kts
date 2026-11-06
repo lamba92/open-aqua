@@ -84,6 +84,12 @@ engineBinaries {
     }
 }
 
+val releaseVersion =
+    project.version
+        .toString()
+        .removePrefix("v")
+        .substringBefore("-")
+
 tasks.register("releaseLinux") {
     group = "distribution"
     description = "Publishes Linux device engine binary to root build/releases"
@@ -93,7 +99,10 @@ tasks.register("releaseLinux") {
     outputs.dir(rootProject.layout.buildDirectory.dir("releases"))
 
     doLast {
-        publishReleaseArtifact(binaryFile.get().asFile)
+        publishReleaseArtifact(
+            file = binaryFile.get().asFile,
+            destinationName = "open-aqua-device-engine-$releaseVersion-linux-x64",
+        )
     }
 }
 
@@ -106,7 +115,10 @@ tasks.register("releaseWindows") {
     outputs.dir(rootProject.layout.buildDirectory.dir("releases"))
 
     doLast {
-        publishReleaseArtifact(binaryFile.get().asFile)
+        publishReleaseArtifact(
+            file = binaryFile.get().asFile,
+            destinationName = "open-aqua-device-engine-$releaseVersion-windows-x64.exe",
+        )
     }
 }
 

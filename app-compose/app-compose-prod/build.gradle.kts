@@ -70,7 +70,7 @@ tasks.register<Tar>("packageReleaseTarGz") {
     dependsOn("createReleaseDistributable")
 
     archiveBaseName = "open-aqua"
-    archiveVersion = project.version.toString()
+    archiveVersion = releasePackageVersion
     archiveClassifier = "linux-x64"
     archiveExtension = "tar.gz"
     compression = Compression.GZIP
@@ -87,8 +87,8 @@ tasks.register<Zip>("packageReleaseZip") {
     dependsOn("createReleaseDistributable")
 
     archiveBaseName = "open-aqua"
-    archiveVersion = project.version.toString()
-    archiveClassifier = "portable"
+    archiveVersion = releasePackageVersion
+    archiveClassifier = "windows-x64"
     destinationDirectory = layout.buildDirectory.dir("compose/binaries/main-release/zip")
 
     into("open-aqua") {
@@ -96,8 +96,7 @@ tasks.register<Zip>("packageReleaseZip") {
     }
 }
 
-val appImageVersion = project.version.toString().removePrefix("v")
-val appImageFileName = "OpenAqua-$appImageVersion-x86_64.AppImage"
+val appImageFileName = "open-aqua-$releasePackageVersion-linux-x64.AppImage"
 
 tasks.register("packageReleaseAppImage") {
     group = "distribution"
@@ -303,15 +302,28 @@ tasks.register("releaseWindows") {
     outputs.dir(rootProject.layout.buildDirectory.dir("releases"))
 
     doLast {
-        val allowedExtensions = listOf("msi", "zip")
-        val files =
+        val msiFile =
             composeBinDir
                 .get()
                 .asFile
                 .walk()
-                .filter { file -> file.isFile && allowedExtensions.any { file.name.endsWith(".$it") } }
-                .toList()
-        publishReleaseArtifacts(files)
+                .firstOrNull { it.isFile && it.name.endsWith(".msi") }
+        if (msiFile != null) {
+            publishReleaseArtifact(
+                file = msiFile,
+                destinationName = "open-aqua-$releasePackageVersion-windows-x64.msi",
+            )
+        }
+
+        val zipFile =
+            composeBinDir
+                .get()
+                .asFile
+                .walk()
+                .firstOrNull { it.isFile && it.name.endsWith(".zip") }
+        if (zipFile != null) {
+            publishReleaseArtifact(zipFile)
+        }
     }
 }
 
