@@ -22,6 +22,7 @@ include(
     ":app-compose",
     ":app-compose:app-compose-mock",
     ":app-compose:app-compose-prod",
+    ":app-compose:app-compose-screenshots",
     ":assets",
     ":core-model",
     ":core-model:core-model-device",

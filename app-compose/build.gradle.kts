@@ -18,32 +18,23 @@ kotlin {
 }
 
 dependencies {
-    implementation(projects.coreModel.coreModelDevice)
-    implementation(projects.coreModel.coreModelHost)
+    api(getCurrentPlatformComposeRuntime())
+    api(libs.coil.compose)
+    api(libs.coil.svg)
+    api(libs.compose.components.resources)
+    api(libs.compose.material.icons.extended)
+    api(libs.compose.material3)
+    api(libs.kermit)
+    api(libs.kermit.io)
+    api(libs.kodein.di)
+    api(libs.kotlinx.coroutines.core)
+    api(libs.kotlinx.coroutines.swing)
+    api(libs.kotlinx.datetime)
+    api(libs.kotlinx.io.core)
+    api(libs.kotlinx.serialization.json)
+    api(libs.ktor.client.cio)
+    api(libs.ktor.server.cio)
+    api(projects.coreModel.coreModelDevice)
+    api(projects.coreModel.coreModelHost)
     api(projects.coreTheme)
-    implementation(getCurrentPlatformComposeRuntime())
-    implementation(libs.compose.material3)
-    implementation(libs.compose.material.icons.extended)
-    implementation(libs.compose.components.resources)
-    implementation(libs.coil.compose)
-    implementation(libs.coil.svg)
-    implementation(libs.kodein.di)
-    implementation(libs.kotlinx.coroutines.core)
-    implementation(libs.kotlinx.coroutines.swing)
-    implementation(libs.kotlinx.datetime)
-    implementation(libs.kotlinx.serialization.json)
-    implementation(libs.kotlinx.io.core)
-    implementation(libs.kermit)
-    implementation(libs.kermit.io)
-    implementation(libs.ktor.server.cio)
-    implementation(libs.ktor.client.cio)
 }
-
-fun getCurrentPlatformComposeRuntime() =
-    when (SupportedTargets.getCurrent()) {
-        SupportedTargets.LinuxX64 -> libs.compose.desktop.linux.x64
-        SupportedTargets.LinuxArm64 -> libs.compose.desktop.linux.arm64
-        SupportedTargets.WindowsX64 -> libs.compose.desktop.windows.x64
-        SupportedTargets.MacOSX64 -> libs.compose.desktop.macos.x64
-        SupportedTargets.MacOSArm64 -> libs.compose.desktop.macos.arm64
-    }

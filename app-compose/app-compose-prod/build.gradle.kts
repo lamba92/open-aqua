@@ -21,24 +21,13 @@ engineBinaries {
 
 dependencies {
     implementation(projects.appCompose)
-    implementation(getCurrentPlatformComposeRuntime())
     engineBinaries(projects.engine.engineDevice.engineDeviceProd)
-    val currentOs = if (Os.current() == Os.MACOS) Os.LINUX else SupportedTargets.getCurrent().os
-    when (currentOs) {
+    when (SupportedTargets.getCurrent().os) {
         Os.LINUX -> engineBinaries(projects.engine.engineHost.engineHostLinux)
         Os.WINDOWS -> engineBinaries(projects.engine.engineHost.engineHostWindows)
         else -> Unit
     }
 }
-
-fun getCurrentPlatformComposeRuntime() =
-    when (SupportedTargets.getCurrent()) {
-        SupportedTargets.LinuxX64 -> libs.compose.desktop.linux.x64
-        SupportedTargets.LinuxArm64 -> libs.compose.desktop.linux.arm64
-        SupportedTargets.WindowsX64 -> libs.compose.desktop.windows.x64
-        SupportedTargets.MacOSX64 -> libs.compose.desktop.macos.x64
-        SupportedTargets.MacOSArm64 -> libs.compose.desktop.macos.arm64
-    }
 
 compose.desktop {
     application {
