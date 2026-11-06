@@ -35,7 +35,7 @@ internal const val UEVENT_HID_ID_PREFIX = "HID_ID="
 
 /**
  * The `uevent` key prefix for the device unique serial number string.
- * For Aquacomputer USB devices, this contains the factory serial number (e.g. `13235-54067`).
+ * For Aquacomputer USB devices, this contains the factory serial number (e.g. `10000-00001`).
  */
 internal const val UEVENT_HID_UNIQ_PREFIX = "HID_UNIQ="
 

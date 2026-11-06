@@ -13,6 +13,7 @@ import io.github.lamba92.openaqua.model.device.DeviceDescriptor
 import io.github.lamba92.openaqua.model.device.DeviceId
 import io.github.lamba92.openaqua.model.device.DeviceRegistry
 import io.github.lamba92.openaqua.model.device.DeviceTelemetry
+import io.github.lamba92.openaqua.model.device.descriptor
 import io.github.lamba92.openaqua.model.every
 import io.github.lamba92.openaqua.model.host.HostInfo
 import io.github.lamba92.openaqua.model.host.HostSensorId
@@ -161,7 +162,7 @@ class DeviceDataCacheService(
             .filterIsInstance<DeviceState.Aqua.Ready>()
 
     private fun DetectedHardwareDevice.getStateFlow(pollingIntervals: PollingIntervals): Flow<DeviceState.Aqua> {
-        val descriptor = DeviceRegistry.findByType(type)
+        val descriptor = descriptor()
         var isFirstReady = true
         return combine<DeviceConfig, DeviceTelemetry, DeviceState.Aqua>(
             every(pollingIntervals.deviceConfig) { openAquaDeviceEngineApi.getDeviceConfig(id) }

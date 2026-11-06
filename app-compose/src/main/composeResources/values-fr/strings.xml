@@ -309,6 +309,9 @@
     <string name="bug_report_github_button">Ouvrir un ticket GitHub</string>
     <string name="bug_report_attach_hint">Veuillez joindre des journaux et/ou des captures d'écran à votre signalement.</string>
     <string name="bug_report_environment_title">Informations sur l'environnement</string>
+        <string name="bug_report_connected_devices_title">Périphériques Connectés</string>
+    <string name="bug_report_devices_loading">Recherche des périphériques...</string>
+    <string name="bug_report_devices_none">Aucun périphérique détecté</string>
     <string name="bug_report_view_logs">Afficher les journaux dans l'application</string>
     <string name="about_screen_title">À propos d'OpenAqua</string>
     <string name="about_screen_subtitle">Informations sur le projet, créateur et dépôt</string>

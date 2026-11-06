@@ -68,7 +68,7 @@ Unlike proprietary XML/service databases, OpenAqua stores profiles in clean, use
 {
   "profileName": "Daily Quiet",
   "devices": {
-    "13235-54067": {
+    "10000-00001": {
       "name": "Custom Loop OCTO",
       "channels": {
         "fan1": {

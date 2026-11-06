@@ -309,6 +309,9 @@
     <string name="bug_report_github_button">Abrir problema en GitHub</string>
     <string name="bug_report_attach_hint">Por favor, adjunta registros y/o capturas de pantalla a tu reporte de error.</string>
     <string name="bug_report_environment_title">Información del entorno</string>
+        <string name="bug_report_connected_devices_title">Dispositivos Conectados</string>
+    <string name="bug_report_devices_loading">Buscando dispositivos...</string>
+    <string name="bug_report_devices_none">No se detectaron dispositivos</string>
     <string name="bug_report_view_logs">Ver registros en la aplicación</string>
     <string name="about_screen_title">Acerca de OpenAqua</string>
     <string name="about_screen_subtitle">Información del proyecto, creador y repositorio</string>

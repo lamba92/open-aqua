@@ -309,6 +309,9 @@
     <string name="bug_report_github_button">GitHub-Issue öffnen</string>
     <string name="bug_report_attach_hint">Bitte hänge Protokolle und/oder Screenshots an deinen Fehlerbericht an.</string>
     <string name="bug_report_environment_title">Umgebungsinformationen</string>
+        <string name="bug_report_connected_devices_title">Verbundene Geräte</string>
+    <string name="bug_report_devices_loading">Geräte werden gesucht...</string>
+    <string name="bug_report_devices_none">Keine Geräte erkannt</string>
     <string name="bug_report_view_logs">Protokolle in der App anzeigen</string>
     <string name="about_screen_title">Über OpenAqua</string>
     <string name="about_screen_subtitle">Projektinformationen, Entwickler und Repository</string>

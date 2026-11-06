@@ -1,13 +1,14 @@
 package io.github.lamba92.openaqua.engine.device.protocol
 
 import io.github.lamba92.openaqua.model.FeatureState
+import io.github.lamba92.openaqua.model.FeatureState.Active
 import io.github.lamba92.openaqua.model.device.CoolingChannelKind
 import io.github.lamba92.openaqua.model.device.CoolingChannelTelemetry
 import io.github.lamba92.openaqua.model.device.DetectedHardwareDevice
-import io.github.lamba92.openaqua.model.device.DeviceRegistry
 import io.github.lamba92.openaqua.model.device.DeviceTelemetry
 import io.github.lamba92.openaqua.model.device.SensorChannelKind
 import io.github.lamba92.openaqua.model.device.SensorTelemetry
+import io.github.lamba92.openaqua.model.device.descriptor
 import kotlin.math.round
 
 object StatusReportParser {
@@ -15,18 +16,15 @@ object StatusReportParser {
         device: DetectedHardwareDevice,
         report: UByteArray,
     ): DeviceTelemetry {
-        val descriptor = DeviceRegistry.findByType(device.type)
-
+        val descriptor = device.descriptor()
         val fans =
             descriptor.fanChannels.map { fan ->
                 parseFan(fan.channel, report, fan.statusOffset, fan.kind)
             }
-
         val physicalSensors =
             descriptor.tempSensors.map { sensor ->
                 parseTemp(sensor.channel, report, sensor.statusOffset, sensor.kind)
             }
-
         val virtualSensors =
             parseVirtualSensors(
                 report = report,
@@ -34,16 +32,14 @@ object StatusReportParser {
                 count = descriptor.virtualSensorsCount,
                 startChannel = descriptor.tempSensors.size,
             )
-
         val flowOffset = descriptor.flowSensorOffset
         val flowRateDlH =
             if (descriptor.hasFlowSensor && flowOffset != null) {
                 val flowRaw = readU16Be(report, flowOffset)
-                if (flowRaw in 1..65534) FeatureState.Active(flowRaw) else FeatureState.Disconnected
+                if (flowRaw in 1..65534) Active(flowRaw) else FeatureState.Disconnected
             } else {
                 FeatureState.Unsupported
             }
-
         return DeviceTelemetry(
             fans = fans,
             sensors = physicalSensors + virtualSensors,

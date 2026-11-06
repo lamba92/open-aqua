@@ -11,7 +11,6 @@ import io.github.lamba92.openaqua.model.device.CurvePoint
 import io.github.lamba92.openaqua.model.device.DetectedHardwareDevice
 import io.github.lamba92.openaqua.model.device.DeviceConfig
 import io.github.lamba92.openaqua.model.device.DeviceDescriptor
-import io.github.lamba92.openaqua.model.device.DeviceRegistry
 import io.github.lamba92.openaqua.model.device.DeviceTelemetry
 import io.github.lamba92.openaqua.model.device.DisplayTelemetry
 import io.github.lamba92.openaqua.model.device.FanChannelConfig
@@ -26,6 +25,7 @@ import io.github.lamba92.openaqua.model.device.SensorTelemetry
 import io.github.lamba92.openaqua.model.device.TargetTempFanConfig
 import io.github.lamba92.openaqua.model.device.TwoPointFanConfig
 import io.github.lamba92.openaqua.model.device.UnconfiguredFanConfig
+import io.github.lamba92.openaqua.model.device.descriptor
 import io.github.lamba92.openaqua.model.device.tempCelsiusOrNull
 import io.github.lamba92.openaqua.model.device.validateRequestMatchesDevice
 import io.github.lamba92.openaqua.model.device.virtualSensorsChannelRange
@@ -64,7 +64,7 @@ class MockHardwareController : HardwareController {
         request: FlashConfigRequest,
     ): DeviceConfig {
         checkDeviceAccessible(device)
-        val descriptor = DeviceRegistry.findByType(device.type)
+        val descriptor = device.descriptor()
         descriptor.validateRequestMatchesDevice(request)
 
         val storage = loadMockStorage()
@@ -132,7 +132,7 @@ class MockHardwareController : HardwareController {
         sensors: Map<Int, Double>,
     ) {
         checkDeviceAccessible(device)
-        val descriptor = DeviceRegistry.findByType(device.type)
+        val descriptor = device.descriptor()
         check(descriptor.virtualSensorsCount > 0) {
             "${device.name} does not support virtual sensors"
         }
@@ -157,7 +157,7 @@ class MockHardwareController : HardwareController {
     override fun streamTelemetry(device: DetectedHardwareDevice): Flow<DeviceTelemetry> =
         flow {
             checkDeviceAccessible(device)
-            val descriptor = DeviceRegistry.findByType(device.type)
+            val descriptor = device.descriptor()
             while (currentCoroutineContext().isActive) {
                 val config = readConfig(device)
                 val allSensorsStorage = loadMockVirtualSensorsStorage()

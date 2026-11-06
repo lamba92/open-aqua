@@ -37,4 +37,5 @@ dependencies {
     api(projects.coreModel.coreModelDevice)
     api(projects.coreModel.coreModelHost)
     api(projects.coreTheme)
+    testImplementation(kotlin("test"))
 }

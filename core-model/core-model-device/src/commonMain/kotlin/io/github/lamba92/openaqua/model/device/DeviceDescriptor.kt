@@ -48,6 +48,28 @@ data class DeviceDescriptor(
     val virtualSensorsReportSize: Int = 0x43,
 )
 
+@Serializable
+data class FirmwareRange(
+    val minInclusive: Int = 0,
+    val maxInclusive: Int = Int.MAX_VALUE,
+) {
+    operator fun contains(version: Int): Boolean = version in minInclusive..maxInclusive
+
+    companion object {
+        val ANY = FirmwareRange(0, Int.MAX_VALUE)
+
+        fun upTo(maxInclusive: Int) = FirmwareRange(0, maxInclusive)
+
+        fun from(minInclusive: Int) = FirmwareRange(minInclusive, Int.MAX_VALUE)
+    }
+}
+
+@Serializable
+data class DeviceLayout(
+    val fwRange: FirmwareRange,
+    val descriptor: DeviceDescriptor,
+)
+
 object DeviceRegistry {
     const val AQUACOMPUTER_VENDOR_ID = 0x0C70
 
@@ -177,10 +199,61 @@ object DeviceRegistry {
 
     fun findByProductId(productId: Int): DeviceDescriptor? = ALL.firstOrNull { it.productId == productId }
 
-    fun findByType(type: DeviceType): DeviceDescriptor = ALL.firstOrNull { it.type == type } ?: error("Unsupported device type: $type")
+    fun findByType(
+        type: DeviceType,
+        firmwareVersion: Int? = null,
+    ): DeviceDescriptor = DeviceLayoutRegistry.resolveDescriptor(type, firmwareVersion)
 }
 
-fun DetectedHardwareDevice.descriptor(): DeviceDescriptor = DeviceRegistry.findByType(type)
+object DeviceLayoutRegistry {
+    val OCTO_LAYOUTS: List<DeviceLayout> =
+        listOf(
+            DeviceLayout(
+                fwRange = FirmwareRange.ANY,
+                descriptor = DeviceRegistry.OCTO,
+            ),
+        )
+
+    val QUADRO_LAYOUTS: List<DeviceLayout> =
+        listOf(
+            DeviceLayout(
+                fwRange = FirmwareRange.ANY,
+                descriptor = DeviceRegistry.QUADRO,
+            ),
+        )
+
+    val D5_NEXT_LAYOUTS: List<DeviceLayout> =
+        listOf(
+            DeviceLayout(
+                fwRange = FirmwareRange.ANY,
+                descriptor = DeviceRegistry.D5_NEXT,
+            ),
+        )
+
+    val ALL_LAYOUTS: Map<DeviceType, List<DeviceLayout>> =
+        mapOf(
+            DeviceType.OCTO to OCTO_LAYOUTS,
+            DeviceType.QUADRO to QUADRO_LAYOUTS,
+            DeviceType.D5_NEXT to D5_NEXT_LAYOUTS,
+        )
+
+    fun getLayoutsForType(type: DeviceType): List<DeviceLayout> = ALL_LAYOUTS[type] ?: emptyList()
+
+    fun resolveDescriptor(
+        type: DeviceType,
+        fwVersion: Int? = null,
+    ): DeviceDescriptor {
+        val layouts = getLayoutsForType(type)
+        if (layouts.isEmpty()) error("Unsupported device type: $type")
+        if (fwVersion == null) {
+            return layouts.last().descriptor
+        }
+        return layouts.firstOrNull { fwVersion in it.fwRange }?.descriptor
+            ?: layouts.last().descriptor
+    }
+}
+
+fun DetectedHardwareDevice.descriptor(): DeviceDescriptor = DeviceLayoutRegistry.resolveDescriptor(type, firmwareVersion)
 
 val DeviceDescriptor.virtualSensorsStartChannel: Int
     get() = tempSensors.size

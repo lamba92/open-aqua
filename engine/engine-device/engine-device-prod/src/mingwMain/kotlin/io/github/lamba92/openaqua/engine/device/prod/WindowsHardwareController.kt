@@ -13,6 +13,7 @@ import io.github.lamba92.openaqua.model.device.DeviceId
 import io.github.lamba92.openaqua.model.device.DeviceRegistry
 import io.github.lamba92.openaqua.model.device.DeviceTelemetry
 import io.github.lamba92.openaqua.model.device.FlashConfigRequest
+import io.github.lamba92.openaqua.model.device.descriptor
 import io.github.lamba92.openaqua.model.device.validateRequestMatchesDevice
 import kotlinx.cinterop.CPointer
 import kotlinx.cinterop.CPointerVar
@@ -187,9 +188,7 @@ object WindowsHardwareController : HardwareController {
 
     override fun streamTelemetry(device: DetectedHardwareDevice): Flow<DeviceTelemetry> =
         flow {
-            val descriptor =
-                DeviceRegistry.ALL.firstOrNull { it.type == device.type }
-                    ?: error("Unsupported device type: ${device.type}")
+            val descriptor = device.descriptor()
 
             val node = getScannedNode(device)
             val handle =

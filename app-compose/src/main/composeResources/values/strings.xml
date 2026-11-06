@@ -314,6 +314,9 @@
     <string name="bug_report_github_button">Open GitHub Issue</string>
     <string name="bug_report_attach_hint">Please attach logs and/or screenshots to your issue report.</string>
     <string name="bug_report_environment_title">Environment Information</string>
+        <string name="bug_report_connected_devices_title">Connected Devices</string>
+    <string name="bug_report_devices_loading">Scanning devices...</string>
+    <string name="bug_report_devices_none">No devices detected</string>
     <string name="bug_report_view_logs">View in-app logs</string>
     <!-- About Screen -->
     <string name="about_screen_title">About OpenAqua</string>

@@ -2,6 +2,7 @@ package io.github.lamba92.openaqua.app.feature.bugreport
 
 data class BugReportState(
     val buildInfo: List<Pair<String, String>>,
+    val connectedDevices: List<String>? = null,
 )
 
 sealed interface BugReportEvent {

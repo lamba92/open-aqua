@@ -153,6 +153,7 @@ val appModule =
         bindSingleton {
             BugReportViewModel(
                 appLogService = instance(),
+                openAquaDeviceEngineApi = instance(),
                 scopeProvider = instance(),
             )
         }

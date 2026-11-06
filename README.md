@@ -129,11 +129,11 @@ $ open-aqua-device-engine devices
 {
   "devices": [
     {
-      "id": "13235-54067",
+      "id": "10000-00001",
       "alias": "octo-1",
       "type": "OCTO",
       "name": "Aquacomputer OCTO",
-      "serial": "13235-54067",
+      "serial": "10000-00001",
       "firmwareVersion": 1020
     }
   ]

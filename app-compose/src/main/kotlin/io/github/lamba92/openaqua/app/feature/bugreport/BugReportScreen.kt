@@ -30,12 +30,16 @@ import open_aqua.app_compose.generated.resources.Res
 import open_aqua.app_compose.generated.resources.bug_report_attach_hint
 import open_aqua.app_compose.generated.resources.bug_report_card_desc
 import open_aqua.app_compose.generated.resources.bug_report_card_title
+import open_aqua.app_compose.generated.resources.bug_report_connected_devices_title
+import open_aqua.app_compose.generated.resources.bug_report_devices_loading
+import open_aqua.app_compose.generated.resources.bug_report_devices_none
 import open_aqua.app_compose.generated.resources.bug_report_environment_title
 import open_aqua.app_compose.generated.resources.bug_report_github_button
 import open_aqua.app_compose.generated.resources.bug_report_screen_subtitle
 import open_aqua.app_compose.generated.resources.bug_report_screen_title
 import open_aqua.app_compose.generated.resources.bug_report_view_logs
 import open_aqua.app_compose.generated.resources.ic_bug_report
+import open_aqua.app_compose.generated.resources.ic_device
 import open_aqua.app_compose.generated.resources.ic_info
 import open_aqua.app_compose.generated.resources.settings_logs_open_folder
 import org.jetbrains.compose.resources.painterResource
@@ -122,6 +126,46 @@ fun BugReportScreen(
             Column(verticalArrangement = Arrangement.spacedBy(metrics.spacingSm)) {
                 state.buildInfo.forEach { (label, value) ->
                     BuildInfoRow(label = label, value = value)
+                }
+            }
+        }
+
+        // Connected Devices Card
+        ScreenCard {
+            SectionHeader(
+                icon = painterResource(Res.drawable.ic_device),
+                title = stringResource(Res.string.bug_report_connected_devices_title),
+            )
+
+            val devices = state.connectedDevices
+            when {
+                devices == null -> {
+                    Text(
+                        text = stringResource(Res.string.bug_report_devices_loading),
+                        color = colors.textSecondary,
+                        fontSize = 13.sp,
+                    )
+                }
+
+                devices.isEmpty() -> {
+                    Text(
+                        text = stringResource(Res.string.bug_report_devices_none),
+                        color = colors.textSecondary,
+                        fontSize = 13.sp,
+                    )
+                }
+
+                else -> {
+                    Column(verticalArrangement = Arrangement.spacedBy(metrics.spacingSm)) {
+                        devices.forEach { deviceText ->
+                            Text(
+                                text = "•  $deviceText",
+                                color = colors.textPrimary,
+                                fontSize = 13.sp,
+                                fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
+                            )
+                        }
+                    }
                 }
             }
         }
