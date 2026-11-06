@@ -222,7 +222,10 @@ private fun DevicePermissionState.toCurrentOSSettings(isRemovingPermissions: Boo
                 isRemovingPermissions = isRemovingPermissions,
             )
         }
-        else -> CurrentOSSettings.None
+
+        else -> {
+            CurrentOSSettings.None
+        }
     }
 
 private val TIMESTAMP_PREFIX_REGEX = Regex("""^\d{4}-\d{2}-\d{2}[T\s]""")

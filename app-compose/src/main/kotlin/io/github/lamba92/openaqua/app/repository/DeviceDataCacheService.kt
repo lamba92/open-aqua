@@ -200,10 +200,10 @@ private fun Throwable.toDeviceErrorType(): DeviceErrorType =
         this is IOException -> DeviceErrorType.IoFailure
 
         message?.contains("open", ignoreCase = true) == true ||
-                message?.contains("permission", ignoreCase = true) == true ||
-                message?.contains("access", ignoreCase = true) == true ||
-                message?.contains("hidraw", ignoreCase = true) == true ||
-                message?.contains("device", ignoreCase = true) == true -> DeviceErrorType.IoFailure
+            message?.contains("permission", ignoreCase = true) == true ||
+            message?.contains("access", ignoreCase = true) == true ||
+            message?.contains("hidraw", ignoreCase = true) == true ||
+            message?.contains("device", ignoreCase = true) == true -> DeviceErrorType.IoFailure
 
         else -> DeviceErrorType.Unknown
     }

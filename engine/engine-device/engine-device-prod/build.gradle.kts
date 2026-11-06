@@ -83,3 +83,29 @@ engineBinaries {
         fromExecutable(kotlin.mingwX64().binaries.getExecutable("release"))
     }
 }
+
+tasks.register("releaseLinux") {
+    group = "distribution"
+    description = "Publishes Linux device engine binary to root build/releases"
+    dependsOn("prepareEngineBinaryLinuxX64")
+    val binaryFile = layout.buildDirectory.file("engine-binaries/linuxX64/open-aqua-device-engine-linux-x64")
+    inputs.file(binaryFile)
+    outputs.dir(rootProject.layout.buildDirectory.dir("releases"))
+
+    doLast {
+        publishReleaseArtifact(binaryFile.get().asFile)
+    }
+}
+
+tasks.register("releaseWindows") {
+    group = "distribution"
+    description = "Publishes Windows device engine binary to root build/releases"
+    dependsOn("prepareEngineBinaryMingwX64")
+    val binaryFile = layout.buildDirectory.file("engine-binaries/mingwX64/open-aqua-device-engine-windows-x64.exe")
+    inputs.file(binaryFile)
+    outputs.dir(rootProject.layout.buildDirectory.dir("releases"))
+
+    doLast {
+        publishReleaseArtifact(binaryFile.get().asFile)
+    }
+}

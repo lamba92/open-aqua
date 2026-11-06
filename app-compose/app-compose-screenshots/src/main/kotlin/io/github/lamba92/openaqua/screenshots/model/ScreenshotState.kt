@@ -33,7 +33,6 @@ data class ScreenshotState(
  * Sealed hierarchy identifying what screen and data state to render.
  */
 sealed interface Scene {
-
     sealed interface DeviceScreen : Scene {
         val navState: DeviceNavState
         val device: DetectedHardwareDevice get() = mockOctoHardwareDevice

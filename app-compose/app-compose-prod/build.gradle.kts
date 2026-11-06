@@ -29,7 +29,11 @@ dependencies {
     }
 }
 
-val releasePackageVersion = project.version.toString().removePrefix("v").substringBefore("-")
+val releasePackageVersion =
+    project.version
+        .toString()
+        .removePrefix("v")
+        .substringBefore("-")
 
 compose.desktop {
     application {
@@ -181,10 +185,12 @@ tasks.register("packageReleaseAppImage") {
                 }
             toolAppImage.setExecutable(true, false)
 
-            providers.exec {
-                workingDir = toolDir
-                commandLine(toolAppImage.absolutePath, "--appimage-extract")
-            }.result.get()
+            providers
+                .exec {
+                    workingDir = toolDir
+                    commandLine(toolAppImage.absolutePath, "--appimage-extract")
+                }.result
+                .get()
         }
 
         // 6. Run appimagetool
@@ -193,14 +199,16 @@ tasks.register("packageReleaseAppImage") {
         val finalAppImage = File(outDir, appImageFileName)
         finalAppImage.delete()
 
-        providers.exec {
-            environment("ARCH", "x86_64")
-            commandLine(
-                extractedTool.absolutePath,
-                targetAppDir.absolutePath,
-                finalAppImage.absolutePath,
-            )
-        }.result.get()
+        providers
+            .exec {
+                environment("ARCH", "x86_64")
+                commandLine(
+                    extractedTool.absolutePath,
+                    targetAppDir.absolutePath,
+                    finalAppImage.absolutePath,
+                )
+            }.result
+            .get()
 
         finalAppImage.setExecutable(true, false)
         logger.lifecycle("AppImage generated successfully at: ${finalAppImage.absolutePath}")
@@ -238,17 +246,71 @@ tasks.register("installReleaseAppImage") {
 
         // 3. Install .desktop file pointing to installed AppImage
         val installedDesktop = File(appsDir, "open-aqua.desktop")
-        val desktopContent = desktopFile.readText()
-            .replace("Exec=open-aqua", "Exec=${installedAppImage.absolutePath}")
+        val desktopContent =
+            desktopFile
+                .readText()
+                .replace("Exec=open-aqua", "Exec=${installedAppImage.absolutePath}")
         installedDesktop.writeText(desktopContent)
 
         // 4. Update desktop database if available
         runCatching {
-            providers.exec {
-                commandLine("update-desktop-database", appsDir.absolutePath)
-            }.result.get()
+            providers
+                .exec {
+                    commandLine("update-desktop-database", appsDir.absolutePath)
+                }.result
+                .get()
         }
 
         logger.lifecycle("OpenAqua successfully installed to ~/.local for KDE/GNOME application menu.")
+    }
+}
+
+tasks.register("releaseLinux") {
+    group = "distribution"
+    description = "Publishes Linux desktop application packages to root build/releases"
+    dependsOn(
+        "packageReleaseAppImage",
+        "packageReleaseDeb",
+        "packageReleaseRpm",
+        "packageReleaseTarGz",
+    )
+    val composeBinDir = layout.buildDirectory.dir("compose/binaries/main-release")
+    inputs.dir(composeBinDir)
+    outputs.dir(rootProject.layout.buildDirectory.dir("releases"))
+
+    doLast {
+        val allowedExtensions = listOf("AppImage", "deb", "rpm", "tar.gz")
+        val files =
+            composeBinDir
+                .get()
+                .asFile
+                .walk()
+                .filter { file -> file.isFile && allowedExtensions.any { file.name.endsWith(".$it") } }
+                .toList()
+        publishReleaseArtifacts(files)
+    }
+}
+
+tasks.register("releaseWindows") {
+    group = "distribution"
+    description = "Publishes Windows desktop application packages to root build/releases"
+    dependsOn(
+        "packageReleaseMsi",
+        "packageReleaseZip",
+    )
+    val composeBinDir = layout.buildDirectory.dir("compose/binaries/main-release")
+    inputs.dir(composeBinDir)
+    outputs.dir(rootProject.layout.buildDirectory.dir("releases"))
+
+    doLast {
+        val allowedExtensions = listOf("msi", "zip")
+        val files =
+            composeBinDir
+                .get()
+                .asFile
+                .walk()
+                .filter { file -> file.isFile && allowedExtensions.any { file.name.endsWith(".$it") } }
+                .toList()
+        publishReleaseArtifacts(files)
     }
 }
