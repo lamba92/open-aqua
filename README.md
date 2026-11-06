@@ -22,7 +22,7 @@
 Aquacomputer hardware (**OCTO**, **QUADRO**, **D5 NEXT**, etc.) represents the gold standard in custom PC liquid cooling and thermal control. However, the official proprietary software (**Aquasuite**) is Windows-only (WPF/.NET) and tied to licensing models. On Linux, users have historically had to rely on Windows virtual machines or incomplete reverse-engineered scripts.
 
 **OpenAqua** provides a modern, transparent, and completely free thermal management solution built with Kotlin and Compose Multiplatform:
-- **Autonomous Hardware Operation**: Custom curves and fixed fan profiles are flashed directly to the device's onboard EEPROM/firmware. Once flashed, the device executes the curve in hardware—cooling remains fully active even if the app is closed or the host OS crashes. *(Host software fan control evaluated on the host is planned and coming as well!)*
+- **Autonomous Hardware Operation**: Custom curves and fixed fan profiles are flashed directly to the device's onboard EEPROM/firmware. Once flashed, the device executes the curve in hardware—cooling remains fully active even if the app is closed or the host OS crashes.
 - **Modern Compose Desktop UI**: A responsive, themeable desktop interface for visualizing fan curves, monitoring real-time telemetry, calibrating physical sensors, and streaming host temperatures into virtual sensor slots.
 - **Cross-Platform**: Designed from the ground up for both **Linux** (native HIDRAW ioctl + sysfs) and **Windows** (native Win32 HID subsystem).
 - **Stateless Native Engine**: A lightweight standalone CLI binary (`open-aqua-device-engine`) for headless monitoring, script integration, and daemonless operation.
@@ -55,7 +55,9 @@ Inspect USB descriptors, firmware revisions, hardware serial numbers, and channe
 > **Current Testing & Hardware Verification**:
 > - **Physically Verified**: Tested on an **Aquacomputer OCTO** under **Linux (Bazzite)** and **Windows (emulated via QEMU/KVM with USB passthrough)**.
 > - **Untested Hardware**: The **Aquacomputer QUADRO** and **D5 NEXT** have full protocol and descriptor definitions implemented based on reverse engineering, but have **not been physically verified on hardware yet**. Community feedback and bug reports are welcome!
-> - **Missing LEDs & Planned Features**: Control of **RGB / RGBpx LEDs is currently not implemented** (LED support will arrive in a future update). In addition, **host software fan control** (evaluating complex software fan curves directly on the host) is planned and coming soon.
+> - **Planned Features**:
+>   - **RGB / RGBpx LED Control**: Control of RGB / RGBpx LEDs is currently not implemented, but will arrive in a future update.
+>   - **Host Software Fan Control**: Evaluating complex software-driven fan curves directly on the host system.
 
 | Device | USB Product ID | Fan Channels | Temp Sensors | Flow Sensor | RGBpx | Physical Testing Status |
 | :--- | :---: | :---: | :---: | :---: | :---: | :--- |
