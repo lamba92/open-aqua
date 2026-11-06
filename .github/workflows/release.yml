@@ -22,10 +22,8 @@ jobs:
         include:
           - os: ubuntu-latest
             os_name: Linux
-            task: releaseLinux
           - os: windows-latest
             os_name: Windows
-            task: releaseWindows
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -49,7 +47,7 @@ jobs:
       - run: chmod +x gradlew
 
       - name: Build release assets
-        run: ./gradlew ${{ matrix.task }} --stacktrace
+        run: ./gradlew release --stacktrace
 
       - name: Upload to GitHub Release
         env:

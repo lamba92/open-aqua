@@ -314,3 +314,16 @@ tasks.register("releaseWindows") {
         publishReleaseArtifacts(files)
     }
 }
+
+tasks.register("release") {
+    group = "distribution"
+    description = "Publishes desktop application packages to root build/releases for the current OS"
+    val os =
+        org.gradle.internal.os.OperatingSystem
+            .current()
+    when {
+        os.isLinux -> dependsOn("releaseLinux")
+        os.isWindows -> dependsOn("releaseWindows")
+        else -> Unit
+    }
+}

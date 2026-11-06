@@ -109,3 +109,16 @@ tasks.register("releaseWindows") {
         publishReleaseArtifact(binaryFile.get().asFile)
     }
 }
+
+tasks.register("release") {
+    group = "distribution"
+    description = "Publishes device engine release binary to root build/releases for the current OS"
+    val os =
+        org.gradle.internal.os.OperatingSystem
+            .current()
+    when {
+        os.isLinux -> dependsOn("releaseLinux")
+        os.isWindows -> dependsOn("releaseWindows")
+        else -> Unit
+    }
+}
