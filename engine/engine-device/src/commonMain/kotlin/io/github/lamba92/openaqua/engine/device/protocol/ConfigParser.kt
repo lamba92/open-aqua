@@ -193,12 +193,16 @@ object ConfigParser {
         val rawMax = ((report[setupOffset + 3].toInt() and 0xFF shl 8) or (report[setupOffset + 4].toInt() and 0xFF))
         val rawFallback = ((report[setupOffset + 5].toInt() and 0xFF shl 8) or (report[setupOffset + 6].toInt() and 0xFF))
 
+        val minPower = (round((rawMin.toDouble() / 100.0) * 10.0) / 10.0).coerceIn(0.0, 100.0)
+        val maxPower = (round((rawMax.toDouble() / 100.0) * 10.0) / 10.0).coerceIn(0.0, 100.0)
+        val fallbackPower = (round((rawFallback.toDouble() / 100.0) * 10.0) / 10.0).coerceIn(0.0, 100.0)
+
         return FanLimits(
-            minPowerPercent = round((rawMin.toDouble() / 100.0) * 10.0) / 10.0,
-            maxPowerPercent = round((rawMax.toDouble() / 100.0) * 10.0) / 10.0,
+            minPowerPercent = minPower.coerceAtMost(maxPower),
+            maxPowerPercent = maxPower,
             startBoost = startBoost,
             holdMinPower = holdMin,
-            fallbackPowerPercent = round((rawFallback.toDouble() / 100.0) * 10.0) / 10.0,
+            fallbackPowerPercent = fallbackPower,
         )
     }
 
