@@ -431,4 +431,37 @@ class ProtocolMappingTest {
             }
         assertTrue(ex.message?.contains("Verification failed on fan 0 minPower: expected 10.0%, read 20.0%") == true)
     }
+
+    @Test
+    fun testD5NextChannelOffsets() {
+        val d5Next = DeviceRegistry.D5_NEXT
+        val pump = d5Next.fanChannels.first { it.channel == 0 }
+        val fan = d5Next.fanChannels.first { it.channel == 1 }
+
+        assertEquals(0x96, pump.ctrlOffset)
+        assertEquals(0x38, pump.setupOffset)
+        assertEquals(0x6C, pump.statusOffset)
+
+        assertEquals(0x41, fan.ctrlOffset)
+        assertEquals(0x2F, fan.setupOffset)
+        assertEquals(0x5F, fan.statusOffset)
+    }
+
+    @Test
+    fun testParseFanLimitsClampsOutOfRangeValues() {
+        val report = UByteArray(10)
+        // Simulate out-of-range report: raw min = 12000 (120%), raw max = 5000 (50%), raw fallback = 47100 (471%)
+        report[0] = 0x03u
+        report[1] = 0x2Eu
+        report[2] = 0xE0u // 12000
+        report[3] = 0x13u
+        report[4] = 0x88u // 5000
+        report[5] = 0xB7u
+        report[6] = 0xFCu // 47100 -> 471.0%
+
+        val limits = ConfigParser.parseFanLimits(report, 0)
+        assertEquals(50.0, limits.maxPowerPercent)
+        assertEquals(50.0, limits.minPowerPercent) // clamped to max
+        assertEquals(100.0, limits.fallbackPowerPercent) // clamped to 100
+    }
 }

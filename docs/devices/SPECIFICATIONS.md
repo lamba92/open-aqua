@@ -443,7 +443,7 @@ Writing Report `0x03` updates the microcontroller's RAM registers. To commit the
 Preceding the fan control blocks in Report `0x03`, each physical fan channel has a 9-byte electrical guardrail block:
 * **OCTO Setup Offsets**: `0x12 + (ch * 0x09)` (Channels 0..7 span `0x12..0x59`)
 * **QUADRO Setup Offsets**: `0x12 + (ch * 0x09)` (Channels 0..3 span `0x12..0x35`)
-* **D5 NEXT Setup Offsets**: Pump (Channel 0) at `0x12`, Fan (Channel 1) at `0x1B`
+* **D5 NEXT Setup Offsets**: Fan (Channel 1) at `0x2F`, Pump (Channel 0) at `0x38`
 
 | Relative Offset | Width    | Field Name    | Description                                          |
 |-----------------|----------|---------------|------------------------------------------------------|
@@ -576,7 +576,7 @@ Total: 67 bytes (0x43)
 | **Fan Telemetry Stride**           |   `0x0D` (13 bytes)   |   `0x0D` (13 bytes)   |       Fixed offsets       |
 | **Fan Telemetry Base**             |        `0x7D`         |        `0x70`         | Pump: `0x6C`, Fan: `0x5F` |
 | **Fan Control Stride**             |   `0x55` (85 bytes)   |   `0x55` (85 bytes)   |       Fixed offsets       |
-| **Fan Control Base**               |        `0x5A`         |        `0x36`         | Pump: `0x36`, Fan: `0x8B` |
+| **Fan Control Base**               |        `0x5A`         |        `0x36`         | Pump: `0x96`, Fan: `0x41` |
 | **Physical Temp Telemetry Base**   |        `0x3D`         |        `0x34`         |          `0x57`           |
 | **Virtual Temp Telemetry Base**    |        `0x45`         |        `0x3C`         |          `0x3F`           |
 | **Flow Telemetry Offset**          |        `0x7B`         |        `0x6E`         |            N/A            |
