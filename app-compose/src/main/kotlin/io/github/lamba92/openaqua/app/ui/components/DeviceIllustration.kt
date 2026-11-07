@@ -21,10 +21,18 @@ import io.github.lamba92.openaqua.app.theme.SurfaceContainerHigh
 import io.github.lamba92.openaqua.app.theme.SurfaceContainerLowest
 import io.github.lamba92.openaqua.model.device.DeviceType
 import open_aqua.app_compose.generated.resources.Res
+import open_aqua.app_compose.generated.resources.device_aquaero
+import open_aqua.app_compose.generated.resources.device_aquastream_ultimate
+import open_aqua.app_compose.generated.resources.device_aquastream_xt
 import open_aqua.app_compose.generated.resources.device_d5_next
+import open_aqua.app_compose.generated.resources.device_farbwerk
+import open_aqua.app_compose.generated.resources.device_farbwerk360
+import open_aqua.app_compose.generated.resources.device_high_flow_next
+import open_aqua.app_compose.generated.resources.device_high_flow_usb
+import open_aqua.app_compose.generated.resources.device_leakshield
 import open_aqua.app_compose.generated.resources.device_octo
+import open_aqua.app_compose.generated.resources.device_poweradjust3
 import open_aqua.app_compose.generated.resources.device_quadro
-import open_aqua.app_compose.generated.resources.ic_device
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 
@@ -34,7 +42,15 @@ val DeviceType.drawable: DrawableResource
             DeviceType.OCTO -> Res.drawable.device_octo
             DeviceType.QUADRO -> Res.drawable.device_quadro
             DeviceType.D5_NEXT -> Res.drawable.device_d5_next
-            else -> Res.drawable.ic_device
+            DeviceType.FARBWERK360 -> Res.drawable.device_farbwerk360
+            DeviceType.FARBWERK -> Res.drawable.device_farbwerk
+            DeviceType.HIGH_FLOW_NEXT -> Res.drawable.device_high_flow_next
+            DeviceType.LEAKSHIELD -> Res.drawable.device_leakshield
+            DeviceType.AQUASTREAM_ULTIMATE -> Res.drawable.device_aquastream_ultimate
+            DeviceType.AQUAERO -> Res.drawable.device_aquaero
+            DeviceType.HIGH_FLOW_USB -> Res.drawable.device_high_flow_usb
+            DeviceType.POWERADJUST3 -> Res.drawable.device_poweradjust3
+            DeviceType.AQUASTREAM_XT -> Res.drawable.device_aquastream_xt
         }
 
 @Composable
