@@ -99,7 +99,10 @@ class OpenAquaDeviceEngineApi(
                 )
             } finally {
                 withContext(Dispatchers.IO) {
-                    runCatching { java.nio.file.Files.deleteIfExists(tempFile) }
+                    runCatching {
+                        java.nio.file.Files
+                            .deleteIfExists(tempFile)
+                    }
                 }
             }
         logger.i { "Configuration flashed successfully to device '${deviceId.value}'" }
