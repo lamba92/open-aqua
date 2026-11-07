@@ -24,6 +24,7 @@ import open_aqua.app_compose.generated.resources.Res
 import open_aqua.app_compose.generated.resources.device_d5_next
 import open_aqua.app_compose.generated.resources.device_octo
 import open_aqua.app_compose.generated.resources.device_quadro
+import open_aqua.app_compose.generated.resources.ic_device
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 
@@ -33,6 +34,7 @@ val DeviceType.drawable: DrawableResource
             DeviceType.OCTO -> Res.drawable.device_octo
             DeviceType.QUADRO -> Res.drawable.device_quadro
             DeviceType.D5_NEXT -> Res.drawable.device_d5_next
+            else -> Res.drawable.ic_device
         }
 
 @Composable

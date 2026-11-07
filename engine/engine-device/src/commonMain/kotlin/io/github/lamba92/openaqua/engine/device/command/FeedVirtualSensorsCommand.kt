@@ -56,7 +56,7 @@ class FeedVirtualSensorsCommand(
                         "Channel 0 is the coolant temperature sensor on ${target.name}. " +
                             "Virtual sensors are channels 1..8.",
                     )
-                channel in 0..3 ->
+                channel in 0 until startChannel ->
                     error(
                         "Channel $channel is a physical sensor on ${target.name}. " +
                             "Virtual sensors are channels $startChannel..$maxChannel.",
