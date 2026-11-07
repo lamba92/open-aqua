@@ -1,3 +1,5 @@
+@file:OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
+
 package io.github.lamba92.openaqua.engine.host.linux.hardware
 
 import kotlinx.cinterop.ByteVar
