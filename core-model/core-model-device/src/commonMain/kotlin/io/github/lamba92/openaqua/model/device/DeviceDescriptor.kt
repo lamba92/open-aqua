@@ -7,6 +7,15 @@ enum class DeviceType {
     OCTO,
     QUADRO,
     D5_NEXT,
+    FARBWERK360,
+    FARBWERK,
+    HIGH_FLOW_NEXT,
+    LEAKSHIELD,
+    AQUASTREAM_ULTIMATE,
+    AQUAERO,
+    HIGH_FLOW_USB,
+    POWERADJUST3,
+    AQUASTREAM_XT,
 }
 
 @Serializable
@@ -195,7 +204,348 @@ object DeviceRegistry {
             virtualSensorsStartOffset = 0x3F,
         )
 
-    val ALL = listOf(OCTO, QUADRO, D5_NEXT)
+    val FARBWERK360 =
+        DeviceDescriptor(
+            type = DeviceType.FARBWERK360,
+            name = "Aquacomputer Farbwerk 360",
+            productId = 0xF010,
+            ctrlReportLength = 0x682,
+            statusReportLength = 0xB6,
+            tempSensors =
+                (0..3).map {
+                    SensorDescriptor(
+                        channel = it,
+                        hwmonIndex = it + 1,
+                        statusOffset = 0x32 + (it * 2),
+                        kind = SensorChannelKind.PHYSICAL_NTC,
+                    )
+                },
+            tempCtrlOffset = 0x08,
+            firmwareVersionOffset = 0x0D,
+            hasFlowSensor = false,
+            hasDisplay = false,
+            hasRgbpx = true,
+            rgbpxPortCount = 4,
+            virtualSensorsCount = 16,
+            virtualSensorsStartOffset = 0x3A,
+            virtualSensorsReportSize = 0x33,
+        )
+
+    val FARBWERK =
+        DeviceDescriptor(
+            type = DeviceType.FARBWERK,
+            name = "Aquacomputer Farbwerk",
+            productId = 0xF00A,
+            ctrlReportLength = 0xB6,
+            statusReportLength = 0xB6,
+            tempSensors =
+                (0..3).map {
+                    SensorDescriptor(
+                        channel = it,
+                        hwmonIndex = it + 1,
+                        statusOffset = 0x2F + (it * 2),
+                        kind = SensorChannelKind.PHYSICAL_NTC,
+                    )
+                },
+            tempCtrlOffset = null,
+            firmwareVersionOffset = 0x0D,
+            hasFlowSensor = false,
+            hasDisplay = false,
+            hasRgbpx = false,
+            rgbpxPortCount = 0,
+            virtualSensorsCount = 0,
+        )
+
+    val HIGH_FLOW_NEXT =
+        DeviceDescriptor(
+            type = DeviceType.HIGH_FLOW_NEXT,
+            name = "Aquacomputer High Flow Next",
+            productId = 0xF012,
+            ctrlReportLength = 0x2AA,
+            statusReportLength = 0x6F,
+            tempSensors =
+                listOf(
+                    SensorDescriptor(
+                        channel = 0,
+                        hwmonIndex = 1,
+                        statusOffset = 0x55,
+                        kind = SensorChannelKind.INTEGRATED_COOLANT,
+                    ),
+                    SensorDescriptor(
+                        channel = 1,
+                        hwmonIndex = 2,
+                        statusOffset = 0x57,
+                        kind = SensorChannelKind.PHYSICAL_NTC,
+                    ),
+                ),
+            tempCtrlOffset = 0x0A,
+            firmwareVersionOffset = 0x0D,
+            hasFlowSensor = true,
+            flowSensorOffset = 0x51,
+            flowPulsesCtrlOffset = null,
+            hasDisplay = true,
+            hasRgbpx = true,
+            rgbpxPortCount = 1,
+            virtualSensorsCount = 0,
+        )
+
+    val LEAKSHIELD =
+        DeviceDescriptor(
+            type = DeviceType.LEAKSHIELD,
+            name = "Aquacomputer Leakshield",
+            productId = 0xF014,
+            ctrlReportLength = 0x33,
+            statusReportLength = 0x140,
+            tempSensors =
+                listOf(
+                    SensorDescriptor(
+                        channel = 0,
+                        hwmonIndex = 1,
+                        statusOffset = 265,
+                        kind = SensorChannelKind.PHYSICAL_NTC,
+                    ),
+                    SensorDescriptor(
+                        channel = 1,
+                        hwmonIndex = 2,
+                        statusOffset = 287,
+                        kind = SensorChannelKind.PHYSICAL_NTC,
+                    ),
+                ),
+            tempCtrlOffset = null,
+            firmwareVersionOffset = 0x0D,
+            hasFlowSensor = false,
+            hasDisplay = true,
+            hasRgbpx = true,
+            rgbpxPortCount = 1,
+            virtualSensorsCount = 0,
+        )
+
+    val AQUASTREAM_ULTIMATE =
+        DeviceDescriptor(
+            type = DeviceType.AQUASTREAM_ULTIMATE,
+            name = "Aquacomputer Aquastream Ultimate",
+            productId = 0xF00B,
+            ctrlReportLength = 0x329,
+            statusReportLength = 0x76,
+            fanChannels =
+                listOf(
+                    FanChannelDescriptor(
+                        channel = 0,
+                        ctrlOffset = 0x96,
+                        statusOffset = 0x51,
+                        kind = CoolingChannelKind.PUMP,
+                    ),
+                    FanChannelDescriptor(
+                        channel = 1,
+                        ctrlOffset = 0x41,
+                        statusOffset = 0x41,
+                        kind = CoolingChannelKind.FAN,
+                    ),
+                ),
+            tempSensors =
+                listOf(
+                    SensorDescriptor(
+                        channel = 0,
+                        hwmonIndex = 1,
+                        statusOffset = 0x2D,
+                        kind = SensorChannelKind.INTEGRATED_COOLANT,
+                    ),
+                    SensorDescriptor(
+                        channel = 1,
+                        hwmonIndex = 2,
+                        statusOffset = 0x2F,
+                        kind = SensorChannelKind.PHYSICAL_NTC,
+                    ),
+                ),
+            tempCtrlOffset = null,
+            firmwareVersionOffset = 0x0D,
+            hasFlowSensor = true,
+            flowSensorOffset = 0x37,
+            flowPulsesCtrlOffset = null,
+            hasDisplay = true,
+            hasRgbpx = true,
+            rgbpxPortCount = 1,
+            virtualSensorsCount = 0,
+        )
+
+    val AQUAERO =
+        DeviceDescriptor(
+            type = DeviceType.AQUAERO,
+            name = "Aquacomputer Aquaero",
+            productId = 0xF001,
+            ctrlReportLength = 0x0A93,
+            statusReportLength = 0x195,
+            fanChannels =
+                (0..3).map {
+                    FanChannelDescriptor(
+                        channel = it,
+                        ctrlOffset = 0x20C + (it * 0x14),
+                        statusOffset = 0x167 + (it * 0x0C),
+                        kind = CoolingChannelKind.FAN,
+                    )
+                },
+            tempSensors =
+                (0..7).map {
+                    SensorDescriptor(
+                        channel = it,
+                        hwmonIndex = it + 1,
+                        statusOffset = 0x65 + (it * 2),
+                        kind = SensorChannelKind.PHYSICAL_NTC,
+                    )
+                },
+            tempCtrlOffset = 0xDB,
+            firmwareVersionOffset = 0x0B,
+            hasFlowSensor = true,
+            flowSensorOffset = 0xF9,
+            flowPulsesCtrlOffset = null,
+            hasDisplay = true,
+            hasRgbpx = false,
+            rgbpxPortCount = 0,
+            virtualSensorsCount = 8,
+            virtualSensorsStartOffset = 0x85,
+        )
+
+    val HIGH_FLOW_USB =
+        DeviceDescriptor(
+            type = DeviceType.HIGH_FLOW_USB,
+            name = "Aquacomputer High Flow USB",
+            productId = 0xF003,
+            ctrlReportLength = 0,
+            statusReportLength = 0x76,
+            tempSensors =
+                listOf(
+                    SensorDescriptor(
+                        channel = 0,
+                        hwmonIndex = 1,
+                        statusOffset = 0x2B,
+                        kind = SensorChannelKind.PHYSICAL_NTC,
+                    ),
+                    SensorDescriptor(
+                        channel = 1,
+                        hwmonIndex = 2,
+                        statusOffset = 0x2D,
+                        kind = SensorChannelKind.PHYSICAL_NTC,
+                    ),
+                ),
+            tempCtrlOffset = null,
+            firmwareVersionOffset = 0x03,
+            hasFlowSensor = true,
+            flowSensorOffset = 0x23,
+            flowPulsesCtrlOffset = null,
+            hasDisplay = false,
+            hasRgbpx = false,
+            virtualSensorsCount = 0,
+        )
+
+    val POWERADJUST3 =
+        DeviceDescriptor(
+            type = DeviceType.POWERADJUST3,
+            name = "Aquacomputer Poweradjust 3",
+            productId = 0xF0BD,
+            ctrlReportLength = 0x32,
+            statusReportLength = 0x32,
+            fanChannels =
+                listOf(
+                    FanChannelDescriptor(
+                        channel = 0,
+                        ctrlOffset = 0x08,
+                        statusOffset = 0x0B,
+                        kind = CoolingChannelKind.FAN,
+                    ),
+                ),
+            tempSensors =
+                listOf(
+                    SensorDescriptor(
+                        channel = 0,
+                        hwmonIndex = 1,
+                        statusOffset = 0x01,
+                        kind = SensorChannelKind.PHYSICAL_NTC,
+                    ),
+                    SensorDescriptor(
+                        channel = 1,
+                        hwmonIndex = 2,
+                        statusOffset = 0x03,
+                        kind = SensorChannelKind.PHYSICAL_NTC,
+                    ),
+                ),
+            tempCtrlOffset = null,
+            firmwareVersionOffset = 0x21,
+            hasFlowSensor = true,
+            flowSensorOffset = 0x09,
+            flowPulsesCtrlOffset = null,
+            hasDisplay = false,
+            hasRgbpx = false,
+            virtualSensorsCount = 0,
+        )
+
+    val AQUASTREAM_XT =
+        DeviceDescriptor(
+            type = DeviceType.AQUASTREAM_XT,
+            name = "Aquacomputer Aquastream XT",
+            productId = 0xF0B6,
+            ctrlReportLength = 0x34,
+            statusReportLength = 0x42,
+            fanChannels =
+                listOf(
+                    FanChannelDescriptor(
+                        channel = 0,
+                        ctrlOffset = 0x08,
+                        statusOffset = 0x13,
+                        kind = CoolingChannelKind.PUMP,
+                    ),
+                    FanChannelDescriptor(
+                        channel = 1,
+                        ctrlOffset = 0x1B,
+                        statusOffset = 0x1B,
+                        kind = CoolingChannelKind.FAN,
+                    ),
+                ),
+            tempSensors =
+                listOf(
+                    SensorDescriptor(
+                        channel = 0,
+                        hwmonIndex = 1,
+                        statusOffset = 0x0D,
+                        kind = SensorChannelKind.PHYSICAL_NTC,
+                    ),
+                    SensorDescriptor(
+                        channel = 1,
+                        hwmonIndex = 2,
+                        statusOffset = 0x0F,
+                        kind = SensorChannelKind.PHYSICAL_NTC,
+                    ),
+                    SensorDescriptor(
+                        channel = 2,
+                        hwmonIndex = 3,
+                        statusOffset = 0x11,
+                        kind = SensorChannelKind.INTEGRATED_COOLANT,
+                    ),
+                ),
+            tempCtrlOffset = null,
+            firmwareVersionOffset = 0x32,
+            hasFlowSensor = false,
+            flowSensorOffset = null,
+            flowPulsesCtrlOffset = null,
+            hasDisplay = false,
+            hasRgbpx = false,
+            virtualSensorsCount = 0,
+        )
+
+    val ALL =
+        listOf(
+            OCTO,
+            QUADRO,
+            D5_NEXT,
+            FARBWERK360,
+            FARBWERK,
+            HIGH_FLOW_NEXT,
+            LEAKSHIELD,
+            AQUASTREAM_ULTIMATE,
+            AQUAERO,
+            HIGH_FLOW_USB,
+            POWERADJUST3,
+            AQUASTREAM_XT,
+        )
 
     fun findByProductId(productId: Int): DeviceDescriptor? = ALL.firstOrNull { it.productId == productId }
 
@@ -230,11 +580,92 @@ object DeviceLayoutRegistry {
             ),
         )
 
+    val FARBWERK360_LAYOUTS: List<DeviceLayout> =
+        listOf(
+            DeviceLayout(
+                fwRange = FirmwareRange.ANY,
+                descriptor = DeviceRegistry.FARBWERK360,
+            ),
+        )
+
+    val FARBWERK_LAYOUTS: List<DeviceLayout> =
+        listOf(
+            DeviceLayout(
+                fwRange = FirmwareRange.ANY,
+                descriptor = DeviceRegistry.FARBWERK,
+            ),
+        )
+
+    val HIGH_FLOW_NEXT_LAYOUTS: List<DeviceLayout> =
+        listOf(
+            DeviceLayout(
+                fwRange = FirmwareRange.ANY,
+                descriptor = DeviceRegistry.HIGH_FLOW_NEXT,
+            ),
+        )
+
+    val LEAKSHIELD_LAYOUTS: List<DeviceLayout> =
+        listOf(
+            DeviceLayout(
+                fwRange = FirmwareRange.ANY,
+                descriptor = DeviceRegistry.LEAKSHIELD,
+            ),
+        )
+
+    val AQUASTREAM_ULTIMATE_LAYOUTS: List<DeviceLayout> =
+        listOf(
+            DeviceLayout(
+                fwRange = FirmwareRange.ANY,
+                descriptor = DeviceRegistry.AQUASTREAM_ULTIMATE,
+            ),
+        )
+
+    val AQUAERO_LAYOUTS: List<DeviceLayout> =
+        listOf(
+            DeviceLayout(
+                fwRange = FirmwareRange.ANY,
+                descriptor = DeviceRegistry.AQUAERO,
+            ),
+        )
+
+    val HIGH_FLOW_USB_LAYOUTS: List<DeviceLayout> =
+        listOf(
+            DeviceLayout(
+                fwRange = FirmwareRange.ANY,
+                descriptor = DeviceRegistry.HIGH_FLOW_USB,
+            ),
+        )
+
+    val POWERADJUST3_LAYOUTS: List<DeviceLayout> =
+        listOf(
+            DeviceLayout(
+                fwRange = FirmwareRange.ANY,
+                descriptor = DeviceRegistry.POWERADJUST3,
+            ),
+        )
+
+    val AQUASTREAM_XT_LAYOUTS: List<DeviceLayout> =
+        listOf(
+            DeviceLayout(
+                fwRange = FirmwareRange.ANY,
+                descriptor = DeviceRegistry.AQUASTREAM_XT,
+            ),
+        )
+
     val ALL_LAYOUTS: Map<DeviceType, List<DeviceLayout>> =
         mapOf(
             DeviceType.OCTO to OCTO_LAYOUTS,
             DeviceType.QUADRO to QUADRO_LAYOUTS,
             DeviceType.D5_NEXT to D5_NEXT_LAYOUTS,
+            DeviceType.FARBWERK360 to FARBWERK360_LAYOUTS,
+            DeviceType.FARBWERK to FARBWERK_LAYOUTS,
+            DeviceType.HIGH_FLOW_NEXT to HIGH_FLOW_NEXT_LAYOUTS,
+            DeviceType.LEAKSHIELD to LEAKSHIELD_LAYOUTS,
+            DeviceType.AQUASTREAM_ULTIMATE to AQUASTREAM_ULTIMATE_LAYOUTS,
+            DeviceType.AQUAERO to AQUAERO_LAYOUTS,
+            DeviceType.HIGH_FLOW_USB to HIGH_FLOW_USB_LAYOUTS,
+            DeviceType.POWERADJUST3 to POWERADJUST3_LAYOUTS,
+            DeviceType.AQUASTREAM_XT to AQUASTREAM_XT_LAYOUTS,
         )
 
     fun getLayoutsForType(type: DeviceType): List<DeviceLayout> = ALL_LAYOUTS[type] ?: emptyList()

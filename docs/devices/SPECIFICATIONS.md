@@ -61,12 +61,18 @@ All Aqua Computer modern USB controllers share a common USB vendor and endpoint 
 
 * **USB Vendor ID (VID)**: `0x0C70` (`AQUACOMPUTER_VENDOR_ID`)
 * **Product IDs (PID)**:
-  * **OCTO**: `0xF011`
+  * **AQUAERO 5/6**: `0xF001`
+  * **HIGH FLOW USB / MPS**: `0xF003`
+  * **FARBWERK**: `0xF00A`
+  * **AQUASTREAM ULTIMATE**: `0xF00B`
   * **QUADRO**: `0xF00D`
   * **D5 NEXT**: `0xF00E`
   * **FARBWERK 360**: `0xF010`
+  * **OCTO**: `0xF011`
   * **HIGH FLOW NEXT**: `0xF012`
-  * **LEAKSHIELD**: `0xF013`
+  * **LEAKSHIELD**: `0xF014`
+  * **AQUASTREAM XT**: `0xF0B6`
+  * **POWERADJUST 3**: `0xF0BD`
 
 #### USB Interfaces & Endpoints
 Every physical device enumerates as a USB Composite Device with at least two interfaces:
@@ -561,25 +567,45 @@ Total: 67 bytes (0x43)
 
 ## 7. Device Hardware Matrix & Offset Reference
 
-| Metric / Parameter                 |   Aquacomputer OCTO   |  Aquacomputer QUADRO  |   Aquacomputer D5 NEXT    |
-|------------------------------------|:---------------------:|:---------------------:|:-------------------------:|
-| **USB Product ID (PID)**           |       `0xF011`        |       `0xF00D`        |         `0xF00E`          |
-| **Cooling Channels**               |     8 (PWM Fans)      |     4 (PWM Fans)      |    2 (1 Pump + 1 Fan)     |
-| **Physical Temp Sensors**          |      4 (NTC 10k)      |      4 (NTC 10k)      |     1 (Coolant Probe)     |
-| **Virtual Sensors**                |          16           |          16           |             8             |
-| **Flow Sensor Input**              | Dedicated Port (dL/h) | Dedicated Port (dL/h) |   Virtual / Calculated    |
-| **RGBpx Ports**                    |        2 Ports        |        1 Port         |          1 Port           |
-| **Integrated OLED Display**        |         None          |         None          | 128x64 Graphical Display  |
-| **Status Report Length (`0x01`)**  |  `0x147` (327 bytes)  |  `0xA5` (165 bytes)   |    `0x76` (118 bytes)     |
-| **Control Report Length (`0x03`)** | `0x65F` (1631 bytes)  |  `0x3C1` (961 bytes)  |    `0x329` (809 bytes)    |
-| **Virtual Sensors Report Size**    | **51 Bytes (`0x33`)** | **67 Bytes (`0x43`)** |   **51 Bytes (`0x33`)**   |
-| **Fan Telemetry Stride**           |   `0x0D` (13 bytes)   |   `0x0D` (13 bytes)   |       Fixed offsets       |
-| **Fan Telemetry Base**             |        `0x7D`         |        `0x70`         | Pump: `0x6C`, Fan: `0x5F` |
-| **Fan Control Stride**             |   `0x55` (85 bytes)   |   `0x55` (85 bytes)   |       Fixed offsets       |
-| **Fan Control Base**               |        `0x5A`         |        `0x36`         | Pump: `0x36`, Fan: `0x8B` |
-| **Physical Temp Telemetry Base**   |        `0x3D`         |        `0x34`         |          `0x57`           |
-| **Virtual Temp Telemetry Base**    |        `0x45`         |        `0x3C`         |          `0x3F`           |
-| **Flow Telemetry Offset**          |        `0x7B`         |        `0x6E`         |            N/A            |
-| **Flow Pulses Ctrl Offset**        |        `0x06`         |        `0x06`         |            N/A            |
-| **Temp Sensor Ctrl Offset**        |        `0x0A`         |        `0x0A`         |          `0x2D`           |
-| **Firmware Version Offset**        |        `0x0D`         |        `0x0D`         |          `0x0D`           |
+### 7.1 Primary Fan and Pump Controllers
+
+| Metric / Parameter                 |   Aquacomputer OCTO   |  Aquacomputer QUADRO  |   Aquacomputer D5 NEXT    | Aquacomputer AQUAERO 5/6  | Aquacomputer AQUASTREAM ULT |
+|------------------------------------|:---------------------:|:---------------------:|:-------------------------:|:-------------------------:|:---------------------------:|
+| **USB Product ID (PID)**           |       `0xF011`        |       `0xF00D`        |         `0xF00E`          |         `0xF001`          |          `0xF00B`           |
+| **Cooling Channels**               |     8 (PWM Fans)      |     4 (PWM Fans)      |    2 (1 Pump + 1 Fan)     |       4 (PWM/Volt)        |     2 (1 Pump + 1 Fan)      |
+| **Physical Temp Sensors**          |      4 (NTC 10k)      |      4 (NTC 10k)      |     1 (Coolant Probe)     |        8 (NTC 10k)        |      2 (Coolant + Ext)      |
+| **Virtual Sensors**                |          16           |          16           |             8             |             8             |              0              |
+| **Flow Sensor Input**              | Dedicated Port (dL/h) | Dedicated Port (dL/h) |   Virtual / Calculated    |      2 Ports (dL/h)       |       1 Port (0x37)         |
+| **RGBpx Ports**                    |        2 Ports        |        1 Port         |          1 Port           |           None            |           1 Port            |
+| **Integrated Display**             |         None          |         None          |       128x64 OLED         |     OLED / VFD / LC       |            OLED             |
+| **Status Report Length (`0x01`)**  |  `0x147` (327 bytes)  |  `0xA5` (165 bytes)   |    `0x76` (118 bytes)     |    `0x195` (405 bytes)    |     `0x76` (118 bytes)      |
+| **Control Report Length (`0x03`)** | `0x65F` (1631 bytes)  |  `0x3C1` (961 bytes)  |    `0x329` (809 bytes)    |   `0xA93` (2707 bytes)    |     `0x329` (809 bytes)     |
+| **Virtual Sensors Report Size**    | **51 Bytes (`0x33`)** | **67 Bytes (`0x43`)** |   **51 Bytes (`0x33`)**   |            N/A            |             N/A             |
+| **Fan Telemetry Base**             |        `0x7D`         |        `0x70`         | Pump: `0x6C`, Fan: `0x5F` |          `0x167`          |  Pump: `0x51`, Fan: `0x41`  |
+| **Fan Telemetry Stride**           |   `0x0D` (13 bytes)   |   `0x0D` (13 bytes)   |       Fixed offsets       |     `0x0C` (12 bytes)     |        Fixed offsets        |
+| **Fan Control Base**               |        `0x5A`         |        `0x36`         | Pump: `0x36`, Fan: `0x8B` |          `0x20C`          |  Pump: `0x96`, Fan: `0x41`  |
+| **Fan Control Stride**             |   `0x55` (85 bytes)   |   `0x55` (85 bytes)   |       Fixed offsets       |     `0x14` (20 bytes)     |        Fixed offsets        |
+| **Physical Temp Base**             |        `0x3D`         |        `0x34`         |          `0x57`           |          `0x65`           |           `0x2D`            |
+| **Virtual Temp Base**              |        `0x45`         |        `0x3C`         |          `0x3F`           |          `0x85`           |             N/A             |
+| **Flow Telemetry Offset**          |        `0x7B`         |        `0x6E`         |            N/A            |          `0xF9`           |           `0x37`            |
+| **Firmware Version Offset**        |        `0x0D`         |        `0x0D`         |          `0x0D`           |          `0x0B`           |           `0x0D`            |
+
+---
+
+### 7.2 RGB, Sensors & Accessory Controllers
+
+| Metric / Parameter                 | Farbwerk 360  |   Farbwerk    | High Flow Next |  Leakshield   | High Flow USB / MPS | Poweradjust 3 | Aquastream XT |
+|------------------------------------|:-------------:|:-------------:|:--------------:|:-------------:|:-------------------:|:-------------:|:-------------:|
+| **USB Product ID (PID)**           |   `0xF010`    |   `0xF00A`    |    `0xF012`    |   `0xF014`    |      `0xF003`       |   `0xF0BD`    |   `0xF0B6`    |
+| **Cooling Channels**               |     None      |     None      |      None      |     None      |        None         |    1 (Fan)    |  2 (Pump+Fan) |
+| **Physical Temp Sensors**          |  4 (NTC 10k)  |  4 (NTC 10k)  | 2 (Coolant+Ext)|  2 (Probes)   |     2 (Int+Ext)     |  2 (IC+Ext)   |  3 (IC+Ext+W) |
+| **Virtual Sensors**                |      16       |       0       |       0        |       0       |          0          |       0       |       0       |
+| **Flow Sensor Input**              |     None      |     None      |     `0x51`     |     None      |       `0x23`        |    `0x09`     |     None      |
+| **RGBpx Ports**                    |    4 Ports    |  0 (12V RGB)  |     1 Port     |    1 Port     |        None         |     None      |     None      |
+| **Integrated Display**             |     None      |     None      |      OLED      |     OLED      |        None         |     None      |     None      |
+| **Status Report Length (`0x01`)**  |    `0xB6`     |    `0xB6`     |     `0x6F`     |    `0x140`    |       `0x76`        |    `0x32`     |    `0x42`     |
+| **Control Report Length (`0x03`)** |    `0x682`    |    `0xB6`     |    `0x2AA`     |    `0x33`     |         N/A         |    `0x32`     |    `0x34`     |
+| **Physical Temp Base**             |    `0x32`     |    `0x2F`     |     `0x55`     |     `265`     |       `0x2B`        |    `0x01`     |    `0x0D`     |
+| **Virtual Temp Base**              |    `0x3A`     |      N/A      |      N/A       |      N/A      |         N/A         |      N/A      |      N/A      |
+| **Firmware Version Offset**        |    `0x0D`     |    `0x0D`     |     `0x0D`     |    `0x0D`     |       `0x03`        |    `0x21`     |    `0x32`     |
+| **Serial Number Offset**           |    `0x03`     |    `0x03`     |     `0x03`     |    `0x03`     |       `0x09`        |    `0x27`     |    `0x3A`     |
