@@ -60,7 +60,20 @@ class OpenAquaDeviceEngineApi(
                 try {
                     val reader = process.inputStream.asSource().buffered()
                     while (true) {
-                        val line = reader.readLine() ?: error("Device telemetry stream process closed unexpectedly for device '${deviceId.value}'")
+                        val line =
+                            reader.readLine() ?: run {
+                                val exitCode = if (!process.isAlive) process.exitValue() else null
+                                val stderr =
+                                    process.errorStream
+                                        .bufferedReader()
+                                        .readText()
+                                        .trim()
+                                error(
+                                    "Device telemetry stream process closed unexpectedly for device '${deviceId.value}'" +
+                                        (if (exitCode != null) " (exit code $exitCode)" else "") +
+                                        (if (stderr.isNotBlank()) ": $stderr" else ""),
+                                )
+                            }
                         when (val telemetry = json.decodeFromString<EngineResponse<DeviceTelemetry>>(line)) {
                             is EngineResponse.Error -> error(telemetry.formatWithStackTrace())
                             is EngineResponse.Success<DeviceTelemetry> -> send(telemetry.value)

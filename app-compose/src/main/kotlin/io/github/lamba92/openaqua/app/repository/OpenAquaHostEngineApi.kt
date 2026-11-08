@@ -44,7 +44,20 @@ class OpenAquaHostEngineApi(
                 try {
                     val reader = process.inputStream.asSource().buffered()
                     while (true) {
-                        val line = reader.readLine() ?: error("Host telemetry stream process closed unexpectedly")
+                        val line =
+                            reader.readLine() ?: run {
+                                val exitCode = if (!process.isAlive) process.exitValue() else null
+                                val stderr =
+                                    process.errorStream
+                                        .bufferedReader()
+                                        .readText()
+                                        .trim()
+                                error(
+                                    "Host telemetry stream process closed unexpectedly" +
+                                        (if (exitCode != null) " (exit code $exitCode)" else "") +
+                                        (if (stderr.isNotBlank()) ": $stderr" else ""),
+                                )
+                            }
                         when (val telemetry = json.decodeFromString<EngineResponse<HostTelemetry>>(line)) {
                             is EngineResponse.Error -> error(telemetry.formatWithStackTrace())
                             is EngineResponse.Success<HostTelemetry> -> send(telemetry.value)
