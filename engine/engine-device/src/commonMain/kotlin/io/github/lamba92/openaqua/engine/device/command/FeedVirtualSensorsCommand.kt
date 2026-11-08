@@ -11,7 +11,8 @@ import io.github.lamba92.openaqua.model.device.DeviceType
 import io.github.lamba92.openaqua.model.device.FeedVirtualSensorsRequest
 import io.github.lamba92.openaqua.model.device.descriptor
 import io.github.lamba92.openaqua.model.device.virtualSensorsChannelRange
-import io.github.lamba92.openaqua.model.device.virtualSensorsCount
+import io.github.lamba92.openaqua.model.device.DeviceCapability
+import io.github.lamba92.openaqua.model.device.findCapability
 import io.github.lamba92.openaqua.model.device.virtualSensorsStartChannel
 import kotlinx.serialization.json.Json
 
@@ -28,7 +29,8 @@ class FeedVirtualSensorsCommand(
         val target = controller.requireTarget(device)
         val descriptor = target.descriptor()
 
-        check(descriptor.virtualSensorsCount > 0) {
+        val virtCap = descriptor.findCapability<DeviceCapability.VirtualSensors>()
+        check(virtCap != null && virtCap.count > 0) {
             "${target.name} does not support virtual sensors"
         }
 

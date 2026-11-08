@@ -5,53 +5,71 @@ import io.github.lamba92.openaqua.model.FeatureState.Active
 import io.github.lamba92.openaqua.model.device.CoolingChannelKind
 import io.github.lamba92.openaqua.model.device.CoolingChannelTelemetry
 import io.github.lamba92.openaqua.model.device.DetectedHardwareDevice
+import io.github.lamba92.openaqua.model.device.DeviceCapability
 import io.github.lamba92.openaqua.model.device.DeviceTelemetry
 import io.github.lamba92.openaqua.model.device.SensorChannelKind
 import io.github.lamba92.openaqua.model.device.SensorTelemetry
 import io.github.lamba92.openaqua.model.device.descriptor
-import io.github.lamba92.openaqua.model.device.fanChannels
-import io.github.lamba92.openaqua.model.device.flowSensorOffset
-import io.github.lamba92.openaqua.model.device.hasDisplay
-import io.github.lamba92.openaqua.model.device.hasFlowSensor
-import io.github.lamba92.openaqua.model.device.tempSensors
-import io.github.lamba92.openaqua.model.device.virtualSensorsCount
-import io.github.lamba92.openaqua.model.device.virtualSensorsStartOffset
+import io.github.lamba92.openaqua.model.device.findCapability
 import kotlin.math.round
 
+/**
+ * Parses raw HID status reports (Report ID 0x01 or 0x02 depending on device) into high-level [DeviceTelemetry].
+ */
 object StatusReportParser {
+    /**
+     * Parses the binary status report of a detected device.
+     *
+     * @param device Detected device descriptor holder.
+     * @param report Binary payload of the incoming HID status report.
+     * @return Fully populated [DeviceTelemetry] snapshot.
+     */
     fun parse(
         device: DetectedHardwareDevice,
         report: UByteArray,
     ): DeviceTelemetry {
         val descriptor = device.descriptor()
-        val fans =
-            descriptor.fanChannels.map { fan ->
+        val fans = when (val fansCap = descriptor.findCapability<DeviceCapability.Fans>()) {
+            null -> emptyList()
+            else -> fansCap.channels.map { fan ->
                 parseFan(fan.channel, report, fan.statusOffset, fan.kind)
             }
-        val physicalSensors =
-            descriptor.tempSensors.map { sensor ->
+        }
+        val tempCap = descriptor.findCapability<DeviceCapability.TemperatureSensors>()
+        val physicalSensors = when (tempCap) {
+            null -> emptyList()
+            else -> tempCap.sensors.map { sensor ->
                 parseTemp(sensor.channel, report, sensor.statusOffset, sensor.kind)
             }
-        val virtualSensors =
-            parseVirtualSensors(
-                report = report,
-                startOffset = descriptor.virtualSensorsStartOffset,
-                count = descriptor.virtualSensorsCount,
-                startChannel = descriptor.tempSensors.size,
-            )
-        val flowOffset = descriptor.flowSensorOffset
-        val flowRateDlH =
-            if (descriptor.hasFlowSensor && flowOffset != null) {
-                val flowRaw = readU16Be(report, flowOffset)
-                if (flowRaw in 1..65534) Active(flowRaw) else FeatureState.Disconnected
-            } else {
-                FeatureState.Unsupported
+        }
+        val virtualSensors = when (val virtCap = descriptor.findCapability<DeviceCapability.VirtualSensors>()) {
+            null -> emptyList()
+            else ->
+                parseVirtualSensors(
+                    report = report,
+                    statusOffset = virtCap.statusOffset,
+                    count = virtCap.count,
+                    startChannel = tempCap?.sensors?.size ?: 0,
+                )
+        }
+        val flowRateDlH = when (val flowCap = descriptor.findCapability<DeviceCapability.FlowSensor>()) {
+            is DeviceCapability.FlowSensor -> {
+                when (val flowRaw = readU16Be(report, flowCap.statusOffset)) {
+                    in 1..65534 -> Active(flowRaw)
+                    else -> FeatureState.Disconnected
+                }
             }
+            null -> FeatureState.Unsupported
+        }
+        val display = when (descriptor.findCapability<DeviceCapability.Display>()) {
+            is DeviceCapability.Display -> FeatureState.Disconnected
+            null -> FeatureState.Unsupported
+        }
         return DeviceTelemetry(
             fans = fans,
             sensors = physicalSensors + virtualSensors,
             flowRateDlH = flowRateDlH,
-            display = if (descriptor.hasDisplay) FeatureState.Disconnected else FeatureState.Unsupported,
+            display = display,
         )
     }
 
@@ -132,16 +150,16 @@ object StatusReportParser {
 
     private fun parseVirtualSensors(
         report: UByteArray,
-        startOffset: Int?,
+        statusOffset: Int,
         count: Int,
         startChannel: Int,
     ): List<SensorTelemetry> {
-        if (startOffset == null || count == 0) return emptyList()
+        if (count == 0) return emptyList()
         return (0 until count).map { i ->
             parseTemp(
                 channel = startChannel + i,
                 report = report,
-                offset = startOffset + (i * 2),
+                offset = statusOffset + (i * 2),
                 kind = SensorChannelKind.VIRTUAL,
             )
         }

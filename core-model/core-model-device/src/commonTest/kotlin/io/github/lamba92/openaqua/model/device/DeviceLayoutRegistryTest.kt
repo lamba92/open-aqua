@@ -98,18 +98,18 @@ class DeviceLayoutRegistryTest {
 
     @Test
     fun testFirmwareVersionOffsets() {
-        assertEquals(0x0D, DeviceRegistry.OCTO.firmwareVersionOffset)
-        assertEquals(0x0D, DeviceRegistry.QUADRO.firmwareVersionOffset)
-        assertEquals(0x0D, DeviceRegistry.D5_NEXT.firmwareVersionOffset)
-        assertEquals(0x0D, DeviceRegistry.FARBWERK360.firmwareVersionOffset)
-        assertEquals(0x0D, DeviceRegistry.FARBWERK.firmwareVersionOffset)
-        assertEquals(0x0D, DeviceRegistry.HIGH_FLOW_NEXT.firmwareVersionOffset)
-        assertEquals(0x0D, DeviceRegistry.LEAKSHIELD.firmwareVersionOffset)
-        assertEquals(0x0D, DeviceRegistry.AQUASTREAM_ULTIMATE.firmwareVersionOffset)
-        assertEquals(0x0B, DeviceRegistry.AQUAERO.firmwareVersionOffset)
-        assertEquals(0x03, DeviceRegistry.HIGH_FLOW_USB.firmwareVersionOffset)
-        assertEquals(0x21, DeviceRegistry.POWERADJUST3.firmwareVersionOffset)
-        assertEquals(0x32, DeviceRegistry.AQUASTREAM_XT.firmwareVersionOffset)
+        assertEquals(0x0D, DeviceRegistry.OCTO.protocol.firmwareVersionOffset)
+        assertEquals(0x0D, DeviceRegistry.QUADRO.protocol.firmwareVersionOffset)
+        assertEquals(0x0D, DeviceRegistry.D5_NEXT.protocol.firmwareVersionOffset)
+        assertEquals(0x0D, DeviceRegistry.FARBWERK360.protocol.firmwareVersionOffset)
+        assertEquals(0x0D, DeviceRegistry.FARBWERK.protocol.firmwareVersionOffset)
+        assertEquals(0x0D, DeviceRegistry.HIGH_FLOW_NEXT.protocol.firmwareVersionOffset)
+        assertEquals(0x0D, DeviceRegistry.LEAKSHIELD.protocol.firmwareVersionOffset)
+        assertEquals(0x0D, DeviceRegistry.AQUASTREAM_ULTIMATE.protocol.firmwareVersionOffset)
+        assertEquals(0x0B, DeviceRegistry.AQUAERO.protocol.firmwareVersionOffset)
+        assertEquals(0x03, DeviceRegistry.HIGH_FLOW_USB.protocol.firmwareVersionOffset)
+        assertEquals(0x21, DeviceRegistry.POWERADJUST3.protocol.firmwareVersionOffset)
+        assertEquals(0x32, DeviceRegistry.AQUASTREAM_XT.protocol.firmwareVersionOffset)
     }
 
     @Test
@@ -148,7 +148,6 @@ class DeviceLayoutRegistryTest {
 
         val fansCap = octo.requireCapability<DeviceCapability.Fans>()
         assertEquals(8, fansCap.channels.size)
-        assertEquals(8, octo.fanChannels.size)
 
         val virtualSensorsCap = octo.requireCapability<DeviceCapability.VirtualSensors>()
         assertEquals(16, virtualSensorsCap.count)
@@ -172,8 +171,7 @@ class DeviceLayoutRegistryTest {
 
         for (desc in devicesWithoutFans) {
             assertFalse(desc.hasCapability<DeviceCapability.Fans>(), "${desc.name} should not have Fans capability")
-            assertNull(desc.fanCapability, "${desc.name} fanCapability should be null")
-            assertTrue(desc.fanChannels.isEmpty(), "${desc.name} fanChannels should be empty")
+            assertNull(desc.findCapability<DeviceCapability.Fans>(), "${desc.name} Fans capability should be null")
         }
     }
 
@@ -200,5 +198,20 @@ class DeviceLayoutRegistryTest {
         assertEquals(DisplayKind.LCD, aquaero.requireCapability<DeviceCapability.Display>().kind)
         val aquaeroFlow = aquaero.requireCapability<DeviceCapability.FlowSensor>()
         assertEquals(2, aquaeroFlow.portCount)
+    }
+    @Test
+    fun testCommitStrategies() {
+        assertEquals(CommitStrategy.SecondaryReport(), DeviceRegistry.OCTO.protocol.commitStrategy)
+        assertEquals(CommitStrategy.SecondaryReport(), DeviceRegistry.QUADRO.protocol.commitStrategy)
+        assertEquals(CommitStrategy.SecondaryReport(), DeviceRegistry.D5_NEXT.protocol.commitStrategy)
+        assertEquals(CommitStrategy.SecondaryReport(), DeviceRegistry.FARBWERK360.protocol.commitStrategy)
+        assertEquals(CommitStrategy.SecondaryReport(), DeviceRegistry.FARBWERK.protocol.commitStrategy)
+        assertEquals(CommitStrategy.SecondaryReport(), DeviceRegistry.HIGH_FLOW_NEXT.protocol.commitStrategy)
+        assertEquals(CommitStrategy.SecondaryReport(), DeviceRegistry.LEAKSHIELD.protocol.commitStrategy)
+        assertEquals(CommitStrategy.SecondaryReport(), DeviceRegistry.AQUASTREAM_ULTIMATE.protocol.commitStrategy)
+        assertEquals(CommitStrategy.Direct, DeviceRegistry.AQUAERO.protocol.commitStrategy)
+        assertEquals(CommitStrategy.Direct, DeviceRegistry.POWERADJUST3.protocol.commitStrategy)
+        assertEquals(CommitStrategy.Direct, DeviceRegistry.AQUASTREAM_XT.protocol.commitStrategy)
+        assertEquals(CommitStrategy.None, DeviceRegistry.HIGH_FLOW_USB.protocol.commitStrategy)
     }
 }

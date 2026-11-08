@@ -167,10 +167,7 @@ object WindowsHardwareController : HardwareController {
                         null
                     }
 
-                val fw =
-                    descriptor.firmwareVersionOffset?.let { offset ->
-                        readFirmwareVersion(devicePath, offset)
-                    }
+                val fw = readFirmwareVersion(devicePath, descriptor.protocol.firmwareVersionOffset)
 
                 val id = DeviceId.from("$vid-$pid" + if (serial != null) "-$serial" else "")
 
@@ -206,13 +203,13 @@ object WindowsHardwareController : HardwareController {
 
             try {
                 memScoped {
-                    val reportLen = descriptor.statusReportLength
+                    val reportLen = descriptor.protocol.statusReportLength
                     val buf = allocArray<UByteVar>(512)
                     val bytesRead = alloc<UIntVar>()
 
                     while (currentCoroutineContext().isActive) {
                         val ok = ReadFile(handle, buf, 512u, bytesRead.ptr, null)
-                        if (ok != 0 && bytesRead.value >= reportLen.toUInt() && buf[0].toInt() == HID_STATUS_REPORT_ID) {
+                        if (ok != 0 && bytesRead.value >= reportLen.toUInt() && buf[0].toInt() == descriptor.protocol.statusReportId) {
                             val raw = UByteArray(bytesRead.value.toInt()) { buf[it] }
                             val telemetry = StatusReportParser.parse(device, raw)
                             emit(telemetry)
@@ -231,9 +228,9 @@ object WindowsHardwareController : HardwareController {
                 ?: error("Unsupported device type: ${device.type}")
 
         val node = getScannedNode(device)
-        val report = readFeatureReport(node.devicePath, 0x03u, descriptor.ctrlReportLength)
+        val report = readFeatureReport(node.devicePath, descriptor.protocol.ctrlReportId.toUByte(), descriptor.protocol.ctrlReportLength)
 
-        return ConfigParser.parseConfig(device, descriptor, report)
+        return ConfigParser.parseConfig(descriptor, report)
     }
 
     override fun flashConfig(
@@ -247,17 +244,20 @@ object WindowsHardwareController : HardwareController {
         descriptor.validateRequestMatchesDevice(request)
 
         val node = getScannedNode(device)
-        val report = readFeatureReport(node.devicePath, 0x03u, descriptor.ctrlReportLength)
+        val report = readFeatureReport(node.devicePath, descriptor.protocol.ctrlReportId.toUByte(), descriptor.protocol.ctrlReportLength)
 
-        ConfigWriter.applyFlashConfig(report, descriptor, request)
-        ConfigWriter.finalizeReport(report, descriptor.ctrlReportLength)
-
-        writeFeatureReport(node.devicePath, report)
-        writeOutputReport(node.devicePath, ConfigWriter.SECONDARY_COMMIT_REPORT)
+        val flashReports = ConfigWriter.prepareFlashReports(report, descriptor, request)
+        flashReports.forEachIndexed { index, reportToWrite ->
+            if (index == 0) {
+                writeFeatureReport(node.devicePath, reportToWrite)
+            } else {
+                writeOutputReport(node.devicePath, reportToWrite)
+            }
+        }
         Sleep(250u)
 
-        val readback = readFeatureReport(node.devicePath, 0x03u, descriptor.ctrlReportLength)
-        val readbackReport = ConfigParser.parseConfig(device, descriptor, readback)
+        val readback = readFeatureReport(node.devicePath, descriptor.protocol.ctrlReportId.toUByte(), descriptor.protocol.ctrlReportLength)
+        val readbackReport = ConfigParser.parseConfig(descriptor, readback)
 
         ConfigWriter.verifyFlashConfig(expected = request, actual = readbackReport)
 

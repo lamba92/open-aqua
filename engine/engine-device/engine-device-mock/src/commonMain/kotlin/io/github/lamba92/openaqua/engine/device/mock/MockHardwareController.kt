@@ -26,16 +26,12 @@ import io.github.lamba92.openaqua.model.device.SensorTelemetry
 import io.github.lamba92.openaqua.model.device.TargetTempFanConfig
 import io.github.lamba92.openaqua.model.device.TwoPointFanConfig
 import io.github.lamba92.openaqua.model.device.UnconfiguredFanConfig
+import io.github.lamba92.openaqua.model.device.DeviceCapability
 import io.github.lamba92.openaqua.model.device.descriptor
-import io.github.lamba92.openaqua.model.device.fanChannels
-import io.github.lamba92.openaqua.model.device.flowSensorOffset
-import io.github.lamba92.openaqua.model.device.hasDisplay
-import io.github.lamba92.openaqua.model.device.hasFlowSensor
+import io.github.lamba92.openaqua.model.device.findCapability
 import io.github.lamba92.openaqua.model.device.tempCelsiusOrNull
-import io.github.lamba92.openaqua.model.device.tempSensors
 import io.github.lamba92.openaqua.model.device.validateRequestMatchesDevice
 import io.github.lamba92.openaqua.model.device.virtualSensorsChannelRange
-import io.github.lamba92.openaqua.model.device.virtualSensorsCount
 import io.github.lamba92.openaqua.model.device.withLimits
 import io.github.lamba92.openaqua.model.valueOrNull
 import kotlinx.coroutines.currentCoroutineContext
@@ -140,7 +136,8 @@ class MockHardwareController : HardwareController {
     ) {
         checkDeviceAccessible(device)
         val descriptor = device.descriptor()
-        check(descriptor.virtualSensorsCount > 0) {
+        val virtCap = descriptor.findCapability<DeviceCapability.VirtualSensors>()
+        check(virtCap != null && virtCap.count > 0) {
             "${device.name} does not support virtual sensors"
         }
 
@@ -181,8 +178,10 @@ class MockHardwareController : HardwareController {
         config: DeviceConfig,
         virtualSensorsMap: Map<Int, Double?>,
     ): DeviceTelemetry {
-        val physicalSensors =
-            descriptor.tempSensors.map { sensor ->
+        val tempCap = descriptor.findCapability<DeviceCapability.TemperatureSensors>()
+        val physicalSensors = when (tempCap) {
+            null -> emptyList()
+            else -> tempCap.sensors.map { sensor ->
                 val baseTemp =
                     when (sensor.channel) {
                         0 -> if (sensor.kind == SensorChannelKind.INTEGRATED_COOLANT) 28.5 else 32.5
@@ -199,29 +198,28 @@ class MockHardwareController : HardwareController {
                     kind = sensor.kind,
                 )
             }
+        }
 
-        val virtualSensors =
-            (0 until descriptor.virtualSensorsCount).map { i ->
-                val ch = descriptor.tempSensors.size + i
-                val temp = virtualSensorsMap[ch]
-                if (temp != null) {
-                    SensorTelemetry.Connected(
-                        channel = ch,
-                        tempCelsius = temp,
-                        kind = SensorChannelKind.VIRTUAL,
-                    )
-                } else {
-                    SensorTelemetry.Disconnected(
-                        channel = ch,
-                        kind = SensorChannelKind.VIRTUAL,
-                    )
+        val virtCap = descriptor.findCapability<DeviceCapability.VirtualSensors>()
+        val virtualSensors = when (virtCap) {
+            null -> emptyList()
+            else ->
+                (0 until virtCap.count).map { i ->
+                    val ch = (tempCap?.sensors?.size ?: 0) + i
+                    val temp = virtualSensorsMap[ch]
+                    when (temp) {
+                        null -> SensorTelemetry.Disconnected(channel = ch, kind = SensorChannelKind.VIRTUAL)
+                        else -> SensorTelemetry.Connected(channel = ch, tempCelsius = temp, kind = SensorChannelKind.VIRTUAL)
+                    }
                 }
-            }
+        }
 
         val allSensors = (physicalSensors + virtualSensors).associate { it.channel to it.tempCelsiusOrNull }
 
-        val fans =
-            descriptor.fanChannels.map { fan ->
+        val fansCap = descriptor.findCapability<DeviceCapability.Fans>()
+        val fans = when (fansCap) {
+            null -> emptyList()
+            else -> fansCap.channels.map { fan ->
                 val fanConfig = config.fans.firstOrNull { it.channel == fan.channel }
                 val fanLimits = fanConfig?.limits
                 val (maxRpm, maxAmps) =
@@ -240,31 +238,33 @@ class MockHardwareController : HardwareController {
                     allConfigs = config.fans,
                 )
             }
+        }
 
-        val flowRateDlH =
-            if (descriptor.hasFlowSensor && descriptor.flowSensorOffset != null) {
+        val flowRateDlH = when (descriptor.findCapability<DeviceCapability.FlowSensor>()) {
+            is DeviceCapability.FlowSensor -> {
                 val activeFans = fans.filterIsInstance<CoolingChannelTelemetry.Connected>()
-                if (activeFans.any { it.rpm > 0 }) {
-                    val pwm = activeFans.firstOrNull()?.pwmPercent ?: 50.0
-                    FeatureState.Active(round(60.0 + (pwm / 100.0) * 140.0).toInt())
-                } else {
-                    FeatureState.Disconnected
+                when {
+                    activeFans.any { it.rpm > 0 } -> {
+                        val pwm = activeFans.firstOrNull()?.pwmPercent ?: 50.0
+                        FeatureState.Active(round(60.0 + (pwm / 100.0) * 140.0).toInt())
+                    }
+                    else -> FeatureState.Disconnected
                 }
-            } else {
-                FeatureState.Unsupported
             }
+            null -> FeatureState.Unsupported
+        }
 
-        val display =
-            if (descriptor.hasDisplay) {
+        val display = when (descriptor.findCapability<DeviceCapability.Display>()) {
+            is DeviceCapability.Display -> {
                 FeatureState.Active(
                     DisplayTelemetry(
                         brightnessPercent = config.display.valueOrNull?.brightnessPercent ?: 80,
                         orientationDegrees = config.display.valueOrNull?.orientationDegrees ?: 0,
                     ),
                 )
-            } else {
-                FeatureState.Unsupported
             }
+            null -> FeatureState.Unsupported
+        }
 
         return DeviceTelemetry(
             fans = fans,

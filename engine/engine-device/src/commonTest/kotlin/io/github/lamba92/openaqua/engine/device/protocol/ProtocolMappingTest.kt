@@ -19,11 +19,13 @@ import io.github.lamba92.openaqua.model.device.FlashConfigRequest
 import io.github.lamba92.openaqua.model.device.RgbpxPortConfig
 import io.github.lamba92.openaqua.model.device.TargetTempFanConfig
 import io.github.lamba92.openaqua.model.device.UnconfiguredFanConfig
-import io.github.lamba92.openaqua.model.device.fanChannels
+import io.github.lamba92.openaqua.model.device.FanChannelDescriptor
 import io.github.lamba92.openaqua.model.device.findFanCapability
+import io.github.lamba92.openaqua.model.device.hardwareToLogicalSensorIndex
+import io.github.lamba92.openaqua.model.device.logicalToHardwareSensorIndex
+import io.github.lamba92.openaqua.model.device.requireCapability
 import io.github.lamba92.openaqua.model.device.validateRequestMatchesDevice
 import io.github.lamba92.openaqua.model.device.virtualSensorsChannelRange
-import io.github.lamba92.openaqua.model.device.virtualSensorsReportSize
 import io.github.lamba92.openaqua.model.device.virtualSensorsStartChannel
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -35,7 +37,7 @@ class ProtocolMappingTest {
     @Test
     fun testOctoVirtualSensorsReportLayoutAndCrc() {
         val octo = DeviceRegistry.OCTO
-        assertEquals(51, octo.virtualSensorsReportSize)
+        assertEquals(51, octo.requireCapability<DeviceCapability.VirtualSensors>().reportSize)
 
         val temperatures =
             mapOf(
@@ -71,7 +73,7 @@ class ProtocolMappingTest {
     @Test
     fun testQuadroVirtualSensorsReportLayout() {
         val quadro = DeviceRegistry.QUADRO
-        assertEquals(67, quadro.virtualSensorsReportSize)
+        assertEquals(67, quadro.requireCapability<DeviceCapability.VirtualSensors>().reportSize)
 
         val report = VirtualSensorsWriter.buildReport(quadro, mapOf(0 to 25.0))
         assertEquals(67, report.size)
@@ -91,7 +93,7 @@ class ProtocolMappingTest {
     @Test
     fun testFanSensorHardwareIndexMappingForOcto() {
         val octo = DeviceRegistry.OCTO
-        val report = UByteArray(octo.ctrlReportLength)
+        val report = UByteArray(octo.protocol.ctrlReportLength)
         val baseOffset = 0x5A // Fan 1 ctrl offset
 
         // 1. Physical sensor 0 (Sensor 1) -> hw index 0
@@ -162,7 +164,7 @@ class ProtocolMappingTest {
     @Test
     fun testFanLimitsEncodeAndParse() {
         val octo = DeviceRegistry.OCTO
-        val report = UByteArray(octo.ctrlReportLength)
+        val report = UByteArray(octo.protocol.ctrlReportLength)
         val setupOffset = 0x12 // Fan 1 setup offset
 
         val limits =
@@ -199,7 +201,7 @@ class ProtocolMappingTest {
     @Test
     fun testApplyAndVerifyFlashConfigWithFanLimits() {
         val octo = DeviceRegistry.OCTO
-        val report = UByteArray(octo.ctrlReportLength)
+        val report = UByteArray(octo.protocol.ctrlReportLength)
 
         val limits =
             FanLimits(
@@ -215,13 +217,6 @@ class ProtocolMappingTest {
 
         val parsedConfig =
             ConfigParser.parseConfig(
-                device =
-                    DetectedHardwareDevice(
-                        id = DeviceId.from("test"),
-                        alias = DeviceAlias.from("test"),
-                        type = DeviceType.OCTO,
-                        name = octo.name,
-                    ),
                 descriptor = octo,
                 report = report,
             )
@@ -357,60 +352,57 @@ class ProtocolMappingTest {
     }
 
     @Test
-    fun testParseConfigFailsWhenFanLacksSetupOffset() {
+    fun testParseConfigWithBasicFanUsesStandardLimits() {
         val octo = DeviceRegistry.OCTO
-        val badDescriptor =
+        val basicDescriptor =
             octo.copy(
                 capabilities =
                     octo.capabilities.map { cap ->
-                        if (cap is DeviceCapability.Fans) {
-                            cap.copy(
-                                channels =
-                                    cap.channels.map {
-                                        if (it.channel == 0) it.copy(setupOffset = null) else it
-                                    },
-                            )
-                        } else {
-                            cap
+                        when (cap) {
+                            is DeviceCapability.Fans -> {
+                                cap.copy(
+                                    channels =
+                                        cap.channels.map {
+                                            when (it.channel) {
+                                                0 -> FanChannelDescriptor.Basic(it.channel, it.ctrlOffset, it.statusOffset)
+                                                else -> it
+                                            }
+                                        },
+                                )
+                            }
+                            else -> cap
                         }
                     },
             )
-        val report = UByteArray(badDescriptor.ctrlReportLength)
-        val device =
-            DetectedHardwareDevice(
-                id = DeviceId.from("test"),
-                alias = DeviceAlias.from("test"),
-                type = DeviceType.OCTO,
-                name = badDescriptor.name,
-            )
-
-        val ex =
-            assertFailsWith<IllegalStateException> {
-                ConfigParser.parseConfig(device, badDescriptor, report)
-            }
-        assertEquals("Fan channel 0 on Aquacomputer OCTO lacks setupOffset for required limits", ex.message)
+        val report = UByteArray(basicDescriptor.protocol.ctrlReportLength)
+        val config = ConfigParser.parseConfig(basicDescriptor, report)
+        assertEquals(FanLimits.Standard, config.fans.first { it.channel == 0 }.limits)
     }
 
     @Test
-    fun testApplyFlashConfigFailsWhenFanLacksSetupOffset() {
+    fun testApplyFlashConfigFailsWhenFanLacksLimits() {
         val octo = DeviceRegistry.OCTO
-        val badDescriptor =
+        val basicDescriptor =
             octo.copy(
                 capabilities =
                     octo.capabilities.map { cap ->
-                        if (cap is DeviceCapability.Fans) {
-                            cap.copy(
-                                channels =
-                                    cap.channels.map {
-                                        if (it.channel == 0) it.copy(setupOffset = null) else it
-                                    },
-                            )
-                        } else {
-                            cap
+                        when (cap) {
+                            is DeviceCapability.Fans -> {
+                                cap.copy(
+                                    channels =
+                                        cap.channels.map {
+                                            when (it.channel) {
+                                                0 -> FanChannelDescriptor.Basic(it.channel, it.ctrlOffset, it.statusOffset)
+                                                else -> it
+                                            }
+                                        },
+                                )
+                            }
+                            else -> cap
                         }
                     },
             )
-        val report = UByteArray(badDescriptor.ctrlReportLength)
+        val report = UByteArray(basicDescriptor.protocol.ctrlReportLength)
         val request =
             FlashConfigRequest(
                 fans = mapOf(0 to FixedFanConfig(channel = 0, powerPercent = 50.0)),
@@ -418,7 +410,7 @@ class ProtocolMappingTest {
 
         val ex =
             assertFailsWith<IllegalArgumentException> {
-                ConfigWriter.applyFlashConfig(report, badDescriptor, request)
+                ConfigWriter.applyFlashConfig(report, basicDescriptor, request)
             }
         assertEquals("Fan channel 0 does not support fan limits on Aquacomputer OCTO", ex.message)
     }
@@ -460,8 +452,9 @@ class ProtocolMappingTest {
     @Test
     fun testD5NextChannelOffsets() {
         val d5Next = DeviceRegistry.D5_NEXT
-        val pump = d5Next.fanChannels.first { it.channel == 0 }
-        val fan = d5Next.fanChannels.first { it.channel == 1 }
+        val channels = d5Next.requireCapability<DeviceCapability.Fans>().channels
+        val pump = assertIs<FanChannelDescriptor.WithLimits>(channels.first { it.channel == 0 })
+        val fan = assertIs<FanChannelDescriptor.WithLimits>(channels.first { it.channel == 1 })
 
         assertEquals(0x96, pump.ctrlOffset)
         assertEquals(0x38, pump.setupOffset)
@@ -493,7 +486,7 @@ class ProtocolMappingTest {
     @Test
     fun testQuadroFollowFanModeEncodingAndParsing() {
         val quadro = DeviceRegistry.QUADRO
-        val report = UByteArray(quadro.ctrlReportLength)
+        val report = UByteArray(quadro.protocol.ctrlReportLength)
         val baseOffset = 0x36 // Fan 0 ctrl offset on QUADRO
 
         // Issue #8: Fan 0 follows Fan 1 -> mode 0x03 + 1 = 0x04
@@ -530,7 +523,7 @@ class ProtocolMappingTest {
     @Test
     fun testOctoFollowFanModeEncodingAndParsing() {
         val octo = DeviceRegistry.OCTO
-        val report = UByteArray(octo.ctrlReportLength)
+        val report = UByteArray(octo.protocol.ctrlReportLength)
         val baseOffset = 0x36
 
         // OCTO supports channels 0..7, so follow mode goes up to 0x03 + 7 = 0x0A
@@ -547,7 +540,7 @@ class ProtocolMappingTest {
     @Test
     fun testUnsupportedOrUnknownModeFallback() {
         val quadro = DeviceRegistry.QUADRO
-        val report = UByteArray(quadro.ctrlReportLength)
+        val report = UByteArray(quadro.protocol.ctrlReportLength)
         val baseOffset = 0x36
 
         // 0x48 (TwoPoint mode) is not supported on QUADRO (only on Aquaero)
@@ -555,5 +548,53 @@ class ProtocolMappingTest {
         val parsed = ConfigParser.parseFanChannelConfig(report, baseOffset, channel = 0, descriptor = quadro)
         assertIs<UnconfiguredFanConfig>(parsed)
         assertEquals(0x48, parsed.rawMode)
+    }
+
+    @Test
+    fun testSensorIndexHardwareMapping() {
+        val octo = DeviceRegistry.OCTO
+        // Physical sensors 0..3 map 1:1
+        assertEquals(0, octo.logicalToHardwareSensorIndex(0))
+        assertEquals(3, octo.logicalToHardwareSensorIndex(3))
+        assertEquals(0, octo.hardwareToLogicalSensorIndex(0))
+        assertEquals(3, octo.hardwareToLogicalSensorIndex(3))
+
+        // Hardware slot 4 is Flow sensor -> null logical
+        assertEquals(null, octo.hardwareToLogicalSensorIndex(4))
+
+        // Virtual sensors (logical 4..19) map to hardware 5..20
+        assertEquals(5, octo.logicalToHardwareSensorIndex(4))
+        assertEquals(20, octo.logicalToHardwareSensorIndex(19))
+        assertEquals(4, octo.hardwareToLogicalSensorIndex(5))
+        assertEquals(19, octo.hardwareToLogicalSensorIndex(20))
+
+        // Device without hwSensorSlot (e.g. AQUAERO) maps 1:1
+        val aquaero = DeviceRegistry.AQUAERO
+        assertEquals(4, aquaero.logicalToHardwareSensorIndex(4))
+        assertEquals(4, aquaero.hardwareToLogicalSensorIndex(4))
+    }
+    @Test
+    fun testPrepareFlashReportsSequencing() {
+        val octo = DeviceRegistry.OCTO
+        val report = UByteArray(octo.protocol.ctrlReportLength)
+        val request = FlashConfigRequest(flowPulsesPerLiter = 450)
+
+        val octoReports = ConfigWriter.prepareFlashReports(report, octo, request)
+        assertEquals(2, octoReports.size)
+        assertEquals(octo.protocol.ctrlReportLength, octoReports[0].size)
+        assertEquals(11, octoReports[1].size)
+        assertEquals(ConfigWriter.SECONDARY_COMMIT_REPORT.toList(), octoReports[1].toList())
+
+        val aquaero = DeviceRegistry.AQUAERO
+        val aquaeroReport = UByteArray(aquaero.protocol.ctrlReportLength)
+        val aquaeroReports = ConfigWriter.prepareFlashReports(aquaeroReport, aquaero, FlashConfigRequest())
+        assertEquals(1, aquaeroReports.size)
+        assertEquals(aquaero.protocol.ctrlReportLength, aquaeroReports[0].size)
+
+        val highFlowUsb = DeviceRegistry.HIGH_FLOW_USB
+        val hfReport = UByteArray(highFlowUsb.protocol.ctrlReportLength)
+        assertFailsWith<IllegalStateException> {
+            ConfigWriter.prepareFlashReports(hfReport, highFlowUsb, FlashConfigRequest())
+        }
     }
 }

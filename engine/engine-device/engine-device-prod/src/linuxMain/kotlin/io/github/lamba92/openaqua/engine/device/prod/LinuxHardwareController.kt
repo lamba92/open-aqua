@@ -19,7 +19,8 @@ import io.github.lamba92.openaqua.model.device.DeviceTelemetry
 import io.github.lamba92.openaqua.model.device.FlashConfigRequest
 import io.github.lamba92.openaqua.model.device.descriptor
 import io.github.lamba92.openaqua.model.device.validateRequestMatchesDevice
-import io.github.lamba92.openaqua.model.device.virtualSensorsCount
+import io.github.lamba92.openaqua.model.device.DeviceCapability
+import io.github.lamba92.openaqua.model.device.findCapability
 import kotlinx.cinterop.COpaquePointerVar
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.UByteVar
@@ -126,9 +127,7 @@ object LinuxHardwareController : HardwareController {
                 val typePrefix = type.name.lowercase().replace('_', '-')
                 nodes.mapIndexed { index, node ->
                     val fwVersion =
-                        node.descriptor.firmwareVersionOffset?.let { offset ->
-                            readFirmwareVersion(node.hidrawPath, offset)
-                        }
+                        readFirmwareVersion(node.hidrawPath, node.descriptor.protocol.firmwareVersionOffset)
                     DetectedHardwareDevice(
                         id = node.id,
                         alias = DeviceAlias.from("$typePrefix-${index + 1}"),
@@ -161,7 +160,7 @@ object LinuxHardwareController : HardwareController {
                         val pollRet = poll(pfd.ptr, 1u, DEFAULT_HID_REPORT_TIMEOUT_MS)
                         if (pollRet > 0) {
                             val bytesRead = read(fd, buf, bufSize.toULong())
-                            if (bytesRead >= descriptor.statusReportLength.toLong() && buf[0].toInt() == HID_STATUS_REPORT_ID) {
+                            if (bytesRead >= descriptor.protocol.statusReportLength.toLong() && buf[0].toInt() == descriptor.protocol.statusReportId) {
                                 val report = UByteArray(bytesRead.toInt()) { buf[it] }
                                 val telemetry = StatusReportParser.parse(device, report)
                                 emit(telemetry)
@@ -180,9 +179,9 @@ object LinuxHardwareController : HardwareController {
                 ?: error("Unsupported device type: ${device.type}")
 
         val node = getScannedNode(device)
-        val report = readFeatureReport(node.hidrawPath, 0x03u, descriptor.ctrlReportLength)
+        val report = readFeatureReport(node.hidrawPath, descriptor.protocol.ctrlReportId.toUByte(), descriptor.protocol.ctrlReportLength)
 
-        return ConfigParser.parseConfig(device, descriptor, report)
+        return ConfigParser.parseConfig(descriptor, report)
     }
 
     override fun flashConfig(
@@ -196,17 +195,16 @@ object LinuxHardwareController : HardwareController {
         descriptor.validateRequestMatchesDevice(request)
 
         val node = getScannedNode(device)
-        val report = readFeatureReport(node.hidrawPath, 0x03u, descriptor.ctrlReportLength)
+        val report = readFeatureReport(node.hidrawPath, descriptor.protocol.ctrlReportId.toUByte(), descriptor.protocol.ctrlReportLength)
 
-        ConfigWriter.applyFlashConfig(report, descriptor, request)
-        ConfigWriter.finalizeReport(report, descriptor.ctrlReportLength)
-
-        writeFeatureReport(node.hidrawPath, report)
-        writeFeatureReport(node.hidrawPath, ConfigWriter.SECONDARY_COMMIT_REPORT)
+        val flashReports = ConfigWriter.prepareFlashReports(report, descriptor, request)
+        flashReports.forEach { reportToWrite ->
+            writeFeatureReport(node.hidrawPath, reportToWrite)
+        }
         usleep(250_000u)
 
-        val readback = readFeatureReport(node.hidrawPath, 0x03u, descriptor.ctrlReportLength)
-        val readbackReport = ConfigParser.parseConfig(device, descriptor, readback)
+        val readback = readFeatureReport(node.hidrawPath, descriptor.protocol.ctrlReportId.toUByte(), descriptor.protocol.ctrlReportLength)
+        val readbackReport = ConfigParser.parseConfig(descriptor, readback)
 
         ConfigWriter.verifyFlashConfig(expected = request, actual = readbackReport)
 
@@ -221,7 +219,8 @@ object LinuxHardwareController : HardwareController {
             DeviceRegistry.ALL.firstOrNull { it.type == device.type }
                 ?: error("Unsupported device type: ${device.type}")
 
-        check(descriptor.virtualSensorsCount > 0) {
+        val virtCap = descriptor.findCapability<DeviceCapability.VirtualSensors>()
+        check(virtCap != null && virtCap.count > 0) {
             "${device.name} does not support virtual sensors"
         }
 
