@@ -161,17 +161,17 @@ object DeviceRegistry {
                 listOf(
                     FanChannelDescriptor(
                         channel = 0,
-                        ctrlOffset = 0x36,
+                        ctrlOffset = 0x96,
                         statusOffset = 0x6C,
                         kind = CoolingChannelKind.PUMP,
-                        setupOffset = 0x12,
+                        setupOffset = 0x38,
                     ),
                     FanChannelDescriptor(
                         channel = 1,
-                        ctrlOffset = 0x8B,
+                        ctrlOffset = 0x41,
                         statusOffset = 0x5F,
                         kind = CoolingChannelKind.FAN,
-                        setupOffset = 0x1B,
+                        setupOffset = 0x2F,
                     ),
                 ),
             tempSensors =
