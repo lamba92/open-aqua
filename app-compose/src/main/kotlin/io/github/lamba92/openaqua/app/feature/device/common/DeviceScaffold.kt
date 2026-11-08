@@ -39,6 +39,10 @@ import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
 import io.github.lamba92.openaqua.app.ui.components.FeederStatus
 import io.github.lamba92.openaqua.app.ui.components.FeederStatusBadge
 import io.github.lamba92.openaqua.model.device.DetectedHardwareDevice
+import io.github.lamba92.openaqua.model.device.DeviceCapability
+import io.github.lamba92.openaqua.model.device.DeviceDescriptor
+import io.github.lamba92.openaqua.model.device.DeviceRegistry
+import io.github.lamba92.openaqua.model.device.hasCapability
 import open_aqua.app_compose.generated.resources.Res
 import open_aqua.app_compose.generated.resources.device_error_generic
 import open_aqua.app_compose.generated.resources.device_error_io
@@ -62,6 +66,7 @@ private val DrawerLineHeightStyle =
 @Composable
 fun DeviceDrawerScaffold(
     device: DetectedHardwareDevice,
+    descriptor: DeviceDescriptor,
     selectedTab: CommonDeviceTab,
     onSelectTab: (CommonDeviceTab) -> Unit,
     modifier: Modifier = Modifier,
@@ -134,27 +139,39 @@ fun DeviceDrawerScaffold(
                         colors = drawerColors,
                     )
 
-                    DeviceDrawerTabItem(
-                        label = stringResource(Res.string.nav_fans),
-                        icon = painterResource(Res.drawable.ic_fan),
-                        selected = selectedTab == CommonDeviceTab.FANS,
-                        onClick = { onSelectTab(CommonDeviceTab.FANS) },
-                        colors = drawerColors,
-                    )
+                    if (descriptor.hasCapability<DeviceCapability.Fans>()) {
+                        DeviceDrawerTabItem(
+                            label = stringResource(Res.string.nav_fans),
+                            icon = painterResource(Res.drawable.ic_fan),
+                            selected = selectedTab == CommonDeviceTab.FANS,
+                            onClick = { onSelectTab(CommonDeviceTab.FANS) },
+                            colors = drawerColors,
+                        )
+                    }
 
-                    DeviceDrawerTabItem(
-                        label = stringResource(Res.string.nav_sensors),
-                        icon = painterResource(Res.drawable.ic_sensor),
-                        selected = selectedTab == CommonDeviceTab.SENSORS,
-                        onClick = { onSelectTab(CommonDeviceTab.SENSORS) },
-                        colors = drawerColors,
-                        badge =
-                            if (feederStatus != FeederStatus.NONE) {
-                                { FeederStatusBadge(status = feederStatus) }
-                            } else {
-                                null
-                            },
-                    )
+                    if (
+                        descriptor.hasCapability<DeviceCapability.TemperatureSensors>() ||
+                        descriptor.hasCapability<DeviceCapability.VirtualSensors>() ||
+                        descriptor.hasCapability<DeviceCapability.FlowSensor>()
+                    ) {
+                        DeviceDrawerTabItem(
+                            label = stringResource(Res.string.nav_sensors),
+                            icon = painterResource(Res.drawable.ic_sensor),
+                            selected = selectedTab == CommonDeviceTab.SENSORS,
+                            onClick = { onSelectTab(CommonDeviceTab.SENSORS) },
+                            colors = drawerColors,
+                            badge =
+                                when {
+                                    feederStatus != FeederStatus.NONE -> {
+                                        { FeederStatusBadge(status = feederStatus) }
+                                    }
+
+                                    else -> {
+                                        null
+                                    }
+                                },
+                        )
+                    }
                 }
             }
         },

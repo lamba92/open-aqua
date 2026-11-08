@@ -5,6 +5,7 @@ import io.github.lamba92.openaqua.model.device.CurveFanConfig
 import io.github.lamba92.openaqua.model.device.CurvePoint
 import io.github.lamba92.openaqua.model.device.DetectedHardwareDevice
 import io.github.lamba92.openaqua.model.device.DeviceAlias
+import io.github.lamba92.openaqua.model.device.DeviceCapability
 import io.github.lamba92.openaqua.model.device.DeviceConfig
 import io.github.lamba92.openaqua.model.device.DeviceId
 import io.github.lamba92.openaqua.model.device.DeviceRegistry
@@ -16,8 +17,10 @@ import io.github.lamba92.openaqua.model.device.FlashConfigRequest
 import io.github.lamba92.openaqua.model.device.RgbpxPortConfig
 import io.github.lamba92.openaqua.model.device.TargetTempFanConfig
 import io.github.lamba92.openaqua.model.device.UnconfiguredFanConfig
+import io.github.lamba92.openaqua.model.device.fanChannels
 import io.github.lamba92.openaqua.model.device.validateRequestMatchesDevice
 import io.github.lamba92.openaqua.model.device.virtualSensorsChannelRange
+import io.github.lamba92.openaqua.model.device.virtualSensorsReportSize
 import io.github.lamba92.openaqua.model.device.virtualSensorsStartChannel
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -354,9 +357,18 @@ class ProtocolMappingTest {
         val octo = DeviceRegistry.OCTO
         val badDescriptor =
             octo.copy(
-                fanChannels =
-                    octo.fanChannels.map {
-                        if (it.channel == 0) it.copy(setupOffset = null) else it
+                capabilities =
+                    octo.capabilities.map { cap ->
+                        if (cap is DeviceCapability.Fans) {
+                            cap.copy(
+                                channels =
+                                    cap.channels.map {
+                                        if (it.channel == 0) it.copy(setupOffset = null) else it
+                                    },
+                            )
+                        } else {
+                            cap
+                        }
                     },
             )
         val report = UByteArray(badDescriptor.ctrlReportLength)
@@ -380,9 +392,18 @@ class ProtocolMappingTest {
         val octo = DeviceRegistry.OCTO
         val badDescriptor =
             octo.copy(
-                fanChannels =
-                    octo.fanChannels.map {
-                        if (it.channel == 0) it.copy(setupOffset = null) else it
+                capabilities =
+                    octo.capabilities.map { cap ->
+                        if (cap is DeviceCapability.Fans) {
+                            cap.copy(
+                                channels =
+                                    cap.channels.map {
+                                        if (it.channel == 0) it.copy(setupOffset = null) else it
+                                    },
+                            )
+                        } else {
+                            cap
+                        }
                     },
             )
         val report = UByteArray(badDescriptor.ctrlReportLength)

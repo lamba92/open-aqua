@@ -16,6 +16,14 @@ import io.github.lamba92.openaqua.model.device.SensorOffset
 import io.github.lamba92.openaqua.model.device.TargetTempFanConfig
 import io.github.lamba92.openaqua.model.device.TwoPointFanConfig
 import io.github.lamba92.openaqua.model.device.UnconfiguredFanConfig
+import io.github.lamba92.openaqua.model.device.fanChannels
+import io.github.lamba92.openaqua.model.device.flowPulsesCtrlOffset
+import io.github.lamba92.openaqua.model.device.hasDisplay
+import io.github.lamba92.openaqua.model.device.hasFlowSensor
+import io.github.lamba92.openaqua.model.device.rgbpxPortCount
+import io.github.lamba92.openaqua.model.device.tempCtrlOffset
+import io.github.lamba92.openaqua.model.device.tempSensors
+import io.github.lamba92.openaqua.model.device.virtualSensorsCount
 import kotlin.math.round
 
 object ConfigParser {

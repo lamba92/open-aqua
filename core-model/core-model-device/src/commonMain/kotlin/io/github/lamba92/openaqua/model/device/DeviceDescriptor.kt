@@ -19,6 +19,12 @@ enum class DeviceType {
 }
 
 @Serializable
+enum class DisplayKind {
+    OLED,
+    LCD,
+}
+
+@Serializable
 data class FanChannelDescriptor(
     val channel: Int,
     val ctrlOffset: Int,
@@ -36,26 +42,154 @@ data class SensorDescriptor(
 )
 
 @Serializable
+sealed interface DeviceCapability {
+    @Serializable
+    data class Fans(
+        val channels: List<FanChannelDescriptor>,
+    ) : DeviceCapability
+
+    @Serializable
+    data class TemperatureSensors(
+        val sensors: List<SensorDescriptor>,
+        val ctrlOffset: Int? = null,
+    ) : DeviceCapability
+
+    @Serializable
+    data class VirtualSensors(
+        val count: Int,
+        val startOffset: Int? = null,
+        val reportSize: Int = 0x43,
+    ) : DeviceCapability
+
+    @Serializable
+    data class FlowSensor(
+        val statusOffset: Int? = null,
+        val pulsesCtrlOffset: Int? = null,
+        val portCount: Int = 1,
+    ) : DeviceCapability
+
+    @Serializable
+    data class Display(
+        val kind: DisplayKind = DisplayKind.OLED,
+        val ctrlOffset: Int? = null,
+    ) : DeviceCapability
+
+    @Serializable
+    sealed interface Lighting : DeviceCapability {
+        @Serializable
+        data class Rgbpx(
+            val portCount: Int,
+            val maxLedsPerPort: Int = 90,
+            val ctrlOffset: Int? = null,
+        ) : Lighting
+
+        @Serializable
+        data class ClassicAnalogRgb(
+            val channelCount: Int = 4,
+            val resolutionBits: Int = 13,
+            val voltage: Int = 12,
+        ) : Lighting
+    }
+
+    @Serializable
+    data class CoolantQuality(
+        val conductivityOffset: Int? = null,
+        val qualityPercentOffset: Int? = null,
+    ) : DeviceCapability
+
+    @Serializable
+    data class Pressure(
+        val pressureOffset: Int? = null,
+        val targetPressureOffset: Int? = null,
+        val pumpCyclesOffset: Int? = null,
+    ) : DeviceCapability
+}
+
+@Serializable
 data class DeviceDescriptor(
     val type: DeviceType,
     val name: String,
     val productId: Int,
     val ctrlReportLength: Int,
     val statusReportLength: Int,
-    val fanChannels: List<FanChannelDescriptor> = emptyList(),
-    val tempSensors: List<SensorDescriptor> = emptyList(),
-    val tempCtrlOffset: Int? = null,
     val firmwareVersionOffset: Int? = 0x0D,
-    val hasFlowSensor: Boolean = false,
-    val flowSensorOffset: Int? = null,
-    val flowPulsesCtrlOffset: Int? = null,
-    val hasDisplay: Boolean = false,
-    val hasRgbpx: Boolean = false,
-    val rgbpxPortCount: Int = 0,
-    val virtualSensorsCount: Int = 0,
-    val virtualSensorsStartOffset: Int? = null,
-    val virtualSensorsReportSize: Int = 0x43,
+    val capabilities: List<DeviceCapability> = emptyList(),
 )
+
+inline fun <reified T : DeviceCapability> DeviceDescriptor.findCapability(): T? = capabilities.filterIsInstance<T>().firstOrNull()
+
+inline fun <reified T : DeviceCapability> DeviceDescriptor.hasCapability(): Boolean = findCapability<T>() != null
+
+inline fun <reified T : DeviceCapability> DeviceDescriptor.requireCapability(): T =
+    findCapability<T>() ?: error("Device $name ($type) does not have capability ${T::class.simpleName}")
+
+inline fun <reified T : DeviceCapability> DeviceDescriptor.findCapabilities(): List<T> = capabilities.filterIsInstance<T>()
+
+val DeviceDescriptor.fanCapability: DeviceCapability.Fans?
+    get() = findCapability()
+
+val DeviceDescriptor.fanChannels: List<FanChannelDescriptor>
+    get() = fanCapability?.channels ?: emptyList()
+
+val DeviceDescriptor.tempSensorsCapability: DeviceCapability.TemperatureSensors?
+    get() = findCapability()
+
+val DeviceDescriptor.tempSensors: List<SensorDescriptor>
+    get() = tempSensorsCapability?.sensors ?: emptyList()
+
+val DeviceDescriptor.tempCtrlOffset: Int?
+    get() = tempSensorsCapability?.ctrlOffset
+
+val DeviceDescriptor.virtualSensorsCapability: DeviceCapability.VirtualSensors?
+    get() = findCapability()
+
+val DeviceDescriptor.virtualSensorsCount: Int
+    get() = virtualSensorsCapability?.count ?: 0
+
+val DeviceDescriptor.virtualSensorsStartOffset: Int?
+    get() = virtualSensorsCapability?.startOffset
+
+val DeviceDescriptor.virtualSensorsReportSize: Int
+    get() = virtualSensorsCapability?.reportSize ?: 0x43
+
+val DeviceDescriptor.flowSensorCapability: DeviceCapability.FlowSensor?
+    get() = findCapability()
+
+val DeviceDescriptor.hasFlowSensor: Boolean
+    get() = flowSensorCapability != null
+
+val DeviceDescriptor.flowSensorOffset: Int?
+    get() = flowSensorCapability?.statusOffset
+
+val DeviceDescriptor.flowPulsesCtrlOffset: Int?
+    get() = flowSensorCapability?.pulsesCtrlOffset
+
+val DeviceDescriptor.displayCapability: DeviceCapability.Display?
+    get() = findCapability()
+
+val DeviceDescriptor.hasDisplay: Boolean
+    get() = displayCapability != null
+
+val DeviceDescriptor.rgbpxCapability: DeviceCapability.Lighting.Rgbpx?
+    get() = findCapability()
+
+val DeviceDescriptor.hasRgbpx: Boolean
+    get() = rgbpxCapability != null
+
+val DeviceDescriptor.rgbpxPortCount: Int
+    get() = rgbpxCapability?.portCount ?: 0
+
+val DeviceDescriptor.classicAnalogRgbCapability: DeviceCapability.Lighting.ClassicAnalogRgb?
+    get() = findCapability()
+
+val DeviceDescriptor.hasClassicAnalogRgb: Boolean
+    get() = classicAnalogRgbCapability != null
+
+val DeviceDescriptor.coolantQualityCapability: DeviceCapability.CoolantQuality?
+    get() = findCapability()
+
+val DeviceDescriptor.pressureCapability: DeviceCapability.Pressure?
+    get() = findCapability()
 
 @Serializable
 data class FirmwareRange(
@@ -89,36 +223,48 @@ object DeviceRegistry {
             productId = 0xF011,
             ctrlReportLength = 0x65F,
             statusReportLength = 0x147,
-            fanChannels =
-                (0..7).map {
-                    FanChannelDescriptor(
-                        channel = it,
-                        ctrlOffset = 0x5A + (it * 0x55),
-                        statusOffset = 0x7D + (it * 0x0D),
-                        kind = CoolingChannelKind.FAN,
-                        setupOffset = 0x12 + (it * 0x09),
-                    )
-                },
-            tempSensors =
-                (0..3).map {
-                    SensorDescriptor(
-                        channel = it,
-                        hwmonIndex = it + 1,
-                        statusOffset = 0x3D + (it * 2),
-                        kind = SensorChannelKind.PHYSICAL_NTC,
-                    )
-                },
-            tempCtrlOffset = 0x0A,
             firmwareVersionOffset = 0x0D,
-            hasFlowSensor = true,
-            flowSensorOffset = 0x7B,
-            flowPulsesCtrlOffset = 0x06,
-            hasDisplay = false,
-            hasRgbpx = true,
-            rgbpxPortCount = 2,
-            virtualSensorsCount = 16,
-            virtualSensorsStartOffset = 0x45,
-            virtualSensorsReportSize = 0x33,
+            capabilities =
+                listOf(
+                    DeviceCapability.Fans(
+                        channels =
+                            (0..7).map {
+                                FanChannelDescriptor(
+                                    channel = it,
+                                    ctrlOffset = 0x5A + (it * 0x55),
+                                    statusOffset = 0x7D + (it * 0x0D),
+                                    kind = CoolingChannelKind.FAN,
+                                    setupOffset = 0x12 + (it * 0x09),
+                                )
+                            },
+                    ),
+                    DeviceCapability.TemperatureSensors(
+                        sensors =
+                            (0..3).map {
+                                SensorDescriptor(
+                                    channel = it,
+                                    hwmonIndex = it + 1,
+                                    statusOffset = 0x3D + (it * 2),
+                                    kind = SensorChannelKind.PHYSICAL_NTC,
+                                )
+                            },
+                        ctrlOffset = 0x0A,
+                    ),
+                    DeviceCapability.FlowSensor(
+                        statusOffset = 0x7B,
+                        pulsesCtrlOffset = 0x06,
+                        portCount = 1,
+                    ),
+                    DeviceCapability.VirtualSensors(
+                        count = 16,
+                        startOffset = 0x45,
+                        reportSize = 0x33,
+                    ),
+                    DeviceCapability.Lighting.Rgbpx(
+                        portCount = 2,
+                        maxLedsPerPort = 90,
+                    ),
+                ),
         )
 
     val QUADRO =
@@ -128,35 +274,48 @@ object DeviceRegistry {
             productId = 0xF00D,
             ctrlReportLength = 0x3C1,
             statusReportLength = 0xA5,
-            fanChannels =
-                (0..3).map {
-                    FanChannelDescriptor(
-                        channel = it,
-                        ctrlOffset = 0x36 + (it * 0x55),
-                        statusOffset = 0x70 + (it * 0x0D),
-                        kind = CoolingChannelKind.FAN,
-                        setupOffset = 0x12 + (it * 0x09),
-                    )
-                },
-            tempSensors =
-                (0..3).map {
-                    SensorDescriptor(
-                        channel = it,
-                        hwmonIndex = it + 1,
-                        statusOffset = 0x34 + (it * 2),
-                        kind = SensorChannelKind.PHYSICAL_NTC,
-                    )
-                },
-            tempCtrlOffset = 0x0A,
             firmwareVersionOffset = 0x0D,
-            hasFlowSensor = true,
-            flowSensorOffset = 0x6E,
-            flowPulsesCtrlOffset = 0x06,
-            hasDisplay = false,
-            hasRgbpx = true,
-            rgbpxPortCount = 1,
-            virtualSensorsCount = 16,
-            virtualSensorsStartOffset = 0x3C,
+            capabilities =
+                listOf(
+                    DeviceCapability.Fans(
+                        channels =
+                            (0..3).map {
+                                FanChannelDescriptor(
+                                    channel = it,
+                                    ctrlOffset = 0x36 + (it * 0x55),
+                                    statusOffset = 0x70 + (it * 0x0D),
+                                    kind = CoolingChannelKind.FAN,
+                                    setupOffset = 0x12 + (it * 0x09),
+                                )
+                            },
+                    ),
+                    DeviceCapability.TemperatureSensors(
+                        sensors =
+                            (0..3).map {
+                                SensorDescriptor(
+                                    channel = it,
+                                    hwmonIndex = it + 1,
+                                    statusOffset = 0x34 + (it * 2),
+                                    kind = SensorChannelKind.PHYSICAL_NTC,
+                                )
+                            },
+                        ctrlOffset = 0x0A,
+                    ),
+                    DeviceCapability.FlowSensor(
+                        statusOffset = 0x6E,
+                        pulsesCtrlOffset = 0x06,
+                        portCount = 1,
+                    ),
+                    DeviceCapability.VirtualSensors(
+                        count = 16,
+                        startOffset = 0x3C,
+                        reportSize = 0x43,
+                    ),
+                    DeviceCapability.Lighting.Rgbpx(
+                        portCount = 1,
+                        maxLedsPerPort = 90,
+                    ),
+                ),
         )
 
     val D5_NEXT =
@@ -166,42 +325,58 @@ object DeviceRegistry {
             productId = 0xF00E,
             ctrlReportLength = 0x329,
             statusReportLength = 0x76,
-            fanChannels =
-                listOf(
-                    FanChannelDescriptor(
-                        channel = 0,
-                        ctrlOffset = 0x96,
-                        statusOffset = 0x6C,
-                        kind = CoolingChannelKind.PUMP,
-                        setupOffset = 0x38,
-                    ),
-                    FanChannelDescriptor(
-                        channel = 1,
-                        ctrlOffset = 0x41,
-                        statusOffset = 0x5F,
-                        kind = CoolingChannelKind.FAN,
-                        setupOffset = 0x2F,
-                    ),
-                ),
-            tempSensors =
-                listOf(
-                    SensorDescriptor(
-                        channel = 0,
-                        hwmonIndex = 1,
-                        statusOffset = 0x57,
-                        kind = SensorChannelKind.INTEGRATED_COOLANT,
-                    ),
-                ),
-            tempCtrlOffset = 0x2D,
             firmwareVersionOffset = 0x0D,
-            hasFlowSensor = true,
-            flowSensorOffset = null,
-            flowPulsesCtrlOffset = null,
-            hasDisplay = true,
-            hasRgbpx = true,
-            rgbpxPortCount = 1,
-            virtualSensorsCount = 8,
-            virtualSensorsStartOffset = 0x3F,
+            capabilities =
+                listOf(
+                    DeviceCapability.Fans(
+                        channels =
+                            listOf(
+                                FanChannelDescriptor(
+                                    channel = 0,
+                                    ctrlOffset = 0x96,
+                                    statusOffset = 0x6C,
+                                    kind = CoolingChannelKind.PUMP,
+                                    setupOffset = 0x38,
+                                ),
+                                FanChannelDescriptor(
+                                    channel = 1,
+                                    ctrlOffset = 0x41,
+                                    statusOffset = 0x5F,
+                                    kind = CoolingChannelKind.FAN,
+                                    setupOffset = 0x2F,
+                                ),
+                            ),
+                    ),
+                    DeviceCapability.TemperatureSensors(
+                        sensors =
+                            listOf(
+                                SensorDescriptor(
+                                    channel = 0,
+                                    hwmonIndex = 1,
+                                    statusOffset = 0x57,
+                                    kind = SensorChannelKind.INTEGRATED_COOLANT,
+                                ),
+                            ),
+                        ctrlOffset = 0x2D,
+                    ),
+                    DeviceCapability.FlowSensor(
+                        statusOffset = null,
+                        pulsesCtrlOffset = null,
+                        portCount = 1,
+                    ),
+                    DeviceCapability.VirtualSensors(
+                        count = 8,
+                        startOffset = 0x3F,
+                        reportSize = 0x43,
+                    ),
+                    DeviceCapability.Display(
+                        kind = DisplayKind.OLED,
+                    ),
+                    DeviceCapability.Lighting.Rgbpx(
+                        portCount = 1,
+                        maxLedsPerPort = 90,
+                    ),
+                ),
         )
 
     val FARBWERK360 =
@@ -211,24 +386,31 @@ object DeviceRegistry {
             productId = 0xF010,
             ctrlReportLength = 0x682,
             statusReportLength = 0xB6,
-            tempSensors =
-                (0..3).map {
-                    SensorDescriptor(
-                        channel = it,
-                        hwmonIndex = it + 1,
-                        statusOffset = 0x32 + (it * 2),
-                        kind = SensorChannelKind.PHYSICAL_NTC,
-                    )
-                },
-            tempCtrlOffset = 0x08,
             firmwareVersionOffset = 0x0D,
-            hasFlowSensor = false,
-            hasDisplay = false,
-            hasRgbpx = true,
-            rgbpxPortCount = 4,
-            virtualSensorsCount = 16,
-            virtualSensorsStartOffset = 0x3A,
-            virtualSensorsReportSize = 0x33,
+            capabilities =
+                listOf(
+                    DeviceCapability.TemperatureSensors(
+                        sensors =
+                            (0..3).map {
+                                SensorDescriptor(
+                                    channel = it,
+                                    hwmonIndex = it + 1,
+                                    statusOffset = 0x32 + (it * 2),
+                                    kind = SensorChannelKind.PHYSICAL_NTC,
+                                )
+                            },
+                        ctrlOffset = 0x08,
+                    ),
+                    DeviceCapability.VirtualSensors(
+                        count = 16,
+                        startOffset = 0x3A,
+                        reportSize = 0x33,
+                    ),
+                    DeviceCapability.Lighting.Rgbpx(
+                        portCount = 4,
+                        maxLedsPerPort = 90,
+                    ),
+                ),
         )
 
     val FARBWERK =
@@ -238,22 +420,27 @@ object DeviceRegistry {
             productId = 0xF00A,
             ctrlReportLength = 0xB6,
             statusReportLength = 0xB6,
-            tempSensors =
-                (0..3).map {
-                    SensorDescriptor(
-                        channel = it,
-                        hwmonIndex = it + 1,
-                        statusOffset = 0x2F + (it * 2),
-                        kind = SensorChannelKind.PHYSICAL_NTC,
-                    )
-                },
-            tempCtrlOffset = null,
             firmwareVersionOffset = 0x0D,
-            hasFlowSensor = false,
-            hasDisplay = false,
-            hasRgbpx = false,
-            rgbpxPortCount = 0,
-            virtualSensorsCount = 0,
+            capabilities =
+                listOf(
+                    DeviceCapability.TemperatureSensors(
+                        sensors =
+                            (0..3).map {
+                                SensorDescriptor(
+                                    channel = it,
+                                    hwmonIndex = it + 1,
+                                    statusOffset = 0x2F + (it * 2),
+                                    kind = SensorChannelKind.PHYSICAL_NTC,
+                                )
+                            },
+                        ctrlOffset = null,
+                    ),
+                    DeviceCapability.Lighting.ClassicAnalogRgb(
+                        channelCount = 4,
+                        resolutionBits = 13,
+                        voltage = 12,
+                    ),
+                ),
         )
 
     val HIGH_FLOW_NEXT =
@@ -263,30 +450,44 @@ object DeviceRegistry {
             productId = 0xF012,
             ctrlReportLength = 0x2AA,
             statusReportLength = 0x6F,
-            tempSensors =
+            firmwareVersionOffset = 0x0D,
+            capabilities =
                 listOf(
-                    SensorDescriptor(
-                        channel = 0,
-                        hwmonIndex = 1,
-                        statusOffset = 0x55,
-                        kind = SensorChannelKind.INTEGRATED_COOLANT,
+                    DeviceCapability.TemperatureSensors(
+                        sensors =
+                            listOf(
+                                SensorDescriptor(
+                                    channel = 0,
+                                    hwmonIndex = 1,
+                                    statusOffset = 0x55,
+                                    kind = SensorChannelKind.INTEGRATED_COOLANT,
+                                ),
+                                SensorDescriptor(
+                                    channel = 1,
+                                    hwmonIndex = 2,
+                                    statusOffset = 0x57,
+                                    kind = SensorChannelKind.PHYSICAL_NTC,
+                                ),
+                            ),
+                        ctrlOffset = 0x0A,
                     ),
-                    SensorDescriptor(
-                        channel = 1,
-                        hwmonIndex = 2,
-                        statusOffset = 0x57,
-                        kind = SensorChannelKind.PHYSICAL_NTC,
+                    DeviceCapability.FlowSensor(
+                        statusOffset = 0x51,
+                        pulsesCtrlOffset = null,
+                        portCount = 1,
+                    ),
+                    DeviceCapability.CoolantQuality(
+                        conductivityOffset = null,
+                        qualityPercentOffset = null,
+                    ),
+                    DeviceCapability.Display(
+                        kind = DisplayKind.OLED,
+                    ),
+                    DeviceCapability.Lighting.Rgbpx(
+                        portCount = 1,
+                        maxLedsPerPort = 90,
                     ),
                 ),
-            tempCtrlOffset = 0x0A,
-            firmwareVersionOffset = 0x0D,
-            hasFlowSensor = true,
-            flowSensorOffset = 0x51,
-            flowPulsesCtrlOffset = null,
-            hasDisplay = true,
-            hasRgbpx = true,
-            rgbpxPortCount = 1,
-            virtualSensorsCount = 0,
         )
 
     val LEAKSHIELD =
@@ -296,28 +497,40 @@ object DeviceRegistry {
             productId = 0xF014,
             ctrlReportLength = 0x33,
             statusReportLength = 0x140,
-            tempSensors =
+            firmwareVersionOffset = 0x0D,
+            capabilities =
                 listOf(
-                    SensorDescriptor(
-                        channel = 0,
-                        hwmonIndex = 1,
-                        statusOffset = 265,
-                        kind = SensorChannelKind.PHYSICAL_NTC,
+                    DeviceCapability.TemperatureSensors(
+                        sensors =
+                            listOf(
+                                SensorDescriptor(
+                                    channel = 0,
+                                    hwmonIndex = 1,
+                                    statusOffset = 265,
+                                    kind = SensorChannelKind.PHYSICAL_NTC,
+                                ),
+                                SensorDescriptor(
+                                    channel = 1,
+                                    hwmonIndex = 2,
+                                    statusOffset = 287,
+                                    kind = SensorChannelKind.PHYSICAL_NTC,
+                                ),
+                            ),
+                        ctrlOffset = null,
                     ),
-                    SensorDescriptor(
-                        channel = 1,
-                        hwmonIndex = 2,
-                        statusOffset = 287,
-                        kind = SensorChannelKind.PHYSICAL_NTC,
+                    DeviceCapability.Pressure(
+                        pressureOffset = null,
+                        targetPressureOffset = null,
+                        pumpCyclesOffset = null,
+                    ),
+                    DeviceCapability.Display(
+                        kind = DisplayKind.OLED,
+                    ),
+                    DeviceCapability.Lighting.Rgbpx(
+                        portCount = 1,
+                        maxLedsPerPort = 90,
                     ),
                 ),
-            tempCtrlOffset = null,
-            firmwareVersionOffset = 0x0D,
-            hasFlowSensor = false,
-            hasDisplay = true,
-            hasRgbpx = true,
-            rgbpxPortCount = 1,
-            virtualSensorsCount = 0,
         )
 
     val AQUASTREAM_ULTIMATE =
@@ -327,45 +540,57 @@ object DeviceRegistry {
             productId = 0xF00B,
             ctrlReportLength = 0x329,
             statusReportLength = 0x76,
-            fanChannels =
-                listOf(
-                    FanChannelDescriptor(
-                        channel = 0,
-                        ctrlOffset = 0x96,
-                        statusOffset = 0x51,
-                        kind = CoolingChannelKind.PUMP,
-                    ),
-                    FanChannelDescriptor(
-                        channel = 1,
-                        ctrlOffset = 0x41,
-                        statusOffset = 0x41,
-                        kind = CoolingChannelKind.FAN,
-                    ),
-                ),
-            tempSensors =
-                listOf(
-                    SensorDescriptor(
-                        channel = 0,
-                        hwmonIndex = 1,
-                        statusOffset = 0x2D,
-                        kind = SensorChannelKind.INTEGRATED_COOLANT,
-                    ),
-                    SensorDescriptor(
-                        channel = 1,
-                        hwmonIndex = 2,
-                        statusOffset = 0x2F,
-                        kind = SensorChannelKind.PHYSICAL_NTC,
-                    ),
-                ),
-            tempCtrlOffset = null,
             firmwareVersionOffset = 0x0D,
-            hasFlowSensor = true,
-            flowSensorOffset = 0x37,
-            flowPulsesCtrlOffset = null,
-            hasDisplay = true,
-            hasRgbpx = true,
-            rgbpxPortCount = 1,
-            virtualSensorsCount = 0,
+            capabilities =
+                listOf(
+                    DeviceCapability.Fans(
+                        channels =
+                            listOf(
+                                FanChannelDescriptor(
+                                    channel = 0,
+                                    ctrlOffset = 0x96,
+                                    statusOffset = 0x51,
+                                    kind = CoolingChannelKind.PUMP,
+                                ),
+                                FanChannelDescriptor(
+                                    channel = 1,
+                                    ctrlOffset = 0x41,
+                                    statusOffset = 0x41,
+                                    kind = CoolingChannelKind.FAN,
+                                ),
+                            ),
+                    ),
+                    DeviceCapability.TemperatureSensors(
+                        sensors =
+                            listOf(
+                                SensorDescriptor(
+                                    channel = 0,
+                                    hwmonIndex = 1,
+                                    statusOffset = 0x2D,
+                                    kind = SensorChannelKind.INTEGRATED_COOLANT,
+                                ),
+                                SensorDescriptor(
+                                    channel = 1,
+                                    hwmonIndex = 2,
+                                    statusOffset = 0x2F,
+                                    kind = SensorChannelKind.PHYSICAL_NTC,
+                                ),
+                            ),
+                        ctrlOffset = null,
+                    ),
+                    DeviceCapability.FlowSensor(
+                        statusOffset = 0x37,
+                        pulsesCtrlOffset = null,
+                        portCount = 1,
+                    ),
+                    DeviceCapability.Display(
+                        kind = DisplayKind.OLED,
+                    ),
+                    DeviceCapability.Lighting.Rgbpx(
+                        portCount = 1,
+                        maxLedsPerPort = 90,
+                    ),
+                ),
         )
 
     val AQUAERO =
@@ -375,34 +600,46 @@ object DeviceRegistry {
             productId = 0xF001,
             ctrlReportLength = 0x0A93,
             statusReportLength = 0x195,
-            fanChannels =
-                (0..3).map {
-                    FanChannelDescriptor(
-                        channel = it,
-                        ctrlOffset = 0x20C + (it * 0x14),
-                        statusOffset = 0x167 + (it * 0x0C),
-                        kind = CoolingChannelKind.FAN,
-                    )
-                },
-            tempSensors =
-                (0..7).map {
-                    SensorDescriptor(
-                        channel = it,
-                        hwmonIndex = it + 1,
-                        statusOffset = 0x65 + (it * 2),
-                        kind = SensorChannelKind.PHYSICAL_NTC,
-                    )
-                },
-            tempCtrlOffset = 0xDB,
             firmwareVersionOffset = 0x0B,
-            hasFlowSensor = true,
-            flowSensorOffset = 0xF9,
-            flowPulsesCtrlOffset = null,
-            hasDisplay = true,
-            hasRgbpx = false,
-            rgbpxPortCount = 0,
-            virtualSensorsCount = 8,
-            virtualSensorsStartOffset = 0x85,
+            capabilities =
+                listOf(
+                    DeviceCapability.Fans(
+                        channels =
+                            (0..3).map {
+                                FanChannelDescriptor(
+                                    channel = it,
+                                    ctrlOffset = 0x20C + (it * 0x14),
+                                    statusOffset = 0x167 + (it * 0x0C),
+                                    kind = CoolingChannelKind.FAN,
+                                )
+                            },
+                    ),
+                    DeviceCapability.TemperatureSensors(
+                        sensors =
+                            (0..7).map {
+                                SensorDescriptor(
+                                    channel = it,
+                                    hwmonIndex = it + 1,
+                                    statusOffset = 0x65 + (it * 2),
+                                    kind = SensorChannelKind.PHYSICAL_NTC,
+                                )
+                            },
+                        ctrlOffset = 0xDB,
+                    ),
+                    DeviceCapability.FlowSensor(
+                        statusOffset = 0xF9,
+                        pulsesCtrlOffset = null,
+                        portCount = 2,
+                    ),
+                    DeviceCapability.VirtualSensors(
+                        count = 8,
+                        startOffset = 0x85,
+                        reportSize = 0x43,
+                    ),
+                    DeviceCapability.Display(
+                        kind = DisplayKind.LCD,
+                    ),
+                ),
         )
 
     val HIGH_FLOW_USB =
@@ -412,29 +649,33 @@ object DeviceRegistry {
             productId = 0xF003,
             ctrlReportLength = 0,
             statusReportLength = 0x76,
-            tempSensors =
+            firmwareVersionOffset = 0x03,
+            capabilities =
                 listOf(
-                    SensorDescriptor(
-                        channel = 0,
-                        hwmonIndex = 1,
-                        statusOffset = 0x2B,
-                        kind = SensorChannelKind.PHYSICAL_NTC,
+                    DeviceCapability.TemperatureSensors(
+                        sensors =
+                            listOf(
+                                SensorDescriptor(
+                                    channel = 0,
+                                    hwmonIndex = 1,
+                                    statusOffset = 0x2B,
+                                    kind = SensorChannelKind.PHYSICAL_NTC,
+                                ),
+                                SensorDescriptor(
+                                    channel = 1,
+                                    hwmonIndex = 2,
+                                    statusOffset = 0x2D,
+                                    kind = SensorChannelKind.PHYSICAL_NTC,
+                                ),
+                            ),
+                        ctrlOffset = null,
                     ),
-                    SensorDescriptor(
-                        channel = 1,
-                        hwmonIndex = 2,
-                        statusOffset = 0x2D,
-                        kind = SensorChannelKind.PHYSICAL_NTC,
+                    DeviceCapability.FlowSensor(
+                        statusOffset = 0x23,
+                        pulsesCtrlOffset = null,
+                        portCount = 1,
                     ),
                 ),
-            tempCtrlOffset = null,
-            firmwareVersionOffset = 0x03,
-            hasFlowSensor = true,
-            flowSensorOffset = 0x23,
-            flowPulsesCtrlOffset = null,
-            hasDisplay = false,
-            hasRgbpx = false,
-            virtualSensorsCount = 0,
         )
 
     val POWERADJUST3 =
@@ -444,38 +685,44 @@ object DeviceRegistry {
             productId = 0xF0BD,
             ctrlReportLength = 0x32,
             statusReportLength = 0x32,
-            fanChannels =
-                listOf(
-                    FanChannelDescriptor(
-                        channel = 0,
-                        ctrlOffset = 0x08,
-                        statusOffset = 0x0B,
-                        kind = CoolingChannelKind.FAN,
-                    ),
-                ),
-            tempSensors =
-                listOf(
-                    SensorDescriptor(
-                        channel = 0,
-                        hwmonIndex = 1,
-                        statusOffset = 0x01,
-                        kind = SensorChannelKind.PHYSICAL_NTC,
-                    ),
-                    SensorDescriptor(
-                        channel = 1,
-                        hwmonIndex = 2,
-                        statusOffset = 0x03,
-                        kind = SensorChannelKind.PHYSICAL_NTC,
-                    ),
-                ),
-            tempCtrlOffset = null,
             firmwareVersionOffset = 0x21,
-            hasFlowSensor = true,
-            flowSensorOffset = 0x09,
-            flowPulsesCtrlOffset = null,
-            hasDisplay = false,
-            hasRgbpx = false,
-            virtualSensorsCount = 0,
+            capabilities =
+                listOf(
+                    DeviceCapability.Fans(
+                        channels =
+                            listOf(
+                                FanChannelDescriptor(
+                                    channel = 0,
+                                    ctrlOffset = 0x08,
+                                    statusOffset = 0x0B,
+                                    kind = CoolingChannelKind.FAN,
+                                ),
+                            ),
+                    ),
+                    DeviceCapability.TemperatureSensors(
+                        sensors =
+                            listOf(
+                                SensorDescriptor(
+                                    channel = 0,
+                                    hwmonIndex = 1,
+                                    statusOffset = 0x01,
+                                    kind = SensorChannelKind.PHYSICAL_NTC,
+                                ),
+                                SensorDescriptor(
+                                    channel = 1,
+                                    hwmonIndex = 2,
+                                    statusOffset = 0x03,
+                                    kind = SensorChannelKind.PHYSICAL_NTC,
+                                ),
+                            ),
+                        ctrlOffset = null,
+                    ),
+                    DeviceCapability.FlowSensor(
+                        statusOffset = 0x09,
+                        pulsesCtrlOffset = null,
+                        portCount = 1,
+                    ),
+                ),
         )
 
     val AQUASTREAM_XT =
@@ -485,50 +732,51 @@ object DeviceRegistry {
             productId = 0xF0B6,
             ctrlReportLength = 0x34,
             statusReportLength = 0x42,
-            fanChannels =
-                listOf(
-                    FanChannelDescriptor(
-                        channel = 0,
-                        ctrlOffset = 0x08,
-                        statusOffset = 0x13,
-                        kind = CoolingChannelKind.PUMP,
-                    ),
-                    FanChannelDescriptor(
-                        channel = 1,
-                        ctrlOffset = 0x1B,
-                        statusOffset = 0x1B,
-                        kind = CoolingChannelKind.FAN,
-                    ),
-                ),
-            tempSensors =
-                listOf(
-                    SensorDescriptor(
-                        channel = 0,
-                        hwmonIndex = 1,
-                        statusOffset = 0x0D,
-                        kind = SensorChannelKind.PHYSICAL_NTC,
-                    ),
-                    SensorDescriptor(
-                        channel = 1,
-                        hwmonIndex = 2,
-                        statusOffset = 0x0F,
-                        kind = SensorChannelKind.PHYSICAL_NTC,
-                    ),
-                    SensorDescriptor(
-                        channel = 2,
-                        hwmonIndex = 3,
-                        statusOffset = 0x11,
-                        kind = SensorChannelKind.INTEGRATED_COOLANT,
-                    ),
-                ),
-            tempCtrlOffset = null,
             firmwareVersionOffset = 0x32,
-            hasFlowSensor = false,
-            flowSensorOffset = null,
-            flowPulsesCtrlOffset = null,
-            hasDisplay = false,
-            hasRgbpx = false,
-            virtualSensorsCount = 0,
+            capabilities =
+                listOf(
+                    DeviceCapability.Fans(
+                        channels =
+                            listOf(
+                                FanChannelDescriptor(
+                                    channel = 0,
+                                    ctrlOffset = 0x08,
+                                    statusOffset = 0x13,
+                                    kind = CoolingChannelKind.PUMP,
+                                ),
+                                FanChannelDescriptor(
+                                    channel = 1,
+                                    ctrlOffset = 0x1B,
+                                    statusOffset = 0x1B,
+                                    kind = CoolingChannelKind.FAN,
+                                ),
+                            ),
+                    ),
+                    DeviceCapability.TemperatureSensors(
+                        sensors =
+                            listOf(
+                                SensorDescriptor(
+                                    channel = 0,
+                                    hwmonIndex = 1,
+                                    statusOffset = 0x0D,
+                                    kind = SensorChannelKind.PHYSICAL_NTC,
+                                ),
+                                SensorDescriptor(
+                                    channel = 1,
+                                    hwmonIndex = 2,
+                                    statusOffset = 0x0F,
+                                    kind = SensorChannelKind.PHYSICAL_NTC,
+                                ),
+                                SensorDescriptor(
+                                    channel = 2,
+                                    hwmonIndex = 3,
+                                    statusOffset = 0x11,
+                                    kind = SensorChannelKind.INTEGRATED_COOLANT,
+                                ),
+                            ),
+                        ctrlOffset = null,
+                    ),
+                ),
         )
 
     val ALL =
@@ -553,6 +801,8 @@ object DeviceRegistry {
         type: DeviceType,
         firmwareVersion: Int? = null,
     ): DeviceDescriptor = DeviceLayoutRegistry.resolveDescriptor(type, firmwareVersion)
+
+    operator fun get(type: DeviceType): DeviceDescriptor = findByType(type)
 }
 
 object DeviceLayoutRegistry {

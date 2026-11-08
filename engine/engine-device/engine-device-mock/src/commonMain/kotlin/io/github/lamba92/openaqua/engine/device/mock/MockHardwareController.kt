@@ -26,9 +26,15 @@ import io.github.lamba92.openaqua.model.device.TargetTempFanConfig
 import io.github.lamba92.openaqua.model.device.TwoPointFanConfig
 import io.github.lamba92.openaqua.model.device.UnconfiguredFanConfig
 import io.github.lamba92.openaqua.model.device.descriptor
+import io.github.lamba92.openaqua.model.device.fanChannels
+import io.github.lamba92.openaqua.model.device.flowSensorOffset
+import io.github.lamba92.openaqua.model.device.hasDisplay
+import io.github.lamba92.openaqua.model.device.hasFlowSensor
 import io.github.lamba92.openaqua.model.device.tempCelsiusOrNull
+import io.github.lamba92.openaqua.model.device.tempSensors
 import io.github.lamba92.openaqua.model.device.validateRequestMatchesDevice
 import io.github.lamba92.openaqua.model.device.virtualSensorsChannelRange
+import io.github.lamba92.openaqua.model.device.virtualSensorsCount
 import io.github.lamba92.openaqua.model.device.withLimits
 import io.github.lamba92.openaqua.model.valueOrNull
 import kotlinx.coroutines.currentCoroutineContext

@@ -1,6 +1,8 @@
 package io.github.lamba92.openaqua.engine.device.protocol
 
 import io.github.lamba92.openaqua.model.device.DeviceDescriptor
+import io.github.lamba92.openaqua.model.device.virtualSensorsCount
+import io.github.lamba92.openaqua.model.device.virtualSensorsReportSize
 import io.github.lamba92.openaqua.model.device.virtualSensorsStartChannel
 import kotlin.math.roundToInt
 
