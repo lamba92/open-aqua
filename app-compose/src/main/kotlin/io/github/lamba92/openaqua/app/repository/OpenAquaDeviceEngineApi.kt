@@ -29,6 +29,7 @@ import kotlinx.serialization.json.Json
 import java.io.IOException
 import java.nio.file.Path
 import kotlin.io.path.absolutePathString
+import kotlin.io.path.writeText
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -80,14 +81,30 @@ class OpenAquaDeviceEngineApi(
     ): DeviceConfig {
         val logger = getLogger()
         logger.i { "Flashing configuration to device '${deviceId.value}'..." }
+        val tempFile =
+            withContext(Dispatchers.IO) {
+                java.nio.file.Files.createTempFile("open-aqua-flash-", ".json").apply {
+                    toFile().deleteOnExit()
+                    writeText(json.encodeToString(FlashConfigRequest.serializer(), config))
+                }
+            }
         val result: DeviceConfig =
-            executeAndDecodeWithTimeout(
-                "config",
-                "flash",
-                "--device=${deviceId.value}",
-                "--request=${json.encodeToString(FlashConfigRequest.serializer(), config)}",
-                timeout = 10.seconds,
-            )
+            try {
+                executeAndDecodeWithTimeout(
+                    "config",
+                    "flash",
+                    "--device=${deviceId.value}",
+                    "--file=${tempFile.absolutePathString()}",
+                    timeout = 10.seconds,
+                )
+            } finally {
+                withContext(Dispatchers.IO) {
+                    runCatching {
+                        java.nio.file.Files
+                            .deleteIfExists(tempFile)
+                    }
+                }
+            }
         logger.i { "Configuration flashed successfully to device '${deviceId.value}'" }
         return result
     }

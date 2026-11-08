@@ -15,6 +15,7 @@ import kotlinx.serialization.json.Json
 private val strictJson =
     Json {
         ignoreUnknownKeys = false
+        isLenient = true
     }
 
 class FlashConfigCommand(
