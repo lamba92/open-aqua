@@ -69,9 +69,20 @@ Inspect USB descriptors, firmware revisions, hardware serial numbers, and channe
 
 ---
 
-## 📦 Downloads & Installation
+## 📦 App Stores & Package Managers
 
-Pre-packaged releases are available on the [**GitHub Releases**](https://github.com/lamba92/open-aqua/releases) page for each build:
+| Platform / Store | Installation Command / Link |
+| :--- | :--- |
+| **Flathub & Bazaar** | [![Download on Flathub](https://dl.flathub.org/assets/badges/flathub-badge-en.svg)](https://flathub.org/apps/io.github.lamba92.openaqua)<br>`flatpak install flathub io.github.lamba92.openaqua` |
+| **Arch Linux (AUR)** | `yay -S open-aqua-bin`<br>`paru -S open-aqua-bin` |
+| **Snap Store** | [![Get it from the Snap Store](https://snapcraft.io/static/images/badges/en/snap-store-black.svg)](https://snapcraft.io/open-aqua)<br>`sudo snap install open-aqua` |
+| **Microsoft Store** | [![Get it from Microsoft](https://get.microsoft.com/images/en-us%20dark.svg)](https://apps.microsoft.com/detail/9MZT3W68T48F)<br>`ms-windows-store://pdp/?productid=9MZT3W68T48F` |
+
+---
+
+## 📥 Direct Downloads & Standalone Packages
+
+Pre-packaged standalone release artifacts are available directly on the [**GitHub Releases**](https://github.com/lamba92/open-aqua/releases) page:
 
 ### Linux
 - **AppImage**: Portable standalone bundle (`open-aqua-<version>-linux-x64.AppImage`).
@@ -81,6 +92,7 @@ Pre-packaged releases are available on the [**GitHub Releases**](https://github.
 - **Native Engine CLI**: Standalone binary (`open-aqua-device-engine-<version>-linux-x64`).
 
 ### Windows
+- **MSIX Package**: Windows Store package (`open-aqua-<version>-windows-x64.msix`).
 - **MSI Installer**: Windows installer package (`open-aqua-<version>-windows-x64.msi`).
 - **Portable ZIP**: Standalone archive (`open-aqua-<version>-windows-x64.zip`).
 - **Native Engine CLI**: Standalone executable (`open-aqua-device-engine-<version>-windows-x64.exe`).
@@ -214,12 +226,12 @@ $ echo '{"sensors":{"0":45.2,"1":58.0}}' | open-aqua-device-engine feed-virtual-
 ./gradlew :app-compose:app-compose-prod:run
 
 # Package AppImage (Linux)
-./gradlew :app-compose:app-compose-prod:packageReleaseAppImage
+./gradlew :packaging:packageReleaseAppImage
 
 # Install AppImage to ~/.local with desktop menu integration (Linux)
-./gradlew :app-compose:app-compose-prod:installReleaseAppImage
+./gradlew :packaging:installReleaseAppImage
 
-# Build all release packages for the current OS (AppImage, deb, rpm, tar.gz or MSI, zip)
+# Build all release packages for the current OS (AppImage, deb, rpm, tar.gz or MSI, zip, MSIX)
 ./gradlew release
 ```
 

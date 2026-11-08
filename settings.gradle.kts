@@ -1,15 +1,31 @@
 @file:Suppress("UnstableApiUsage")
 
-enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
-
-rootProject.name = "open-aqua"
-
 pluginManagement {
     repositories {
         mavenCentral()
         gradlePluginPortal()
     }
 }
+
+plugins {
+    id("com.gradle.develocity") version "3.19.2"
+}
+
+develocity {
+    buildScan {
+        termsOfUseUrl = "https://gradle.com/terms-of-service"
+        termsOfUseAgree = "yes"
+        if (System.getenv("CI") != null) {
+            publishing.onlyIf { true }
+            tag("CI")
+            System.getenv("GITHUB_WORKFLOW")?.let { tag(it) }
+        }
+    }
+}
+
+enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
+
+rootProject.name = "open-aqua"
 
 dependencyResolutionManagement {
     repositories {
