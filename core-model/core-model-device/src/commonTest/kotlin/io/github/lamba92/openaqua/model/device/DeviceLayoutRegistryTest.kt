@@ -3,6 +3,7 @@ package io.github.lamba92.openaqua.model.device
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class DeviceLayoutRegistryTest {
@@ -43,6 +44,70 @@ class DeviceLayoutRegistryTest {
         val d5Next = DeviceLayoutRegistry.resolveDescriptor(DeviceType.D5_NEXT, 1010)
         assertEquals(DeviceType.D5_NEXT, d5Next.type)
         assertEquals(0xF00E, d5Next.productId)
+
+        val farbwerk360 = DeviceLayoutRegistry.resolveDescriptor(DeviceType.FARBWERK360, 1010)
+        assertEquals(DeviceType.FARBWERK360, farbwerk360.type)
+        assertEquals(0xF010, farbwerk360.productId)
+
+        val farbwerk = DeviceLayoutRegistry.resolveDescriptor(DeviceType.FARBWERK, null)
+        assertEquals(DeviceType.FARBWERK, farbwerk.type)
+        assertEquals(0xF00A, farbwerk.productId)
+
+        val highFlowNext = DeviceLayoutRegistry.resolveDescriptor(DeviceType.HIGH_FLOW_NEXT, 1010)
+        assertEquals(DeviceType.HIGH_FLOW_NEXT, highFlowNext.type)
+        assertEquals(0xF012, highFlowNext.productId)
+
+        val leakshield = DeviceLayoutRegistry.resolveDescriptor(DeviceType.LEAKSHIELD, 1000)
+        assertEquals(DeviceType.LEAKSHIELD, leakshield.type)
+        assertEquals(0xF014, leakshield.productId)
+
+        val aquaero = DeviceLayoutRegistry.resolveDescriptor(DeviceType.AQUAERO, 6000)
+        assertEquals(DeviceType.AQUAERO, aquaero.type)
+        assertEquals(0xF001, aquaero.productId)
+
+        val highFlowUsb = DeviceLayoutRegistry.resolveDescriptor(DeviceType.HIGH_FLOW_USB, null)
+        assertEquals(DeviceType.HIGH_FLOW_USB, highFlowUsb.type)
+        assertEquals(0xF003, highFlowUsb.productId)
+
+        val poweradjust3 = DeviceLayoutRegistry.resolveDescriptor(DeviceType.POWERADJUST3, null)
+        assertEquals(DeviceType.POWERADJUST3, poweradjust3.type)
+        assertEquals(0xF0BD, poweradjust3.productId)
+
+        val aquastreamXt = DeviceLayoutRegistry.resolveDescriptor(DeviceType.AQUASTREAM_XT, 1018)
+        assertEquals(DeviceType.AQUASTREAM_XT, aquastreamXt.type)
+        assertEquals(0xF0B6, aquastreamXt.productId)
+
+        val aquastreamUlt = DeviceLayoutRegistry.resolveDescriptor(DeviceType.AQUASTREAM_ULTIMATE, 1010)
+        assertEquals(DeviceType.AQUASTREAM_ULTIMATE, aquastreamUlt.type)
+        assertEquals(0xF00B, aquastreamUlt.productId)
+    }
+
+    @Test
+    fun testAllDeviceTypesRegisteredInDeviceRegistry() {
+        for (type in DeviceType.entries) {
+            val descriptor = DeviceRegistry.findByType(type)
+            assertNotNull(descriptor, "Descriptor for $type must be registered")
+            assertEquals(type, descriptor.type)
+            val byPid = DeviceRegistry.findByProductId(descriptor.productId)
+            assertNotNull(byPid, "Lookup by PID 0x${descriptor.productId.toString(16)} failed")
+            assertEquals(descriptor, byPid)
+        }
+    }
+
+    @Test
+    fun testFirmwareVersionOffsets() {
+        assertEquals(0x0D, DeviceRegistry.OCTO.firmwareVersionOffset)
+        assertEquals(0x0D, DeviceRegistry.QUADRO.firmwareVersionOffset)
+        assertEquals(0x0D, DeviceRegistry.D5_NEXT.firmwareVersionOffset)
+        assertEquals(0x0D, DeviceRegistry.FARBWERK360.firmwareVersionOffset)
+        assertEquals(0x0D, DeviceRegistry.FARBWERK.firmwareVersionOffset)
+        assertEquals(0x0D, DeviceRegistry.HIGH_FLOW_NEXT.firmwareVersionOffset)
+        assertEquals(0x0D, DeviceRegistry.LEAKSHIELD.firmwareVersionOffset)
+        assertEquals(0x0D, DeviceRegistry.AQUASTREAM_ULTIMATE.firmwareVersionOffset)
+        assertEquals(0x0B, DeviceRegistry.AQUAERO.firmwareVersionOffset)
+        assertEquals(0x03, DeviceRegistry.HIGH_FLOW_USB.firmwareVersionOffset)
+        assertEquals(0x21, DeviceRegistry.POWERADJUST3.firmwareVersionOffset)
+        assertEquals(0x32, DeviceRegistry.AQUASTREAM_XT.firmwareVersionOffset)
     }
 
     @Test

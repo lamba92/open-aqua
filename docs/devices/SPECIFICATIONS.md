@@ -36,6 +36,18 @@
    - [QUADRO Bulk Report Structure (67 Bytes)](#62-quadro-bulk-report-structure-67-bytes)
    - [Feed Lifecycle, Expiration & Fallback Dynamics](#63-feed-lifecycle-expiration--fallback-dynamics)
 7. [Device Hardware Matrix & Offset Reference](#7-device-hardware-matrix--offset-reference)
+8. [RGB & RGBpx Lighting Architecture](#8-rgb--rgbpx-lighting-architecture)
+   - [RGBpx Physical Protocol & Pinout](#81-rgbpx-physical-protocol--pinout)
+   - [Farbwerk 360 Feature Report `0x03` (1666 Bytes)](#82-farbwerk-360-feature-report-0x03-1666-bytes)
+   - [Virtual Controller Slot Layout (70 Bytes)](#83-virtual-controller-slot-layout-70-bytes)
+   - [Hardware Effect Modes (Farbwerk 360)](#84-hardware-effect-modes-farbwerk-360)
+   - [Routing Table & Flash Commit Sequence](#85-routing-table--flash-commit-sequence)
+   - [High Flow Next & D5 Next RGBpx (HSV Zone Models)](#86-high-flow-next--d5-next-rgbpx-hsv-zone-models)
+   - [Classic Farbwerk Analog 12V RGB (13-Bit PWM)](#87-classic-farbwerk-analog-12v-rgb-13-bit-pwm)
+9. [Aquaero 5/6 Control & Configuration (Report `0x0B`)](#9-aquaero-56-control--configuration-report-0x0b)
+   - [Feature Report `0x0B` Architecture (1025 Bytes)](#91-feature-report-0x0b-architecture-1025-bytes)
+   - [PWM vs. DC Power Mode Switching](#92-pwm-vs-dc-power-mode-switching)
+   - [Flow Sensor Impulse Calibration](#93-flow-sensor-impulse-calibration)
 
 ---
 
@@ -61,12 +73,18 @@ All Aqua Computer modern USB controllers share a common USB vendor and endpoint 
 
 * **USB Vendor ID (VID)**: `0x0C70` (`AQUACOMPUTER_VENDOR_ID`)
 * **Product IDs (PID)**:
-  * **OCTO**: `0xF011`
+  * **AQUAERO 5/6**: `0xF001`
+  * **HIGH FLOW USB / MPS**: `0xF003`
+  * **FARBWERK**: `0xF00A`
+  * **AQUASTREAM ULTIMATE**: `0xF00B`
   * **QUADRO**: `0xF00D`
   * **D5 NEXT**: `0xF00E`
   * **FARBWERK 360**: `0xF010`
+  * **OCTO**: `0xF011`
   * **HIGH FLOW NEXT**: `0xF012`
-  * **LEAKSHIELD**: `0xF013`
+  * **LEAKSHIELD**: `0xF014`
+  * **AQUASTREAM XT**: `0xF0B6`
+  * **POWERADJUST 3**: `0xF0BD`
 
 #### USB Interfaces & Endpoints
 Every physical device enumerates as a USB Composite Device with at least two interfaces:
@@ -222,7 +240,9 @@ During the reverse-engineering and empirical hardware validation of OpenAqua, se
   Total:       51 bytes
   ```
   * Note: The CRC calculation must run strictly over bytes `[1..48]`, **excluding** Report ID byte `0`.
-* **Architecture Fix**: `DeviceDescriptor` includes `virtualSensorsReportSize` (configured as `0x33` / 51 bytes for OCTO, and `0x43` / 67 bytes for QUADRO).
+* **Architecture Fix**: `DeviceDescriptor` includes `virtualSensorsReportSize` configured according to microcontroller firmware requirements:
+  * **OCTO, D5 NEXT & FARBWERK 360**: Strictly **51 bytes (`0x33`)**.
+  * **QUADRO**: Strictly **67 bytes (`0x43`)** (includes a 16-byte `0x64` padding block before the CRC).
 
 ---
 
@@ -561,25 +581,228 @@ Total: 67 bytes (0x43)
 
 ## 7. Device Hardware Matrix & Offset Reference
 
-| Metric / Parameter                 |   Aquacomputer OCTO   |  Aquacomputer QUADRO  |   Aquacomputer D5 NEXT    |
-|------------------------------------|:---------------------:|:---------------------:|:-------------------------:|
-| **USB Product ID (PID)**           |       `0xF011`        |       `0xF00D`        |         `0xF00E`          |
-| **Cooling Channels**               |     8 (PWM Fans)      |     4 (PWM Fans)      |    2 (1 Pump + 1 Fan)     |
-| **Physical Temp Sensors**          |      4 (NTC 10k)      |      4 (NTC 10k)      |     1 (Coolant Probe)     |
-| **Virtual Sensors**                |          16           |          16           |             8             |
-| **Flow Sensor Input**              | Dedicated Port (dL/h) | Dedicated Port (dL/h) |   Virtual / Calculated    |
-| **RGBpx Ports**                    |        2 Ports        |        1 Port         |          1 Port           |
-| **Integrated OLED Display**        |         None          |         None          | 128x64 Graphical Display  |
-| **Status Report Length (`0x01`)**  |  `0x147` (327 bytes)  |  `0xA5` (165 bytes)   |    `0x76` (118 bytes)     |
-| **Control Report Length (`0x03`)** | `0x65F` (1631 bytes)  |  `0x3C1` (961 bytes)  |    `0x329` (809 bytes)    |
-| **Virtual Sensors Report Size**    | **51 Bytes (`0x33`)** | **67 Bytes (`0x43`)** |   **51 Bytes (`0x33`)**   |
-| **Fan Telemetry Stride**           |   `0x0D` (13 bytes)   |   `0x0D` (13 bytes)   |       Fixed offsets       |
-| **Fan Telemetry Base**             |        `0x7D`         |        `0x70`         | Pump: `0x6C`, Fan: `0x5F` |
-| **Fan Control Stride**             |   `0x55` (85 bytes)   |   `0x55` (85 bytes)   |       Fixed offsets       |
-| **Fan Control Base**               |        `0x5A`         |        `0x36`         | Pump: `0x96`, Fan: `0x41` |
-| **Physical Temp Telemetry Base**   |        `0x3D`         |        `0x34`         |          `0x57`           |
-| **Virtual Temp Telemetry Base**    |        `0x45`         |        `0x3C`         |          `0x3F`           |
-| **Flow Telemetry Offset**          |        `0x7B`         |        `0x6E`         |            N/A            |
-| **Flow Pulses Ctrl Offset**        |        `0x06`         |        `0x06`         |            N/A            |
-| **Temp Sensor Ctrl Offset**        |        `0x0A`         |        `0x0A`         |          `0x2D`           |
-| **Firmware Version Offset**        |        `0x0D`         |        `0x0D`         |          `0x0D`           |
+### 7.1 Primary Fan and Pump Controllers
+
+| Metric / Parameter                 |   Aquacomputer OCTO   |  Aquacomputer QUADRO  |   Aquacomputer D5 NEXT    | Aquacomputer AQUAERO 5/6  | Aquacomputer AQUASTREAM ULT |
+|------------------------------------|:---------------------:|:---------------------:|:-------------------------:|:-------------------------:|:---------------------------:|
+| **USB Product ID (PID)**           |       `0xF011`        |       `0xF00D`        |         `0xF00E`          |         `0xF001`          |          `0xF00B`           |
+| **Cooling Channels**               |     8 (PWM Fans)      |     4 (PWM Fans)      |    2 (1 Pump + 1 Fan)     |       4 (PWM/Volt)        |     2 (1 Pump + 1 Fan)      |
+| **Physical Temp Sensors**          |      4 (NTC 10k)      |      4 (NTC 10k)      |     1 (Coolant Probe)     |        8 (NTC 10k)        |      2 (Coolant + Ext)      |
+| **Virtual Sensors**                |          16           |          16           |             8             |             8             |              0              |
+| **Flow Sensor Input**              | Dedicated Port (dL/h) | Dedicated Port (dL/h) |   Virtual / Calculated    |      2 Ports (dL/h)       |        1 Port (0x37)        |
+| **RGBpx Ports**                    |        2 Ports        |        1 Port         |          1 Port           |           None            |           1 Port            |
+| **Integrated Display**             |         None          |         None          |        128x64 OLED        |      OLED / VFD / LC      |            OLED             |
+| **Status Report Length (`0x01`)**  |  `0x147` (327 bytes)  |  `0xA5` (165 bytes)   |    `0x76` (118 bytes)     |    `0x195` (405 bytes)    |     `0x76` (118 bytes)      |
+| **Control Report Length (`0x03`)** | `0x65F` (1631 bytes)  |  `0x3C1` (961 bytes)  |    `0x329` (809 bytes)    |   `0xA93` (2707 bytes)    |     `0x329` (809 bytes)     |
+| **Virtual Sensors Report Size**    | **51 Bytes (`0x33`)** | **67 Bytes (`0x43`)** |   **51 Bytes (`0x33`)**   |            N/A            |             N/A             |
+| **Fan Telemetry Base**             |        `0x7D`         |        `0x70`         | Pump: `0x6C`, Fan: `0x5F` |          `0x167`          |  Pump: `0x51`, Fan: `0x41`  |
+| **Fan Telemetry Stride**           |   `0x0D` (13 bytes)   |   `0x0D` (13 bytes)   |       Fixed offsets       |     `0x0C` (12 bytes)     |        Fixed offsets        |
+| **Fan Control Base**               |        `0x5A`         |        `0x36`         | Pump: `0x36`, Fan: `0x8B` |          `0x20C`          |  Pump: `0x96`, Fan: `0x41`  |
+| **Fan Control Stride**             |   `0x55` (85 bytes)   |   `0x55` (85 bytes)   |       Fixed offsets       |     `0x14` (20 bytes)     |        Fixed offsets        |
+| **Physical Temp Base**             |        `0x3D`         |        `0x34`         |          `0x57`           |          `0x65`           |           `0x2D`            |
+| **Virtual Temp Base**              |        `0x45`         |        `0x3C`         |          `0x3F`           |          `0x85`           |             N/A             |
+| **Flow Telemetry Offset**          |        `0x7B`         |        `0x6E`         |            N/A            |          `0xF9`           |           `0x37`            |
+| **Firmware Version Offset**        |        `0x0D`         |        `0x0D`         |          `0x0D`           |          `0x0B`           |           `0x0D`            |
+
+---
+
+### 7.2 RGB, Sensors & Accessory Controllers
+
+| Metric / Parameter                 | Farbwerk 360 |  Farbwerk   | High Flow Next  | Leakshield | High Flow USB / MPS | Poweradjust 3 | Aquastream XT |
+|------------------------------------|:------------:|:-----------:|:---------------:|:----------:|:-------------------:|:-------------:|:-------------:|
+| **USB Product ID (PID)**           |   `0xF010`   |  `0xF00A`   |    `0xF012`     |  `0xF014`  |      `0xF003`       |   `0xF0BD`    |   `0xF0B6`    |
+| **Cooling Channels**               |     None     |    None     |      None       |    None    |        None         |    1 (Fan)    | 2 (Pump+Fan)  |
+| **Physical Temp Sensors**          | 4 (NTC 10k)  | 4 (NTC 10k) | 2 (Coolant+Ext) | 2 (Probes) |     2 (Int+Ext)     |  2 (IC+Ext)   | 3 (IC+Ext+W)  |
+| **Virtual Sensors**                |      16      |      0      |        0        |     0      |          0          |       0       |       0       |
+| **Flow Sensor Input**              |     None     |    None     |     `0x51`      |    None    |       `0x23`        |    `0x09`     |     None      |
+| **RGBpx Ports**                    |   4 Ports    | 0 (12V RGB) |     1 Port      |   1 Port   |        None         |     None      |     None      |
+| **Integrated Display**             |     None     |    None     |      OLED       |    OLED    |        None         |     None      |     None      |
+| **Status Report Length (`0x01`)**  |    `0xB6`    |   `0xB6`    |     `0x6F`      |  `0x140`   |       `0x76`        |    `0x32`     |    `0x42`     |
+| **Control Report Length (`0x03`)** |   `0x682`    |   `0xB6`    |     `0x2AA`     |   `0x33`   |         N/A         |    `0x32`     |    `0x34`     |
+| **Physical Temp Base**             |    `0x32`    |   `0x2F`    |     `0x55`      |   `265`    |       `0x2B`        |    `0x01`     |    `0x0D`     |
+| **Virtual Temp Base**              |    `0x3A`    |     N/A     |       N/A       |    N/A     |         N/A         |      N/A      |      N/A      |
+| **Firmware Version Offset**        |    `0x0D`    |   `0x0D`    |     `0x0D`      |   `0x0D`   |       `0x03`        |    `0x21`     |    `0x32`     |
+| **Serial Number Offset**           |    `0x03`    |   `0x03`    |     `0x03`      |   `0x03`   |       `0x09`        |    `0x27`     |    `0x3A`     |
+
+
+---
+
+## 8. RGB & RGBpx Lighting Architecture
+
+Aqua Computer devices implement lighting through two distinct hardware generations:
+1. **Modern RGBpx Addressable Architecture**: Digital WS2812B/SK6812 protocol driving daisy-chained addressable LEDs (OCTO, QUADRO, D5 NEXT, FARBWERK 360, HIGH FLOW NEXT, LEAKSHIELD, and AQUASTREAM ULTIMATE).
+2. **Classic Farbwerk Analog Architecture**: 12V common-anode PWM driving analog 5050 RGB LED strips (FARBWERK `0xF00A`).
+
+---
+
+### 8.1 RGBpx Physical Protocol & Pinout
+
+RGBpx is electrically compatible with standard single-wire WS2812B/SK6812 digital protocols operating at 800 kHz transmission frequency.
+
+* **Physical Header**: 4-pin Molex PicoBlade connector (1.25 mm pitch):
+  * **Pin 1**: `+5V DC` (Fused power supply)
+  * **Pin 2**: `Data Out` (800 kHz NZR digital data signal)
+  * **Pin 3**: `Data Return` (Optional loopback / feedback sensing)
+  * **Pin 4**: `GND` (Ground)
+* **Channel Capacity**: Maximum 90 individually addressable LEDs per physical port:
+  * **FARBWERK 360**: 4 ports $\\times$ 90 LEDs = **360 LEDs total**.
+  * **OCTO**: 2 ports $\\times$ 90 LEDs = **180 LEDs total**.
+  * **QUADRO, D5 NEXT, HIGH FLOW NEXT, LEAKSHIELD, AQUASTREAM ULTIMATE**: 1 port $\\times$ 90 LEDs = **90 LEDs**.
+
+---
+
+### 8.2 Farbwerk 360 Feature Report `0x03` (1666 Bytes)
+
+On the **Farbwerk 360** (`0xF010`), the entire lighting state, active effects, parameter tables, and channel assignments travel in a single **1666-byte (`0x0682`)** USB HID Feature Report `0x03`.
+
+```
+Byte Range        Size (Bytes)   Description
+─────────────────────────────────────────────────────────────────────────────────
+0                 1 byte         Report ID (0x03)
+0..18             19 bytes       Header. Global Master Brightness stored at Byte 16 (0..100%).
+19..1418          1400 bytes     20 Virtual Controller Slots × 70 bytes each.
+                                 Slot k starts at: 19 + (70 × k)
+1419..1478        60 bytes       Routing Table: Up to 20 records × 3 bytes each.
+1479..1601        123 bytes      Reserved / Constant padding.
+1602..1663        62 bytes       Footer / Constant padding.
+1664..1665        2 bytes        CRC-16-USB over bytes [1..1663] (Stored Big-Endian).
+─────────────────────────────────────────────────────────────────────────────────
+Total: 1666 bytes (0x0682)
+```
+
+---
+
+### 8.3 Virtual Controller Slot Layout (70 Bytes)
+
+The board decouples physical LEDs from effects using **20 virtual controllers (strips)**. Each active slot operates either as a static colour block or an autonomous hardware effect engine:
+
+```
+Offset in Slot    Length         Description
+─────────────────────────────────────────────────────────────────────────────────
++0                1 byte         Slot Enable: 0x0F = Active, 0x00 = Disabled.
++1                1 byte         Effect Mode ID (0x01 = Static, 0x02 = Breathing, etc.).
++2..+22           21 bytes       Skeleton area (constant per effect mode).
++5                1 byte         Mode Option Flags bitfield (see below).
++9                1 byte         Constant 0x0F (Virtual strip width = 15 LEDs).
++23..+40          18 bytes       Up to 9 × 16-bit Little-Endian Effect Parameters (Word k = +23 + 2k).
++41..+45          5 bytes        Zero padding.
++46..+69          24 bytes       6-entry Palette (4 bytes each in [A, G, R, B] channel order):
+                                 +0: A (Alpha / intensity, always 0xFF)
+                                 +1: G (Green channel: 0..255)
+                                 +2: R (Red channel: 0..255)
+                                 +3: B (Blue channel: 0..255)
+                                 Entry 0 serves as Background Color where applicable.
+─────────────────────────────────────────────────────────────────────────────────
+Total Slot Size: 70 bytes
+```
+
+#### Option Flags Bitfield (`+5`):
+* `0x01` / `0x02`: `Reverse Direction`
+* `0x04`: `Fade` / `Fade In` / `Fade Out`
+* `0x08`: `Random Color Selection`
+* `0x10`: `Slide Colors` / `Snowfall Mode`
+* `0x20`: `Alternative Color Mode 2`
+* `0x40`: `Color Change On Cycle`
+* `0x80`: `Circular Loop`
+
+---
+
+### 8.4 Hardware Effect Modes (Farbwerk 360)
+
+| Mode ID | Effect Name          | Parameters (Words at `+23+2k`)                                                                                                      | Palette Usage                                           |
+|:-------:|:---------------------|:------------------------------------------------------------------------------------------------------------------------------------|:--------------------------------------------------------|
+| `0x01`  | **Static**           | None                                                                                                                                | Single colour at `+47..+49` (`[G, R, B]`)               |
+| `0x02`  | **Breathing**        | $k_0$: Speed, $k_1$: Intensity, $k_2$: Delay Max, $k_3$: Delay Min                                                                  | Entry 0: Target colour                                  |
+| `0x03`  | **Rotating Rainbow** | $k_0$: Speed, $k_1$: Color range                                                                                                    | Internal rainbow                                        |
+| `0x04`  | **Blinking**         | $k_0$: Speed, $k_1$: Number of FG colours                                                                                           | Entry 0: Background, Entries 1..$N$: Foreground         |
+| `0x05`  | **Color Change**     | $k_0$: Speed, $k_1$: Number of colours                                                                                              | Entries 0..$N-1$: Color list                            |
+| `0x07`  | **Sequence**         | $k_0$: Speed, $k_1$: Smoothness, $k_2$: Count, $k_3$: Delay After, $k_4$: Delay Before                                              | Entry 0: Background, Entries 1..$N$: Colors             |
+| `0x08`  | **Scanner**          | $k_0$: Speed, $k_1$: Smoothness, $k_2$: Width, $k_3$: Start Delay, $k_4$: Min Interval, $k_5$: Max Interval                         | Entry 0: Background, Entry 1: Color 1, Entry 2: Color 2 |
+| `0x09`  | **Laser**            | Identical layout to Scanner ($k_0..k_5$)                                                                                            | Entry 0: Background, Entry 1: Color 1, Entry 2: Color 2 |
+| `0x0A`  | **Wave**             | $k_0$: Speed, $k_1$: Smoothness, $k_2$: Width, $k_5$: Start Delay, $k_7$: Max Interval                                              | Entry 0: Background, Entries 1..$N$: Colors             |
+| `0x0B`  | **Color Sequence**   | $k_0$: Speed, $k_1$: Smoothness, $k_2$: 1 (constant), $k_3$: Count, $k_4$: Change Speed                                             | Entries 0..$N-1$: Colors                                |
+| `0x0C`  | **Color Shift**      | $k_0$: Speed, $k_1$: Color range, $k_2$: Total area                                                                                 | Entry 0: Base colour                                    |
+| `0x0E`  | **Flame**            | $k_0$: Intensity                                                                                                                    | Entry 0: Background, Entry 1: Flame 1, Entry 2: Flame 2 |
+| `0x0F`  | **Rain**             | $k_0$: Drop speed, $k_1$: Drop items, $k_2$: Drop size, $k_3$: Smoothness, $k_4$: Runtime, $k_5$: Min Interval, $k_6$: Max Interval | Entry 0: Background, Entry 1: Drop color                |
+| `0x10`  | **Snowfall**         | Identical layout to Rain ($k_0..k_6$)                                                                                               | Entry 0: Background, Entry 1: Flake color               |
+| `0x11`  | **Stardust**         | Identical layout to Rain ($k_0..k_6$)                                                                                               | Entry 0: Background, Entry 1: Star color                |
+| `0x13`  | **Swiping Rainbow**  | $k_0$: Point speed, $k_1$: Smoothness, $k_2$: Size, $k_3$: Change speed, $k_4$: Range                                               | Entry 0: Point color, Entry 1: Strip color              |
+
+---
+
+### 8.5 Routing Table & Flash Commit Sequence
+
+#### 1. Routing Table (Bytes 1419..1478)
+The routing table maps virtual controller slots to physical output strips:
+* Up to 20 contiguous records of **3 bytes each**:
+  * **Byte 0**: `Controller ID` = Slot index + 1 (1-based creation index).
+  * **Byte 1**: `Channel ID` = 0-based physical port index (`0` = RGBpx 1 .. `3` = RGBpx 4).
+  * **Byte 2**: `Start LED Index` = 0-based offset on the physical strip (`0` = LED 1).
+* **Sorting Rule**: Microcontroller requires records sorted by **Channel ascending, Controller descending**.
+
+#### 2. Live Preview vs. Permanent Save
+* **Live Apply**: Transmit the 1666-byte buffer via `HIDIOCSFEATURE` / `HidD_SetFeature` on Report ID `0x03`.
+* **Flash Save**: Transmit a secondary commit payload over HID Output Report `0x02` (11 bytes):
+  ```
+  0x02 0x00 0x00 0x00 0x02 0x00 0x00 0x00 0x00 0x34 0xC6
+  ```
+
+---
+
+### 8.6 High Flow Next & D5 Next RGBpx (HSV Zone Models)
+
+On the **High Flow Next** (`0xF012`, 682-byte `0x03`) and **D5 Next** (`0xF00E`, 809-byte `0x03`):
+* Lighting is divided into **8 dedicated LED zones** (~70 bytes per zone).
+* **Color Encoding**: Uses an **HSV Color Space** rather than RGB:
+  * **Hue**: Stored as a 16-bit Big-Endian integer scaled across $0..1535$ ($1536 / 360^\\circ$).
+  * **Saturation**: 8-bit unsigned integer ($0..255$).
+  * **Brightness**: 8-bit unsigned integer ($0..255$).
+* Both the base zone color and effect palette entries must be populated.
+* The report is protected by CRC-16-USB at the final two bytes and committed via Report `0x02`.
+
+---
+
+### 8.7 Classic Farbwerk Analog 12V RGB (13-Bit PWM)
+
+On the legacy **Farbwerk** (`0xF00A`):
+* Controls 4 independent 12V common-anode analog RGB channels (12 subchannels: $4 \\times [R, G, B]$).
+* Uses high-resolution **13-bit hardware PWM** (0 to 8,191 discrete steps) per subchannel, allowing completely flicker-free logarithmic dimming curves without stepped banding.
+* Communicates via USB HID Feature Report `0x03` or over Bluetooth SPP using Aqua Computer's binary command protocol.
+
+---
+
+## 9. Aquaero 5/6 Control & Configuration (Report `0x0B`)
+
+Unlike newer controllers that consolidate configuration exclusively into Report `0x03`, the **Aquaero 5 and 6** (`0xF001`) use a dedicated **1025-byte Feature Report `0x0B`** for real-time control modes and calibration registers.
+
+---
+
+### 9.1 Feature Report `0x0B` Architecture (1025 Bytes)
+
+* **Report ID**: `0x0B` (`buffer[0] = 0x0B`).
+* **Transport**: Read-Modify-Write via standard HID Feature Report transfers (`HIDIOCGFEATURE` / `HIDIOCSFEATURE` on Linux; `HidD_GetFeature` / `HidD_SetFeature` on Windows).
+
+---
+
+### 9.2 PWM vs. DC Power Mode Switching
+
+Each of the 4 fan headers on Aquaero 5/6 features hardware switching between linear analog voltage regulation (DC) and high-frequency PWM switching:
+
+|  Fan Channel  | Offset Index in Report `0x0B` | Accepted Values                                                                           |
+|:-------------:|:-----------------------------:|:------------------------------------------------------------------------------------------|
+| **Channel 1** |             `539`             | `0x00`: Power-controlled (DC / linear voltage regulation)<br>`0x02`: PWM mode (4-pin PWM) |
+| **Channel 2** |             `559`             | `0x00`: Power-controlled (DC / linear voltage regulation)<br>`0x02`: PWM mode (4-pin PWM) |
+| **Channel 3** |             `579`             | `0x00`: Power-controlled (DC / linear voltage regulation)<br>`0x02`: PWM mode (4-pin PWM) |
+| **Channel 4** |             `599`             | `0x00`: Power-controlled (DC / linear voltage regulation)<br>`0x02`: PWM mode (4-pin PWM) |
+
+---
+
+### 9.3 Flow Sensor Impulse Calibration
+
+The calibration constants for connected flow sensors (impulses per liter) are stored as **16-bit unsigned little-endian integers**:
+
+|    Flow Sensor    |  Offset Indices  | Byte Ordering | Formula                             |
+|:-----------------:|:----------------:|:-------------:|:------------------------------------|
+| **Flow Sensor 1** | Bytes `416..417` | Little-Endian | `val = buf[416] \| (buf[417] << 8)` |
+| **Flow Sensor 2** | Bytes `422..423` | Little-Endian | `val = buf[422] \| (buf[423] << 8)` |
+
