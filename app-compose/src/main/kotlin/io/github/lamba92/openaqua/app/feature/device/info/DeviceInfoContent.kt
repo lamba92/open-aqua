@@ -37,6 +37,7 @@ import io.github.lamba92.openaqua.app.ui.components.ScreenHeaderSection
 import io.github.lamba92.openaqua.app.ui.components.SectionHeader
 import io.github.lamba92.openaqua.app.ui.components.scrollFadingEdge
 import io.github.lamba92.openaqua.model.device.DeviceCapability
+import io.github.lamba92.openaqua.model.device.DeviceProtocol
 import io.github.lamba92.openaqua.model.device.DisplayKind
 import io.github.lamba92.openaqua.model.device.findCapability
 import open_aqua.app_compose.generated.resources.Res
@@ -298,6 +299,7 @@ fun DeviceInfoContent(
                                 subtitle = stringResource(Res.string.spec_pressure_subtitle),
                             )
                         }
+                        val configLength = (descriptor.protocol as? DeviceProtocol.Flashable)?.configReportLength ?: 0
                         SpecCard(
                             title = stringResource(Res.string.spec_usb_protocol),
                             value =
@@ -309,7 +311,7 @@ fun DeviceInfoContent(
                                 stringResource(
                                     Res.string.spec_usb_protocol_subtitle,
                                     descriptor.protocol.statusReportLength,
-                                    descriptor.protocol.ctrlReportLength,
+                                    configLength,
                                 ),
                         )
                     }

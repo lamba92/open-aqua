@@ -3,19 +3,17 @@ package io.github.lamba92.openaqua.engine.device.protocol
 import io.github.lamba92.openaqua.model.device.DeviceCapability
 import io.github.lamba92.openaqua.model.device.DeviceDescriptor
 import io.github.lamba92.openaqua.model.device.requireCapability
+import io.github.lamba92.openaqua.model.device.virtualSensorsChannelRange
 import io.github.lamba92.openaqua.model.device.virtualSensorsStartChannel
 import kotlin.math.roundToInt
 
 /**
  * Firmware sensor classification codes encoded into the type table of Report 0x04.
- *
- * @property byteValue Raw byte written to device memory.
  */
-enum class VirtualSensorTypeCode(val byteValue: UByte) {
-    /** Slot is unconfigured / inactive. */
+enum class VirtualSensorTypeCode(
+    val byteValue: UByte,
+) {
     DISABLED(0x00u),
-
-    /** Slot represents a live temperature in centidegrees Celsius. */
     TEMPERATURE(0x03u),
 }
 
@@ -23,18 +21,16 @@ enum class VirtualSensorTypeCode(val byteValue: UByte) {
  * Encodes software temperature sensor feeds into binary USB Bulk Report 0x04 packets.
  *
  * Transmitted over Endpoint 0x02 OUT to provide real-time software thermal feeds
- * (e.g. CPU package, GPU hotspot) to hardware fan curve engines.
+ * (CPU package, GPU core, ambient ambient probes) to the device's hardware fan curve PID loops.
  */
 object VirtualSensorsWriter {
-    /** 16-bit signed integer sentinel value (32767) indicating a disconnected or inactive sensor. */
-    const val DISCONNECTED_TEMP_RAW: Short = 0x7FFF
-
     /**
      * Builds a finalized Report 0x04 buffer for the specified device and slot-to-temperature map.
      *
-     * @param descriptor Target device descriptor with [DeviceCapability.VirtualSensors].
-     * @param temperaturesBySlot Map of slot index (0 until capability.count) to temperature in Celsius.
-     * @return Finalized, CRC-16 checksummed byte array ready for USB bulk transfer.
+     * @param descriptor Target device descriptor (must declare [DeviceCapability.VirtualSensors]).
+     * @param temperaturesBySlot Map of 0-based virtual sensor slot index (0 until capability.count)
+     *                            to temperature in degrees Celsius.
+     * @return Fully formatted binary buffer ready for USB transmission, finalized with CRC-16 trailer.
      */
     fun buildReport(
         descriptor: DeviceDescriptor,
@@ -42,22 +38,23 @@ object VirtualSensorsWriter {
     ): UByteArray {
         val virtCap = descriptor.requireCapability<DeviceCapability.VirtualSensors>()
         val report = UByteArray(virtCap.reportSize)
+
         report[0] = virtCap.reportId.toUByte()
 
-        // Initialize all slots in the packet as disconnected and disabled
+        // Initialize all slots to disconnected/inactive
         for (slot in 0 until virtCap.maxSlots) {
             val valOffset = virtCap.valuesOffset + (slot * 2)
-            report[valOffset] = ((DISCONNECTED_TEMP_RAW.toInt() ushr 8) and 0xFF).toUByte()
-            report[valOffset + 1] = (DISCONNECTED_TEMP_RAW.toInt() and 0xFF).toUByte()
+            report[valOffset] = ((virtCap.disconnectedSentinelWhenWriting.toInt() ushr 8) and 0xFF).toUByte()
+            report[valOffset + 1] = (virtCap.disconnectedSentinelWhenWriting.toInt() and 0xFF).toUByte()
 
             val typeOffset = virtCap.typesOffset + slot
             report[typeOffset] = VirtualSensorTypeCode.DISABLED.byteValue
         }
 
-        // Apply device-specific padding if the format requires it
+        // Apply device-specific padding block if required
         when (virtCap) {
             is DeviceCapability.VirtualSensors.Padded67 -> {
-                for (i in 0 until 16) {
+                for (i in 0 until virtCap.paddingLength) {
                     report[virtCap.paddingOffset + i] = virtCap.paddingByte
                 }
             }
@@ -78,8 +75,7 @@ object VirtualSensorsWriter {
             report[typeOffset] = VirtualSensorTypeCode.TEMPERATURE.byteValue
         }
 
-        ConfigWriter.finalizeReport(report, virtCap.reportSize)
-        return report
+        return virtCap.reportSigner.sign(report)
     }
 
     /**
@@ -98,23 +94,26 @@ object VirtualSensorsWriter {
         val startChannel = descriptor.virtualSensorsStartChannel
         val slot = channel - startChannel
         require(slot in 0 until virtCap.count) {
-            "Channel $channel is not a valid virtual sensor for ${descriptor.name} (valid channels: $startChannel..${startChannel + virtCap.count - 1})"
+            "Channel $channel is not a valid virtual sensor for ${descriptor.name} (valid channels: ${descriptor.virtualSensorsChannelRange})"
         }
         return slot
     }
 
     /**
-     * Builds a finalized Report 0x04 buffer using unified logical channel indices.
+     * Builds a finalized Report 0x04 buffer using logical sensor channel indexes.
      *
      * @param descriptor Target device descriptor.
-     * @param temperaturesByChannel Map of logical channel index to temperature in Celsius.
-     * @return Finalized, CRC-16 checksummed byte array ready for USB bulk transfer.
+     * @param temperaturesByChannel Map of logical channel index (e.g. 4..19 on OCTO) to temperature in Celsius.
+     * @return Fully formatted binary buffer ready for USB transmission, finalized with CRC-16 trailer.
      */
     fun buildReportFromChannels(
         descriptor: DeviceDescriptor,
         temperaturesByChannel: Map<Int, Double>,
     ): UByteArray {
-        val slotMap = temperaturesByChannel.mapKeys { (ch, _) -> channelToSlot(descriptor, ch) }
-        return buildReport(descriptor, slotMap)
+        val temperaturesBySlot =
+            temperaturesByChannel.mapKeys { (channel, _) ->
+                channelToSlot(descriptor, channel)
+            }
+        return buildReport(descriptor, temperaturesBySlot)
     }
 }

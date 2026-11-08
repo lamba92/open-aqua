@@ -68,14 +68,12 @@ data class DeviceDescriptor(
 /**
  * Retrieves the first capability of type [T] registered on this device, or `null` if not supported.
  */
-inline fun <reified T : DeviceCapability> DeviceDescriptor.findCapability(): T? =
-    capabilities.filterIsInstance<T>().firstOrNull()
+inline fun <reified T : DeviceCapability> DeviceDescriptor.findCapability(): T? = capabilities.filterIsInstance<T>().firstOrNull()
 
 /**
  * Checks whether this device supports capability [T].
  */
-inline fun <reified T : DeviceCapability> DeviceDescriptor.hasCapability(): Boolean =
-    findCapability<T>() != null
+inline fun <reified T : DeviceCapability> DeviceDescriptor.hasCapability(): Boolean = findCapability<T>() != null
 
 /**
  * Retrieves the capability of type [T] registered on this device, or throws an [IllegalStateException] if absent.
@@ -86,8 +84,7 @@ inline fun <reified T : DeviceCapability> DeviceDescriptor.requireCapability(): 
 /**
  * Retrieves all capabilities of type [T] registered on this device.
  */
-inline fun <reified T : DeviceCapability> DeviceDescriptor.findCapabilities(): List<T> =
-    capabilities.filterIsInstance<T>()
+inline fun <reified T : DeviceCapability> DeviceDescriptor.findCapabilities(): List<T> = capabilities.filterIsInstance<T>()
 
 /**
  * Retrieves a specific fan control mode capability [T] (e.g. [FanCapability.Follow] or [FanCapability.TargetTemp])

@@ -230,7 +230,9 @@ val installReleaseAppImage =
 
             val installedDesktop = File(appsDir, "open-aqua.desktop")
             val desktopContent =
-                desktopFile.get().asFile
+                desktopFile
+                    .get()
+                    .asFile
                     .readText()
                     .replace("Exec=open-aqua", "Exec=${installedAppImage.absolutePath}")
             installedDesktop.writeText(desktopContent)
@@ -312,17 +314,19 @@ val packageReleaseMsix =
             finalMsix.parentFile.mkdirs()
             finalMsix.delete()
 
-            providers.exec {
-                commandLine(
-                    makeAppxExe.absolutePath,
-                    "pack",
-                    "/d",
-                    targetStagingDir.absolutePath,
-                    "/p",
-                    finalMsix.absolutePath,
-                    "/nv",
-                )
-            }.result.get()
+            providers
+                .exec {
+                    commandLine(
+                        makeAppxExe.absolutePath,
+                        "pack",
+                        "/d",
+                        targetStagingDir.absolutePath,
+                        "/p",
+                        finalMsix.absolutePath,
+                        "/nv",
+                    )
+                }.result
+                .get()
 
             logger.lifecycle("MSIX package generated successfully at: ${finalMsix.absolutePath}")
         }
@@ -375,7 +379,11 @@ val releaseWindows =
 
             val msixPackages =
                 if (os.isWindows) {
-                    listOf(packageReleaseMsix.get().outputs.files.singleFile)
+                    listOf(
+                        packageReleaseMsix
+                            .get()
+                            .outputs.files.singleFile,
+                    )
                 } else {
                     emptyList()
                 }

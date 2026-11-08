@@ -11,6 +11,7 @@ import io.github.lamba92.openaqua.engine.util.listDirectory
 import io.github.lamba92.openaqua.engine.util.readTextOrNull
 import io.github.lamba92.openaqua.model.device.DetectedHardwareDevice
 import io.github.lamba92.openaqua.model.device.DeviceAlias
+import io.github.lamba92.openaqua.model.device.DeviceCapability
 import io.github.lamba92.openaqua.model.device.DeviceConfig
 import io.github.lamba92.openaqua.model.device.DeviceDescriptor
 import io.github.lamba92.openaqua.model.device.DeviceId
@@ -18,9 +19,9 @@ import io.github.lamba92.openaqua.model.device.DeviceRegistry
 import io.github.lamba92.openaqua.model.device.DeviceTelemetry
 import io.github.lamba92.openaqua.model.device.FlashConfigRequest
 import io.github.lamba92.openaqua.model.device.descriptor
-import io.github.lamba92.openaqua.model.device.validateRequestMatchesDevice
-import io.github.lamba92.openaqua.model.device.DeviceCapability
 import io.github.lamba92.openaqua.model.device.findCapability
+import io.github.lamba92.openaqua.model.device.flashableProtocol
+import io.github.lamba92.openaqua.model.device.validateRequestMatchesDevice
 import kotlinx.cinterop.COpaquePointerVar
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.UByteVar
@@ -98,21 +99,22 @@ object LinuxHardwareController : HardwareController {
                 }
             }
 
-            if (vendorId != DeviceRegistry.AQUACOMPUTER_VENDOR_ID || productId == null) {
-                continue
-            }
-
+            if (vendorId != DeviceRegistry.AQUACOMPUTER_VENDOR_ID || productId == null) continue
             val descriptor = DeviceRegistry.findByProductId(productId) ?: continue
-            val id = DeviceId.from(hidUniq ?: entryName)
 
-            scanned.add(
-                ScannedHardwareNode(
-                    id = id,
-                    descriptor = descriptor,
-                    serial = hidUniq,
-                    hidrawPath = hidrawDevPath(entryName),
-                ),
-            )
+            val devPath = hidrawDevPath(entryName)
+            val id = DeviceId.from("$vendorId-$productId" + if (hidUniq != null) "-$hidUniq" else "")
+
+            if (scanned.none { it.id == id }) {
+                scanned.add(
+                    ScannedHardwareNode(
+                        id = id,
+                        descriptor = descriptor,
+                        serial = hidUniq,
+                        hidrawPath = devPath,
+                    ),
+                )
+            }
         }
         return scanned
     }
@@ -127,7 +129,11 @@ object LinuxHardwareController : HardwareController {
                 val typePrefix = type.name.lowercase().replace('_', '-')
                 nodes.mapIndexed { index, node ->
                     val fwVersion =
-                        readFirmwareVersion(node.hidrawPath, node.descriptor.protocol.firmwareVersionOffset)
+                        readFirmwareVersion(
+                            hidrawPath = node.hidrawPath,
+                            firmwareOffset = node.descriptor.protocol.firmwareVersionOffset,
+                            statusReportId = node.descriptor.protocol.statusReportId,
+                        )
                     DetectedHardwareDevice(
                         id = node.id,
                         alias = DeviceAlias.from("$typePrefix-${index + 1}"),
@@ -145,7 +151,7 @@ object LinuxHardwareController : HardwareController {
 
             val node = getScannedNode(device)
             val fd = open(node.hidrawPath, O_RDWR or O_NONBLOCK)
-            check(fd >= 0) { "Cannot open ${node.hidrawPath} for reading" }
+            check(fd >= 0) { "Cannot open ${node.hidrawPath} for streaming" }
 
             try {
                 memScoped {
@@ -153,16 +159,16 @@ object LinuxHardwareController : HardwareController {
                     pfd.fd = fd
                     pfd.events = POLLIN.toShort()
 
-                    val bufSize = 512
-                    val buf = allocArray<UByteVar>(bufSize)
+                    val reportLen = descriptor.protocol.statusReportLength
+                    val buf = allocArray<UByteVar>(512)
 
                     while (currentCoroutineContext().isActive) {
                         val pollRet = poll(pfd.ptr, 1u, DEFAULT_HID_REPORT_TIMEOUT_MS)
-                        if (pollRet > 0) {
-                            val bytesRead = read(fd, buf, bufSize.toULong())
-                            if (bytesRead >= descriptor.protocol.statusReportLength.toLong() && buf[0].toInt() == descriptor.protocol.statusReportId) {
-                                val report = UByteArray(bytesRead.toInt()) { buf[it] }
-                                val telemetry = StatusReportParser.parse(device, report)
+                        if (pollRet > 0 && (pfd.revents.toInt() and POLLIN) != 0) {
+                            val bytesRead = read(fd, buf, 512u)
+                            if (bytesRead >= reportLen.toLong() && buf[0].toInt() == descriptor.protocol.statusReportId) {
+                                val raw = UByteArray(bytesRead.toInt()) { buf[it] }
+                                val telemetry = StatusReportParser.parse(device, raw)
                                 emit(telemetry)
                             }
                         }
@@ -179,7 +185,12 @@ object LinuxHardwareController : HardwareController {
                 ?: error("Unsupported device type: ${device.type}")
 
         val node = getScannedNode(device)
-        val report = readFeatureReport(node.hidrawPath, descriptor.protocol.ctrlReportId.toUByte(), descriptor.protocol.ctrlReportLength)
+        val report =
+            readFeatureReport(
+                hidrawPath = node.hidrawPath,
+                reportId = descriptor.flashableProtocol.configReportId.toUByte(),
+                reportPayloadLength = descriptor.flashableProtocol.configReportLength,
+            )
 
         return ConfigParser.parseConfig(descriptor, report)
     }
@@ -192,10 +203,16 @@ object LinuxHardwareController : HardwareController {
             DeviceRegistry.ALL.firstOrNull { it.type == device.type }
                 ?: error("Unsupported device type: ${device.type}")
 
+        val flashProtocol = descriptor.flashableProtocol
         descriptor.validateRequestMatchesDevice(request)
 
         val node = getScannedNode(device)
-        val report = readFeatureReport(node.hidrawPath, descriptor.protocol.ctrlReportId.toUByte(), descriptor.protocol.ctrlReportLength)
+        val report =
+            readFeatureReport(
+                hidrawPath = node.hidrawPath,
+                reportId = flashProtocol.configReportId.toUByte(),
+                reportPayloadLength = flashProtocol.configReportLength,
+            )
 
         val flashReports = ConfigWriter.prepareFlashReports(report, descriptor, request)
         flashReports.forEach { reportToWrite ->
@@ -203,7 +220,12 @@ object LinuxHardwareController : HardwareController {
         }
         usleep(250_000u)
 
-        val readback = readFeatureReport(node.hidrawPath, descriptor.protocol.ctrlReportId.toUByte(), descriptor.protocol.ctrlReportLength)
+        val readback =
+            readFeatureReport(
+                hidrawPath = node.hidrawPath,
+                reportId = flashProtocol.configReportId.toUByte(),
+                reportPayloadLength = flashProtocol.configReportLength,
+            )
         val readbackReport = ConfigParser.parseConfig(descriptor, readback)
 
         ConfigWriter.verifyFlashConfig(expected = request, actual = readbackReport)
@@ -219,21 +241,18 @@ object LinuxHardwareController : HardwareController {
             DeviceRegistry.ALL.firstOrNull { it.type == device.type }
                 ?: error("Unsupported device type: ${device.type}")
 
-        val virtCap = descriptor.findCapability<DeviceCapability.VirtualSensors>()
-        check(virtCap != null && virtCap.count > 0) {
-            "${device.name} does not support virtual sensors"
-        }
+        val virtCap =
+            descriptor.findCapability<DeviceCapability.VirtualSensors>()
+                ?: error("${device.name} does not support virtual sensors")
 
         val report = VirtualSensorsWriter.buildReportFromChannels(descriptor, sensors)
-        val node = getScannedNode(device)
-
-        writeVirtualSensorsBulkReport(node.hidrawPath, report)
+        writeVirtualSensorsBulkReport(getScannedNode(device).hidrawPath, report)
     }
 }
 
-private fun hidiocgfeature(len: Int): ULong = 0xC0000000UL or ((len.toULong() and 0x3FFFUL) shl 16) or 0x4807UL
+private const val HIDIOCGFEATURE_BASE: ULong = 0xC0004807UL
 
-private fun hidiocsfeature(len: Int): ULong = 0xC0000000UL or ((len.toULong() and 0x3FFFUL) shl 16) or 0x4806UL
+private fun hidiocgfeature(length: Int): ULong = HIDIOCGFEATURE_BASE or ((length.toULong() and 0x3FFFUL) shl 16)
 
 private fun readFeatureReport(
     hidrawPath: String,
@@ -242,7 +261,7 @@ private fun readFeatureReport(
 ): UByteArray {
     val totalLen = reportPayloadLength + 1
     val fd = open(hidrawPath, O_RDWR)
-    check(fd >= 0) { "Cannot open $hidrawPath for reading" }
+    check(fd >= 0) { "Cannot open $hidrawPath for reading feature report" }
 
     try {
         memScoped {
@@ -251,7 +270,7 @@ private fun readFeatureReport(
 
             val cmd = hidiocgfeature(totalLen)
             val ret = ioctl(fd, cmd, buf)
-            check(ret >= 0) { "ioctl HIDIOCGFEATURE failed on $hidrawPath" }
+            check(ret >= 0) { "ioctl HIDIOCGFEATURE failed on $hidrawPath (totalLen=$totalLen)" }
 
             val result = UByteArray(totalLen)
             for (i in 0 until totalLen) {
@@ -267,6 +286,7 @@ private fun readFeatureReport(
 private fun readFirmwareVersion(
     hidrawPath: String,
     firmwareOffset: Int,
+    statusReportId: Int,
     timeoutMs: Int = DEFAULT_HID_REPORT_TIMEOUT_MS,
 ): Int? {
     val fd = open(hidrawPath, O_RDWR or O_NONBLOCK)
@@ -285,7 +305,7 @@ private fun readFirmwareVersion(
             val buf = allocArray<UByteVar>(bufSize)
             val bytesRead = read(fd, buf, bufSize.toULong())
             if (bytesRead < (firmwareOffset + 2).toLong()) return null
-            if (buf[0].toInt() != HID_STATUS_REPORT_ID) return null
+            if (buf[0].toInt() != statusReportId) return null
 
             val fwHigh = buf[firmwareOffset].toInt() and 0xFF
             val fwLow = buf[firmwareOffset + 1].toInt() and 0xFF
@@ -329,6 +349,7 @@ private fun writeFeatureReport(
 private const val USBDEVFS_CLAIMINTERFACE: ULong = 0x8004550FUL
 private const val USBDEVFS_RELEASEINTERFACE: ULong = 0x80045510UL
 private const val USBDEVFS_BULK: ULong = 0xC0185502UL
+private const val VIRTUAL_SENSORS_BULK_OUT_EP: UInt = 0x02u
 
 private data class UsbBulkSession(
     val fd: Int,
@@ -426,7 +447,7 @@ private fun writeVirtualSensorsBulkReport(
             // 24 bytes on 64-bit Linux
             val transfer = allocArray<UByteVar>(24)
             val uintView = transfer.reinterpret<UIntVar>()
-            uintView[0] = 0x02u // Endpoint 0x02 OUT
+            uintView[0] = VIRTUAL_SENSORS_BULK_OUT_EP
             uintView[1] = reportData.size.toUInt()
             uintView[2] = 2000u // 2000 ms timeout
 

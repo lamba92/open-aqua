@@ -14,9 +14,9 @@ object DeviceRegistry {
             name = "Aquacomputer OCTO",
             productId = 0xF011,
             protocol =
-                DeviceProtocol(
+                DeviceProtocol.Flashable(
                     statusReportLength = 0x147,
-                    ctrlReportLength = 0x65F,
+                    configReportLength = 0x65F,
                     firmwareVersionOffset = 0x0D,
                     commitStrategy = CommitStrategy.SecondaryReport(),
                 ),
@@ -76,9 +76,9 @@ object DeviceRegistry {
             name = "Aquacomputer QUADRO",
             productId = 0xF00D,
             protocol =
-                DeviceProtocol(
+                DeviceProtocol.Flashable(
                     statusReportLength = 0xA5,
-                    ctrlReportLength = 0x3C1,
+                    configReportLength = 0x3C1,
                     firmwareVersionOffset = 0x0D,
                     commitStrategy = CommitStrategy.SecondaryReport(),
                 ),
@@ -138,9 +138,9 @@ object DeviceRegistry {
             name = "Aquacomputer D5 Next",
             productId = 0xF00E,
             protocol =
-                DeviceProtocol(
+                DeviceProtocol.Flashable(
                     statusReportLength = 0x76,
-                    ctrlReportLength = 0x329,
+                    configReportLength = 0x329,
                     firmwareVersionOffset = 0x0D,
                     commitStrategy = CommitStrategy.SecondaryReport(),
                 ),
@@ -198,9 +198,9 @@ object DeviceRegistry {
             name = "Aquacomputer Farbwerk 360",
             productId = 0xF010,
             protocol =
-                DeviceProtocol(
+                DeviceProtocol.Flashable(
                     statusReportLength = 0xB6,
-                    ctrlReportLength = 0x682,
+                    configReportLength = 0x682,
                     firmwareVersionOffset = 0x0D,
                     commitStrategy = CommitStrategy.SecondaryReport(),
                 ),
@@ -236,9 +236,9 @@ object DeviceRegistry {
             name = "Aquacomputer Farbwerk",
             productId = 0xF00A,
             protocol =
-                DeviceProtocol(
+                DeviceProtocol.Flashable(
                     statusReportLength = 0xB6,
-                    ctrlReportLength = 0xB6,
+                    configReportLength = 0xB6,
                     firmwareVersionOffset = 0x0D,
                     commitStrategy = CommitStrategy.SecondaryReport(),
                 ),
@@ -270,9 +270,9 @@ object DeviceRegistry {
             name = "Aquacomputer High Flow Next",
             productId = 0xF012,
             protocol =
-                DeviceProtocol(
+                DeviceProtocol.Flashable(
                     statusReportLength = 0x6F,
-                    ctrlReportLength = 0x2AA,
+                    configReportLength = 0x2AA,
                     firmwareVersionOffset = 0x0D,
                     commitStrategy = CommitStrategy.SecondaryReport(),
                 ),
@@ -321,9 +321,9 @@ object DeviceRegistry {
             name = "Aquacomputer Leakshield",
             productId = 0xF014,
             protocol =
-                DeviceProtocol(
+                DeviceProtocol.Flashable(
                     statusReportLength = 0x140,
-                    ctrlReportLength = 0x33,
+                    configReportLength = 0x33,
                     firmwareVersionOffset = 0x0D,
                     commitStrategy = CommitStrategy.SecondaryReport(),
                 ),
@@ -368,9 +368,9 @@ object DeviceRegistry {
             name = "Aquacomputer Aquastream Ultimate",
             productId = 0xF00B,
             protocol =
-                DeviceProtocol(
+                DeviceProtocol.Flashable(
                     statusReportLength = 0x76,
-                    ctrlReportLength = 0x329,
+                    configReportLength = 0x329,
                     firmwareVersionOffset = 0x0D,
                     commitStrategy = CommitStrategy.SecondaryReport(),
                 ),
@@ -431,10 +431,10 @@ object DeviceRegistry {
             name = "Aquacomputer Aquaero",
             productId = 0xF001,
             protocol =
-                DeviceProtocol(
+                DeviceProtocol.Flashable(
                     statusReportLength = 0x195,
-                    ctrlReportLength = 0x0A93,
-                    ctrlReportId = 0x0B,
+                    configReportLength = 0x0A93,
+                    configReportId = 0x0B,
                     firmwareVersionOffset = 0x0B,
                     commitStrategy = CommitStrategy.Direct,
                 ),
@@ -491,11 +491,9 @@ object DeviceRegistry {
             name = "Aquacomputer High Flow USB",
             productId = 0xF003,
             protocol =
-                DeviceProtocol(
+                DeviceProtocol.ReadOnly(
                     statusReportLength = 0x76,
-                    ctrlReportLength = 0,
                     firmwareVersionOffset = 0x03,
-                    commitStrategy = CommitStrategy.None,
                 ),
             capabilities =
                 listOf(
@@ -530,9 +528,9 @@ object DeviceRegistry {
             name = "Aquacomputer Poweradjust 3",
             productId = 0xF0BD,
             protocol =
-                DeviceProtocol(
+                DeviceProtocol.Flashable(
                     statusReportLength = 0x32,
-                    ctrlReportLength = 0x32,
+                    configReportLength = 0x32,
                     firmwareVersionOffset = 0x21,
                     commitStrategy = CommitStrategy.Direct,
                 ),
@@ -580,9 +578,9 @@ object DeviceRegistry {
             name = "Aquacomputer Aquastream XT",
             productId = 0xF0B6,
             protocol =
-                DeviceProtocol(
+                DeviceProtocol.Flashable(
                     statusReportLength = 0x42,
-                    ctrlReportLength = 0x34,
+                    configReportLength = 0x34,
                     firmwareVersionOffset = 0x32,
                     commitStrategy = CommitStrategy.Direct,
                 ),

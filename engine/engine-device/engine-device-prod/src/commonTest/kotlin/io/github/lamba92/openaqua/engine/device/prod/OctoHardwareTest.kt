@@ -383,7 +383,9 @@ class OctoHardwareTest {
             assertTrue(updated is CopyFanConfig, "Fan config must be CopyFanConfig, was ${updated::class.simpleName}")
             assertEquals(testChannel, updated.channel)
             assertEquals(sourceChannel, updated.sourceChannel)
-            println("Verified CopyFanConfig flashed and read back successfully on Fan ${testChannel + 1} following Fan ${sourceChannel + 1}")
+            println(
+                "Verified CopyFanConfig flashed and read back successfully on Fan ${testChannel + 1} following Fan ${sourceChannel + 1}",
+            )
         }
 
     companion object {

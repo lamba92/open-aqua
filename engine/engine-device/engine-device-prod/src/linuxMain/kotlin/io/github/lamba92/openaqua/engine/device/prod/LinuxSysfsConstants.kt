@@ -49,33 +49,46 @@ internal const val UEVENT_DELIMITER = ":"
 // -----------------------------------------------------------------------------
 
 /**
- * HID Input Report ID continuously emitted by Aquacomputer devices (~1 Hz) containing
- * telemetry, device serial number, and firmware version.
- */
-internal const val HID_STATUS_REPORT_ID = 0x01
-
-/**
  * Default timeout in milliseconds when polling for an incoming status report.
  */
 internal const val DEFAULT_HID_REPORT_TIMEOUT_MS = 1200
 
-/**
- * Status string returned upon a successful operation (e.g. flashing a curve).
- */
-internal const val STATUS_OK = "ok"
-
 // -----------------------------------------------------------------------------
-// Path Builder Helpers
+// Linux ioctl command builder for HIDIOCSFEATURE (Set Feature Report)
 // -----------------------------------------------------------------------------
 
 /**
- * Builds the sysfs path to the device's `uevent` file for a given hidraw entry.
- * Example: `/sys/class/hidraw/hidraw9/device/uevent`
+ * Encodes `_IOC(_IOC_WRITE|_IOC_READ, 'H', 0x06, length)` matching the kernel
+ * definition in `<linux/hidraw.h>`.
+ *
+ * `HIDIOCSFEATURE(len)` opcode:
+ * - Direction: `_IOC_READ | _IOC_WRITE` (bits 30..31 = 0x3)
+ * - Size: length in bytes (bits 16..29)
+ * - Type: `'H'` = 0x48 (bits 8..15)
+ * - Number: 0x06 (bits 0..7)
+ *
+ * @param length Total feature report buffer size in bytes (Report ID byte + payload).
  */
-internal fun hidrawUeventPath(entry: String): String = "$SYSFS_HIDRAW_DIR/$entry/$DEVICE_UEVENT"
+internal fun hidiocsfeature(length: Int): ULong {
+    val dir = 3UL shl 30
+    val size = (length.toULong() and 0x3FFFUL) shl 16
+    val type = 'H'.code.toULong() shl 8
+    val nr = 0x06UL
+    return dir or size or type or nr
+}
+
+// -----------------------------------------------------------------------------
+// Sysfs Path Builders
+// -----------------------------------------------------------------------------
 
 /**
- * Builds the character device node path in `/dev` for a given hidraw entry.
- * Example: `/dev/hidraw9`
+ * Builds the absolute sysfs path to the `uevent` file for a given hidraw device node.
+ * Example: `hidraw9` -> `/sys/class/hidraw/hidraw9/device/uevent`.
  */
-internal fun hidrawDevPath(entry: String): String = "$DEV_DIR/$entry"
+internal fun hidrawUeventPath(hidrawName: String): String = "$SYSFS_HIDRAW_DIR/$hidrawName/$DEVICE_UEVENT"
+
+/**
+ * Builds the character device path under `/dev` for a given hidraw device node.
+ * Example: `hidraw9` -> `/dev/hidraw9`.
+ */
+internal fun hidrawDevPath(hidrawName: String): String = "$DEV_DIR/$hidrawName"

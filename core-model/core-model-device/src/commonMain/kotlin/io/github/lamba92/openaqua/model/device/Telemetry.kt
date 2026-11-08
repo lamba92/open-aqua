@@ -71,9 +71,6 @@ sealed interface SensorTelemetry {
     ) : SensorTelemetry
 }
 
-/**
- * Helper returning the temperature in Celsius if the sensor is [SensorTelemetry.Connected], or `null` otherwise.
- */
 val SensorTelemetry.tempCelsiusOrNull: Double?
     get() = (this as? SensorTelemetry.Connected)?.tempCelsius
 

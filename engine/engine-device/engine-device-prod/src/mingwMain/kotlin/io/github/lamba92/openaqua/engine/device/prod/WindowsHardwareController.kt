@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalForeignApi::class)
+
 package io.github.lamba92.openaqua.engine.device.prod
 
 import io.github.lamba92.openaqua.engine.device.hardware.HardwareController
@@ -7,6 +9,7 @@ import io.github.lamba92.openaqua.engine.device.protocol.StatusReportParser
 import io.github.lamba92.openaqua.engine.device.protocol.VirtualSensorsWriter
 import io.github.lamba92.openaqua.model.device.DetectedHardwareDevice
 import io.github.lamba92.openaqua.model.device.DeviceAlias
+import io.github.lamba92.openaqua.model.device.DeviceCapability
 import io.github.lamba92.openaqua.model.device.DeviceConfig
 import io.github.lamba92.openaqua.model.device.DeviceDescriptor
 import io.github.lamba92.openaqua.model.device.DeviceId
@@ -14,10 +17,12 @@ import io.github.lamba92.openaqua.model.device.DeviceRegistry
 import io.github.lamba92.openaqua.model.device.DeviceTelemetry
 import io.github.lamba92.openaqua.model.device.FlashConfigRequest
 import io.github.lamba92.openaqua.model.device.descriptor
+import io.github.lamba92.openaqua.model.device.flashableProtocol
+import io.github.lamba92.openaqua.model.device.hasCapability
 import io.github.lamba92.openaqua.model.device.validateRequestMatchesDevice
-import io.github.lamba92.openaqua.model.device.virtualSensorsCount
 import kotlinx.cinterop.CPointer
 import kotlinx.cinterop.CPointerVar
+import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.MemScope
 import kotlinx.cinterop.UByteVar
 import kotlinx.cinterop.UIntVar
@@ -76,8 +81,6 @@ import winhid.WinUsb_Initialize
 import winhid.WinUsb_SetPipePolicy
 import winhid.WinUsb_WritePipe
 import kotlin.time.Duration.Companion.seconds
-
-private const val HID_STATUS_REPORT_ID = 0x01
 
 private data class ScannedWindowsNode(
     val id: DeviceId,
@@ -167,7 +170,12 @@ object WindowsHardwareController : HardwareController {
                         null
                     }
 
-                val fw = readFirmwareVersion(devicePath, descriptor.protocol.firmwareVersionOffset)
+                val fw =
+                    readFirmwareVersion(
+                        devicePath = devicePath,
+                        firmwareOffset = descriptor.protocol.firmwareVersionOffset,
+                        statusReportId = descriptor.protocol.statusReportId,
+                    )
 
                 val id = DeviceId.from("$vid-$pid" + if (serial != null) "-$serial" else "")
 
@@ -228,7 +236,12 @@ object WindowsHardwareController : HardwareController {
                 ?: error("Unsupported device type: ${device.type}")
 
         val node = getScannedNode(device)
-        val report = readFeatureReport(node.devicePath, descriptor.protocol.ctrlReportId.toUByte(), descriptor.protocol.ctrlReportLength)
+        val report =
+            readFeatureReport(
+                node.devicePath,
+                descriptor.flashableProtocol.configReportId.toUByte(),
+                descriptor.flashableProtocol.configReportLength,
+            )
 
         return ConfigParser.parseConfig(descriptor, report)
     }
@@ -241,10 +254,11 @@ object WindowsHardwareController : HardwareController {
             DeviceRegistry.ALL.firstOrNull { it.type == device.type }
                 ?: error("Unsupported device type: ${device.type}")
 
+        val flashProtocol = descriptor.flashableProtocol
         descriptor.validateRequestMatchesDevice(request)
 
         val node = getScannedNode(device)
-        val report = readFeatureReport(node.devicePath, descriptor.protocol.ctrlReportId.toUByte(), descriptor.protocol.ctrlReportLength)
+        val report = readFeatureReport(node.devicePath, flashProtocol.configReportId.toUByte(), flashProtocol.configReportLength)
 
         val flashReports = ConfigWriter.prepareFlashReports(report, descriptor, request)
         flashReports.forEachIndexed { index, reportToWrite ->
@@ -256,7 +270,7 @@ object WindowsHardwareController : HardwareController {
         }
         Sleep(250u)
 
-        val readback = readFeatureReport(node.devicePath, descriptor.protocol.ctrlReportId.toUByte(), descriptor.protocol.ctrlReportLength)
+        val readback = readFeatureReport(node.devicePath, flashProtocol.configReportId.toUByte(), flashProtocol.configReportLength)
         val readbackReport = ConfigParser.parseConfig(descriptor, readback)
 
         ConfigWriter.verifyFlashConfig(expected = request, actual = readbackReport)
@@ -272,7 +286,7 @@ object WindowsHardwareController : HardwareController {
             DeviceRegistry.ALL.firstOrNull { it.type == device.type }
                 ?: error("Unsupported device type: ${device.type}")
 
-        check(descriptor.virtualSensorsCount > 0) {
+        check(device.descriptor().hasCapability<DeviceCapability.VirtualSensors>()) {
             "${device.name} does not support virtual sensors"
         }
 
@@ -324,6 +338,7 @@ private fun readFeatureReport(
 private fun readFirmwareVersion(
     devicePath: String,
     firmwareOffset: Int,
+    statusReportId: Int,
 ): Int? {
     val handle =
         CreateFileW(
@@ -346,7 +361,7 @@ private fun readFirmwareVersion(
             val ok = ReadFile(handle, buf, bufSize.toUInt(), bytesRead.ptr, null)
             if (ok == 0) return null
             if (bytesRead.value < (firmwareOffset + 2).toUInt()) return null
-            if (buf[0].toInt() != HID_STATUS_REPORT_ID) return null
+            if (buf[0].toInt() != statusReportId) return null
 
             val fwHigh = buf[firmwareOffset].toInt() and 0xFF
             val fwLow = buf[firmwareOffset + 1].toInt() and 0xFF
@@ -429,15 +444,15 @@ private fun writeOutputReport(
                 buf[i] = reportData[i]
             }
 
-            Sleep(100u)
+            Sleep(200u)
 
-            val ret = HidD_SetOutputReport(handle, buf, totalLen.toUInt())
-            if (ret == 0.toUByte()) {
+            val ok = HidD_SetOutputReport(handle, buf, totalLen.toUInt())
+            if (ok == 0.toUByte()) {
                 val bytesWritten = alloc<UIntVar>()
                 val writeOk = WriteFile(handle, buf, totalLen.toUInt(), bytesWritten.ptr, null)
                 check(writeOk != 0) {
                     val err = GetLastError()
-                    "Both HidD_SetOutputReport and WriteFile failed on $devicePath (err=$err)"
+                    "Failed to write output report to $devicePath (SetOutputReport and WriteFile failed, err=$err)"
                 }
             }
         }
@@ -478,21 +493,23 @@ private fun tryOpenMatchingWinUsbSession(
             dwFlagsAndAttributes = FILE_FLAG_OVERLAPPED.toUInt(),
             hTemplateFile = null,
         )
-    if (fileHandle == INVALID_HANDLE_VALUE || fileHandle == null) return null
+    if (fileHandle == null || fileHandle == INVALID_HANDLE_VALUE) return null
 
     memScoped {
         val winUsbHandleVar = alloc<WINUSB_INTERFACE_HANDLEVar>()
-        if (WinUsb_Initialize(fileHandle, winUsbHandleVar.ptr) == 0) {
+        val initOk = WinUsb_Initialize(fileHandle, winUsbHandleVar.ptr)
+        if (initOk == 0) {
             CloseHandle(fileHandle)
             return null
         }
-        val winUsbHandle =
-            winUsbHandleVar.value ?: run {
-                CloseHandle(fileHandle)
-                return null
-            }
+        val winUsbHandle = winUsbHandleVar.value
+        if (winUsbHandle == null) {
+            CloseHandle(fileHandle)
+            return null
+        }
 
-        val devDesc = allocArray<UByteVar>(18)
+        // Read USB device descriptor (18 bytes)
+        val devDescBuf = allocArray<UByteVar>(18)
         val transferred = alloc<UIntVar>()
         val descOk =
             WinUsb_GetDescriptor(
@@ -500,48 +517,51 @@ private fun tryOpenMatchingWinUsbSession(
                 DescriptorType = USB_DEVICE_DESCRIPTOR_TYPE,
                 Index = 0u,
                 LanguageID = 0u,
-                Buffer = devDesc,
+                Buffer = devDescBuf,
                 BufferLength = 18u,
                 LengthTransferred = transferred.ptr,
             )
-        if (descOk == 0 || transferred.value < 18u) {
+        if (descOk == 0) {
             WinUsb_Free(winUsbHandle)
             CloseHandle(fileHandle)
             return null
         }
 
-        val vid = (devDesc[9].toInt() shl 8) or devDesc[8].toInt()
-        val pid = (devDesc[11].toInt() shl 8) or devDesc[10].toInt()
+        val vid = (devDescBuf[9].toInt() shl 8) or devDescBuf[8].toInt()
+        val pid = (devDescBuf[11].toInt() shl 8) or devDescBuf[10].toInt()
+        val iSerial = devDescBuf[16].toInt()
+
         if (vid != DeviceRegistry.AQUACOMPUTER_VENDOR_ID) {
             WinUsb_Free(winUsbHandle)
             CloseHandle(fileHandle)
             return null
         }
 
-        val iSerial = devDesc[16]
         var serial: String? = null
-        if (iSerial > 0u) {
-            val strBuf = allocArray<UByteVar>(256)
+        if (iSerial > 0) {
+            val strDescBuf = allocArray<UByteVar>(256)
+            val strTransferred = alloc<UIntVar>()
             val strOk =
                 WinUsb_GetDescriptor(
                     InterfaceHandle = winUsbHandle,
                     DescriptorType = USB_STRING_DESCRIPTOR_TYPE,
-                    Index = iSerial,
+                    Index = iSerial.toUByte(),
                     LanguageID = 0x0409u,
-                    Buffer = strBuf,
+                    Buffer = strDescBuf,
                     BufferLength = 256u,
-                    LengthTransferred = transferred.ptr,
+                    LengthTransferred = strTransferred.ptr,
                 )
-            val byteLen = transferred.value.toInt()
-            if (strOk != 0 && byteLen > 2) {
-                strBuf[byteLen.coerceAtMost(254)] = 0u
-                strBuf[(byteLen + 1).coerceAtMost(255)] = 0u
-                serial = (strBuf + 2)!!.reinterpret<UShortVar>().toKStringFromUtf16()
+            if (strOk != 0 && strTransferred.value > 2u) {
+                val strLenBytes = (strTransferred.value.toInt() - 2)
+                val wcharCount = strLenBytes / 2
+                val wcharPtr = (strDescBuf + 2)!!.reinterpret<UShortVar>()
+                val chars = CharArray(wcharCount) { wcharPtr[it].toInt().toChar() }
+                serial = chars.concatToString().trim().ifEmpty { null }
             }
         }
 
-        val candidateId = DeviceId.from("$vid-$pid" + if (!serial.isNullOrEmpty()) "-$serial" else "")
-        if (candidateId != targetDeviceId) {
+        val candId = DeviceId.from("$vid-$pid" + if (serial != null) "-$serial" else "")
+        if (candId != targetDeviceId) {
             WinUsb_Free(winUsbHandle)
             CloseHandle(fileHandle)
             return null

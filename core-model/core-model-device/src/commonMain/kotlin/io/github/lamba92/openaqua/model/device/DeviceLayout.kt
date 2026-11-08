@@ -52,8 +52,7 @@ data class DeviceLayout(
  * Resolves the appropriate [DeviceDescriptor] for this detected hardware device
  * based on its [DeviceType] and detected firmware version.
  */
-fun DetectedHardwareDevice.descriptor(): DeviceDescriptor =
-    DeviceLayoutRegistry.resolveDescriptor(type, firmwareVersion)
+fun DetectedHardwareDevice.descriptor(): DeviceDescriptor = DeviceLayoutRegistry.resolveDescriptor(type, firmwareVersion)
 
 /**
  * Central registry of all firmware-version-aware device layouts.

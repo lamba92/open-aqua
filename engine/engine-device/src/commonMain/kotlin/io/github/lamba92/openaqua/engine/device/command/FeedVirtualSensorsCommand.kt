@@ -7,12 +7,12 @@ import com.github.ajalt.clikt.parameters.options.required
 import io.github.lamba92.openaqua.engine.device.hardware.HardwareController
 import io.github.lamba92.openaqua.engine.device.hardware.requireTarget
 import io.github.lamba92.openaqua.model.device.DetectedHardwareDevice
+import io.github.lamba92.openaqua.model.device.DeviceCapability
 import io.github.lamba92.openaqua.model.device.DeviceType
 import io.github.lamba92.openaqua.model.device.FeedVirtualSensorsRequest
 import io.github.lamba92.openaqua.model.device.descriptor
-import io.github.lamba92.openaqua.model.device.virtualSensorsChannelRange
-import io.github.lamba92.openaqua.model.device.DeviceCapability
 import io.github.lamba92.openaqua.model.device.findCapability
+import io.github.lamba92.openaqua.model.device.virtualSensorsChannelRange
 import io.github.lamba92.openaqua.model.device.virtualSensorsStartChannel
 import kotlinx.serialization.json.Json
 

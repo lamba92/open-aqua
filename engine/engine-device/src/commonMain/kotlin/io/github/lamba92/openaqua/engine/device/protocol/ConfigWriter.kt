@@ -1,27 +1,29 @@
 package io.github.lamba92.openaqua.engine.device.protocol
 
-import io.github.lamba92.openaqua.engine.device.util.crc16Usb
 import io.github.lamba92.openaqua.model.FeatureState
 import io.github.lamba92.openaqua.model.device.AutoCurveFanConfig
+import io.github.lamba92.openaqua.model.device.CommitStrategy
 import io.github.lamba92.openaqua.model.device.CopyFanConfig
 import io.github.lamba92.openaqua.model.device.CurveFanConfig
 import io.github.lamba92.openaqua.model.device.CurvePoint
+import io.github.lamba92.openaqua.model.device.DeviceCapability
 import io.github.lamba92.openaqua.model.device.DeviceConfig
-import io.github.lamba92.openaqua.model.device.CommitStrategy
 import io.github.lamba92.openaqua.model.device.DeviceDescriptor
+import io.github.lamba92.openaqua.model.device.DeviceProtocol
 import io.github.lamba92.openaqua.model.device.FanCapability
 import io.github.lamba92.openaqua.model.device.FanChannelConfig
+import io.github.lamba92.openaqua.model.device.FanChannelDescriptor
 import io.github.lamba92.openaqua.model.device.FanLimits
+import io.github.lamba92.openaqua.model.device.FanLimitsLayout
 import io.github.lamba92.openaqua.model.device.FixedFanConfig
 import io.github.lamba92.openaqua.model.device.FlashConfigRequest
 import io.github.lamba92.openaqua.model.device.LimitsOnlyFanConfig
 import io.github.lamba92.openaqua.model.device.TargetTempFanConfig
 import io.github.lamba92.openaqua.model.device.TwoPointFanConfig
 import io.github.lamba92.openaqua.model.device.UnconfiguredFanConfig
-import io.github.lamba92.openaqua.model.device.DeviceCapability
-import io.github.lamba92.openaqua.model.device.FanChannelDescriptor
 import io.github.lamba92.openaqua.model.device.findCapability
 import io.github.lamba92.openaqua.model.device.findFanCapability
+import io.github.lamba92.openaqua.model.device.flashableProtocol
 import io.github.lamba92.openaqua.model.device.hasCapability
 import io.github.lamba92.openaqua.model.device.logicalToHardwareSensorIndex
 import io.github.lamba92.openaqua.model.device.requireCapability
@@ -40,8 +42,8 @@ object ConfigWriter {
     /**
      * Prepares the sequence of raw HID reports required to flash and persist configuration to the device.
      *
-     * Applies the requested changes to [report], finalizes its checksum, and appends any secondary commit
-     * report required by the device's [CommitStrategy].
+     * Applies the requested changes to [report], finalizes its checksum using the device's [DeviceProtocol.Flashable.reportSigner],
+     * and appends any secondary commit report required by the device's [CommitStrategy].
      *
      * @param report Pre-allocated buffer containing the device's current control report (Report ID + payload).
      * @param descriptor The target device descriptor.
@@ -53,16 +55,14 @@ object ConfigWriter {
         descriptor: DeviceDescriptor,
         request: FlashConfigRequest,
     ): List<UByteArray> {
-        check(descriptor.protocol.commitStrategy !is CommitStrategy.None) {
-            "Device ${descriptor.name} does not support configuration writing"
-        }
-        applyFlashConfig(report, descriptor, request)
-        finalizeReport(report, descriptor.protocol.ctrlReportLength)
+        val flashProtocol = descriptor.flashableProtocol
 
-        return when (val strategy = descriptor.protocol.commitStrategy) {
+        applyFlashConfig(report, descriptor, request)
+        flashProtocol.reportSigner.sign(report)
+
+        return when (val strategy = flashProtocol.commitStrategy) {
             is CommitStrategy.SecondaryReport -> listOf(report, strategy.report.toUByteArray())
             is CommitStrategy.Direct -> listOf(report)
-            is CommitStrategy.None -> error("Device ${descriptor.name} does not support configuration writing")
         }
     }
 
@@ -72,50 +72,49 @@ object ConfigWriter {
         config: FanChannelConfig,
         descriptor: DeviceDescriptor,
     ) {
-
         when (config) {
             is FixedFanConfig -> {
-                val mode =
-                    descriptor.findFanCapability<FanCapability.Fixed>()?.modeByte
+                val cap =
+                    descriptor.findFanCapability<FanCapability.Fixed>()
                         ?: error("Device ${descriptor.name} does not support Fixed fan mode")
-                report[baseOffset + 0] = mode.toUByte()
+                report[baseOffset + cap.modeOffset] = cap.modeByte.toUByte()
                 val rawPwm = (config.powerPercent * 100.0).roundToInt().coerceIn(0, 10000).toUShort()
-                report[baseOffset + 1] = ((rawPwm.toInt() ushr 8) and 0xFF).toUByte()
-                report[baseOffset + 2] = (rawPwm.toInt() and 0xFF).toUByte()
+                report[baseOffset + cap.pwmOffset] = ((rawPwm.toInt() ushr 8) and 0xFF).toUByte()
+                report[baseOffset + cap.pwmOffset + 1] = (rawPwm.toInt() and 0xFF).toUByte()
             }
             is CurveFanConfig -> {
-                val mode =
-                    descriptor.findFanCapability<FanCapability.Curve>()?.modeByte
+                val cap =
+                    descriptor.findFanCapability<FanCapability.Curve>()
                         ?: error("Device ${descriptor.name} does not support Curve fan mode")
-                report[baseOffset + 0] = mode.toUByte()
+                report[baseOffset + cap.modeOffset] = cap.modeByte.toUByte()
                 val hwSensor = descriptor.logicalToHardwareSensorIndex(config.sensorIndex)
-                report[baseOffset + 3] = ((hwSensor ushr 8) and 0xFF).toUByte()
-                report[baseOffset + 4] = (hwSensor and 0xFF).toUByte()
-                encodeCurvePoints(report, baseOffset, config.points)
+                report[baseOffset + cap.sensorIndexOffset] = ((hwSensor ushr 8) and 0xFF).toUByte()
+                report[baseOffset + cap.sensorIndexOffset + 1] = (hwSensor and 0xFF).toUByte()
+                encodeCurvePoints(report, baseOffset, config.points, cap)
             }
             is AutoCurveFanConfig -> {
                 encodeFanChannelConfig(report, baseOffset, config.toCurveFanConfig(), descriptor)
             }
             is TargetTempFanConfig -> {
-                val mode =
-                    descriptor.findFanCapability<FanCapability.TargetTemp>()?.modeByte
+                val cap =
+                    descriptor.findFanCapability<FanCapability.TargetTemp>()
                         ?: error("Device ${descriptor.name} does not support TargetTemp fan mode")
-                report[baseOffset + 0] = mode.toUByte()
+                report[baseOffset + cap.modeOffset] = cap.modeByte.toUByte()
                 val hwSensor = descriptor.logicalToHardwareSensorIndex(config.sensorIndex)
-                report[baseOffset + 3] = ((hwSensor ushr 8) and 0xFF).toUByte()
-                report[baseOffset + 4] = (hwSensor and 0xFF).toUByte()
+                report[baseOffset + cap.sensorIndexOffset] = ((hwSensor ushr 8) and 0xFF).toUByte()
+                report[baseOffset + cap.sensorIndexOffset + 1] = (hwSensor and 0xFF).toUByte()
                 val rawTemp = (config.targetTempCelsius * 100.0).roundToInt().coerceIn(-5000, 15000).toShort()
-                report[baseOffset + 5] = ((rawTemp.toInt() ushr 8) and 0xFF).toUByte()
-                report[baseOffset + 6] = (rawTemp.toInt() and 0xFF).toUByte()
+                report[baseOffset + cap.targetTempOffset] = ((rawTemp.toInt() ushr 8) and 0xFF).toUByte()
+                report[baseOffset + cap.targetTempOffset + 1] = (rawTemp.toInt() and 0xFF).toUByte()
             }
             is TwoPointFanConfig -> {
-                val mode =
-                    descriptor.findFanCapability<FanCapability.TwoPoint>()?.modeByte
+                val cap =
+                    descriptor.findFanCapability<FanCapability.TwoPoint>()
                         ?: error("Device ${descriptor.name} does not support TwoPoint fan mode")
-                report[baseOffset + 0] = mode.toUByte()
+                report[baseOffset + cap.modeOffset] = cap.modeByte.toUByte()
                 val hwSensor = descriptor.logicalToHardwareSensorIndex(config.sensorIndex)
-                report[baseOffset + 3] = ((hwSensor ushr 8) and 0xFF).toUByte()
-                report[baseOffset + 4] = (hwSensor and 0xFF).toUByte()
+                report[baseOffset + cap.sensorIndexOffset] = ((hwSensor ushr 8) and 0xFF).toUByte()
+                report[baseOffset + cap.sensorIndexOffset + 1] = (hwSensor and 0xFF).toUByte()
             }
             is CopyFanConfig -> {
                 val follow =
@@ -125,14 +124,17 @@ object ConfigWriter {
                 check(mode <= follow.endModeByteInclusive) {
                     "Source fan channel ${config.sourceChannel} exceeds follow mode range ($mode > ${follow.endModeByteInclusive}) on ${descriptor.name}"
                 }
-                report[baseOffset + 0] = mode.toUByte()
-                report[baseOffset + 3] = 0xFFu
-                report[baseOffset + 4] = 0xFFu
+                report[baseOffset + follow.modeOffset] = mode.toUByte()
+                report[baseOffset + follow.sensorIndexOffset] = ((follow.unassignedSensorSentinel ushr 8) and 0xFF).toUByte()
+                report[baseOffset + follow.sensorIndexOffset + 1] = (follow.unassignedSensorSentinel and 0xFF).toUByte()
             }
             is UnconfiguredFanConfig -> {
+                val follow = descriptor.findFanCapability<FanCapability.Follow>()
+                val sensorIndexOffset = follow?.sensorIndexOffset ?: 3
+                val unassignedSentinel = follow?.unassignedSensorSentinel ?: 0xFFFF
                 report[baseOffset + 0] = config.rawMode.toUByte()
-                report[baseOffset + 3] = 0xFFu
-                report[baseOffset + 4] = 0xFFu
+                report[baseOffset + sensorIndexOffset] = ((unassignedSentinel ushr 8) and 0xFF).toUByte()
+                report[baseOffset + sensorIndexOffset + 1] = (unassignedSentinel and 0xFF).toUByte()
             }
             is LimitsOnlyFanConfig -> {
                 // No control register modification for limits-only config
@@ -144,18 +146,19 @@ object ConfigWriter {
         report: UByteArray,
         baseOffset: Int,
         points: List<CurvePoint>,
+        curveCap: FanCapability.Curve = FanCapability.Curve(),
     ) {
-        require(points.size == 16) {
-            "Expected exactly 16 curve points, got ${points.size}"
+        require(points.size == curveCap.pointsCount) {
+            "Expected exactly ${curveCap.pointsCount} curve points, got ${points.size}"
         }
 
-        for (i in 0 until 16) {
+        for (i in 0 until curveCap.pointsCount) {
             val pt = points[i]
             val tRaw = (pt.temp * 100.0).roundToInt().coerceIn(-5000, 15000).toShort()
             val pRaw = (pt.pwm * 100.0).roundToInt().coerceIn(0, 10000).toUShort()
 
-            val tOffset = baseOffset + 0x15 + (i * 2)
-            val pOffset = baseOffset + 0x35 + (i * 2)
+            val tOffset = baseOffset + curveCap.tempsOffset + (i * 2)
+            val pOffset = baseOffset + curveCap.pwmsOffset + (i * 2)
 
             report[tOffset] = ((tRaw.toInt() ushr 8) and 0xFF).toUByte()
             report[tOffset + 1] = (tRaw.toInt() and 0xFF).toUByte()
@@ -182,24 +185,32 @@ object ConfigWriter {
         report: UByteArray,
         setupOffset: Int,
         limits: FanLimits,
+        limitsLayout: FanLimitsLayout = FanLimitsLayout.Standard,
     ) {
         var flags = 0
-        if (limits.holdMinPower) flags = flags or 0x01
-        if (limits.startBoost) flags = flags or 0x02
-        report[setupOffset] = flags.toUByte()
+        if (limits.holdMinPower) flags = flags or limitsLayout.holdMinPowerMask
+        if (limits.startBoost) flags = flags or limitsLayout.startBoostMask
+        report[setupOffset + limitsLayout.flagsOffset] = flags.toUByte()
 
         val rawMin = (limits.minPowerPercent * 100.0).roundToInt().coerceIn(0, 10000)
-        report[setupOffset + 1] = ((rawMin ushr 8) and 0xFF).toUByte()
-        report[setupOffset + 2] = (rawMin and 0xFF).toUByte()
+        report[setupOffset + limitsLayout.minPowerOffset] = ((rawMin ushr 8) and 0xFF).toUByte()
+        report[setupOffset + limitsLayout.minPowerOffset + 1] = (rawMin and 0xFF).toUByte()
 
         val rawMax = (limits.maxPowerPercent * 100.0).roundToInt().coerceIn(0, 10000)
-        report[setupOffset + 3] = ((rawMax ushr 8) and 0xFF).toUByte()
-        report[setupOffset + 4] = (rawMax and 0xFF).toUByte()
+        report[setupOffset + limitsLayout.maxPowerOffset] = ((rawMax ushr 8) and 0xFF).toUByte()
+        report[setupOffset + limitsLayout.maxPowerOffset + 1] = (rawMax and 0xFF).toUByte()
 
         val rawFallback = (limits.fallbackPowerPercent * 100.0).roundToInt().coerceIn(0, 10000)
-        report[setupOffset + 5] = ((rawFallback ushr 8) and 0xFF).toUByte()
-        report[setupOffset + 6] = (rawFallback and 0xFF).toUByte()
+        report[setupOffset + limitsLayout.fallbackPowerOffset] = ((rawFallback ushr 8) and 0xFF).toUByte()
+        report[setupOffset + limitsLayout.fallbackPowerOffset + 1] = (rawFallback and 0xFF).toUByte()
     }
+
+    fun encodeFanLimits(
+        report: UByteArray,
+        fan: FanChannelDescriptor.WithLimits,
+        limits: FanLimits,
+        limitsLayout: FanLimitsLayout = FanLimitsLayout.Standard,
+    ) = encodeFanLimits(report, fan.setupOffset, limits, limitsLayout)
 
     fun applyFlashConfig(
         report: UByteArray,
@@ -208,6 +219,7 @@ object ConfigWriter {
     ) {
         descriptor.validateRequestMatchesDevice(request)
         val fansCap = descriptor.findCapability<DeviceCapability.Fans>()
+        val limitsLayout = fansCap?.limitsLayout ?: FanLimitsLayout.Standard
         request.fans?.forEach { (channel, config) ->
             val fan =
                 fansCap?.channels?.firstOrNull { it.channel == channel }
@@ -217,7 +229,7 @@ object ConfigWriter {
                 else -> encodeFanChannelConfig(report, fan.ctrlOffset, config, descriptor)
             }
             when (fan) {
-                is FanChannelDescriptor.WithLimits -> encodeFanLimits(report, fan.setupOffset, config.limits)
+                is FanChannelDescriptor.WithLimits -> encodeFanLimits(report, fan.setupOffset, config.limits, limitsLayout)
                 is FanChannelDescriptor.Basic -> Unit
             }
         }
@@ -312,7 +324,7 @@ object ConfigWriter {
                 check(actual.sensorIndex == expected.sensorIndex) {
                     "Verification failed: expected sensorIndex ${expected.sensorIndex}, read ${actual.sensorIndex}"
                 }
-                for (i in 0 until 16) {
+                for (i in expected.points.indices) {
                     val expPt = expected.points[i]
                     val actPt = actual.points[i]
                     check(abs(actPt.temp - expPt.temp) <= 0.2 && abs(actPt.pwm - expPt.pwm) <= 0.2) {
@@ -353,21 +365,5 @@ object ConfigWriter {
             is UnconfiguredFanConfig -> Unit
             is LimitsOnlyFanConfig -> Unit
         }
-    }
-
-    /**
-     * Calculates CRC-16/USB over bytes 1 until reportLength - 2 and appends the
-     * Big-Endian checksum at trailer [reportLength - 2].
-     */
-    fun finalizeReport(
-        report: UByteArray,
-        reportLength: Int,
-    ) {
-        val crcOffset = 1
-        val crcLen = reportLength - 3
-        val crc = crc16Usb(report, crcOffset, crcLen)
-        val crcPos = reportLength - 2
-        report[crcPos] = ((crc.toInt() ushr 8) and 0xFF).toUByte()
-        report[crcPos + 1] = (crc.toInt() and 0xFF).toUByte()
     }
 }
