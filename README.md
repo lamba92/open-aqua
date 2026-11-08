@@ -249,8 +249,6 @@ Binaries will be placed in `engine/engine-device/engine-device-prod/build/bin/<t
 
 ## 📚 Further Documentation
 
-- **[ARCHITECTURE.md](ARCHITECTURE.md)**: Multi-module design, generic device abstraction, protocol byte offsets, CRC-16 implementation, and Aquasuite curve math replication.
-- **[FEATURES.md](FEATURES.md)**: Functional and visual specification for the Compose Desktop UI and JSON profile management.
 - **[assets/BRAND_GUIDELINES.md](assets/BRAND_GUIDELINES.md)**: Brand color palette, typography, and icon asset specifications.
 - **[docker/windows-test/README.md](docker/windows-test/README.md)**: Automated Docker + QEMU/KVM Windows testing environment for validating Windows builds against physical USB devices.
 
