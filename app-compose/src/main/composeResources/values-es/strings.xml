@@ -55,6 +55,19 @@
     <string name="spec_usb_protocol">Protocolo USB</string>
     <string name="spec_usb_protocol_value">0x0C70 : 0x%1$s</string>
     <string name="spec_usb_protocol_subtitle">Informes: %1$dB / %2$dB</string>
+    <string name="spec_analog_rgb">RGB analógico</string>
+    <string name="spec_analog_rgb_value">%1$d canales</string>
+    <string name="spec_analog_rgb_subtitle">RGB de 4 pines 12V</string>
+    <string name="spec_display">Pantalla integrada</string>
+    <string name="spec_display_oled">Pantalla OLED</string>
+    <string name="spec_display_lcd">Pantalla LCD</string>
+    <string name="spec_display_subtitle">Pantalla de hardware</string>
+    <string name="spec_coolant_quality">Calidad del refrigerante</string>
+    <string name="spec_coolant_quality_supported">Compatible</string>
+    <string name="spec_coolant_quality_subtitle">Sonda de conductividad</string>
+    <string name="spec_pressure">Sensor de presión</string>
+    <string name="spec_pressure_supported">Compatible</string>
+    <string name="spec_pressure_subtitle">Presión del circuito / membrana</string>
 
     <!-- Fans Screen -->
     <string name="fans_screen_title">Ventiladores &amp; Canales PWM</string>

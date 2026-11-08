@@ -36,6 +36,16 @@ import io.github.lamba92.openaqua.app.ui.components.OpenAquaVerticalScrollbar
 import io.github.lamba92.openaqua.app.ui.components.ScreenHeaderSection
 import io.github.lamba92.openaqua.app.ui.components.SectionHeader
 import io.github.lamba92.openaqua.app.ui.components.scrollFadingEdge
+import io.github.lamba92.openaqua.model.device.DisplayKind
+import io.github.lamba92.openaqua.model.device.classicAnalogRgbCapability
+import io.github.lamba92.openaqua.model.device.coolantQualityCapability
+import io.github.lamba92.openaqua.model.device.displayCapability
+import io.github.lamba92.openaqua.model.device.fanCapability
+import io.github.lamba92.openaqua.model.device.flowSensorCapability
+import io.github.lamba92.openaqua.model.device.pressureCapability
+import io.github.lamba92.openaqua.model.device.rgbpxCapability
+import io.github.lamba92.openaqua.model.device.tempSensorsCapability
+import io.github.lamba92.openaqua.model.device.virtualSensorsCapability
 import open_aqua.app_compose.generated.resources.Res
 import open_aqua.app_compose.generated.resources.device_identification_title
 import open_aqua.app_compose.generated.resources.device_telemetry_identity_subtitle
@@ -51,15 +61,26 @@ import open_aqua.app_compose.generated.resources.info_not_available
 import open_aqua.app_compose.generated.resources.info_serial_number
 import open_aqua.app_compose.generated.resources.info_unique_id
 import open_aqua.app_compose.generated.resources.info_unknown
+import open_aqua.app_compose.generated.resources.spec_analog_rgb
+import open_aqua.app_compose.generated.resources.spec_analog_rgb_subtitle
+import open_aqua.app_compose.generated.resources.spec_analog_rgb_value
+import open_aqua.app_compose.generated.resources.spec_coolant_quality
+import open_aqua.app_compose.generated.resources.spec_coolant_quality_subtitle
+import open_aqua.app_compose.generated.resources.spec_coolant_quality_supported
+import open_aqua.app_compose.generated.resources.spec_display
+import open_aqua.app_compose.generated.resources.spec_display_lcd
+import open_aqua.app_compose.generated.resources.spec_display_oled
+import open_aqua.app_compose.generated.resources.spec_display_subtitle
 import open_aqua.app_compose.generated.resources.spec_fan_channels
 import open_aqua.app_compose.generated.resources.spec_fan_channels_subtitle
 import open_aqua.app_compose.generated.resources.spec_fan_channels_value
 import open_aqua.app_compose.generated.resources.spec_flow_sensor
 import open_aqua.app_compose.generated.resources.spec_flow_sensor_subtitle
 import open_aqua.app_compose.generated.resources.spec_flow_sensor_supported
-import open_aqua.app_compose.generated.resources.spec_flow_sensor_unsupported
+import open_aqua.app_compose.generated.resources.spec_pressure
+import open_aqua.app_compose.generated.resources.spec_pressure_subtitle
+import open_aqua.app_compose.generated.resources.spec_pressure_supported
 import open_aqua.app_compose.generated.resources.spec_rgbpx_ports
-import open_aqua.app_compose.generated.resources.spec_rgbpx_ports_none
 import open_aqua.app_compose.generated.resources.spec_rgbpx_ports_subtitle
 import open_aqua.app_compose.generated.resources.spec_rgbpx_ports_value
 import open_aqua.app_compose.generated.resources.spec_temp_probes
@@ -216,51 +237,74 @@ fun DeviceInfoContent(
                         horizontalArrangement = Arrangement.spacedBy(metrics.spacingMd),
                         verticalArrangement = Arrangement.spacedBy(metrics.spacingMd),
                     ) {
-                        SpecCard(
-                            title = stringResource(Res.string.spec_fan_channels),
-                            value = stringResource(Res.string.spec_fan_channels_value, descriptor.fanChannels.size),
-                            subtitle = stringResource(Res.string.spec_fan_channels_subtitle),
-                        )
-                        SpecCard(
-                            title = stringResource(Res.string.spec_temp_probes),
-                            value = stringResource(Res.string.spec_temp_probes_value, descriptor.tempSensors.size),
-                            subtitle = stringResource(Res.string.spec_temp_probes_subtitle),
-                        )
-                        SpecCard(
-                            title = stringResource(Res.string.spec_virtual_sensors),
-                            value = stringResource(Res.string.spec_virtual_sensors_value, descriptor.virtualSensorsCount),
-                            subtitle = stringResource(Res.string.spec_virtual_sensors_subtitle),
-                        )
-                        SpecCard(
-                            title = stringResource(Res.string.spec_rgbpx_ports),
-                            value =
-                                if (descriptor.hasRgbpx) {
-                                    stringResource(Res.string.spec_rgbpx_ports_value, descriptor.rgbpxPortCount)
-                                } else {
-                                    stringResource(Res.string.spec_rgbpx_ports_none)
-                                },
-                            subtitle =
-                                if (descriptor.hasRgbpx) {
-                                    stringResource(Res.string.spec_rgbpx_ports_subtitle)
-                                } else {
-                                    notAvailable
-                                },
-                        )
-                        SpecCard(
-                            title = stringResource(Res.string.spec_flow_sensor),
-                            value =
-                                if (descriptor.hasFlowSensor) {
-                                    stringResource(Res.string.spec_flow_sensor_supported)
-                                } else {
-                                    stringResource(Res.string.spec_flow_sensor_unsupported)
-                                },
-                            subtitle =
-                                if (descriptor.hasFlowSensor) {
-                                    stringResource(Res.string.spec_flow_sensor_subtitle)
-                                } else {
-                                    notAvailable
-                                },
-                        )
+                        descriptor.fanCapability?.let { fans ->
+                            SpecCard(
+                                title = stringResource(Res.string.spec_fan_channels),
+                                value = stringResource(Res.string.spec_fan_channels_value, fans.channels.size),
+                                subtitle = stringResource(Res.string.spec_fan_channels_subtitle),
+                            )
+                        }
+                        descriptor.tempSensorsCapability?.let { temps ->
+                            SpecCard(
+                                title = stringResource(Res.string.spec_temp_probes),
+                                value = stringResource(Res.string.spec_temp_probes_value, temps.sensors.size),
+                                subtitle = stringResource(Res.string.spec_temp_probes_subtitle),
+                            )
+                        }
+                        descriptor.virtualSensorsCapability?.let { virtuals ->
+                            SpecCard(
+                                title = stringResource(Res.string.spec_virtual_sensors),
+                                value = stringResource(Res.string.spec_virtual_sensors_value, virtuals.count),
+                                subtitle = stringResource(Res.string.spec_virtual_sensors_subtitle),
+                            )
+                        }
+                        descriptor.rgbpxCapability?.let { rgbpx ->
+                            SpecCard(
+                                title = stringResource(Res.string.spec_rgbpx_ports),
+                                value = stringResource(Res.string.spec_rgbpx_ports_value, rgbpx.portCount),
+                                subtitle = stringResource(Res.string.spec_rgbpx_ports_subtitle),
+                            )
+                        }
+                        descriptor.classicAnalogRgbCapability?.let { analog ->
+                            SpecCard(
+                                title = stringResource(Res.string.spec_analog_rgb),
+                                value = stringResource(Res.string.spec_analog_rgb_value, analog.channelCount),
+                                subtitle = stringResource(Res.string.spec_analog_rgb_subtitle),
+                            )
+                        }
+                        descriptor.flowSensorCapability?.let {
+                            SpecCard(
+                                title = stringResource(Res.string.spec_flow_sensor),
+                                value = stringResource(Res.string.spec_flow_sensor_supported),
+                                subtitle = stringResource(Res.string.spec_flow_sensor_subtitle),
+                            )
+                        }
+                        descriptor.displayCapability?.let { display ->
+                            val displayKindStr =
+                                when (display.kind) {
+                                    DisplayKind.OLED -> stringResource(Res.string.spec_display_oled)
+                                    DisplayKind.LCD -> stringResource(Res.string.spec_display_lcd)
+                                }
+                            SpecCard(
+                                title = stringResource(Res.string.spec_display),
+                                value = displayKindStr,
+                                subtitle = stringResource(Res.string.spec_display_subtitle),
+                            )
+                        }
+                        descriptor.coolantQualityCapability?.let {
+                            SpecCard(
+                                title = stringResource(Res.string.spec_coolant_quality),
+                                value = stringResource(Res.string.spec_coolant_quality_supported),
+                                subtitle = stringResource(Res.string.spec_coolant_quality_subtitle),
+                            )
+                        }
+                        descriptor.pressureCapability?.let {
+                            SpecCard(
+                                title = stringResource(Res.string.spec_pressure),
+                                value = stringResource(Res.string.spec_pressure_supported),
+                                subtitle = stringResource(Res.string.spec_pressure_subtitle),
+                            )
+                        }
                         SpecCard(
                             title = stringResource(Res.string.spec_usb_protocol),
                             value =

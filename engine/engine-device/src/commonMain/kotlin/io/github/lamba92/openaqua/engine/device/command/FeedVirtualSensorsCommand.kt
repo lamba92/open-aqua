@@ -11,6 +11,7 @@ import io.github.lamba92.openaqua.model.device.DeviceType
 import io.github.lamba92.openaqua.model.device.FeedVirtualSensorsRequest
 import io.github.lamba92.openaqua.model.device.descriptor
 import io.github.lamba92.openaqua.model.device.virtualSensorsChannelRange
+import io.github.lamba92.openaqua.model.device.virtualSensorsCount
 import io.github.lamba92.openaqua.model.device.virtualSensorsStartChannel
 import kotlinx.serialization.json.Json
 

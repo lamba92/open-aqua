@@ -2,8 +2,10 @@ package io.github.lamba92.openaqua.model.device
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class DeviceLayoutRegistryTest {
@@ -131,5 +133,72 @@ class DeviceLayoutRegistryTest {
         val descriptor = device.descriptor()
         assertEquals(DeviceType.OCTO, descriptor.type)
         assertEquals(0xF011, descriptor.productId)
+    }
+
+    @Test
+    fun testDeviceCapabilitiesArchitecture() {
+        val octo = DeviceRegistry.OCTO
+        assertTrue(octo.hasCapability<DeviceCapability.Fans>())
+        assertTrue(octo.hasCapability<DeviceCapability.TemperatureSensors>())
+        assertTrue(octo.hasCapability<DeviceCapability.VirtualSensors>())
+        assertTrue(octo.hasCapability<DeviceCapability.FlowSensor>())
+        assertTrue(octo.hasCapability<DeviceCapability.Lighting.Rgbpx>())
+        assertFalse(octo.hasCapability<DeviceCapability.Display>())
+        assertFalse(octo.hasCapability<DeviceCapability.Lighting.ClassicAnalogRgb>())
+
+        val fansCap = octo.requireCapability<DeviceCapability.Fans>()
+        assertEquals(8, fansCap.channels.size)
+        assertEquals(8, octo.fanChannels.size)
+
+        val virtualSensorsCap = octo.requireCapability<DeviceCapability.VirtualSensors>()
+        assertEquals(16, virtualSensorsCap.count)
+        assertEquals(0x33, virtualSensorsCap.reportSize)
+
+        assertFailsWith<IllegalStateException> {
+            octo.requireCapability<DeviceCapability.Display>()
+        }
+    }
+
+    @Test
+    fun testDevicesMissingFansCapability() {
+        val devicesWithoutFans =
+            listOf(
+                DeviceRegistry.FARBWERK360,
+                DeviceRegistry.FARBWERK,
+                DeviceRegistry.HIGH_FLOW_NEXT,
+                DeviceRegistry.LEAKSHIELD,
+                DeviceRegistry.HIGH_FLOW_USB,
+            )
+
+        for (desc in devicesWithoutFans) {
+            assertFalse(desc.hasCapability<DeviceCapability.Fans>(), "${desc.name} should not have Fans capability")
+            assertNull(desc.fanCapability, "${desc.name} fanCapability should be null")
+            assertTrue(desc.fanChannels.isEmpty(), "${desc.name} fanChannels should be empty")
+        }
+    }
+
+    @Test
+    fun testDeviceSpecificCapabilities() {
+        val farbwerk = DeviceRegistry.FARBWERK
+        assertTrue(farbwerk.hasCapability<DeviceCapability.Lighting.ClassicAnalogRgb>())
+        assertFalse(farbwerk.hasCapability<DeviceCapability.Lighting.Rgbpx>())
+        val analogRgb = farbwerk.requireCapability<DeviceCapability.Lighting.ClassicAnalogRgb>()
+        assertEquals(4, analogRgb.channelCount)
+
+        val leakshield = DeviceRegistry.LEAKSHIELD
+        assertTrue(leakshield.hasCapability<DeviceCapability.Pressure>())
+        assertTrue(leakshield.hasCapability<DeviceCapability.Display>())
+        assertEquals(DisplayKind.OLED, leakshield.requireCapability<DeviceCapability.Display>().kind)
+
+        val highFlowNext = DeviceRegistry.HIGH_FLOW_NEXT
+        assertTrue(highFlowNext.hasCapability<DeviceCapability.CoolantQuality>())
+        assertTrue(highFlowNext.hasCapability<DeviceCapability.Display>())
+        assertEquals(DisplayKind.OLED, highFlowNext.requireCapability<DeviceCapability.Display>().kind)
+
+        val aquaero = DeviceRegistry.AQUAERO
+        assertTrue(aquaero.hasCapability<DeviceCapability.Display>())
+        assertEquals(DisplayKind.LCD, aquaero.requireCapability<DeviceCapability.Display>().kind)
+        val aquaeroFlow = aquaero.requireCapability<DeviceCapability.FlowSensor>()
+        assertEquals(2, aquaeroFlow.portCount)
     }
 }

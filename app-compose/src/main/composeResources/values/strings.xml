@@ -71,6 +71,19 @@
     <string name="spec_usb_protocol">USB Protocol</string>
     <string name="spec_usb_protocol_value">0x0C70 : 0x%1$s</string>
     <string name="spec_usb_protocol_subtitle">Reports: %1$dB / %2$dB</string>
+    <string name="spec_analog_rgb">Analog RGB</string>
+    <string name="spec_analog_rgb_value">%1$d Channels</string>
+    <string name="spec_analog_rgb_subtitle">12V 4-pin RGB</string>
+    <string name="spec_display">Integrated Display</string>
+    <string name="spec_display_oled">OLED Display</string>
+    <string name="spec_display_lcd">LCD Display</string>
+    <string name="spec_display_subtitle">Hardware screen</string>
+    <string name="spec_coolant_quality">Coolant Quality</string>
+    <string name="spec_coolant_quality_supported">Supported</string>
+    <string name="spec_coolant_quality_subtitle">Conductivity probe</string>
+    <string name="spec_pressure">Pressure Sensor</string>
+    <string name="spec_pressure_supported">Supported</string>
+    <string name="spec_pressure_subtitle">Loop pressure / membrane</string>
 
     <!-- Fans Screen -->
     <string name="fans_screen_title">Fans &amp; PWM Channels</string>

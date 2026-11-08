@@ -14,6 +14,7 @@ import io.github.lamba92.openaqua.app.feature.device.sensors.SensorsContent
 import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavigationRailScaffold
 import io.github.lamba92.openaqua.app.theme.AppMetrics
 import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
+import io.github.lamba92.openaqua.model.device.DeviceRegistry
 import io.github.lamba92.openaqua.screenshots.model.Scene
 import io.github.lamba92.openaqua.screenshots.model.ScreenshotState
 import io.github.lamba92.openaqua.theme.ThemePalette
@@ -54,6 +55,7 @@ fun renderScreenshot(
                             DeviceNavigationRailScaffold(state = currentScene.navState, onEvent = {}) {
                                 DeviceDrawerScaffold(
                                     device = currentScene.device,
+                                    descriptor = DeviceRegistry.findByType(currentScene.device.type, currentScene.device.firmwareVersion),
                                     selectedTab = CommonDeviceTab.FANS,
                                     onSelectTab = {},
                                     feederStatus = currentScene.feederStatus,
@@ -67,6 +69,7 @@ fun renderScreenshot(
                             DeviceNavigationRailScaffold(state = currentScene.navState, onEvent = {}) {
                                 DeviceDrawerScaffold(
                                     device = currentScene.device,
+                                    descriptor = DeviceRegistry.findByType(currentScene.device.type, currentScene.device.firmwareVersion),
                                     selectedTab = CommonDeviceTab.SENSORS,
                                     onSelectTab = {},
                                     feederStatus = currentScene.feederStatus,
@@ -80,6 +83,7 @@ fun renderScreenshot(
                             DeviceNavigationRailScaffold(state = currentScene.navState, onEvent = {}) {
                                 DeviceDrawerScaffold(
                                     device = currentScene.device,
+                                    descriptor = DeviceRegistry.findByType(currentScene.device.type, currentScene.device.firmwareVersion),
                                     selectedTab = CommonDeviceTab.DEVICE_INFO,
                                     onSelectTab = {},
                                     feederStatus = currentScene.feederStatus,

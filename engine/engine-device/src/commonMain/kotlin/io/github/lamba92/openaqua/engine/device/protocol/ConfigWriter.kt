@@ -16,6 +16,11 @@ import io.github.lamba92.openaqua.model.device.LimitsOnlyFanConfig
 import io.github.lamba92.openaqua.model.device.TargetTempFanConfig
 import io.github.lamba92.openaqua.model.device.TwoPointFanConfig
 import io.github.lamba92.openaqua.model.device.UnconfiguredFanConfig
+import io.github.lamba92.openaqua.model.device.fanChannels
+import io.github.lamba92.openaqua.model.device.flowPulsesCtrlOffset
+import io.github.lamba92.openaqua.model.device.hasDisplay
+import io.github.lamba92.openaqua.model.device.tempCtrlOffset
+import io.github.lamba92.openaqua.model.device.tempSensors
 import io.github.lamba92.openaqua.model.device.validateRequestMatchesDevice
 import kotlin.math.abs
 import kotlin.math.roundToInt

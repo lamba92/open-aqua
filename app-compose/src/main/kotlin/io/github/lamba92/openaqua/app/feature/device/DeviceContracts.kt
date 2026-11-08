@@ -4,6 +4,7 @@ import io.github.lamba92.openaqua.app.repository.DeviceErrorType
 import io.github.lamba92.openaqua.app.repository.DeviceState
 import io.github.lamba92.openaqua.app.ui.components.FeederStatus
 import io.github.lamba92.openaqua.model.device.DetectedHardwareDevice
+import io.github.lamba92.openaqua.model.device.DeviceDescriptor
 
 sealed interface DeviceUiState {
     val status: FeederStatus

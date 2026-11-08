@@ -2,6 +2,7 @@ package io.github.lamba92.openaqua.app.feature.device
 
 import androidx.compose.foundation.ScrollState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -15,7 +16,9 @@ import io.github.lamba92.openaqua.app.feature.device.common.DeviceLoadingContent
 import io.github.lamba92.openaqua.app.feature.device.fans.FansTabContent
 import io.github.lamba92.openaqua.app.feature.device.info.DeviceInfoContent
 import io.github.lamba92.openaqua.app.feature.device.sensors.SensorsTabContent
+import io.github.lamba92.openaqua.model.device.DeviceCapability
 import io.github.lamba92.openaqua.model.device.DeviceId
+import io.github.lamba92.openaqua.model.device.hasCapability
 
 @Composable
 fun DeviceScreen(
@@ -51,15 +54,36 @@ fun DeviceScreen(
         }
 
         is DeviceUiState.Ready -> {
+            val descriptor = s.deviceState.descriptor
+            val hasFans = descriptor.hasCapability<DeviceCapability.Fans>()
+            val hasSensors =
+                descriptor.hasCapability<DeviceCapability.TemperatureSensors>() ||
+                    descriptor.hasCapability<DeviceCapability.VirtualSensors>() ||
+                    descriptor.hasCapability<DeviceCapability.FlowSensor>()
+
+            val effectiveTab =
+                when (selectedTab) {
+                    CommonDeviceTab.DEVICE_INFO -> CommonDeviceTab.DEVICE_INFO
+                    CommonDeviceTab.FANS -> if (hasFans) CommonDeviceTab.FANS else CommonDeviceTab.DEVICE_INFO
+                    CommonDeviceTab.SENSORS -> if (hasSensors) CommonDeviceTab.SENSORS else CommonDeviceTab.DEVICE_INFO
+                }
+
+            LaunchedEffect(effectiveTab) {
+                if (effectiveTab != selectedTab) {
+                    onSelectTab(effectiveTab)
+                }
+            }
+
             DeviceDrawerScaffold(
                 device = s.deviceState.device,
-                selectedTab = selectedTab,
+                descriptor = s.deviceState.descriptor,
+                selectedTab = effectiveTab,
                 onSelectTab = onSelectTab,
                 modifier = modifier,
                 feederStatus = s.status,
             ) {
-                saveableStateHolder.SaveableStateProvider(selectedTab) {
-                    when (selectedTab) {
+                saveableStateHolder.SaveableStateProvider(effectiveTab) {
+                    when (effectiveTab) {
                         CommonDeviceTab.DEVICE_INFO -> {
                             DeviceInfoContent(
                                 deviceState = s.deviceState,

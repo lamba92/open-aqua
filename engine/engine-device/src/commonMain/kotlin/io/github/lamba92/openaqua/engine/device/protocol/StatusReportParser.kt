@@ -9,6 +9,13 @@ import io.github.lamba92.openaqua.model.device.DeviceTelemetry
 import io.github.lamba92.openaqua.model.device.SensorChannelKind
 import io.github.lamba92.openaqua.model.device.SensorTelemetry
 import io.github.lamba92.openaqua.model.device.descriptor
+import io.github.lamba92.openaqua.model.device.fanChannels
+import io.github.lamba92.openaqua.model.device.flowSensorOffset
+import io.github.lamba92.openaqua.model.device.hasDisplay
+import io.github.lamba92.openaqua.model.device.hasFlowSensor
+import io.github.lamba92.openaqua.model.device.tempSensors
+import io.github.lamba92.openaqua.model.device.virtualSensorsCount
+import io.github.lamba92.openaqua.model.device.virtualSensorsStartOffset
 import kotlin.math.round
 
 object StatusReportParser {

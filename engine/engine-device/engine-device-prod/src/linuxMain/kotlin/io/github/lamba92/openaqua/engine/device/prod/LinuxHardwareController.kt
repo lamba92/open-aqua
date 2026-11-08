@@ -19,6 +19,7 @@ import io.github.lamba92.openaqua.model.device.DeviceTelemetry
 import io.github.lamba92.openaqua.model.device.FlashConfigRequest
 import io.github.lamba92.openaqua.model.device.descriptor
 import io.github.lamba92.openaqua.model.device.validateRequestMatchesDevice
+import io.github.lamba92.openaqua.model.device.virtualSensorsCount
 import kotlinx.cinterop.COpaquePointerVar
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.UByteVar
