@@ -63,6 +63,7 @@ import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
 import io.github.lamba92.openaqua.app.ui.components.VisibilityFilterChip
 import io.github.lamba92.openaqua.model.device.AutoCurveFanConfig
 import io.github.lamba92.openaqua.model.device.CoolingChannelKind
+import io.github.lamba92.openaqua.model.device.CopyFanConfig
 import io.github.lamba92.openaqua.model.device.CurveFanConfig
 import io.github.lamba92.openaqua.model.device.CurvePoint
 import io.github.lamba92.openaqua.model.device.FanChannelConfig
@@ -75,6 +76,7 @@ import open_aqua.app_compose.generated.resources.curve_fixed_power
 import open_aqua.app_compose.generated.resources.curve_fixed_power_desc
 import open_aqua.app_compose.generated.resources.curve_legend_current
 import open_aqua.app_compose.generated.resources.curve_legend_destination
+import open_aqua.app_compose.generated.resources.curve_legend_live_operating_point
 import open_aqua.app_compose.generated.resources.curve_legend_op_current
 import open_aqua.app_compose.generated.resources.curve_legend_op_destination
 import open_aqua.app_compose.generated.resources.curve_legend_target
@@ -121,7 +123,7 @@ fun CurveStudio(
     val draftConfig = remember(draft, allFans) { draft.toFanChannelConfig(allFans) }
 
     val activeSensor =
-        remember(sensors, draft, draftConfig) {
+        remember(sensors, draft, draftConfig, allFans) {
             when (draft) {
                 is FanDraft.AutoCurve -> {
                     sensors.firstOrNull { it.channel == draft.sensorIndex }
@@ -132,11 +134,12 @@ fun CurveStudio(
                 }
 
                 is FanDraft.Copy -> {
+                    val sourceConfig = resolveEffectiveFanConfig(draftConfig, allFans)
                     val sensorIdx =
-                        when (draftConfig) {
-                            is AutoCurveFanConfig -> draftConfig.sensorIndex
-                            is CurveFanConfig -> draftConfig.sensorIndex
-                            is TargetTempFanConfig -> draftConfig.sensorIndex
+                        when (sourceConfig) {
+                            is AutoCurveFanConfig -> sourceConfig.sensorIndex
+                            is CurveFanConfig -> sourceConfig.sensorIndex
+                            is TargetTempFanConfig -> sourceConfig.sensorIndex
                             else -> null
                         }
                     sensors.firstOrNull { it.channel == sensorIdx }
@@ -188,30 +191,43 @@ fun CurveStudio(
             Row(
                 horizontalArrangement = Arrangement.spacedBy(metrics.spacingSm),
             ) {
-                CurveMode.entries.forEach { mode ->
-                    val isSelected = mode == draft.mode
-                    val label =
-                        when (mode) {
-                            CurveMode.FIXED -> stringResource(Res.string.fan_mode_fixed)
-                            CurveMode.AUTO_CURVE -> stringResource(Res.string.fan_mode_auto_curve)
-                            CurveMode.TARGET_TEMP -> stringResource(Res.string.fan_mode_target_temp)
-                            CurveMode.COPY_FAN -> stringResource(Res.string.fan_mode_copy_fan)
-                        }
-                    CurveModePill(
-                        label = label,
-                        isSelected = isSelected,
-                        onClick = { onEvent(CurveStudioEvent.ChangeMode(mode)) },
-                    )
-                }
+                CurveMode.entries
+                    .filter { mode ->
+                        if (mode == CurveMode.COPY_FAN) otherFans.isNotEmpty() else true
+                    }.forEach { mode ->
+                        val isSelected = mode == draft.mode
+                        val label =
+                            when (mode) {
+                                CurveMode.FIXED -> stringResource(Res.string.fan_mode_fixed)
+                                CurveMode.AUTO_CURVE -> stringResource(Res.string.fan_mode_auto_curve)
+                                CurveMode.TARGET_TEMP -> stringResource(Res.string.fan_mode_target_temp)
+                                CurveMode.COPY_FAN -> stringResource(Res.string.fan_mode_copy_fan)
+                            }
+                        CurveModePill(
+                            label = label,
+                            isSelected = isSelected,
+                            onClick = { onEvent(CurveStudioEvent.ChangeMode(mode)) },
+                        )
+                    }
             }
         }
 
         HorizontalDivider(color = colors.borderOutline.copy(alpha = 0.5f))
 
+        val resolvedCurrentConfig =
+            remember(fan.config, allFans) {
+                resolveEffectiveFanConfig(fan.config, allFans)
+            }
+
+        val resolvedDraftConfig =
+            remember(draftConfig, allFans) {
+                resolveEffectiveFanConfig(draftConfig, allFans)
+            }
+
         val visualizerGraph = @Composable {
             CurveVisualizerGraph(
-                currentConfig = fan.config,
-                draftConfig = draftConfig,
+                currentConfig = resolvedCurrentConfig,
+                draftConfig = resolvedDraftConfig ?: draftConfig,
                 liveTemp = liveTemp,
                 modifier = Modifier.fillMaxWidth().height(260.dp),
             )
@@ -958,6 +974,7 @@ private fun CurveVisualizerGraph(
 
     val currentPoints = remember(currentConfig) { currentConfig.evaluatePwmPoints() }
     val draftPoints = remember(draftConfig) { draftConfig.evaluatePwmPoints() }
+    val isCurveModified = remember(currentPoints, draftPoints) { currentPoints != draftPoints }
 
     // Control nodes for draft
     val draftNodes =
@@ -1009,32 +1026,34 @@ private fun CurveVisualizerGraph(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                // Current (Hardware) Legend
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Canvas(
-                        modifier =
-                            Modifier
-                                .width(28.dp)
-                                .height(10.dp),
+                if (isCurveModified) {
+                    // Current (Hardware) Legend
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        val y = size.height / 2f
-                        drawLine(
+                        Canvas(
+                            modifier =
+                                Modifier
+                                    .width(28.dp)
+                                    .height(10.dp),
+                        ) {
+                            val y = size.height / 2f
+                            drawLine(
+                                color = colors.secondary,
+                                start = Offset(0f, y),
+                                end = Offset(size.width, y),
+                                strokeWidth = 2.dp.toPx(),
+                                pathEffect = PathEffect.dashPathEffect(floatArrayOf(5.dp.toPx(), 3.dp.toPx()), 0f),
+                            )
+                        }
+                        Text(
+                            text = stringResource(Res.string.curve_legend_current),
                             color = colors.secondary,
-                            start = Offset(0f, y),
-                            end = Offset(size.width, y),
-                            strokeWidth = 2.dp.toPx(),
-                            pathEffect = PathEffect.dashPathEffect(floatArrayOf(5.dp.toPx(), 3.dp.toPx()), 0f),
+                            fontSize = 13.sp,
+                            fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
                         )
                     }
-                    Text(
-                        text = stringResource(Res.string.curve_legend_current),
-                        color = colors.secondary,
-                        fontSize = 13.sp,
-                        fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
-                    )
                 }
 
                 // Destination (Draft) Legend
@@ -1079,29 +1098,44 @@ private fun CurveVisualizerGraph(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(
-                        text =
-                            stringResource(
-                                Res.string.curve_legend_op_current,
-                                "%.1f".format(liveTemp),
-                                currentPwm.roundToInt().toString(),
-                            ),
-                        color = colors.secondary,
-                        fontSize = 12.sp,
-                        fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
-                    )
-                    Text(
-                        text =
-                            stringResource(
-                                Res.string.curve_legend_op_destination,
-                                "%.1f".format(liveTemp),
-                                destPwm.roundToInt().toString(),
-                            ),
-                        color = colors.primaryBright,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
-                    )
+                    if (isCurveModified) {
+                        Text(
+                            text =
+                                stringResource(
+                                    Res.string.curve_legend_op_current,
+                                    "%.1f".format(liveTemp),
+                                    currentPwm.roundToInt().toString(),
+                                ),
+                            color = colors.secondary,
+                            fontSize = 12.sp,
+                            fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
+                        )
+                        Text(
+                            text =
+                                stringResource(
+                                    Res.string.curve_legend_op_destination,
+                                    "%.1f".format(liveTemp),
+                                    destPwm.roundToInt().toString(),
+                                ),
+                            color = colors.primaryBright,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
+                        )
+                    } else {
+                        Text(
+                            text =
+                                stringResource(
+                                    Res.string.curve_legend_live_operating_point,
+                                    "%.1f".format(liveTemp),
+                                    destPwm.roundToInt().toString(),
+                                ),
+                            color = colors.primaryBright,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
+                        )
+                    }
                 }
             }
         }
@@ -1192,11 +1226,13 @@ private fun CurveVisualizerGraph(
                     close()
                 }
 
-            // 1. Draw Current Area (semi-transparent secondary)
-            drawPath(
-                path = currentArea,
-                color = colors.secondary.copy(alpha = 0.18f),
-            )
+            // 1. Draw Current Area (semi-transparent secondary) - only when modified
+            if (isCurveModified) {
+                drawPath(
+                    path = currentArea,
+                    color = colors.secondary.copy(alpha = 0.18f),
+                )
+            }
 
             // 2. Draw Destination Area (semi-transparent primary)
             // Intersecting regions blend naturally via PorterDuff SrcOver compositing!
@@ -1205,24 +1241,26 @@ private fun CurveVisualizerGraph(
                 color = colors.primary.copy(alpha = 0.22f),
             )
 
-            // 3. Draw Current Curve Stroke (dashed secondary line)
-            val currentStroke =
-                Path().apply {
-                    moveTo(tempToX(10.0), pwmToY(currentPoints[10.0] ?: 0.0))
-                    for (t in 11..80) {
-                        val temp = t.toDouble()
-                        lineTo(tempToX(temp), pwmToY(currentPoints[temp] ?: 0.0))
+            // 3. Draw Current Curve Stroke (dashed secondary line) - only when modified
+            if (isCurveModified) {
+                val currentStroke =
+                    Path().apply {
+                        moveTo(tempToX(10.0), pwmToY(currentPoints[10.0] ?: 0.0))
+                        for (t in 11..80) {
+                            val temp = t.toDouble()
+                            lineTo(tempToX(temp), pwmToY(currentPoints[temp] ?: 0.0))
+                        }
                     }
-                }
-            drawPath(
-                path = currentStroke,
-                color = colors.secondary,
-                style =
-                    Stroke(
-                        width = 1.8.dp.toPx(),
-                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(), 4.dp.toPx()), 0f),
-                    ),
-            )
+                drawPath(
+                    path = currentStroke,
+                    color = colors.secondary,
+                    style =
+                        Stroke(
+                            width = 1.8.dp.toPx(),
+                            pathEffect = PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(), 4.dp.toPx()), 0f),
+                        ),
+                )
+            }
 
             // 4. Draw Destination Curve Stroke (solid primaryBright line)
             val destStroke =
@@ -1290,17 +1328,19 @@ private fun CurveVisualizerGraph(
                     pathEffect = PathEffect.dashPathEffect(floatArrayOf(3.dp.toPx(), 3.dp.toPx()), 0f),
                 )
 
-                // Current operating point dot (hardware) on current curve
-                drawCircle(
-                    color = colors.secondary,
-                    radius = 4.dp.toPx(),
-                    center = Offset(lx, currentY),
-                )
-                drawCircle(
-                    color = colors.surfaceLowest,
-                    radius = 2.dp.toPx(),
-                    center = Offset(lx, currentY),
-                )
+                // Current operating point dot (hardware) on current curve - only when modified
+                if (isCurveModified) {
+                    drawCircle(
+                        color = colors.secondary,
+                        radius = 4.dp.toPx(),
+                        center = Offset(lx, currentY),
+                    )
+                    drawCircle(
+                        color = colors.surfaceLowest,
+                        radius = 2.dp.toPx(),
+                        center = Offset(lx, currentY),
+                    )
+                }
 
                 // Destination operating point dot (pulsing halo + solid center dot) on destination curve
                 // Pulsing outer halo
@@ -1383,6 +1423,20 @@ private fun evaluatePointsAt(
         }
     }
     return sorted.last().pwm
+}
+
+private fun resolveEffectiveFanConfig(
+    config: FanChannelConfig?,
+    allFans: List<FanItem>,
+): FanChannelConfig? {
+    var current = config
+    val visited = mutableSetOf<Int>()
+    while (current is CopyFanConfig) {
+        if (!visited.add(current.channel)) break
+        val sourceFan = allFans.firstOrNull { it.channel == current.sourceChannel } ?: break
+        current = sourceFan.config
+    }
+    return current
 }
 
 @Composable

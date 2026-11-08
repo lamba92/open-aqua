@@ -201,7 +201,11 @@ class FansViewModel(
                                             }
 
                                             else -> {
-                                                FanDraft.Copy(channel, limits = currentDraft.limits)
+                                                FanDraft.Copy(
+                                                    channel = channel,
+                                                    sourceChannel = if (channel == 0) 1 else 0,
+                                                    limits = currentDraft.limits,
+                                                )
                                             }
                                         }
                                     }

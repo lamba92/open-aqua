@@ -3,11 +3,13 @@ package io.github.lamba92.openaqua.engine.device.protocol
 import io.github.lamba92.openaqua.engine.device.util.crc16Usb
 import io.github.lamba92.openaqua.model.FeatureState
 import io.github.lamba92.openaqua.model.device.AutoCurveFanConfig
+import io.github.lamba92.openaqua.model.device.CopyFanConfig
 import io.github.lamba92.openaqua.model.device.CurveFanConfig
 import io.github.lamba92.openaqua.model.device.CurvePoint
 import io.github.lamba92.openaqua.model.device.DeviceConfig
 import io.github.lamba92.openaqua.model.device.DeviceDescriptor
 import io.github.lamba92.openaqua.model.device.DeviceType
+import io.github.lamba92.openaqua.model.device.FanCapability
 import io.github.lamba92.openaqua.model.device.FanChannelConfig
 import io.github.lamba92.openaqua.model.device.FanLimits
 import io.github.lamba92.openaqua.model.device.FixedFanConfig
@@ -17,7 +19,9 @@ import io.github.lamba92.openaqua.model.device.TargetTempFanConfig
 import io.github.lamba92.openaqua.model.device.TwoPointFanConfig
 import io.github.lamba92.openaqua.model.device.UnconfiguredFanConfig
 import io.github.lamba92.openaqua.model.device.fanChannels
+import io.github.lamba92.openaqua.model.device.findFanCapability
 import io.github.lamba92.openaqua.model.device.flowPulsesCtrlOffset
+import io.github.lamba92.openaqua.model.device.followFanCapability
 import io.github.lamba92.openaqua.model.device.hasDisplay
 import io.github.lamba92.openaqua.model.device.tempCtrlOffset
 import io.github.lamba92.openaqua.model.device.tempSensors
@@ -49,10 +53,10 @@ object ConfigWriter {
         report: UByteArray,
         baseOffset: Int,
         config: FanChannelConfig,
-        descriptor: DeviceDescriptor? = null,
+        descriptor: DeviceDescriptor,
     ) {
         fun mapSensorIndex(sensorIndex: Int): Int {
-            if (descriptor != null && (descriptor.type == DeviceType.OCTO || descriptor.type == DeviceType.QUADRO)) {
+            if (descriptor.type == DeviceType.OCTO || descriptor.type == DeviceType.QUADRO) {
                 return if (sensorIndex >= 4) sensorIndex + 1 else sensorIndex
             }
             return sensorIndex
@@ -60,13 +64,19 @@ object ConfigWriter {
 
         when (config) {
             is FixedFanConfig -> {
-                report[baseOffset + 0] = ConfigParser.MODE_FIXED.toUByte()
+                val mode =
+                    descriptor.findFanCapability<FanCapability.Fixed>()?.modeByte
+                        ?: error("Device ${descriptor.name} does not support Fixed fan mode")
+                report[baseOffset + 0] = mode.toUByte()
                 val rawPwm = (config.powerPercent * 100.0).roundToInt().coerceIn(0, 10000).toUShort()
                 report[baseOffset + 1] = ((rawPwm.toInt() ushr 8) and 0xFF).toUByte()
                 report[baseOffset + 2] = (rawPwm.toInt() and 0xFF).toUByte()
             }
             is CurveFanConfig -> {
-                report[baseOffset + 0] = ConfigParser.MODE_CURVE.toUByte()
+                val mode =
+                    descriptor.findFanCapability<FanCapability.Curve>()?.modeByte
+                        ?: error("Device ${descriptor.name} does not support Curve fan mode")
+                report[baseOffset + 0] = mode.toUByte()
                 val hwSensor = mapSensorIndex(config.sensorIndex)
                 report[baseOffset + 3] = ((hwSensor ushr 8) and 0xFF).toUByte()
                 report[baseOffset + 4] = (hwSensor and 0xFF).toUByte()
@@ -76,7 +86,10 @@ object ConfigWriter {
                 encodeFanChannelConfig(report, baseOffset, config.toCurveFanConfig(), descriptor)
             }
             is TargetTempFanConfig -> {
-                report[baseOffset + 0] = ConfigParser.MODE_TARGET_TEMP.toUByte()
+                val mode =
+                    descriptor.findFanCapability<FanCapability.TargetTemp>()?.modeByte
+                        ?: error("Device ${descriptor.name} does not support TargetTemp fan mode")
+                report[baseOffset + 0] = mode.toUByte()
                 val hwSensor = mapSensorIndex(config.sensorIndex)
                 report[baseOffset + 3] = ((hwSensor ushr 8) and 0xFF).toUByte()
                 report[baseOffset + 4] = (hwSensor and 0xFF).toUByte()
@@ -85,10 +98,25 @@ object ConfigWriter {
                 report[baseOffset + 6] = (rawTemp.toInt() and 0xFF).toUByte()
             }
             is TwoPointFanConfig -> {
-                report[baseOffset + 0] = ConfigParser.MODE_TWO_POINT.toUByte()
+                val mode =
+                    descriptor.findFanCapability<FanCapability.TwoPoint>()?.modeByte
+                        ?: error("Device ${descriptor.name} does not support TwoPoint fan mode")
+                report[baseOffset + 0] = mode.toUByte()
                 val hwSensor = mapSensorIndex(config.sensorIndex)
                 report[baseOffset + 3] = ((hwSensor ushr 8) and 0xFF).toUByte()
                 report[baseOffset + 4] = (hwSensor and 0xFF).toUByte()
+            }
+            is CopyFanConfig -> {
+                val follow =
+                    descriptor.followFanCapability
+                        ?: error("Device ${descriptor.name} does not support follow fan mode")
+                val mode = follow.startModeByteInclusive + config.sourceChannel
+                check(mode <= follow.endModeByteInclusive) {
+                    "Source fan channel ${config.sourceChannel} exceeds follow mode range ($mode > ${follow.endModeByteInclusive}) on ${descriptor.name}"
+                }
+                report[baseOffset + 0] = mode.toUByte()
+                report[baseOffset + 3] = 0xFFu
+                report[baseOffset + 4] = 0xFFu
             }
             is UnconfiguredFanConfig -> {
                 report[baseOffset + 0] = config.rawMode.toUByte()
@@ -307,6 +335,14 @@ object ConfigWriter {
                 }
                 check(actual.sensorIndex == expected.sensorIndex) {
                     "Verification failed: expected sensorIndex ${expected.sensorIndex}, read ${actual.sensorIndex}"
+                }
+            }
+            is CopyFanConfig -> {
+                check(actual is CopyFanConfig) {
+                    "Verification failed: expected CopyFanConfig, got ${actual::class.simpleName}"
+                }
+                check(actual.sourceChannel == expected.sourceChannel) {
+                    "Verification failed: expected sourceChannel ${expected.sourceChannel}, read ${actual.sourceChannel}"
                 }
             }
             is UnconfiguredFanConfig -> Unit

@@ -51,6 +51,7 @@ import io.github.lamba92.openaqua.app.ui.components.VisibilityFilterChip
 import io.github.lamba92.openaqua.model.device.AutoCurveFanConfig
 import io.github.lamba92.openaqua.model.device.CoolingChannelKind
 import io.github.lamba92.openaqua.model.device.CoolingChannelTelemetry
+import io.github.lamba92.openaqua.model.device.CopyFanConfig
 import io.github.lamba92.openaqua.model.device.CurveFanConfig
 import io.github.lamba92.openaqua.model.device.DeviceId
 import io.github.lamba92.openaqua.model.device.FanChannelConfig
@@ -64,12 +65,28 @@ import open_aqua.app_compose.generated.resources.curve_action_flash_all
 import open_aqua.app_compose.generated.resources.curve_action_flashing
 import open_aqua.app_compose.generated.resources.d5_fan_pin
 import open_aqua.app_compose.generated.resources.d5_pump_pin
+import open_aqua.app_compose.generated.resources.fan_channel_name
 import open_aqua.app_compose.generated.resources.fan_channel_pin
 import open_aqua.app_compose.generated.resources.fan_channels_header
 import open_aqua.app_compose.generated.resources.fan_current_value
+import open_aqua.app_compose.generated.resources.fan_diff_summary_auto_curve
+import open_aqua.app_compose.generated.resources.fan_diff_summary_copy_fan
+import open_aqua.app_compose.generated.resources.fan_diff_summary_custom
+import open_aqua.app_compose.generated.resources.fan_diff_summary_custom_curve
+import open_aqua.app_compose.generated.resources.fan_diff_summary_fixed
+import open_aqua.app_compose.generated.resources.fan_diff_summary_target_temp
 import open_aqua.app_compose.generated.resources.fan_disconnected
 import open_aqua.app_compose.generated.resources.fan_hardware_pin
 import open_aqua.app_compose.generated.resources.fan_limits_badge_modified
+import open_aqua.app_compose.generated.resources.fan_limits_diff_boost_tag
+import open_aqua.app_compose.generated.resources.fan_limits_diff_fallback
+import open_aqua.app_compose.generated.resources.fan_limits_diff_fallback_changed
+import open_aqua.app_compose.generated.resources.fan_limits_diff_hold_tag
+import open_aqua.app_compose.generated.resources.fan_limits_diff_max
+import open_aqua.app_compose.generated.resources.fan_limits_diff_max_changed
+import open_aqua.app_compose.generated.resources.fan_limits_diff_min
+import open_aqua.app_compose.generated.resources.fan_limits_diff_min_changed
+import open_aqua.app_compose.generated.resources.fan_limits_diff_power_header
 import open_aqua.app_compose.generated.resources.fan_power_value
 import open_aqua.app_compose.generated.resources.fan_pwm_value
 import open_aqua.app_compose.generated.resources.fan_rpm_short_disconnected
@@ -570,32 +587,59 @@ private fun PendingFanDiffCard(
     val summary =
         when (targetConfig) {
             is FixedFanConfig -> {
-                "Fixed PWM: ${targetConfig.powerPercent.roundToInt()}%"
+                stringResource(
+                    Res.string.fan_diff_summary_fixed,
+                    targetConfig.powerPercent.roundToInt(),
+                )
             }
 
             is AutoCurveFanConfig -> {
                 val sensorName =
                     sensors.firstOrNull { it.channel == targetConfig.sensorIndex }?.resolveName()
                         ?: stringResource(Res.string.sensor_channel_name, targetConfig.sensorIndex + 1)
-                "Auto Curve • $sensorName • ${targetConfig.tMin.roundToInt()}°C - ${targetConfig.tMax.roundToInt()}°C (${targetConfig.pMin.roundToInt()}% - ${targetConfig.pMax.roundToInt()}%)"
+                stringResource(
+                    Res.string.fan_diff_summary_auto_curve,
+                    sensorName,
+                    targetConfig.tMin.roundToInt(),
+                    targetConfig.tMax.roundToInt(),
+                    targetConfig.pMin.roundToInt(),
+                    targetConfig.pMax.roundToInt(),
+                )
             }
 
             is CurveFanConfig -> {
                 val sensorName =
                     sensors.firstOrNull { it.channel == targetConfig.sensorIndex }?.resolveName()
                         ?: stringResource(Res.string.sensor_channel_name, targetConfig.sensorIndex + 1)
-                "Custom Curve • $sensorName • 16 points"
+                stringResource(
+                    Res.string.fan_diff_summary_custom_curve,
+                    sensorName,
+                    targetConfig.points.size,
+                )
             }
 
             is TargetTempFanConfig -> {
                 val sensorName =
                     sensors.firstOrNull { it.channel == targetConfig.sensorIndex }?.resolveName()
                         ?: stringResource(Res.string.sensor_channel_name, targetConfig.sensorIndex + 1)
-                "Target Temp • $sensorName • ${"%.1f".format(targetConfig.targetTempCelsius)}°C"
+                stringResource(
+                    Res.string.fan_diff_summary_target_temp,
+                    sensorName,
+                    "%.1f".format(targetConfig.targetTempCelsius),
+                )
+            }
+
+            is CopyFanConfig -> {
+                val sourceFanName =
+                    stringResource(Res.string.fan_channel_name, targetConfig.sourceChannel + 1)
+                stringResource(
+                    Res.string.fan_diff_summary_copy_fan,
+                    sourceFanName,
+                )
             }
 
             else -> {
-                "Custom Config"
+                stringResource(Res.string.fan_diff_summary_custom)
             }
         }
 
@@ -664,31 +708,59 @@ private fun PendingFanDiffCard(
                 modifier = Modifier.padding(start = 24.dp),
             )
 
-            val limitsPowerSummary =
-                buildString {
-                    append("Hardware Limits: ")
-                    if (initialLimits.minPowerPercent != limits.minPowerPercent) {
-                        append("Min ${initialLimits.minPowerPercent.roundToInt()}% → ${limits.minPowerPercent.roundToInt()}%")
-                    } else {
-                        append("Min ${limits.minPowerPercent.roundToInt()}%")
-                    }
-                    append(" • ")
-                    if (initialLimits.maxPowerPercent != limits.maxPowerPercent) {
-                        append("Max ${initialLimits.maxPowerPercent.roundToInt()}% → ${limits.maxPowerPercent.roundToInt()}%")
-                    } else {
-                        append("Max ${limits.maxPowerPercent.roundToInt()}%")
-                    }
+            val minPowerText =
+                if (initialLimits.minPowerPercent != limits.minPowerPercent) {
+                    stringResource(
+                        Res.string.fan_limits_diff_min_changed,
+                        initialLimits.minPowerPercent.roundToInt(),
+                        limits.minPowerPercent.roundToInt(),
+                    )
+                } else {
+                    stringResource(
+                        Res.string.fan_limits_diff_min,
+                        limits.minPowerPercent.roundToInt(),
+                    )
                 }
+
+            val maxPowerText =
+                if (initialLimits.maxPowerPercent != limits.maxPowerPercent) {
+                    stringResource(
+                        Res.string.fan_limits_diff_max_changed,
+                        initialLimits.maxPowerPercent.roundToInt(),
+                        limits.maxPowerPercent.roundToInt(),
+                    )
+                } else {
+                    stringResource(
+                        Res.string.fan_limits_diff_max,
+                        limits.maxPowerPercent.roundToInt(),
+                    )
+                }
+
+            val limitsPowerSummary =
+                "${stringResource(Res.string.fan_limits_diff_power_header)}$minPowerText • $maxPowerText"
+
+            val fallbackText =
+                if (initialLimits.fallbackPowerPercent != limits.fallbackPowerPercent) {
+                    stringResource(
+                        Res.string.fan_limits_diff_fallback_changed,
+                        initialLimits.fallbackPowerPercent.roundToInt(),
+                        limits.fallbackPowerPercent.roundToInt(),
+                    )
+                } else {
+                    stringResource(
+                        Res.string.fan_limits_diff_fallback,
+                        limits.fallbackPowerPercent.roundToInt(),
+                    )
+                }
+
+            val boostTag = stringResource(Res.string.fan_limits_diff_boost_tag)
+            val holdTag = stringResource(Res.string.fan_limits_diff_hold_tag)
 
             val limitsSafetySummary =
                 buildString {
-                    if (initialLimits.fallbackPowerPercent != limits.fallbackPowerPercent) {
-                        append("Fallback ${initialLimits.fallbackPowerPercent.roundToInt()}% → ${limits.fallbackPowerPercent.roundToInt()}%")
-                    } else {
-                        append("Fallback ${limits.fallbackPowerPercent.roundToInt()}%")
-                    }
-                    if (limits.startBoost) append(" • Boost")
-                    if (limits.holdMinPower) append(" • Hold min")
+                    append(fallbackText)
+                    if (limits.startBoost) append(" • $boostTag")
+                    if (limits.holdMinPower) append(" • $holdTag")
                 }
 
             Column(

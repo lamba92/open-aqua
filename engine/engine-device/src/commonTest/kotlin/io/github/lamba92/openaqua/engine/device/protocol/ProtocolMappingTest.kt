@@ -1,6 +1,7 @@
 package io.github.lamba92.openaqua.engine.device.protocol
 
 import io.github.lamba92.openaqua.engine.device.util.crc16Usb
+import io.github.lamba92.openaqua.model.device.CopyFanConfig
 import io.github.lamba92.openaqua.model.device.CurveFanConfig
 import io.github.lamba92.openaqua.model.device.CurvePoint
 import io.github.lamba92.openaqua.model.device.DetectedHardwareDevice
@@ -11,6 +12,7 @@ import io.github.lamba92.openaqua.model.device.DeviceId
 import io.github.lamba92.openaqua.model.device.DeviceRegistry
 import io.github.lamba92.openaqua.model.device.DeviceType
 import io.github.lamba92.openaqua.model.device.DisplayConfig
+import io.github.lamba92.openaqua.model.device.FanCapability
 import io.github.lamba92.openaqua.model.device.FanLimits
 import io.github.lamba92.openaqua.model.device.FixedFanConfig
 import io.github.lamba92.openaqua.model.device.FlashConfigRequest
@@ -18,6 +20,7 @@ import io.github.lamba92.openaqua.model.device.RgbpxPortConfig
 import io.github.lamba92.openaqua.model.device.TargetTempFanConfig
 import io.github.lamba92.openaqua.model.device.UnconfiguredFanConfig
 import io.github.lamba92.openaqua.model.device.fanChannels
+import io.github.lamba92.openaqua.model.device.findFanCapability
 import io.github.lamba92.openaqua.model.device.validateRequestMatchesDevice
 import io.github.lamba92.openaqua.model.device.virtualSensorsChannelRange
 import io.github.lamba92.openaqua.model.device.virtualSensorsReportSize
@@ -137,7 +140,8 @@ class ProtocolMappingTest {
         assertEquals(19, parsedVirt16.sensorIndex)
 
         // 5. Hardware index 4 (Flow sensor) -> parsed as UnconfiguredFanConfig
-        report[baseOffset + 0] = ConfigParser.MODE_CURVE.toUByte()
+        val curveByte = octo.findFanCapability<FanCapability.Curve>()?.modeByte?.toUByte() ?: 0x02u
+        report[baseOffset + 0] = curveByte
         report[baseOffset + 3] = 0x00u
         report[baseOffset + 4] = 0x04u
         val parsedFlow = ConfigParser.parseFanChannelConfig(report, baseOffset, channel = 0, descriptor = octo)
@@ -484,5 +488,72 @@ class ProtocolMappingTest {
         assertEquals(50.0, limits.maxPowerPercent)
         assertEquals(50.0, limits.minPowerPercent) // clamped to max
         assertEquals(100.0, limits.fallbackPowerPercent) // clamped to 100
+    }
+
+    @Test
+    fun testQuadroFollowFanModeEncodingAndParsing() {
+        val quadro = DeviceRegistry.QUADRO
+        val report = UByteArray(quadro.ctrlReportLength)
+        val baseOffset = 0x36 // Fan 0 ctrl offset on QUADRO
+
+        // Issue #8: Fan 0 follows Fan 1 -> mode 0x03 + 1 = 0x04
+        val followConfig = CopyFanConfig(channel = 0, sourceChannel = 1)
+        ConfigWriter.encodeFanChannelConfig(report, baseOffset, followConfig, quadro)
+
+        assertEquals(0x04u.toUByte(), report[baseOffset])
+        assertEquals(0xFFu.toUByte(), report[baseOffset + 3])
+        assertEquals(0xFFu.toUByte(), report[baseOffset + 4])
+
+        val parsed = ConfigParser.parseFanChannelConfig(report, baseOffset, channel = 0, descriptor = quadro)
+        assertIs<CopyFanConfig>(parsed)
+        assertEquals(0, parsed.channel)
+        assertEquals(1, parsed.sourceChannel)
+
+        // Verify FlashConfig verification passes
+        val actualDeviceConfig = DeviceConfig(fans = listOf(parsed))
+        val expectedRequest = FlashConfigRequest(fans = mapOf(0 to followConfig))
+        ConfigWriter.verifyFlashConfig(expectedRequest, actualDeviceConfig)
+
+        // Self-following mode (0x03 + 0 = 0x03) parses as UnconfiguredFanConfig
+        report[baseOffset] = 0x03u
+        val parsedSelf = ConfigParser.parseFanChannelConfig(report, baseOffset, channel = 0, descriptor = quadro)
+        assertIs<UnconfiguredFanConfig>(parsedSelf)
+        assertEquals(3, parsedSelf.rawMode)
+
+        // Out-of-bounds follow channel for QUADRO (max source channel is 3, mode 0x06)
+        val invalidFollow = CopyFanConfig(channel = 0, sourceChannel = 4)
+        assertFailsWith<IllegalStateException> {
+            ConfigWriter.encodeFanChannelConfig(report, baseOffset, invalidFollow, quadro)
+        }
+    }
+
+    @Test
+    fun testOctoFollowFanModeEncodingAndParsing() {
+        val octo = DeviceRegistry.OCTO
+        val report = UByteArray(octo.ctrlReportLength)
+        val baseOffset = 0x36
+
+        // OCTO supports channels 0..7, so follow mode goes up to 0x03 + 7 = 0x0A
+        val followConfig = CopyFanConfig(channel = 0, sourceChannel = 7)
+        ConfigWriter.encodeFanChannelConfig(report, baseOffset, followConfig, octo)
+
+        assertEquals(0x0Au.toUByte(), report[baseOffset])
+
+        val parsed = ConfigParser.parseFanChannelConfig(report, baseOffset, channel = 0, descriptor = octo)
+        assertIs<CopyFanConfig>(parsed)
+        assertEquals(7, parsed.sourceChannel)
+    }
+
+    @Test
+    fun testUnsupportedOrUnknownModeFallback() {
+        val quadro = DeviceRegistry.QUADRO
+        val report = UByteArray(quadro.ctrlReportLength)
+        val baseOffset = 0x36
+
+        // 0x48 (TwoPoint mode) is not supported on QUADRO (only on Aquaero)
+        report[baseOffset] = 0x48u
+        val parsed = ConfigParser.parseFanChannelConfig(report, baseOffset, channel = 0, descriptor = quadro)
+        assertIs<UnconfiguredFanConfig>(parsed)
+        assertEquals(0x48, parsed.rawMode)
     }
 }

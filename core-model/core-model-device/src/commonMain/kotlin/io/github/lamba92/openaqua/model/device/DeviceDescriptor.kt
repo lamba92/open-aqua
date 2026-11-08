@@ -1,6 +1,7 @@
 package io.github.lamba92.openaqua.model.device
 
 import kotlinx.serialization.Serializable
+import kotlin.jvm.JvmInline
 
 @Serializable
 enum class DeviceType {
@@ -42,11 +43,60 @@ data class SensorDescriptor(
 )
 
 @Serializable
+sealed interface FanCapability {
+    @Serializable
+    @JvmInline
+    value class Fixed(
+        val modeByte: Int = 0x00,
+    ) : FanCapability
+
+    @Serializable
+    @JvmInline
+    value class Curve(
+        val modeByte: Int = 0x02,
+    ) : FanCapability
+
+    @Serializable
+    @JvmInline
+    value class TargetTemp(
+        val modeByte: Int = 0x01,
+    ) : FanCapability
+
+    @Serializable
+    @JvmInline
+    value class TwoPoint(
+        val modeByte: Int = 0x48,
+    ) : FanCapability
+
+    @Serializable
+    data class Follow(
+        val startModeByteInclusive: Int = 0x03,
+        val endModeByteInclusive: Int = 0x06,
+    ) : FanCapability {
+        init {
+            require(startModeByteInclusive <= endModeByteInclusive) {
+                "startModeByteInclusive ($startModeByteInclusive) cannot be greater than endModeByteInclusive ($endModeByteInclusive)"
+            }
+        }
+    }
+}
+
+@Serializable
 sealed interface DeviceCapability {
     @Serializable
     data class Fans(
         val channels: List<FanChannelDescriptor>,
-    ) : DeviceCapability
+        val capabilities: List<FanCapability> = defaultCapabilities,
+    ) : DeviceCapability {
+        companion object {
+            val defaultCapabilities =
+                listOf(
+                    FanCapability.Fixed(),
+                    FanCapability.Curve(),
+                    FanCapability.TargetTemp(),
+                )
+        }
+    }
 
     @Serializable
     data class TemperatureSensors(
@@ -130,6 +180,17 @@ val DeviceDescriptor.fanCapability: DeviceCapability.Fans?
 
 val DeviceDescriptor.fanChannels: List<FanChannelDescriptor>
     get() = fanCapability?.channels ?: emptyList()
+
+val DeviceDescriptor.fanCapabilities: List<FanCapability>
+    get() = fanCapability?.capabilities ?: emptyList()
+
+inline fun <reified T : FanCapability> DeviceDescriptor.findFanCapability(): T? = fanCapabilities.filterIsInstance<T>().firstOrNull()
+
+val DeviceDescriptor.followFanCapability: FanCapability.Follow?
+    get() = findFanCapability<FanCapability.Follow>()
+
+val DeviceDescriptor.supportsFollowFan: Boolean
+    get() = followFanCapability != null
 
 val DeviceDescriptor.tempSensorsCapability: DeviceCapability.TemperatureSensors?
     get() = findCapability()
@@ -237,6 +298,12 @@ object DeviceRegistry {
                                     setupOffset = 0x12 + (it * 0x09),
                                 )
                             },
+                        capabilities =
+                            DeviceCapability.Fans.defaultCapabilities +
+                                FanCapability.Follow(
+                                    startModeByteInclusive = 0x03,
+                                    endModeByteInclusive = 0x0A,
+                                ),
                     ),
                     DeviceCapability.TemperatureSensors(
                         sensors =
@@ -288,6 +355,12 @@ object DeviceRegistry {
                                     setupOffset = 0x12 + (it * 0x09),
                                 )
                             },
+                        capabilities =
+                            DeviceCapability.Fans.defaultCapabilities +
+                                FanCapability.Follow(
+                                    startModeByteInclusive = 0x03,
+                                    endModeByteInclusive = 0x06,
+                                ),
                     ),
                     DeviceCapability.TemperatureSensors(
                         sensors =
@@ -613,6 +686,13 @@ object DeviceRegistry {
                                     kind = CoolingChannelKind.FAN,
                                 )
                             },
+                        capabilities =
+                            listOf(
+                                FanCapability.Fixed(0x00),
+                                FanCapability.TargetTemp(0x01),
+                                FanCapability.Curve(0x02),
+                                FanCapability.TwoPoint(0x48),
+                            ),
                     ),
                     DeviceCapability.TemperatureSensors(
                         sensors =
@@ -955,6 +1035,15 @@ fun DeviceDescriptor.validateRequestMatchesDevice(request: FlashConfigRequest) {
         }
         require(fan.setupOffset != null) {
             "Fan channel $ch does not support fan limits on $name"
+        }
+        if (config is CopyFanConfig) {
+            val sourceFan = fanChannels.firstOrNull { it.channel == config.sourceChannel }
+            requireNotNull(sourceFan) {
+                "Invalid source fan channel ${config.sourceChannel} to copy for $name"
+            }
+            require(config.sourceChannel != ch) {
+                "Fan channel $ch cannot copy from itself"
+            }
         }
     }
     request.sensorOffsets?.keys?.forEach { ch ->

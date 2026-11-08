@@ -1,12 +1,14 @@
 package io.github.lamba92.openaqua.engine.device.protocol
 
 import io.github.lamba92.openaqua.model.FeatureState
+import io.github.lamba92.openaqua.model.device.CopyFanConfig
 import io.github.lamba92.openaqua.model.device.CurveFanConfig
 import io.github.lamba92.openaqua.model.device.CurvePoint
 import io.github.lamba92.openaqua.model.device.DetectedHardwareDevice
 import io.github.lamba92.openaqua.model.device.DeviceConfig
 import io.github.lamba92.openaqua.model.device.DeviceDescriptor
 import io.github.lamba92.openaqua.model.device.DeviceType
+import io.github.lamba92.openaqua.model.device.FanCapability
 import io.github.lamba92.openaqua.model.device.FanChannelConfig
 import io.github.lamba92.openaqua.model.device.FanLimits
 import io.github.lamba92.openaqua.model.device.FixedFanConfig
@@ -17,7 +19,9 @@ import io.github.lamba92.openaqua.model.device.TargetTempFanConfig
 import io.github.lamba92.openaqua.model.device.TwoPointFanConfig
 import io.github.lamba92.openaqua.model.device.UnconfiguredFanConfig
 import io.github.lamba92.openaqua.model.device.fanChannels
+import io.github.lamba92.openaqua.model.device.findFanCapability
 import io.github.lamba92.openaqua.model.device.flowPulsesCtrlOffset
+import io.github.lamba92.openaqua.model.device.followFanCapability
 import io.github.lamba92.openaqua.model.device.hasDisplay
 import io.github.lamba92.openaqua.model.device.hasFlowSensor
 import io.github.lamba92.openaqua.model.device.rgbpxPortCount
@@ -27,14 +31,6 @@ import io.github.lamba92.openaqua.model.device.virtualSensorsCount
 import kotlin.math.round
 
 object ConfigParser {
-    const val MODE_FIXED = 0x00
-    const val MODE_TARGET_TEMP = 0x01
-    const val MODE_CURVE = 0x02
-    const val MODE_TWO_POINT = 0x05
-
-    // Physical sensors (0..3 on OCTO/QUADRO) + Flow (4) + Virtual sensors (5..20)
-    const val MAX_SUPPORTED_SENSOR_INDEX = 20
-
     fun parseCurvePoints(
         report: UByteArray,
         baseOffset: Int,
@@ -56,22 +52,18 @@ object ConfigParser {
         report: UByteArray,
         baseOffset: Int,
         channel: Int,
-        descriptor: DeviceDescriptor? = null,
+        descriptor: DeviceDescriptor,
         limits: FanLimits = FanLimits.Standard,
     ): FanChannelConfig {
         val mode = report[baseOffset].toInt() and 0xFF
         val rawSensor = ((report[baseOffset + 3].toInt() and 0xFF shl 8) or (report[baseOffset + 4].toInt() and 0xFF))
 
-        val maxHwSensorIndex =
-            if (descriptor != null && (descriptor.type == DeviceType.OCTO || descriptor.type == DeviceType.QUADRO)) {
-                descriptor.tempSensors.size + 1 + descriptor.virtualSensorsCount - 1
-            } else {
-                MAX_SUPPORTED_SENSOR_INDEX
-            }
+        val flowSensorCount = if (descriptor.hasFlowSensor) 1 else 0
+        val maxHwSensorIndex = descriptor.tempSensors.size + flowSensorCount + descriptor.virtualSensorsCount - 1
 
         val sensorIndex =
             if (rawSensor in 0..maxHwSensorIndex) {
-                if (descriptor != null && (descriptor.type == DeviceType.OCTO || descriptor.type == DeviceType.QUADRO)) {
+                if (descriptor.type == DeviceType.OCTO || descriptor.type == DeviceType.QUADRO) {
                     when {
                         rawSensor < 4 -> rawSensor
                         rawSensor == 4 -> null
@@ -84,8 +76,40 @@ object ConfigParser {
                 null
             }
 
-        return when (mode) {
-            MODE_CURVE -> {
+        val followCap = descriptor.followFanCapability
+        val fixedByte = descriptor.findFanCapability<FanCapability.Fixed>()?.modeByte
+        val curveByte = descriptor.findFanCapability<FanCapability.Curve>()?.modeByte
+        val targetTempByte = descriptor.findFanCapability<FanCapability.TargetTemp>()?.modeByte
+        val twoPointByte = descriptor.findFanCapability<FanCapability.TwoPoint>()?.modeByte
+
+        return when {
+            followCap != null && mode in followCap.startModeByteInclusive..followCap.endModeByteInclusive -> {
+                val sourceChannel = mode - followCap.startModeByteInclusive
+                if (sourceChannel == channel) {
+                    UnconfiguredFanConfig(
+                        channel = channel,
+                        rawMode = mode,
+                        limits = limits,
+                    )
+                } else {
+                    CopyFanConfig(
+                        channel = channel,
+                        sourceChannel = sourceChannel,
+                        limits = limits,
+                    )
+                }
+            }
+
+            fixedByte != null && mode == fixedByte -> {
+                val pRaw = ((report[baseOffset + 1].toInt() and 0xFF shl 8) or (report[baseOffset + 2].toInt() and 0xFF))
+                FixedFanConfig(
+                    channel = channel,
+                    powerPercent = round((pRaw.toDouble() / 100.0) * 10.0) / 10.0,
+                    limits = limits,
+                )
+            }
+
+            curveByte != null && mode == curveByte -> {
                 if (sensorIndex == null) {
                     UnconfiguredFanConfig(
                         channel = channel,
@@ -101,15 +125,8 @@ object ConfigParser {
                     )
                 }
             }
-            MODE_FIXED -> {
-                val pRaw = ((report[baseOffset + 1].toInt() and 0xFF shl 8) or (report[baseOffset + 2].toInt() and 0xFF))
-                FixedFanConfig(
-                    channel = channel,
-                    powerPercent = round((pRaw.toDouble() / 100.0) * 10.0) / 10.0,
-                    limits = limits,
-                )
-            }
-            MODE_TARGET_TEMP -> {
+
+            targetTempByte != null && mode == targetTempByte -> {
                 if (sensorIndex == null) {
                     UnconfiguredFanConfig(
                         channel = channel,
@@ -126,7 +143,8 @@ object ConfigParser {
                     )
                 }
             }
-            MODE_TWO_POINT -> {
+
+            twoPointByte != null && mode == twoPointByte -> {
                 if (sensorIndex == null) {
                     UnconfiguredFanConfig(
                         channel = channel,
@@ -141,8 +159,13 @@ object ConfigParser {
                     )
                 }
             }
+
             else -> {
-                error("Unknown fan mode $mode (0x${mode.toString(16)}) for channel $channel at offset 0x${baseOffset.toString(16)}")
+                UnconfiguredFanConfig(
+                    channel = channel,
+                    rawMode = mode,
+                    limits = limits,
+                )
             }
         }
     }

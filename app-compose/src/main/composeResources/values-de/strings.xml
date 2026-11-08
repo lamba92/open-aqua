@@ -281,6 +281,22 @@
     <string name="fan_limits_diff_hold_on">Mindestleistung halten: Ein</string>
     <string name="fan_limits_diff_hold_off">Mindestleistung halten: Aus</string>
     <string name="fan_limits_flash_hint">Flashen überträgt Kurvenprofile und Hardwaregrenzen in das Geräte-EEPROM.</string>
+    <!-- Fan Diff Card Summaries -->
+    <string name="fan_diff_summary_fixed">Festes PWM: %1$d%%</string>
+    <string name="fan_diff_summary_auto_curve">Auto-Kurve • %1$s • %2$d°C - %3$d°C (%4$d%% - %5$d%%)</string>
+    <string name="fan_diff_summary_custom_curve">Benutzerdefinierte Kurve • %1$s • %2$d Punkte</string>
+    <string name="fan_diff_summary_target_temp">Solltemperatur • %1$s • %2$s°C</string>
+    <string name="fan_diff_summary_copy_fan">Lüfter kopieren • %1$s</string>
+    <string name="fan_diff_summary_custom">Benutzerdefinierte Konfiguration</string>
+    <string name="fan_limits_diff_power_header">Hardwaregrenzen: </string>
+    <string name="fan_limits_diff_min_changed">Min %1$d%% → %2$d%%</string>
+    <string name="fan_limits_diff_min">Min %1$d%%</string>
+    <string name="fan_limits_diff_max_changed">Max %1$d%% → %2$d%%</string>
+    <string name="fan_limits_diff_max">Max %1$d%%</string>
+    <string name="fan_limits_diff_fallback_changed">Notfall %1$d%% → %2$d%%</string>
+    <string name="fan_limits_diff_fallback">Notfall %1$d%%</string>
+    <string name="fan_limits_diff_boost_tag">Boost</string>
+    <string name="fan_limits_diff_hold_tag">Min halten</string>
     <string name="sensor_offset_title">Mikrocontroller-Offset-Kalibrierung</string>
     <string name="sensor_offset_desc">Direkt im Mikrocontroller des Geräts angewendeter Hardware-Offset zur Kalibrierung von Fühlertoleranzen vor der Kurvenauswertung.</string>
     <string name="sensor_offset_flash">Offset auf Gerät flashen</string>

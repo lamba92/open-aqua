@@ -6,6 +6,7 @@ import io.github.lamba92.openaqua.model.FeatureState
 import io.github.lamba92.openaqua.model.device.AutoCurveFanConfig
 import io.github.lamba92.openaqua.model.device.CoolingChannelKind
 import io.github.lamba92.openaqua.model.device.CoolingChannelTelemetry
+import io.github.lamba92.openaqua.model.device.CopyFanConfig
 import io.github.lamba92.openaqua.model.device.CurveFanConfig
 import io.github.lamba92.openaqua.model.device.CurvePoint
 import io.github.lamba92.openaqua.model.device.DetectedHardwareDevice
@@ -236,6 +237,7 @@ class MockHardwareController : HardwareController {
                     maxRpm = maxRpm,
                     maxAmps = maxAmps,
                     kind = fan.kind,
+                    allConfigs = config.fans,
                 )
             }
 
@@ -280,8 +282,9 @@ class MockHardwareController : HardwareController {
         maxRpm: Int,
         maxAmps: Double,
         kind: CoolingChannelKind = CoolingChannelKind.FAN,
+        allConfigs: List<FanChannelConfig> = emptyList(),
     ): CoolingChannelTelemetry {
-        val rawPwm = calculatePwm(config, allSensors)
+        val rawPwm = calculatePwm(config, allSensors, allConfigs)
         val pwm =
             if (limits != null) {
                 when (config) {
@@ -326,6 +329,7 @@ class MockHardwareController : HardwareController {
     private fun calculatePwm(
         config: FanChannelConfig?,
         sensorTemps: Map<Int, Double?>,
+        allConfigs: List<FanChannelConfig> = emptyList(),
     ): Double =
         when (config) {
             is FixedFanConfig -> config.powerPercent
@@ -355,6 +359,15 @@ class MockHardwareController : HardwareController {
                     if (temp < 30.0) 30.0 else 100.0
                 } else {
                     100.0
+                }
+            }
+
+            is CopyFanConfig -> {
+                val source = allConfigs.firstOrNull { it.channel == config.sourceChannel }
+                if (source != null && source !is CopyFanConfig) {
+                    calculatePwm(source, sensorTemps, allConfigs)
+                } else {
+                    50.0
                 }
             }
 

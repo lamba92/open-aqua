@@ -177,6 +177,22 @@
     <string name="fan_limits_diff_hold_on">Hold Min: On</string>
     <string name="fan_limits_diff_hold_off">Hold Min: Off</string>
     <string name="fan_limits_flash_hint">Flashing commits curve profiles and hardware limits to device EEPROM.</string>
+    <!-- Fan Diff Card Summaries -->
+    <string name="fan_diff_summary_fixed">Fixed PWM: %1$d%%</string>
+    <string name="fan_diff_summary_auto_curve">Auto Curve • %1$s • %2$d°C - %3$d°C (%4$d%% - %5$d%%)</string>
+    <string name="fan_diff_summary_custom_curve">Custom Curve • %1$s • %2$d points</string>
+    <string name="fan_diff_summary_target_temp">Target Temp • %1$s • %2$s°C</string>
+    <string name="fan_diff_summary_copy_fan">Copy Fan • %1$s</string>
+    <string name="fan_diff_summary_custom">Custom Config</string>
+    <string name="fan_limits_diff_power_header">Hardware Limits: </string>
+    <string name="fan_limits_diff_min_changed">Min %1$d%% → %2$d%%</string>
+    <string name="fan_limits_diff_min">Min %1$d%%</string>
+    <string name="fan_limits_diff_max_changed">Max %1$d%% → %2$d%%</string>
+    <string name="fan_limits_diff_max">Max %1$d%%</string>
+    <string name="fan_limits_diff_fallback_changed">Fallback %1$d%% → %2$d%%</string>
+    <string name="fan_limits_diff_fallback">Fallback %1$d%%</string>
+    <string name="fan_limits_diff_boost_tag">Boost</string>
+    <string name="fan_limits_diff_hold_tag">Hold min</string>
 
     <!-- Sensors Screen -->
     <string name="sensors_screen_title">Temperature Sensors</string>

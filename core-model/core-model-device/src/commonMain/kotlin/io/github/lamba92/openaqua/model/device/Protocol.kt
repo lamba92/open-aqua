@@ -134,6 +134,18 @@ data class TwoPointFanConfig(
 ) : FanChannelConfig
 
 @Serializable
+@SerialName("copy")
+data class CopyFanConfig(
+    override val channel: Int,
+    val sourceChannel: Int,
+    override val limits: FanLimits = FanLimits.Standard,
+) : FanChannelConfig {
+    init {
+        require(channel != sourceChannel) { "Fan channel $channel cannot copy from itself" }
+    }
+}
+
+@Serializable
 @SerialName("unconfigured")
 data class UnconfiguredFanConfig(
     override val channel: Int,
@@ -155,6 +167,7 @@ fun FanChannelConfig.withLimits(limits: FanLimits): FanChannelConfig =
         is FixedFanConfig -> copy(limits = limits)
         is TargetTempFanConfig -> copy(limits = limits)
         is TwoPointFanConfig -> copy(limits = limits)
+        is CopyFanConfig -> copy(limits = limits)
         is UnconfiguredFanConfig -> copy(limits = limits)
         is LimitsOnlyFanConfig -> copy(limits = limits)
     }
