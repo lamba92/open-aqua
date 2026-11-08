@@ -2,12 +2,12 @@ name: Release
 
 on:
   release:
-    types: [ published ]
+    types: [published]
   workflow_dispatch:
     inputs:
       tag_name:
-        description: 'Release tag to upload to (defaults to current ref)'
-        required: false
+        description: 'Release Tag (e.g. v1.0.0)'
+        required: true
         type: string
 
 permissions:
@@ -15,42 +15,185 @@ permissions:
 
 jobs:
   release:
-    name: Build & Publish (${{ matrix.os_name }})
+    name: Build & Release Desktop Packages
     strategy:
       fail-fast: false
       matrix:
         include:
           - os: ubuntu-latest
-            os_name: Linux
+            platform: linux
           - os: windows-latest
-            os_name: Windows
+            platform: windows
     runs-on: ${{ matrix.os }}
-    defaults:
-      run:
-        shell: bash
     steps:
       - uses: actions/checkout@v4
-
-      - uses: actions/setup-java@v4
         with:
-          distribution: temurin
-          java-version: 21
+          fetch-depth: 0
 
-      - uses: gradle/actions/setup-gradle@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'microsoft'
+          java-version: '21'
 
-      - name: Install Linux packaging tools
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
+
+      - name: Install Linux AppImage packaging dependencies
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y rpm fakeroot
+          sudo apt-get install -y libfuse2 file libasound2-dev
 
-      - run: chmod +x gradlew
-
-      - name: Build release assets
-        run: ./gradlew release --stacktrace
+      - name: Build & Publish Release Packages
+        run: ./gradlew release --scan --stacktrace
 
       - name: Upload to GitHub Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release upload "${{ github.event.release.tag_name || inputs.tag_name || github.ref_name }}" build/releases/* --clobber
+
+      - name: Resolve MSIX Package for Store Deployment
+        if: runner.os == 'Windows' && env.MICROSOFT_CLIENT_SECRET != ''
+        id: resolve_msix
+        shell: pwsh
+        env:
+          MICROSOFT_CLIENT_SECRET: ${{ secrets.MICROSOFT_CLIENT_SECRET }}
+        run: |
+          $msix = (Get-Item "build/releases/*.msix").FullName
+          Write-Host "Resolved MSIX for deployment: $msix"
+          echo "msix_path=$msix" >> $env:GITHUB_OUTPUT
+
+      - name: Deploy to Microsoft Store
+        if: runner.os == 'Windows' && env.MICROSOFT_CLIENT_SECRET != ''
+        uses: isaacrlevin/windows-store-action@v1
+        env:
+          MICROSOFT_CLIENT_SECRET: ${{ secrets.MICROSOFT_CLIENT_SECRET }}
+        with:
+          tenant-id: ${{ secrets.MICROSOFT_TENANT_ID }}
+          client-id: ${{ secrets.MICROSOFT_CLIENT_ID }}
+          client-secret: ${{ secrets.MICROSOFT_CLIENT_SECRET }}
+          app-id: ${{ secrets.MICROSOFT_STORE_ID }}
+          package-path: ${{ steps.resolve_msix.outputs.msix_path }}
+
+  publish-linux-stores:
+    name: Publish to Linux Stores
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'microsoft'
+          java-version: '21'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
+
+      - name: Generate Packaging Descriptors
+        run: ./gradlew :packaging:generatePackagingFiles --scan --stacktrace
+
+      - name: Extract Release Metadata & Checksum
+        id: release_info
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ github.event.release.tag_name || inputs.tag_name || github.ref_name }}"
+          VERSION="${TAG#v}"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+          # Download Linux tarball to compute sha256 checksum for Flathub & AUR
+          gh release download "$TAG" -p "open-aqua-*-linux-x64.tar.gz" --dir /tmp/assets
+          TAR_FILE=$(ls /tmp/assets/open-aqua-*-linux-x64.tar.gz | head -n 1)
+          SHA256=$(sha256sum "$TAR_FILE" | awk '{print $1}')
+          echo "sha256=${SHA256}" >> "$GITHUB_OUTPUT"
+          echo "Resolved version ${VERSION} with SHA256: ${SHA256}"
+
+      - name: Sync Flathub Repository
+        if: env.FLATHUB_TOKEN != ''
+        env:
+          FLATHUB_TOKEN: ${{ secrets.FLATHUB_PUSH_TOKEN }}
+          TAG: ${{ steps.release_info.outputs.tag }}
+          VERSION: ${{ steps.release_info.outputs.version }}
+          SHA256: ${{ steps.release_info.outputs.sha256 }}
+        run: |
+          echo "Syncing Flathub repository (io.github.lamba92.openaqua)..."
+          git clone "https://x-access-token:${FLATHUB_TOKEN}@github.com/flathub/io.github.lamba92.openaqua.git" flathub-repo || {
+            echo "::warning::Flathub repository clone failed. Verify FLATHUB_PUSH_TOKEN and repository status."
+            exit 0
+          }
+          cd flathub-repo
+          sed -i -E "s|url: https://.*/open-aqua-.*-linux-x64.tar.gz|url: https://github.com/lamba92/open-aqua/releases/download/${TAG}/open-aqua-${VERSION}-linux-x64.tar.gz|g" io.github.lamba92.openaqua.yaml
+          sed -i -E "s|sha256: [a-f0-9]{64}|sha256: ${SHA256}|g" io.github.lamba92.openaqua.yaml
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -am "Update to version ${VERSION}" || echo "No changes to commit"
+          git push origin master
+
+      - name: Publish to Arch Linux (AUR)
+        if: env.AUR_KEY != ''
+        env:
+          AUR_KEY: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+          TAG: ${{ steps.release_info.outputs.tag }}
+          VERSION: ${{ steps.release_info.outputs.version }}
+          SHA256: ${{ steps.release_info.outputs.sha256 }}
+        run: |
+          echo "Deploying to AUR (open-aqua-bin)..."
+          mkdir -p ~/.ssh
+          echo "${AUR_KEY}" > ~/.ssh/aur_key
+          chmod 600 ~/.ssh/aur_key
+          ssh-keyscan -H aur.archlinux.org >> ~/.ssh/known_hosts 2>/dev/null
+
+          GIT_SSH_COMMAND="ssh -i ~/.ssh/aur_key" git clone "ssh://aur@aur.archlinux.org/open-aqua-bin.git" aur-repo || {
+            echo "::warning::AUR clone failed (account registration may be pending or closed). Skipping AUR publishing."
+            exit 0
+          }
+          cd aur-repo
+          cp ../packaging/build/generated/packaging/aur/PKGBUILD .
+          sed -i -E "s|^pkgver=.*|pkgver=${VERSION}|g" PKGBUILD
+          sed -i -E "s|^pkgrel=.*|pkgrel=1|g" PKGBUILD
+          sed -i -E "0,/'SKIP'/{s/'SKIP'/'${SHA256}'/}" PKGBUILD
+
+          git config user.name "Lamberto Basti"
+          git config user.email "basti.lamberto@gmail.com"
+          git commit -am "Update open-aqua-bin to ${VERSION}" || echo "No changes to commit"
+          GIT_SSH_COMMAND="ssh -i ~/.ssh/aur_key" git push origin master
+
+      - name: Prepare Snap Build Directory
+        if: env.SNAP_TOKEN != ''
+        env:
+          SNAP_TOKEN: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
+          VERSION: ${{ steps.release_info.outputs.version }}
+        run: |
+          echo "Preparing Snap payload..."
+          mkdir -p /tmp/snap-payload
+          cp packaging/build/generated/packaging/snap/snapcraft.yaml /tmp/snap-payload/
+          sed -i -E "s|^version:.*|version: '${VERSION}'|g" /tmp/snap-payload/snapcraft.yaml
+          tar -xzf /tmp/assets/open-aqua-*-linux-x64.tar.gz -C /tmp/snap-payload/ --strip-components=1
+
+      - name: Build Snap Package
+        if: env.SNAP_TOKEN != ''
+        id: snap_build
+        uses: snapcore/action-build@v2
+        with:
+          path: /tmp/snap-payload
+        env:
+          SNAP_TOKEN: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
+
+      - name: Publish Snap to Snap Store
+        if: env.SNAP_TOKEN != ''
+        uses: snapcore/action-publish@v1
+        env:
+          SNAP_TOKEN: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
+        with:
+          snap: ${{ steps.snap_build.outputs.snap }}
+          release: stable

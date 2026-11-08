@@ -1,0 +1,70 @@
+{
+  "id": "io.github.lamba92.openaqua",
+  "name": "OpenAqua",
+  "summary": "Thermal management and telemetry suite for Aquacomputer devices",
+  "comment": "Thermal Management and Telemetry Suite for Aqua Computer Devices",
+  "executable": "open-aqua",
+  "mainClass": "io.github.lamba92.openaqua.app.MainKt",
+  "iconName": "io.github.lamba92.openaqua",
+  "udevRule": "# Aquacomputer devices rootless access\nSUBSYSTEM==\"hidraw\", ATTRS{idVendor}==\"0c70\", MODE=\"0666\", TAG+=\"uaccess\"",
+  "project": {
+    "githubRepo": "lamba92/open-aqua",
+    "homepage": "https://github.com/lamba92/open-aqua",
+    "bugtracker": "https://github.com/lamba92/open-aqua/issues",
+    "license": "Apache-2.0",
+    "metadataLicense": "CC0-1.0"
+  },
+  "developer": {
+    "id": "io.github.lamba92",
+    "name": "Lamberto Basti",
+    "email": "basti.lamberto@gmail.com"
+  },
+  "appstream": {
+    "categories": [
+      "Settings",
+      "HardwareSettings",
+      "System"
+    ],
+    "descriptionParagraphs": [
+      "OpenAqua is an open-source thermal management and telemetry suite designed for Aquacomputer hardware (OCTO, QUADRO, D5 NEXT, and compatible devices)."
+    ],
+    "features": [
+      "Autonomous Hardware Operation: Flash custom fan curves and profiles directly to onboard device EEPROM.",
+      "Real-time telemetry monitoring for fan speeds, water flow, and thermal sensors.",
+      "Virtual temperature sensor feeding from host metrics into hardware virtual sensor slots.",
+      "Sensor calibration with custom temperature offsets.",
+      "Native low-level USB HID interface with rootless udev support."
+    ],
+    "screenshots": [
+      {
+        "caption": "Fan curves and speeds configuration",
+        "url": "https://raw.githubusercontent.com/lamba92/open-aqua/main/docs/screenshots/fans_screen.jpg",
+        "isDefault": true
+      },
+      {
+        "caption": "Real-time sensors and calibration offsets",
+        "url": "https://raw.githubusercontent.com/lamba92/open-aqua/main/docs/screenshots/sensors_screen.jpg",
+        "isDefault": false
+      },
+      {
+        "caption": "Virtual temperature sensor feeding",
+        "url": "https://raw.githubusercontent.com/lamba92/open-aqua/main/docs/screenshots/virtual_sensor_feeding.jpg",
+        "isDefault": false
+      },
+      {
+        "caption": "Hardware diagnostics and device telemetry",
+        "url": "https://raw.githubusercontent.com/lamba92/open-aqua/main/docs/screenshots/device_info_screen.jpg",
+        "isDefault": false
+      }
+    ]
+  },
+  "flatpak": {
+    "runtimeVersion": "24.08"
+  },
+  "msix": {
+    "identityName": "LambertoBasti.OpenAqua",
+    "publisher": "CN=CAEB9266-6FCE-4D3D-99CE-6D18212C1392",
+    "publisherDisplayName": "Lamberto Basti",
+    "storeId": "9MZT3W68T48F"
+  }
+}

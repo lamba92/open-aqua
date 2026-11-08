@@ -36,4 +36,5 @@ include(
     ":engine:engine-host:engine-host-linux",
     ":engine:engine-host:engine-host-mock",
     ":engine:engine-host:engine-host-windows",
+    ":packaging",
 )
