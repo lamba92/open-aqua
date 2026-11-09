@@ -223,6 +223,8 @@ fun ChannelPageScaffold(
     modifier: Modifier = Modifier,
     scrollState: ScrollState = rememberScrollState(),
     selectorHeaderTrailing: (@Composable RowScope.() -> Unit)? = null,
+    secondarySelectorHeader: String? = null,
+    secondarySelectorContent: (@Composable () -> Unit)? = null,
     selectorContent: @Composable () -> Unit,
 ) {
     val colors = OpenAquaTheme.colors
@@ -283,6 +285,33 @@ fun ChannelPageScaffold(
                         verticalArrangement = Arrangement.spacedBy(metrics.spacingMd),
                         content = { selectorContent() },
                     )
+
+                    if (secondarySelectorContent != null) {
+                        if (secondarySelectorHeader != null) {
+                            Text(
+                                text = secondarySelectorHeader,
+                                color = colors.primary,
+                                fontSize = metrics.channelSelectionTile.badgeTextSize,
+                                lineHeight = metrics.channelSelectionTile.badgeLineHeight,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
+                                modifier =
+                                    Modifier
+                                        .padding(horizontal = metrics.spacingXxl)
+                                        .padding(top = metrics.spacingSm),
+                            )
+                        }
+
+                        FlowRow(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = metrics.spacingXxl),
+                            horizontalArrangement = Arrangement.spacedBy(metrics.spacingMd),
+                            verticalArrangement = Arrangement.spacedBy(metrics.spacingMd),
+                            content = { secondarySelectorContent() },
+                        )
+                    }
                 }
 
                 HorizontalDivider(

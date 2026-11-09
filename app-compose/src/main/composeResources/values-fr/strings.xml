@@ -142,6 +142,7 @@
     <string name="sensors_screen_title">Capteurs de température</string>
     <string name="sensors_screen_subtitle">Entrées thermistance NTC et emplacements logiciels virtuels</string>
     <string name="temperature_probes_header">SONDES DE TEMPÉRATURE</string>
+    <string name="virtual_sensors_header">CAPTEURS VIRTUELS</string>
     <string name="sensor_channel_name">Capteur %1$d</string>
     <string name="sensor_channel_pin">T%1$d</string>
     <string name="sensor_virtual_name">Virtuel %1$d</string>
