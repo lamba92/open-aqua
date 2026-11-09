@@ -6,9 +6,11 @@ import io.github.lamba92.openaqua.model.FeatureState
 import io.github.lamba92.openaqua.model.device.AutoCurveFanConfig
 import io.github.lamba92.openaqua.model.device.CoolingChannelKind
 import io.github.lamba92.openaqua.model.device.CoolingChannelTelemetry
+import io.github.lamba92.openaqua.model.device.CopyFanConfig
 import io.github.lamba92.openaqua.model.device.CurveFanConfig
 import io.github.lamba92.openaqua.model.device.CurvePoint
 import io.github.lamba92.openaqua.model.device.DetectedHardwareDevice
+import io.github.lamba92.openaqua.model.device.DeviceCapability
 import io.github.lamba92.openaqua.model.device.DeviceConfig
 import io.github.lamba92.openaqua.model.device.DeviceDescriptor
 import io.github.lamba92.openaqua.model.device.DeviceTelemetry
@@ -26,15 +28,10 @@ import io.github.lamba92.openaqua.model.device.TargetTempFanConfig
 import io.github.lamba92.openaqua.model.device.TwoPointFanConfig
 import io.github.lamba92.openaqua.model.device.UnconfiguredFanConfig
 import io.github.lamba92.openaqua.model.device.descriptor
-import io.github.lamba92.openaqua.model.device.fanChannels
-import io.github.lamba92.openaqua.model.device.flowSensorOffset
-import io.github.lamba92.openaqua.model.device.hasDisplay
-import io.github.lamba92.openaqua.model.device.hasFlowSensor
+import io.github.lamba92.openaqua.model.device.findCapability
 import io.github.lamba92.openaqua.model.device.tempCelsiusOrNull
-import io.github.lamba92.openaqua.model.device.tempSensors
 import io.github.lamba92.openaqua.model.device.validateRequestMatchesDevice
 import io.github.lamba92.openaqua.model.device.virtualSensorsChannelRange
-import io.github.lamba92.openaqua.model.device.virtualSensorsCount
 import io.github.lamba92.openaqua.model.device.withLimits
 import io.github.lamba92.openaqua.model.valueOrNull
 import kotlinx.coroutines.currentCoroutineContext
@@ -139,7 +136,8 @@ class MockHardwareController : HardwareController {
     ) {
         checkDeviceAccessible(device)
         val descriptor = device.descriptor()
-        check(descriptor.virtualSensorsCount > 0) {
+        val virtCap = descriptor.findCapability<DeviceCapability.VirtualSensors>()
+        check(virtCap != null && virtCap.count > 0) {
             "${device.name} does not support virtual sensors"
         }
 
@@ -180,88 +178,99 @@ class MockHardwareController : HardwareController {
         config: DeviceConfig,
         virtualSensorsMap: Map<Int, Double?>,
     ): DeviceTelemetry {
+        val tempCap = descriptor.findCapability<DeviceCapability.TemperatureSensors>()
         val physicalSensors =
-            descriptor.tempSensors.map { sensor ->
-                val baseTemp =
-                    when (sensor.channel) {
-                        0 -> if (sensor.kind == SensorChannelKind.INTEGRATED_COOLANT) 28.5 else 32.5
-                        1 -> 22.8
-                        2 -> 27.4
-                        3 -> 43.1
-                        else -> 30.0
+            when (tempCap) {
+                null -> emptyList()
+                else ->
+                    tempCap.sensors.map { sensor ->
+                        val baseTemp =
+                            when (sensor.channel) {
+                                0 -> if (sensor.kind == SensorChannelKind.INTEGRATED_COOLANT) 28.5 else 32.5
+                                1 -> 22.8
+                                2 -> 27.4
+                                3 -> 43.1
+                                else -> 30.0
+                            }
+                        val offset = config.sensorOffsets.firstOrNull { it.channel == sensor.channel }?.offsetCelsius ?: 0.0
+                        val totalTemp = round((baseTemp + offset) * 10.0) / 10.0
+                        SensorTelemetry.Connected(
+                            channel = sensor.channel,
+                            tempCelsius = totalTemp,
+                            kind = sensor.kind,
+                        )
                     }
-                val offset = config.sensorOffsets.firstOrNull { it.channel == sensor.channel }?.offsetCelsius ?: 0.0
-                val totalTemp = round((baseTemp + offset) * 10.0) / 10.0
-                SensorTelemetry.Connected(
-                    channel = sensor.channel,
-                    tempCelsius = totalTemp,
-                    kind = sensor.kind,
-                )
             }
 
+        val virtCap = descriptor.findCapability<DeviceCapability.VirtualSensors>()
         val virtualSensors =
-            (0 until descriptor.virtualSensorsCount).map { i ->
-                val ch = descriptor.tempSensors.size + i
-                val temp = virtualSensorsMap[ch]
-                if (temp != null) {
-                    SensorTelemetry.Connected(
-                        channel = ch,
-                        tempCelsius = temp,
-                        kind = SensorChannelKind.VIRTUAL,
-                    )
-                } else {
-                    SensorTelemetry.Disconnected(
-                        channel = ch,
-                        kind = SensorChannelKind.VIRTUAL,
-                    )
-                }
+            when (virtCap) {
+                null -> emptyList()
+                else ->
+                    (0 until virtCap.count).map { i ->
+                        val ch = (tempCap?.sensors?.size ?: 0) + i
+                        val temp = virtualSensorsMap[ch]
+                        when (temp) {
+                            null -> SensorTelemetry.Disconnected(channel = ch, kind = SensorChannelKind.VIRTUAL)
+                            else -> SensorTelemetry.Connected(channel = ch, tempCelsius = temp, kind = SensorChannelKind.VIRTUAL)
+                        }
+                    }
             }
 
         val allSensors = (physicalSensors + virtualSensors).associate { it.channel to it.tempCelsiusOrNull }
 
+        val fansCap = descriptor.findCapability<DeviceCapability.Fans>()
         val fans =
-            descriptor.fanChannels.map { fan ->
-                val fanConfig = config.fans.firstOrNull { it.channel == fan.channel }
-                val fanLimits = fanConfig?.limits
-                val (maxRpm, maxAmps) =
-                    when (fan.kind) {
-                        CoolingChannelKind.PUMP -> 4800 to 1.8
-                        CoolingChannelKind.FAN -> if (fan.channel == 0) 2500 to 0.70 else 1800 to 0.30
+            when (fansCap) {
+                null -> emptyList()
+                else ->
+                    fansCap.channels.map { fan ->
+                        val fanConfig = config.fans.firstOrNull { it.channel == fan.channel }
+                        val fanLimits = fanConfig?.limits
+                        val (maxRpm, maxAmps) =
+                            when (fan.kind) {
+                                CoolingChannelKind.PUMP -> 4800 to 1.8
+                                CoolingChannelKind.FAN -> if (fan.channel == 0) 2500 to 0.70 else 1800 to 0.30
+                            }
+                        simulateFan(
+                            channel = fan.channel,
+                            config = fanConfig,
+                            limits = fanLimits,
+                            allSensors = allSensors,
+                            maxRpm = maxRpm,
+                            maxAmps = maxAmps,
+                            kind = fan.kind,
+                            allConfigs = config.fans,
+                        )
                     }
-                simulateFan(
-                    channel = fan.channel,
-                    config = fanConfig,
-                    limits = fanLimits,
-                    allSensors = allSensors,
-                    maxRpm = maxRpm,
-                    maxAmps = maxAmps,
-                    kind = fan.kind,
-                )
             }
 
         val flowRateDlH =
-            if (descriptor.hasFlowSensor && descriptor.flowSensorOffset != null) {
-                val activeFans = fans.filterIsInstance<CoolingChannelTelemetry.Connected>()
-                if (activeFans.any { it.rpm > 0 }) {
-                    val pwm = activeFans.firstOrNull()?.pwmPercent ?: 50.0
-                    FeatureState.Active(round(60.0 + (pwm / 100.0) * 140.0).toInt())
-                } else {
-                    FeatureState.Disconnected
+            when (descriptor.findCapability<DeviceCapability.FlowSensor>()) {
+                is DeviceCapability.FlowSensor -> {
+                    val activeFans = fans.filterIsInstance<CoolingChannelTelemetry.Connected>()
+                    when {
+                        activeFans.any { it.rpm > 0 } -> {
+                            val pwm = activeFans.firstOrNull()?.pwmPercent ?: 50.0
+                            FeatureState.Active(round(60.0 + (pwm / 100.0) * 140.0).toInt())
+                        }
+                        else -> FeatureState.Disconnected
+                    }
                 }
-            } else {
-                FeatureState.Unsupported
+                null -> FeatureState.Unsupported
             }
 
         val display =
-            if (descriptor.hasDisplay) {
-                FeatureState.Active(
-                    DisplayTelemetry(
-                        brightnessPercent = config.display.valueOrNull?.brightnessPercent ?: 80,
-                        orientationDegrees = config.display.valueOrNull?.orientationDegrees ?: 0,
-                    ),
-                )
-            } else {
-                FeatureState.Unsupported
+            when (descriptor.findCapability<DeviceCapability.Display>()) {
+                is DeviceCapability.Display -> {
+                    FeatureState.Active(
+                        DisplayTelemetry(
+                            brightnessPercent = config.display.valueOrNull?.brightnessPercent ?: 80,
+                            orientationDegrees = config.display.valueOrNull?.orientationDegrees ?: 0,
+                        ),
+                    )
+                }
+                null -> FeatureState.Unsupported
             }
 
         return DeviceTelemetry(
@@ -280,8 +289,9 @@ class MockHardwareController : HardwareController {
         maxRpm: Int,
         maxAmps: Double,
         kind: CoolingChannelKind = CoolingChannelKind.FAN,
+        allConfigs: List<FanChannelConfig> = emptyList(),
     ): CoolingChannelTelemetry {
-        val rawPwm = calculatePwm(config, allSensors)
+        val rawPwm = calculatePwm(config, allSensors, allConfigs)
         val pwm =
             if (limits != null) {
                 when (config) {
@@ -326,6 +336,7 @@ class MockHardwareController : HardwareController {
     private fun calculatePwm(
         config: FanChannelConfig?,
         sensorTemps: Map<Int, Double?>,
+        allConfigs: List<FanChannelConfig> = emptyList(),
     ): Double =
         when (config) {
             is FixedFanConfig -> config.powerPercent
@@ -355,6 +366,15 @@ class MockHardwareController : HardwareController {
                     if (temp < 30.0) 30.0 else 100.0
                 } else {
                     100.0
+                }
+            }
+
+            is CopyFanConfig -> {
+                val source = allConfigs.firstOrNull { it.channel == config.sourceChannel }
+                if (source != null && source !is CopyFanConfig) {
+                    calculatePwm(source, sensorTemps, allConfigs)
+                } else {
+                    50.0
                 }
             }
 

@@ -4,6 +4,7 @@ import io.github.lamba92.openaqua.engine.device.hardware.HardwareController
 import io.github.lamba92.openaqua.model.device.AutoCurveFanConfig
 import io.github.lamba92.openaqua.model.device.AutoCurveParams
 import io.github.lamba92.openaqua.model.device.CoolingChannelTelemetry
+import io.github.lamba92.openaqua.model.device.CopyFanConfig
 import io.github.lamba92.openaqua.model.device.CurveFanConfig
 import io.github.lamba92.openaqua.model.device.DetectedHardwareDevice
 import io.github.lamba92.openaqua.model.device.DeviceConfig
@@ -363,6 +364,30 @@ class OctoHardwareTest {
             println("Verified combined FanConfig and FanLimits flashed and read back successfully on Fan ${testChannel + 1}")
         }
 
+    @Test
+    fun testFlashCopyFanOnAllowedFan() =
+        withOctoSafeScope {
+            val testChannel = 4 // Fan 5 (unoccupied, safe)
+            val sourceChannel = 0 // Fan 1 (occupied, active reference)
+            val testCopyConfig =
+                CopyFanConfig(
+                    channel = testChannel,
+                    sourceChannel = sourceChannel,
+                )
+            val testRequest = FlashConfigRequest(fans = mapOf(testChannel to testCopyConfig))
+
+            println("Testing Follow Fan (CopyFanConfig) on allowed Fan ${testChannel + 1} following Fan ${sourceChannel + 1}...")
+            val readback = flashAndVerify(testRequest)
+            val updated = readback.fans.firstOrNull { it.channel == testChannel }
+            assertNotNull(updated, "Fan config for channel $testChannel must be present")
+            assertTrue(updated is CopyFanConfig, "Fan config must be CopyFanConfig, was ${updated::class.simpleName}")
+            assertEquals(testChannel, updated.channel)
+            assertEquals(sourceChannel, updated.sourceChannel)
+            println(
+                "Verified CopyFanConfig flashed and read back successfully on Fan ${testChannel + 1} following Fan ${sourceChannel + 1}",
+            )
+        }
+
     companion object {
         private fun FanChannelConfig.toSafeRestorableConfig(): FanChannelConfig =
             when (this) {
@@ -371,6 +396,7 @@ class OctoHardwareTest {
                 is AutoCurveFanConfig -> this
                 is TargetTempFanConfig -> this
                 is TwoPointFanConfig -> this
+                is CopyFanConfig -> this
                 else -> FixedFanConfig(channel = channel, powerPercent = 50.0, limits = limits)
             }
     }

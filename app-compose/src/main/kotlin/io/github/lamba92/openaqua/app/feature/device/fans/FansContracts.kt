@@ -4,6 +4,7 @@ import io.github.lamba92.openaqua.app.feature.device.common.ChannelName
 import io.github.lamba92.openaqua.app.feature.device.common.FanItem
 import io.github.lamba92.openaqua.app.feature.device.common.SensorItem
 import io.github.lamba92.openaqua.model.device.AutoCurveFanConfig
+import io.github.lamba92.openaqua.model.device.CopyFanConfig
 import io.github.lamba92.openaqua.model.device.CurveFanConfig
 import io.github.lamba92.openaqua.model.device.CurveMath
 import io.github.lamba92.openaqua.model.device.FanChannelConfig
@@ -115,20 +116,11 @@ fun FanDraft.toFanChannelConfig(
         }
 
         is FanDraft.Copy -> {
-            val sourceDraft = allDrafts[sourceChannel]
-            val sourceConfig =
-                if (sourceDraft != null && sourceDraft !is FanDraft.Copy) {
-                    sourceDraft.toFanChannelConfig(allFans, emptyMap())
-                } else {
-                    allFans.firstOrNull { it.channel == sourceChannel }?.config
-                }
-            when (sourceConfig) {
-                is FixedFanConfig -> sourceConfig.copy(channel = channel, limits = targetLimits)
-                is AutoCurveFanConfig -> sourceConfig.copy(channel = channel, limits = targetLimits)
-                is CurveFanConfig -> sourceConfig.copy(channel = channel, limits = targetLimits)
-                is TargetTempFanConfig -> sourceConfig.copy(channel = channel, limits = targetLimits)
-                else -> FixedFanConfig(channel = channel, powerPercent = 50.0, limits = targetLimits)
-            }
+            CopyFanConfig(
+                channel = channel,
+                sourceChannel = sourceChannel,
+                limits = targetLimits,
+            )
         }
     }
 }
@@ -177,6 +169,14 @@ fun FanChannelConfig?.toInitialDraft(
                 channel = channel,
                 sensorIndex = sensorIndex,
                 targetTempCelsius = targetTempCelsius,
+                limits = limits,
+            )
+        }
+
+        is CopyFanConfig -> {
+            FanDraft.Copy(
+                channel = channel,
+                sourceChannel = sourceChannel,
                 limits = limits,
             )
         }

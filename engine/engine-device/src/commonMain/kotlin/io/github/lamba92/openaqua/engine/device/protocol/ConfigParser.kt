@@ -1,14 +1,17 @@
 package io.github.lamba92.openaqua.engine.device.protocol
 
 import io.github.lamba92.openaqua.model.FeatureState
+import io.github.lamba92.openaqua.model.device.CopyFanConfig
 import io.github.lamba92.openaqua.model.device.CurveFanConfig
 import io.github.lamba92.openaqua.model.device.CurvePoint
-import io.github.lamba92.openaqua.model.device.DetectedHardwareDevice
+import io.github.lamba92.openaqua.model.device.DeviceCapability
 import io.github.lamba92.openaqua.model.device.DeviceConfig
 import io.github.lamba92.openaqua.model.device.DeviceDescriptor
-import io.github.lamba92.openaqua.model.device.DeviceType
+import io.github.lamba92.openaqua.model.device.FanCapability
 import io.github.lamba92.openaqua.model.device.FanChannelConfig
+import io.github.lamba92.openaqua.model.device.FanChannelDescriptor
 import io.github.lamba92.openaqua.model.device.FanLimits
+import io.github.lamba92.openaqua.model.device.FanLimitsLayout
 import io.github.lamba92.openaqua.model.device.FixedFanConfig
 import io.github.lamba92.openaqua.model.device.RgbEffectMode
 import io.github.lamba92.openaqua.model.device.RgbpxPortConfig
@@ -16,35 +19,23 @@ import io.github.lamba92.openaqua.model.device.SensorOffset
 import io.github.lamba92.openaqua.model.device.TargetTempFanConfig
 import io.github.lamba92.openaqua.model.device.TwoPointFanConfig
 import io.github.lamba92.openaqua.model.device.UnconfiguredFanConfig
-import io.github.lamba92.openaqua.model.device.fanChannels
-import io.github.lamba92.openaqua.model.device.flowPulsesCtrlOffset
-import io.github.lamba92.openaqua.model.device.hasDisplay
-import io.github.lamba92.openaqua.model.device.hasFlowSensor
-import io.github.lamba92.openaqua.model.device.rgbpxPortCount
-import io.github.lamba92.openaqua.model.device.tempCtrlOffset
-import io.github.lamba92.openaqua.model.device.tempSensors
-import io.github.lamba92.openaqua.model.device.virtualSensorsCount
+import io.github.lamba92.openaqua.model.device.findCapability
+import io.github.lamba92.openaqua.model.device.findFanCapability
+import io.github.lamba92.openaqua.model.device.hardwareToLogicalSensorIndex
 import kotlin.math.round
 
 object ConfigParser {
-    const val MODE_FIXED = 0x00
-    const val MODE_TARGET_TEMP = 0x01
-    const val MODE_CURVE = 0x02
-    const val MODE_TWO_POINT = 0x05
-
-    // Physical sensors (0..3 on OCTO/QUADRO) + Flow (4) + Virtual sensors (5..20)
-    const val MAX_SUPPORTED_SENSOR_INDEX = 20
-
     fun parseCurvePoints(
         report: UByteArray,
         baseOffset: Int,
+        curveCap: FanCapability.Curve = FanCapability.Curve(),
     ): List<CurvePoint> =
-        (0 until 16).map { i ->
-            val tOffset = baseOffset + 0x15 + (i * 2)
-            val pOffset = baseOffset + 0x35 + (i * 2)
+        (0 until curveCap.pointsCount).map { i ->
+            val tOffset = baseOffset + curveCap.tempsOffset + (i * 2)
+            val pOffset = baseOffset + curveCap.pwmsOffset + (i * 2)
 
-            val tRaw = ((report[tOffset].toInt() shl 8) or report[tOffset + 1].toInt()).toShort()
-            val pRaw = ((report[pOffset].toInt() shl 8) or report[pOffset + 1].toInt()).toUShort()
+            val tRaw = ((report[tOffset].toInt() shl 8) or (report[tOffset + 1].toInt() and 0xFF)).toShort()
+            val pRaw = ((report[pOffset].toInt() and 0xFF shl 8) or (report[pOffset + 1].toInt() and 0xFF)).toUShort()
 
             val temp = round((tRaw.toDouble() / 100.0) * 10.0) / 10.0
             val pwm = round((pRaw.toDouble() / 100.0) * 10.0) / 10.0
@@ -56,93 +47,139 @@ object ConfigParser {
         report: UByteArray,
         baseOffset: Int,
         channel: Int,
-        descriptor: DeviceDescriptor? = null,
+        descriptor: DeviceDescriptor,
         limits: FanLimits = FanLimits.Standard,
     ): FanChannelConfig {
-        val mode = report[baseOffset].toInt() and 0xFF
-        val rawSensor = ((report[baseOffset + 3].toInt() and 0xFF shl 8) or (report[baseOffset + 4].toInt() and 0xFF))
+        val followCap = descriptor.findFanCapability<FanCapability.Follow>()
+        val fixedCap = descriptor.findFanCapability<FanCapability.Fixed>()
+        val curveCap = descriptor.findFanCapability<FanCapability.Curve>()
+        val targetTempCap = descriptor.findFanCapability<FanCapability.TargetTemp>()
+        val twoPointCap = descriptor.findFanCapability<FanCapability.TwoPoint>()
 
-        val maxHwSensorIndex =
-            if (descriptor != null && (descriptor.type == DeviceType.OCTO || descriptor.type == DeviceType.QUADRO)) {
-                descriptor.tempSensors.size + 1 + descriptor.virtualSensorsCount - 1
-            } else {
-                MAX_SUPPORTED_SENSOR_INDEX
+        val modeOffset =
+            fixedCap?.modeOffset ?: curveCap?.modeOffset ?: targetTempCap?.modeOffset ?: twoPointCap?.modeOffset ?: followCap?.modeOffset
+                ?: 0
+        val mode = report[baseOffset + modeOffset].toInt() and 0xFF
+
+        val totalSensors = descriptor.findCapability<DeviceCapability.TemperatureSensors>()?.sensors?.size ?: 0
+        val virtualCount = descriptor.findCapability<DeviceCapability.VirtualSensors>()?.count ?: 0
+        val flowSensorSlotCount =
+            when (descriptor.findCapability<DeviceCapability.FlowSensor>()) {
+                is DeviceCapability.FlowSensor.Calibrated -> 1
+                else -> 0
             }
+        val maxHwSensorIndex = totalSensors + flowSensorSlotCount + virtualCount - 1
 
-        val sensorIndex =
-            if (rawSensor in 0..maxHwSensorIndex) {
-                if (descriptor != null && (descriptor.type == DeviceType.OCTO || descriptor.type == DeviceType.QUADRO)) {
-                    when {
-                        rawSensor < 4 -> rawSensor
-                        rawSensor == 4 -> null
-                        else -> rawSensor - 1
+        fun readSensorIndex(sensorIndexOffset: Int): Int? {
+            val rawSensor = (
+                (report[baseOffset + sensorIndexOffset].toInt() and 0xFF shl 8) or
+                    (report[baseOffset + sensorIndexOffset + 1].toInt() and 0xFF)
+            )
+            return if (rawSensor in 0..maxHwSensorIndex) descriptor.hardwareToLogicalSensorIndex(rawSensor) else null
+        }
+
+        return when {
+            followCap != null && mode in followCap.startModeByteInclusive..followCap.endModeByteInclusive -> {
+                when (val sourceChannel = mode - followCap.startModeByteInclusive) {
+                    channel -> {
+                        UnconfiguredFanConfig(
+                            channel = channel,
+                            rawMode = mode,
+                            limits = limits,
+                        )
                     }
-                } else {
-                    rawSensor
+                    else -> {
+                        CopyFanConfig(
+                            channel = channel,
+                            sourceChannel = sourceChannel,
+                            limits = limits,
+                        )
+                    }
                 }
-            } else {
-                null
             }
 
-        return when (mode) {
-            MODE_CURVE -> {
-                if (sensorIndex == null) {
-                    UnconfiguredFanConfig(
-                        channel = channel,
-                        rawMode = mode,
-                        limits = limits,
-                    )
-                } else {
-                    CurveFanConfig(
-                        channel = channel,
-                        sensorIndex = sensorIndex,
-                        points = parseCurvePoints(report, baseOffset),
-                        limits = limits,
-                    )
-                }
-            }
-            MODE_FIXED -> {
-                val pRaw = ((report[baseOffset + 1].toInt() and 0xFF shl 8) or (report[baseOffset + 2].toInt() and 0xFF))
+            fixedCap != null && mode == fixedCap.modeByte -> {
+                val pRaw = (
+                    (report[baseOffset + fixedCap.pwmOffset].toInt() and 0xFF shl 8) or
+                        (report[baseOffset + fixedCap.pwmOffset + 1].toInt() and 0xFF)
+                )
                 FixedFanConfig(
                     channel = channel,
                     powerPercent = round((pRaw.toDouble() / 100.0) * 10.0) / 10.0,
                     limits = limits,
                 )
             }
-            MODE_TARGET_TEMP -> {
-                if (sensorIndex == null) {
-                    UnconfiguredFanConfig(
-                        channel = channel,
-                        rawMode = mode,
-                        limits = limits,
-                    )
-                } else {
-                    val tRaw = ((report[baseOffset + 5].toInt() shl 8) or (report[baseOffset + 6].toInt() and 0xFF)).toShort()
-                    TargetTempFanConfig(
-                        channel = channel,
-                        sensorIndex = sensorIndex,
-                        targetTempCelsius = round((tRaw.toDouble() / 100.0) * 10.0) / 10.0,
-                        limits = limits,
-                    )
+
+            curveCap != null && mode == curveCap.modeByte -> {
+                when (val sensorIndex = readSensorIndex(curveCap.sensorIndexOffset)) {
+                    null -> {
+                        UnconfiguredFanConfig(
+                            channel = channel,
+                            rawMode = mode,
+                            limits = limits,
+                        )
+                    }
+                    else -> {
+                        CurveFanConfig(
+                            channel = channel,
+                            sensorIndex = sensorIndex,
+                            points = parseCurvePoints(report, baseOffset, curveCap),
+                            limits = limits,
+                        )
+                    }
                 }
             }
-            MODE_TWO_POINT -> {
-                if (sensorIndex == null) {
-                    UnconfiguredFanConfig(
-                        channel = channel,
-                        rawMode = mode,
-                        limits = limits,
-                    )
-                } else {
-                    TwoPointFanConfig(
-                        channel = channel,
-                        sensorIndex = sensorIndex,
-                        limits = limits,
-                    )
+
+            targetTempCap != null && mode == targetTempCap.modeByte -> {
+                when (val sensorIndex = readSensorIndex(targetTempCap.sensorIndexOffset)) {
+                    null -> {
+                        UnconfiguredFanConfig(
+                            channel = channel,
+                            rawMode = mode,
+                            limits = limits,
+                        )
+                    }
+                    else -> {
+                        val tRaw =
+                            (
+                                (report[baseOffset + targetTempCap.targetTempOffset].toInt() shl 8) or
+                                    (report[baseOffset + targetTempCap.targetTempOffset + 1].toInt() and 0xFF)
+                            ).toShort()
+                        TargetTempFanConfig(
+                            channel = channel,
+                            sensorIndex = sensorIndex,
+                            targetTempCelsius = round((tRaw.toDouble() / 100.0) * 10.0) / 10.0,
+                            limits = limits,
+                        )
+                    }
                 }
             }
+
+            twoPointCap != null && mode == twoPointCap.modeByte -> {
+                when (val sensorIndex = readSensorIndex(twoPointCap.sensorIndexOffset)) {
+                    null -> {
+                        UnconfiguredFanConfig(
+                            channel = channel,
+                            rawMode = mode,
+                            limits = limits,
+                        )
+                    }
+                    else -> {
+                        TwoPointFanConfig(
+                            channel = channel,
+                            sensorIndex = sensorIndex,
+                            limits = limits,
+                        )
+                    }
+                }
+            }
+
             else -> {
-                error("Unknown fan mode $mode (0x${mode.toString(16)}) for channel $channel at offset 0x${baseOffset.toString(16)}")
+                UnconfiguredFanConfig(
+                    channel = channel,
+                    rawMode = mode,
+                    limits = limits,
+                )
             }
         }
     }
@@ -160,46 +197,60 @@ object ConfigParser {
     private fun parseFans(
         report: UByteArray,
         descriptor: DeviceDescriptor,
+        fansCap: DeviceCapability.Fans,
     ): List<FanChannelConfig> =
-        descriptor.fanChannels.map { fan ->
-            val setupOffset =
-                fan.setupOffset
-                    ?: error("Fan channel ${fan.channel} on ${descriptor.name} lacks setupOffset for required limits")
-            val limits = parseFanLimits(report, setupOffset)
+        fansCap.channels.map { fan ->
+            val limits =
+                when (fan) {
+                    is FanChannelDescriptor.WithLimits -> parseFanLimits(report, fan.setupOffset, fansCap.limitsLayout)
+                    is FanChannelDescriptor.Basic -> FanLimits.Standard
+                }
             parseFanChannelConfig(report, fan.ctrlOffset, fan.channel, descriptor, limits)
         }
 
     private fun parseOffsets(
         report: UByteArray,
-        descriptor: DeviceDescriptor,
-    ): List<SensorOffset> {
-        val baseOffset = descriptor.tempCtrlOffset ?: error("No tempCtrlOffset for ${descriptor.name}")
-        return descriptor.tempSensors.map { sensor ->
-            SensorOffset(sensor.channel, parseSensorOffset(report, baseOffset, sensor.channel))
+        tempCap: DeviceCapability.TemperatureSensors.Calibrated,
+    ): List<SensorOffset> =
+        tempCap.sensors.map { sensor ->
+            SensorOffset(sensor.channel, parseSensorOffset(report, tempCap.ctrlOffset, sensor.channel))
         }
-    }
 
-    private fun defaultRgbpxPorts(descriptor: DeviceDescriptor): List<RgbpxPortConfig> =
-        (0 until descriptor.rgbpxPortCount).map { port ->
-            RgbpxPortConfig(
-                port = port,
-                enabled = true,
-                ledCount = 30,
-                brightnessPercent = 100,
-                mode = RgbEffectMode.STATIC,
-            )
+    private fun defaultRgbpxPorts(rgbpxCap: DeviceCapability.Lighting.Rgbpx?): List<RgbpxPortConfig> =
+        when (rgbpxCap) {
+            null -> emptyList()
+            else ->
+                (0 until rgbpxCap.portCount).map { port ->
+                    RgbpxPortConfig(
+                        port = port,
+                        enabled = true,
+                        ledCount = 30,
+                        brightnessPercent = 100,
+                        mode = RgbEffectMode.STATIC,
+                    )
+                }
         }
 
     fun parseFanLimits(
         report: UByteArray,
         setupOffset: Int,
+        limitsLayout: FanLimitsLayout = FanLimitsLayout.Standard,
     ): FanLimits {
-        val flags = report[setupOffset].toInt() and 0xFF
-        val holdMin = (flags and 0x01) != 0
-        val startBoost = (flags and 0x02) != 0
-        val rawMin = ((report[setupOffset + 1].toInt() and 0xFF shl 8) or (report[setupOffset + 2].toInt() and 0xFF))
-        val rawMax = ((report[setupOffset + 3].toInt() and 0xFF shl 8) or (report[setupOffset + 4].toInt() and 0xFF))
-        val rawFallback = ((report[setupOffset + 5].toInt() and 0xFF shl 8) or (report[setupOffset + 6].toInt() and 0xFF))
+        val flags = report[setupOffset + limitsLayout.flagsOffset].toInt() and 0xFF
+        val holdMin = (flags and limitsLayout.holdMinPowerMask) != 0
+        val startBoost = (flags and limitsLayout.startBoostMask) != 0
+        val rawMin = (
+            (report[setupOffset + limitsLayout.minPowerOffset].toInt() and 0xFF shl 8) or
+                (report[setupOffset + limitsLayout.minPowerOffset + 1].toInt() and 0xFF)
+        )
+        val rawMax = (
+            (report[setupOffset + limitsLayout.maxPowerOffset].toInt() and 0xFF shl 8) or
+                (report[setupOffset + limitsLayout.maxPowerOffset + 1].toInt() and 0xFF)
+        )
+        val rawFallback = (
+            (report[setupOffset + limitsLayout.fallbackPowerOffset].toInt() and 0xFF shl 8) or
+                (report[setupOffset + limitsLayout.fallbackPowerOffset + 1].toInt() and 0xFF)
+        )
 
         val minPower = (round((rawMin.toDouble() / 100.0) * 10.0) / 10.0).coerceIn(0.0, 100.0)
         val maxPower = (round((rawMax.toDouble() / 100.0) * 10.0) / 10.0).coerceIn(0.0, 100.0)
@@ -214,26 +265,52 @@ object ConfigParser {
         )
     }
 
+    fun parseFanLimits(
+        report: UByteArray,
+        fan: FanChannelDescriptor.WithLimits,
+        limitsLayout: FanLimitsLayout = FanLimitsLayout.Standard,
+    ): FanLimits = parseFanLimits(report, fan.setupOffset, limitsLayout)
+
     fun parseConfig(
-        device: DetectedHardwareDevice,
         descriptor: DeviceDescriptor,
         report: UByteArray,
     ): DeviceConfig {
-        val pulsesOffset = descriptor.flowPulsesCtrlOffset
+        val fans =
+            when (val fansCap = descriptor.findCapability<DeviceCapability.Fans>()) {
+                null -> emptyList()
+                else -> parseFans(report, descriptor, fansCap)
+            }
+        val offsets =
+            when (val tempCap = descriptor.findCapability<DeviceCapability.TemperatureSensors>()) {
+                is DeviceCapability.TemperatureSensors.Calibrated -> parseOffsets(report, tempCap)
+                else -> emptyList()
+            }
         val flowPulses =
-            if (descriptor.hasFlowSensor && pulsesOffset != null) {
-                val rawPulses = ((report[pulsesOffset].toInt() and 0xFF shl 8) or (report[pulsesOffset + 1].toInt() and 0xFF))
-                if (rawPulses > 0) FeatureState.Active(rawPulses) else FeatureState.Disconnected
-            } else {
-                FeatureState.Unsupported
+            when (val flowCap = descriptor.findCapability<DeviceCapability.FlowSensor>()) {
+                is DeviceCapability.FlowSensor.Calibrated -> {
+                    val rawPulses = (
+                        (report[flowCap.pulsesCtrlOffset].toInt() and 0xFF shl 8) or
+                            (report[flowCap.pulsesCtrlOffset + 1].toInt() and 0xFF)
+                    )
+                    when {
+                        rawPulses > 0 -> FeatureState.Active(rawPulses)
+                        else -> FeatureState.Disconnected
+                    }
+                }
+                else -> FeatureState.Unsupported
+            }
+        val display =
+            when (descriptor.findCapability<DeviceCapability.Display>()) {
+                is DeviceCapability.Display -> FeatureState.Disconnected
+                null -> FeatureState.Unsupported
             }
 
         return DeviceConfig(
-            fans = parseFans(report, descriptor),
-            sensorOffsets = parseOffsets(report, descriptor),
+            fans = fans,
+            sensorOffsets = offsets,
             flowPulsesPerLiter = flowPulses,
-            display = if (descriptor.hasDisplay) FeatureState.Disconnected else FeatureState.Unsupported,
-            rgbpx = defaultRgbpxPorts(descriptor),
+            display = display,
+            rgbpx = defaultRgbpxPorts(descriptor.findCapability<DeviceCapability.Lighting.Rgbpx>()),
         )
     }
 }

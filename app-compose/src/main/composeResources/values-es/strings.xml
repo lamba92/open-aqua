@@ -281,6 +281,22 @@
     <string name="fan_limits_diff_hold_on">Mantener mín: Activado</string>
     <string name="fan_limits_diff_hold_off">Mantener mín: Desactivado</string>
     <string name="fan_limits_flash_hint">Flashear guarda los perfiles de curva y límites de hardware en la EEPROM del dispositivo.</string>
+    <!-- Fan Diff Card Summaries -->
+    <string name="fan_diff_summary_fixed">PWM fijo: %1$d%%</string>
+    <string name="fan_diff_summary_auto_curve">Curva automática • %1$s • %2$d°C - %3$d°C (%4$d%% - %5$d%%)</string>
+    <string name="fan_diff_summary_custom_curve">Curva personalizada • %1$s • %2$d puntos</string>
+    <string name="fan_diff_summary_target_temp">Temperatura objetivo • %1$s • %2$s°C</string>
+    <string name="fan_diff_summary_copy_fan">Copiar ventilador • %1$s</string>
+    <string name="fan_diff_summary_custom">Configuración personalizada</string>
+    <string name="fan_limits_diff_power_header">Límites de hardware: </string>
+    <string name="fan_limits_diff_min_changed">Mín %1$d%% → %2$d%%</string>
+    <string name="fan_limits_diff_min">Mín %1$d%%</string>
+    <string name="fan_limits_diff_max_changed">Máx %1$d%% → %2$d%%</string>
+    <string name="fan_limits_diff_max">Máx %1$d%%</string>
+    <string name="fan_limits_diff_fallback_changed">Emergencia %1$d%% → %2$d%%</string>
+    <string name="fan_limits_diff_fallback">Emergencia %1$d%%</string>
+    <string name="fan_limits_diff_boost_tag">Boost</string>
+    <string name="fan_limits_diff_hold_tag">Mantener mín</string>
     <string name="sensor_offset_title">Calibración de compensación del microcontrolador</string>
     <string name="sensor_offset_desc">Compensación de hardware aplicada directamente en el microcontrolador del dispositivo para calibrar las tolerancias de la sonda antes de evaluar las curvas.</string>
     <string name="sensor_offset_flash">Flashear compensación al dispositivo</string>

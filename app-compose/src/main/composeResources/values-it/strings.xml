@@ -294,6 +294,22 @@
     <string name="fan_limits_diff_hold_on">Mantieni Min: Attivo</string>
     <string name="fan_limits_diff_hold_off">Mantieni Min: Disattivo</string>
     <string name="fan_limits_flash_hint">La scrittura salva i profili delle curve e i limiti hardware nella EEPROM del dispositivo.</string>
+    <!-- Fan Diff Card Summaries -->
+    <string name="fan_diff_summary_fixed">PWM fisso: %1$d%%</string>
+    <string name="fan_diff_summary_auto_curve">Curva automatica • %1$s • %2$d°C - %3$d°C (%4$d%% - %5$d%%)</string>
+    <string name="fan_diff_summary_custom_curve">Curva personalizzata • %1$s • %2$d punti</string>
+    <string name="fan_diff_summary_target_temp">Temperatura target • %1$s • %2$s°C</string>
+    <string name="fan_diff_summary_copy_fan">Copia ventola • %1$s</string>
+    <string name="fan_diff_summary_custom">Configurazione personalizzata</string>
+    <string name="fan_limits_diff_power_header">Limiti Hardware: </string>
+    <string name="fan_limits_diff_min_changed">Min %1$d%% → %2$d%%</string>
+    <string name="fan_limits_diff_min">Min %1$d%%</string>
+    <string name="fan_limits_diff_max_changed">Max %1$d%% → %2$d%%</string>
+    <string name="fan_limits_diff_max">Max %1$d%%</string>
+    <string name="fan_limits_diff_fallback_changed">Emergenza %1$d%% → %2$d%%</string>
+    <string name="fan_limits_diff_fallback">Emergenza %1$d%%</string>
+    <string name="fan_limits_diff_boost_tag">Spunto</string>
+    <string name="fan_limits_diff_hold_tag">Mantieni min</string>
     <string name="sensor_offset_title">Calibrazione Offset Microcontrollore</string>
     <string name="sensor_offset_desc">Offset hardware applicato direttamente nel microcontrollore del dispositivo per calibrare le tolleranze della sonda prima del calcolo delle curve.</string>
     <string name="sensor_offset_flash">Scrivi Offset sul Dispositivo</string>
