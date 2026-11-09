@@ -44,7 +44,7 @@ data class AppMetadata(
 
     @Serializable
     data class Flatpak(
-        val runtimeVersion: String = "24.08",
+        val runtimeVersion: String = "26.08",
     )
 
     @Serializable

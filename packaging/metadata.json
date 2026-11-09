@@ -59,7 +59,7 @@
     ]
   },
   "flatpak": {
-    "runtimeVersion": "24.08"
+    "runtimeVersion": "26.08"
   },
   "msix": {
     "identityName": "LambertoBasti.OpenAqua",
