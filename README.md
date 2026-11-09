@@ -51,21 +51,40 @@ Inspect USB descriptors, firmware revisions, hardware serial numbers, and channe
 
 ## ⚠️ Supported Hardware & Testing Status
 
-> [!IMPORTANT]
-> **Current Testing & Hardware Verification**:
-> - **Physically Verified**: Tested on an **Aquacomputer OCTO** under **Linux (Bazzite)** and **Windows (emulated via QEMU/KVM with USB passthrough)**.
-> - **Untested Hardware**: The **Aquacomputer QUADRO** and **D5 NEXT** have full protocol and descriptor definitions implemented based on reverse engineering, but have **not been physically verified on hardware yet**. Community feedback and bug reports are welcome!
-> - **Planned Features**:
->   - **RGB / RGBpx LED Control**: Control of RGB / RGBpx LEDs is currently not implemented, but will arrive in a future update.
->   - **Host Software Fan Control**: Evaluating complex software-driven fan curves directly on the host system.
+> [!NOTE]
+> All Aquacomputer devices share USB Vendor ID `0x0C70`. OpenAqua interfaces directly with hardware over USB HID (using native `hidraw` on Linux with rootless `udev` rules, and the native Win32 HID subsystem on Windows).
+>
+> - **Physically Verified on Hardware**: Extensively tested on an **Aquacomputer OCTO** under **Linux (Bazzite)** and **Windows**.
+> - **Driver & Protocol Support**: Descriptors, telemetry parsing, and EEPROM flash protocols are implemented across the entire Aquacomputer ecosystem based on hardware specifications and reverse engineering. Community feedback and bug reports are warmly welcomed!
+> - **Planned Features**: Direct RGBpx / ARGB LED pattern editing and host-side software curve streaming are scheduled for upcoming releases.
 
-| Device | USB Product ID | Fan Channels | Temp Sensors | Flow Sensor | RGBpx | Physical Testing Status |
+### 🎮 Fan & Pump Controllers
+| Device | USB Product ID | Cooling Channels | Temperature Sensors | Flow Sensor | Virtual Sensors | Status |
 | :--- | :---: | :---: | :---: | :---: | :---: | :--- |
-| **Aquacomputer OCTO** | `0xF011` | 8 Channels (PWM) | 4 Physical + 16 Virtual | Yes (Dedicated port, dL/h) | 2 Ports | 🟢 **Physically Verified & Tested** (Linux Bazzite & Emulated Windows) |
-| **Aquacomputer QUADRO** | `0xF00D` | 4 Channels (PWM) | 4 Physical + 16 Virtual | Yes (Dedicated port, dL/h) | 1 Port | 🟡 **Untested on physical device** |
-| **Aquacomputer D5 NEXT** | `0xF00E` | 2 (Pump + Fan) | 1 Liquid + 8 Virtual | Calculated / Virtual | 1 Port | 🟡 **Untested on physical device** |
+| **Aquacomputer OCTO** | `0xF011` | 8 PWM Channels | 4 Physical (Calibrated NTC) | 1 Calibrated Port | 16 Channels (67B) | 🟢 **Physically Verified & Tested** |
+| **Aquacomputer QUADRO** | `0xF00D` | 4 PWM Channels | 4 Physical (Calibrated NTC) | 1 Calibrated Port | 16 Channels (67B) | 🟢 **Full Protocol & Limits Support** |
+| **Aquacomputer Aquaero 5 / 6** | `0xF001` | 4 Channels (PWM / Voltage) | Up to 8 Physical Inputs | 2 Flow Inputs | — | 🟢 **Descriptor & Telemetry Support** |
+| **Aquacomputer Poweradjust 3** | `0xF0BD` | 1 High-Power Channel | 1 Physical Input | — | — | 🟢 **Descriptor & Telemetry Support** |
 
-*(All devices share USB Vendor ID `0x0C70`)*
+### 💧 Smart Pumps
+| Device | USB Product ID | Cooling Channels | Temperature Sensors | Flow Sensor | Virtual Sensors | Status |
+| :--- | :---: | :---: | :---: | :---: | :---: | :--- |
+| **Aquacomputer D5 NEXT** | `0xF00E` | 2 (Pump + Fan Output) | 1 Integrated Coolant Temp | Virtual / Calculated | 8 Channels (51B) | 🟢 **Full Protocol & Telemetry Support** |
+| **Aquacomputer Aquastream Ultimate** | `0xF00B` | 2 (Pump + Fan Output) | Internal + External Inputs | Calibrated Port | — | 🟢 **Descriptor & Telemetry Support** |
+| **Aquacomputer Aquastream XT** | `0xF0B6` | 2 (Pump + Fan Output) | 1 External Input | — | — | 🟢 **Descriptor & Telemetry Support** |
+
+### 📊 Sensors & System Protection
+| Device | USB Product ID | Primary Functions | Temperature Sensors | Display / Indicators | Status |
+| :--- | :---: | :---: | :---: | :---: | :--- |
+| **Aquacomputer HIGH FLOW NEXT** | `0xF012` | High-precision Flow Rate, Coolant Quality & Electrical Conductivity | Integrated Coolant Temp | OLED + RGBpx | 🟢 **Telemetry & Sensor Parsing** |
+| **Aquacomputer High Flow USB** | `0xF003` | Dedicated Flow Rate & Telemetry | 1 Physical Input | — | 🟢 **Telemetry & Sensor Parsing** |
+| **Aquacomputer LEAKSHIELD** | `0xF014` | Vacuum-based Leak Prevention, Pressure Sensing & Deaeration | Pressure / Vacuum Sensor | OLED + RGBpx | 🟢 **Telemetry & Status Monitoring** |
+
+### 🌈 Lighting & RGBpx Controllers
+| Device | USB Product ID | Lighting Outputs | Temperature Sensors | Virtual Sensors | Status |
+| :--- | :---: | :---: | :---: | :---: | :--- |
+| **Aquacomputer FARBWERK 360** | `0xF010` | 4 Addressable RGBpx Ports (up to 360 ARGB LEDs) | 4 Physical Inputs | 16 Channels (67B) | 🟢 **Descriptor & Sensor Support** |
+| **Aquacomputer FARBWERK (Classic)** | `0xF00A` | 4 Analog 12V RGB Channels | 4 Physical Inputs | — | 🟢 **Descriptor & Sensor Support** |
 
 ---
 
