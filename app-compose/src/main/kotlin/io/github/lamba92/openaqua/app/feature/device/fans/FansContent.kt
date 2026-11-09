@@ -41,6 +41,7 @@ import io.github.lamba92.openaqua.app.ui.components.ChannelDetailHeader
 import io.github.lamba92.openaqua.app.ui.components.ChannelPageScaffold
 import io.github.lamba92.openaqua.app.ui.components.ChannelSelectionCard
 import io.github.lamba92.openaqua.app.ui.components.ChannelSelectionTileDefaults
+import io.github.lamba92.openaqua.app.ui.components.ChannelSelectorSection
 import io.github.lamba92.openaqua.app.ui.components.ConfirmationDialog
 import io.github.lamba92.openaqua.app.ui.components.MetricCard
 import io.github.lamba92.openaqua.app.ui.components.OpenAquaButton
@@ -305,9 +306,13 @@ fun FansPageScaffold(
     ChannelPageScaffold(
         title = stringResource(Res.string.fans_screen_title),
         subtitle = stringResource(Res.string.fans_screen_subtitle),
-        selectorHeader = stringResource(Res.string.fan_channels_header),
-        selectorHeaderTrailing = selectorHeaderTrailing,
-        selectorContent = selectorContent,
+        selectorContent = {
+            ChannelSelectorSection(
+                title = stringResource(Res.string.fan_channels_header),
+                trailing = selectorHeaderTrailing,
+                content = selectorContent,
+            )
+        },
         detailContent = detailContent,
         scrollState = scrollState,
         modifier = modifier,

@@ -218,14 +218,10 @@ fun ScreenHeader(
 fun ChannelPageScaffold(
     title: String,
     subtitle: String,
-    selectorHeader: String,
     detailContent: @Composable () -> Unit,
     modifier: Modifier = Modifier,
     scrollState: ScrollState = rememberScrollState(),
-    selectorHeaderTrailing: (@Composable RowScope.() -> Unit)? = null,
-    secondarySelectorHeader: String? = null,
-    secondarySelectorContent: (@Composable () -> Unit)? = null,
-    selectorContent: @Composable () -> Unit,
+    selectorContent: @Composable ColumnScope.() -> Unit,
 ) {
     val colors = OpenAquaTheme.colors
     val metrics = OpenAquaTheme.metrics
@@ -258,61 +254,9 @@ fun ChannelPageScaffold(
             ) {
                 Column(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(metrics.spacingSm),
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = metrics.spacingXxl),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = selectorHeader,
-                            color = colors.primary,
-                            fontSize = metrics.channelSelectionTile.badgeTextSize,
-                            lineHeight = metrics.channelSelectionTile.badgeLineHeight,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
-                        )
-                        selectorHeaderTrailing?.invoke(this)
-                    }
-
-                    FlowRow(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = metrics.spacingXxl),
-                        horizontalArrangement = Arrangement.spacedBy(metrics.spacingMd),
-                        verticalArrangement = Arrangement.spacedBy(metrics.spacingMd),
-                        content = { selectorContent() },
-                    )
-
-                    if (secondarySelectorContent != null) {
-                        if (secondarySelectorHeader != null) {
-                            Text(
-                                text = secondarySelectorHeader,
-                                color = colors.primary,
-                                fontSize = metrics.channelSelectionTile.badgeTextSize,
-                                lineHeight = metrics.channelSelectionTile.badgeLineHeight,
-                                fontWeight = FontWeight.Bold,
-                                fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
-                                modifier =
-                                    Modifier
-                                        .padding(horizontal = metrics.spacingXxl)
-                                        .padding(top = metrics.spacingSm),
-                            )
-                        }
-
-                        FlowRow(
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = metrics.spacingXxl),
-                            horizontalArrangement = Arrangement.spacedBy(metrics.spacingMd),
-                            verticalArrangement = Arrangement.spacedBy(metrics.spacingMd),
-                            content = { secondarySelectorContent() },
-                        )
-                    }
-                }
+                    verticalArrangement = Arrangement.spacedBy(metrics.spacingMd),
+                    content = selectorContent,
+                )
 
                 HorizontalDivider(
                     color = colors.borderOutline,
@@ -338,6 +282,48 @@ fun ChannelPageScaffold(
                         .padding(vertical = 4.dp),
             )
         }
+    }
+}
+
+@Composable
+fun ChannelSelectorSection(
+    title: String,
+    modifier: Modifier = Modifier,
+    trailing: (@Composable RowScope.() -> Unit)? = null,
+    content: @Composable () -> Unit,
+) {
+    val colors = OpenAquaTheme.colors
+    val metrics = OpenAquaTheme.metrics
+
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(metrics.spacingSm),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = metrics.spacingXxl),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = title,
+                color = colors.primary,
+                fontSize = metrics.channelSelectionTile.badgeTextSize,
+                lineHeight = metrics.channelSelectionTile.badgeLineHeight,
+                fontWeight = FontWeight.Bold,
+                fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
+            )
+            trailing?.invoke(this)
+        }
+
+        FlowRow(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = metrics.spacingXxl),
+            horizontalArrangement = Arrangement.spacedBy(metrics.spacingMd),
+            verticalArrangement = Arrangement.spacedBy(metrics.spacingMd),
+            content = { content() },
+        )
     }
 }
 

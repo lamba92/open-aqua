@@ -60,6 +60,7 @@ import io.github.lamba92.openaqua.app.ui.components.ChannelDetailHeader
 import io.github.lamba92.openaqua.app.ui.components.ChannelPageScaffold
 import io.github.lamba92.openaqua.app.ui.components.ChannelSelectionCard
 import io.github.lamba92.openaqua.app.ui.components.ChannelSelectionTileDefaults
+import io.github.lamba92.openaqua.app.ui.components.ChannelSelectorSection
 import io.github.lamba92.openaqua.app.ui.components.FeederStatus
 import io.github.lamba92.openaqua.app.ui.components.FeederStatusBadge
 import io.github.lamba92.openaqua.app.ui.components.FeederStatusBadgeStyle
@@ -204,36 +205,34 @@ fun SensorsContent(
     ChannelPageScaffold(
         title = stringResource(Res.string.sensors_screen_title),
         subtitle = stringResource(Res.string.sensors_screen_subtitle),
-        selectorHeader = stringResource(Res.string.temperature_probes_header),
-        selectorHeaderTrailing =
-            if (hiddenCount > 0) {
-                {
-                    VisibilityFilterChip(
-                        hiddenCount = hiddenCount,
-                        showingAll = !isHidingAny,
-                        onClick = { onEvent(SensorsUiEvent.ToggleShowAllSensors) },
-                    )
-                }
-            } else {
-                null
-            },
         selectorContent = {
-            SensorSelectionTiles(
-                sensors = displayedPhysicalSensors,
-                selectedChannel = selectedSensor?.channel,
-                isModified = state::isSensorModified,
-                onEvent = onEvent,
-            )
-        },
-        secondarySelectorHeader =
+            ChannelSelectorSection(
+                title = stringResource(Res.string.temperature_probes_header),
+                trailing =
+                    if (hiddenCount > 0) {
+                        {
+                            VisibilityFilterChip(
+                                hiddenCount = hiddenCount,
+                                showingAll = !isHidingAny,
+                                onClick = { onEvent(SensorsUiEvent.ToggleShowAllSensors) },
+                            )
+                        }
+                    } else {
+                        null
+                    },
+            ) {
+                SensorSelectionTiles(
+                    sensors = displayedPhysicalSensors,
+                    selectedChannel = selectedSensor?.channel,
+                    isModified = state::isSensorModified,
+                    onEvent = onEvent,
+                )
+            }
+
             if (displayedVirtualSensors.isNotEmpty()) {
-                stringResource(Res.string.virtual_sensors_header)
-            } else {
-                null
-            },
-        secondarySelectorContent =
-            if (displayedVirtualSensors.isNotEmpty()) {
-                {
+                ChannelSelectorSection(
+                    title = stringResource(Res.string.virtual_sensors_header),
+                ) {
                     SensorSelectionTiles(
                         sensors = displayedVirtualSensors,
                         selectedChannel = selectedSensor?.channel,
@@ -241,9 +240,8 @@ fun SensorsContent(
                         onEvent = onEvent,
                     )
                 }
-            } else {
-                null
-            },
+            }
+        },
         detailContent = {
             if (displayedSensors.isEmpty()) {
                 VisibilityEmptyState(
