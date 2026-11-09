@@ -88,33 +88,33 @@ Inspect USB descriptors, firmware revisions, hardware serial numbers, and channe
 
 ---
 
-## 📦 App Stores & Package Managers
+## 📥 Direct Downloads & Standalone Packages (Recommended)
 
-| Platform / Store | Installation Command / Link |
-| :--- | :--- |
-| **Flathub & Bazaar** | [![Download on Flathub](https://dl.flathub.org/assets/badges/flathub-badge-en.svg)](https://flathub.org/apps/io.github.lamba92.openaqua)<br>`flatpak install flathub io.github.lamba92.openaqua` |
-| **Arch Linux (AUR)** | `yay -S open-aqua-bin`<br>`paru -S open-aqua-bin` |
-| **Snap Store** | [![Get it from the Snap Store](https://snapcraft.io/static/images/badges/en/snap-store-black.svg)](https://snapcraft.io/open-aqua)<br>`sudo snap install open-aqua` |
-| **Microsoft Store** | [![Get it from Microsoft](https://get.microsoft.com/images/en-us%20dark.svg)](https://apps.microsoft.com/detail/9MZT3W68T48F)<br>`ms-windows-store://pdp/?productid=9MZT3W68T48F` |
+Pre-packaged standalone release artifacts are available directly on [**GitHub Releases**](https://github.com/lamba92/open-aqua/releases/latest):
+
+### Linux (x86_64)
+- **AppImage**: Standalone portable bundle ([open-aqua-1.0.3-linux-x64.AppImage](https://github.com/lamba92/open-aqua/releases/download/1.0.3/open-aqua-1.0.3-linux-x64.AppImage))
+- **DEB**: Debian / Ubuntu package ([open-aqua_1.0.3_amd64.deb](https://github.com/lamba92/open-aqua/releases/download/1.0.3/open-aqua_1.0.3_amd64.deb))
+- **RPM**: Fedora / openSUSE / RHEL package ([open-aqua-1.0.3-1.x86_64.rpm](https://github.com/lamba92/open-aqua/releases/download/1.0.3/open-aqua-1.0.3-1.x86_64.rpm))
+- **Tarball**: Standalone archive ([open-aqua-1.0.3-linux-x64.tar.gz](https://github.com/lamba92/open-aqua/releases/download/1.0.3/open-aqua-1.0.3-linux-x64.tar.gz))
+- **Native Engine CLI**: Headless standalone binary ([open-aqua-device-engine-1.0.3-linux-x64](https://github.com/lamba92/open-aqua/releases/download/1.0.3/open-aqua-device-engine-1.0.3-linux-x64))
+
+### Windows (x86_64)
+- **MSIX Package**: Windows app package ([open-aqua-1.0.3.msix](https://github.com/lamba92/open-aqua/releases/download/1.0.3/open-aqua-1.0.3.msix))
+- **MSI Installer**: Windows installer package ([open-aqua-1.0.3.msi](https://github.com/lamba92/open-aqua/releases/download/1.0.3/open-aqua-1.0.3.msi))
+- **Portable ZIP**: Standalone archive ([open-aqua-1.0.3-windows-x64.zip](https://github.com/lamba92/open-aqua/releases/download/1.0.3/open-aqua-1.0.3-windows-x64.zip))
+- **Native Engine CLI**: Headless standalone executable ([open-aqua-device-engine-1.0.3-windows-x64.exe](https://github.com/lamba92/open-aqua/releases/download/1.0.3/open-aqua-device-engine-1.0.3-windows-x64.exe))
 
 ---
 
-## 📥 Direct Downloads & Standalone Packages
+## 📦 App Stores & Distribution Status
 
-Pre-packaged standalone release artifacts are available directly on the [**GitHub Releases**](https://github.com/lamba92/open-aqua/releases) page:
-
-### Linux
-- **AppImage**: Portable standalone bundle (`open-aqua-<version>-linux-x64.AppImage`).
-- **DEB**: Debian / Ubuntu package (`open-aqua_<version>_amd64.deb`).
-- **RPM**: Fedora / openSUSE / RHEL package (`open-aqua-<version>-1.x86_64.rpm`).
-- **Tarball**: Standalone archive (`open-aqua-<version>-linux-x64.tar.gz`).
-- **Native Engine CLI**: Standalone binary (`open-aqua-device-engine-<version>-linux-x64`).
-
-### Windows
-- **MSIX Package**: Windows Store package (`open-aqua-<version>-windows-x64.msix`).
-- **MSI Installer**: Windows installer package (`open-aqua-<version>-windows-x64.msi`).
-- **Portable ZIP**: Standalone archive (`open-aqua-<version>-windows-x64.zip`).
-- **Native Engine CLI**: Standalone executable (`open-aqua-device-engine-<version>-windows-x64.exe`).
+| Channel / Store | Platform | Status & Installation |
+| :--- | :---: | :--- |
+| **Snap Store** | Linux | `sudo snap install open-aqua`<br>*(Published to `stable` channel)* |
+| **Flathub** | Linux | ⏳ **Under Review** ([Submission PR #11084](https://github.com/flathub/flathub/pull/11084))<br>Test build ref:<br>`flatpak install --user https://dl.flathub.org/build-repo/338893/io.github.lamba92.openaqua.flatpakref` |
+| **Microsoft Store** | Windows | ⏳ **Submission Pending Review**<br>*(Direct MSIX & MSI packages available above)* |
+| **Arch Linux (AUR)** | Linux | ⏳ **In Progress** (`open-aqua-bin`) |
 
 ---
 
