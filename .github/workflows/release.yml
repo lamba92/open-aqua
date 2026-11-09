@@ -13,6 +13,9 @@ on:
 permissions:
   contents: write
 
+env:
+  TAG_NAME: ${{ github.event.release.tag_name || inputs.tag_name || github.ref_name }}
+
 jobs:
   release-linux:
     name: Build & Release Linux Packages
@@ -48,7 +51,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload "${{ github.event.release.tag_name || inputs.tag_name || github.ref_name }}" build/releases/* --clobber
+          gh release upload "${{ env.TAG_NAME }}" build/releases/* --clobber
 
   release-windows:
     name: Build & Release Windows Packages
@@ -79,7 +82,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload "${{ github.event.release.tag_name || inputs.tag_name || github.ref_name }}" build/releases/* --clobber
+          gh release upload "${{ env.TAG_NAME }}" build/releases/* --clobber
 
       - name: Resolve MSIX Package for Store Deployment
         if: env.MICROSOFT_CLIENT_SECRET != ''
@@ -88,9 +91,14 @@ jobs:
         env:
           MICROSOFT_CLIENT_SECRET: ${{ secrets.MICROSOFT_CLIENT_SECRET }}
         run: |
-          $msix = (Get-Item "build/releases/*.msix").FullName
-          Write-Host "Resolved MSIX for deployment: $msix"
-          echo "msix_path=$msix" >> $env:GITHUB_OUTPUT
+          $deployDir = New-Item -ItemType Directory -Path "$env:RUNNER_TEMP/msix-deploy" -Force
+          $msix = Get-ChildItem "build/releases" -Filter "*.msix" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+          if (-not $msix) {
+            throw "No MSIX package found in build/releases"
+          }
+          Copy-Item $msix.FullName -Destination $deployDir.FullName
+          Write-Host "Resolved MSIX directory for deployment: $($deployDir.FullName) with package $($msix.Name)"
+          echo "msix_dir=$($deployDir.FullName)" >> $env:GITHUB_OUTPUT
 
       - name: Deploy to Microsoft Store
         if: env.MICROSOFT_CLIENT_SECRET != ''
@@ -102,7 +110,7 @@ jobs:
           client-id: ${{ secrets.MICROSOFT_CLIENT_ID }}
           client-secret: ${{ secrets.MICROSOFT_CLIENT_SECRET }}
           app-id: ${{ secrets.MICROSOFT_STORE_ID }}
-          package-path: ${{ steps.resolve_msix.outputs.msix_path }}
+          package-path: ${{ steps.resolve_msix.outputs.msix_dir }}
 
   publish-linux-stores:
     name: Publish to Linux Stores
@@ -133,14 +141,15 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG="${{ github.event.release.tag_name || inputs.tag_name || github.ref_name }}"
+          TAG="${{ env.TAG_NAME }}"
           VERSION="${TAG#v}"
           echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
 
           # Download Linux tarball to compute sha256 checksum for Flathub & AUR
-          gh release download "$TAG" -p "open-aqua-*-linux-x64.tar.gz" --dir /tmp/assets
-          TAR_FILE=$(ls /tmp/assets/open-aqua-*-linux-x64.tar.gz | head -n 1)
+          mkdir -p /tmp/assets
+          gh release download "$TAG" -p "open-aqua-${VERSION}-linux-x64.tar.gz" --dir /tmp/assets
+          TAR_FILE="/tmp/assets/open-aqua-${VERSION}-linux-x64.tar.gz"
           SHA256=$(sha256sum "$TAR_FILE" | awk '{print $1}')
           echo "sha256=${SHA256}" >> "$GITHUB_OUTPUT"
           echo "Resolved version ${VERSION} with SHA256: ${SHA256}"
@@ -206,7 +215,7 @@ jobs:
           mkdir -p /tmp/snap-payload
           cp packaging/build/generated/packaging/snap/snapcraft.yaml /tmp/snap-payload/
           sed -i -E "s|^version:.*|version: '${VERSION}'|g" /tmp/snap-payload/snapcraft.yaml
-          tar -xzf /tmp/assets/open-aqua-*-linux-x64.tar.gz -C /tmp/snap-payload/ --strip-components=1
+          tar -xzf "/tmp/assets/open-aqua-${VERSION}-linux-x64.tar.gz" -C /tmp/snap-payload/ --strip-components=1
 
       - name: Build Snap Package
         if: env.SNAP_TOKEN != ''
