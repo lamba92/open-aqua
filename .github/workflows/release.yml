@@ -117,6 +117,9 @@ jobs:
     name: Publish to Linux Stores
     needs: release-linux
     runs-on: ubuntu-latest
+    env:
+      SNAP_TOKEN: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
+      SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
     steps:
       - uses: actions/checkout@v4
 
@@ -209,7 +212,6 @@ jobs:
       - name: Prepare Snap Build Directory
         if: env.SNAP_TOKEN != ''
         env:
-          SNAP_TOKEN: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
           VERSION: ${{ steps.release_info.outputs.version }}
         run: |
           echo "Preparing Snap payload..."
