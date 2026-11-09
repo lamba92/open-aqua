@@ -253,6 +253,7 @@ val packageReleaseMsix =
     tasks.register("packageReleaseMsix") {
         group = "distribution"
         description = "Packages the Windows release distribution into a .msix package using MakeAppx"
+        dependsOn(":packaging:generatePackagingFiles")
 
         val packagingDir = layout.buildDirectory.dir("generated/packaging/msix")
         val stagingDir = layout.buildDirectory.dir("tmp/msix/layout")
@@ -284,7 +285,10 @@ val packageReleaseMsix =
                 from(zipTree(zipFile))
                 into(targetStagingDir)
                 eachFile {
-                    path = path.removePrefix("open-aqua/")
+                    val normalized = path.replace('\\', '/')
+                    if (normalized.startsWith("open-aqua/")) {
+                        path = normalized.removePrefix("open-aqua/")
+                    }
                 }
                 includeEmptyDirs = false
             }
@@ -314,19 +318,32 @@ val packageReleaseMsix =
             finalMsix.parentFile.mkdirs()
             finalMsix.delete()
 
-            providers
-                .exec {
-                    commandLine(
-                        makeAppxExe.absolutePath,
-                        "pack",
-                        "/d",
-                        targetStagingDir.absolutePath,
-                        "/p",
-                        finalMsix.absolutePath,
-                        "/nv",
-                    )
-                }.result
-                .get()
+            val outputStream = java.io.ByteArrayOutputStream()
+            val result =
+                providers
+                    .exec {
+                        commandLine(
+                            makeAppxExe.absolutePath,
+                            "pack",
+                            "/d",
+                            targetStagingDir.absolutePath,
+                            "/p",
+                            finalMsix.absolutePath,
+                            "/nv",
+                        )
+                        standardOutput = outputStream
+                        errorOutput = outputStream
+                        isIgnoreExitValue = true
+                    }.result
+                    .get()
+
+            val logText = outputStream.toString()
+            if (logText.isNotBlank()) {
+                logger.lifecycle("MakeAppx output:\n$logText")
+            }
+            if (result.exitValue != 0) {
+                error("MakeAppx pack failed with exit code ${result.exitValue}:\n$logText")
+            }
 
             logger.lifecycle("MSIX package generated successfully at: ${finalMsix.absolutePath}")
         }

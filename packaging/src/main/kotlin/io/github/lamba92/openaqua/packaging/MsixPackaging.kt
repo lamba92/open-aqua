@@ -210,8 +210,13 @@ fun generateAppxManifest(
             capabilities = AppxCapabilities(),
         )
 
-    return "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +
-        xmlSerializer.encodeToString(AppxPackage.serializer(), pkg) + "\n"
+    val rawXml = xmlSerializer.encodeToString(AppxPackage.serializer(), pkg)
+    val fixedXml =
+        rawXml.replaceFirst(
+            "<Package ",
+            "<Package xmlns:uap=\"$APPX_UAP_NS\" xmlns:rescap=\"$APPX_RESCAP_NS\" ",
+        )
+    return "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n$fixedXml\n"
 }
 
 fun generateMsixAssets(

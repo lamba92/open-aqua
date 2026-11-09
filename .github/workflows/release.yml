@@ -14,17 +14,9 @@ permissions:
   contents: write
 
 jobs:
-  release:
-    name: Build & Release Desktop Packages
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-latest
-            platform: linux
-          - os: windows-latest
-            platform: windows
-    runs-on: ${{ matrix.os }}
+  release-linux:
+    name: Build & Release Linux Packages
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
@@ -45,7 +37,6 @@ jobs:
           build-scan-terms-of-use-agree: "yes"
 
       - name: Install Linux AppImage packaging dependencies
-        if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y libfuse2 file libasound2-dev
@@ -59,8 +50,39 @@ jobs:
         run: |
           gh release upload "${{ github.event.release.tag_name || inputs.tag_name || github.ref_name }}" build/releases/* --clobber
 
+  release-windows:
+    name: Build & Release Windows Packages
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'microsoft'
+          java-version: '21'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
+          build-scan-publish: true
+          build-scan-terms-of-use-url: "https://gradle.com/terms-of-service"
+          build-scan-terms-of-use-agree: "yes"
+
+      - name: Build & Publish Release Packages
+        run: ./gradlew release --scan --stacktrace
+
+      - name: Upload to GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "${{ github.event.release.tag_name || inputs.tag_name || github.ref_name }}" build/releases/* --clobber
+
       - name: Resolve MSIX Package for Store Deployment
-        if: runner.os == 'Windows' && env.MICROSOFT_CLIENT_SECRET != ''
+        if: env.MICROSOFT_CLIENT_SECRET != ''
         id: resolve_msix
         shell: pwsh
         env:
@@ -71,7 +93,7 @@ jobs:
           echo "msix_path=$msix" >> $env:GITHUB_OUTPUT
 
       - name: Deploy to Microsoft Store
-        if: runner.os == 'Windows' && env.MICROSOFT_CLIENT_SECRET != ''
+        if: env.MICROSOFT_CLIENT_SECRET != ''
         uses: isaacrlevin/windows-store-action@1.0
         env:
           MICROSOFT_CLIENT_SECRET: ${{ secrets.MICROSOFT_CLIENT_SECRET }}
@@ -84,7 +106,7 @@ jobs:
 
   publish-linux-stores:
     name: Publish to Linux Stores
-    needs: release
+    needs: release-linux
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
