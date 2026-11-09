@@ -72,11 +72,13 @@ fun NavigationSelectionStoredData.toSelectedItem(): DeviceNavState.SelectedItem 
 sealed interface DeviceNavEvent {
     data object SelectHost : DeviceNavEvent
 
-    data class SelectDevice(
+    @JvmInline
+    value class SelectDevice(
         val deviceId: DeviceId,
     ) : DeviceNavEvent
 
-    data class SelectTab(
+    @JvmInline
+    value class SelectTab(
         val tab: CommonDeviceTab,
     ) : DeviceNavEvent
 
@@ -86,13 +88,15 @@ sealed interface DeviceNavEvent {
 
     data object SelectAbout : DeviceNavEvent
 
-    data class SelectAboutTab(
+    @JvmInline
+    value class SelectAboutTab(
         val tab: AboutTab,
     ) : DeviceNavEvent
 
     data object SelectSettings : DeviceNavEvent
 
-    data class SelectSettingsTab(
+    @JvmInline
+    value class SelectSettingsTab(
         val tab: SettingsTab,
     ) : DeviceNavEvent
 

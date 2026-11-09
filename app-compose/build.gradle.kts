@@ -11,12 +11,6 @@ compose.resources {
     packageOfResClass = "open_aqua.app_compose.generated.resources"
 }
 
-kotlin {
-    compilerOptions {
-        freeCompilerArgs.add("-XXLanguage:+FullValueClasses")
-    }
-}
-
 dependencies {
     api(getCurrentPlatformComposeRuntime())
     api(libs.coil.compose)
