@@ -198,6 +198,7 @@
     <string name="sensors_screen_title">Temperature Sensors</string>
     <string name="sensors_screen_subtitle">NTC thermistor inputs and virtual software sensor slots</string>
     <string name="temperature_probes_header">TEMPERATURE PROBES</string>
+    <string name="virtual_sensors_header">VIRTUAL SENSORS</string>
     <string name="sensor_channel_name">Sensor %1$d</string>
     <string name="sensor_channel_pin">T%1$d</string>
     <string name="sensor_virtual_name">Virtual %1$d</string>

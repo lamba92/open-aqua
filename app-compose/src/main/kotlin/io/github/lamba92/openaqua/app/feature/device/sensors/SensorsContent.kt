@@ -60,6 +60,7 @@ import io.github.lamba92.openaqua.app.ui.components.ChannelDetailHeader
 import io.github.lamba92.openaqua.app.ui.components.ChannelPageScaffold
 import io.github.lamba92.openaqua.app.ui.components.ChannelSelectionCard
 import io.github.lamba92.openaqua.app.ui.components.ChannelSelectionTileDefaults
+import io.github.lamba92.openaqua.app.ui.components.ChannelSelectorSection
 import io.github.lamba92.openaqua.app.ui.components.FeederStatus
 import io.github.lamba92.openaqua.app.ui.components.FeederStatusBadge
 import io.github.lamba92.openaqua.app.ui.components.FeederStatusBadgeStyle
@@ -133,6 +134,7 @@ import open_aqua.app_compose.generated.resources.sensor_virtual_pin
 import open_aqua.app_compose.generated.resources.sensors_screen_subtitle
 import open_aqua.app_compose.generated.resources.sensors_screen_title
 import open_aqua.app_compose.generated.resources.temperature_probes_header
+import open_aqua.app_compose.generated.resources.virtual_sensors_header
 import open_aqua.app_compose.generated.resources.visibility_no_sensors_visible
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -185,6 +187,16 @@ fun SensorsContent(
             }
         }
 
+    val displayedPhysicalSensors =
+        remember(displayedSensors) {
+            displayedSensors.filter { it.telemetry.kind != SensorChannelKind.VIRTUAL }
+        }
+
+    val displayedVirtualSensors =
+        remember(displayedSensors) {
+            displayedSensors.filter { it.telemetry.kind == SensorChannelKind.VIRTUAL }
+        }
+
     val selectedSensor =
         displayedSensors.firstOrNull { it.channel == state.selectedSensorChannel }
             ?: displayedSensors.firstOrNull()
@@ -193,36 +205,41 @@ fun SensorsContent(
     ChannelPageScaffold(
         title = stringResource(Res.string.sensors_screen_title),
         subtitle = stringResource(Res.string.sensors_screen_subtitle),
-        selectorHeader = stringResource(Res.string.temperature_probes_header),
-        selectorHeaderTrailing =
-            if (hiddenCount > 0) {
-                {
-                    VisibilityFilterChip(
-                        hiddenCount = hiddenCount,
-                        showingAll = !isHidingAny,
-                        onClick = { onEvent(SensorsUiEvent.ToggleShowAllSensors) },
+        selectorContent = {
+            ChannelSelectorSection(
+                title = stringResource(Res.string.temperature_probes_header),
+                trailing =
+                    if (hiddenCount > 0) {
+                        {
+                            VisibilityFilterChip(
+                                hiddenCount = hiddenCount,
+                                showingAll = !isHidingAny,
+                                onClick = { onEvent(SensorsUiEvent.ToggleShowAllSensors) },
+                            )
+                        }
+                    } else {
+                        null
+                    },
+            ) {
+                SensorSelectionTiles(
+                    sensors = displayedPhysicalSensors,
+                    selectedChannel = selectedSensor?.channel,
+                    isModified = state::isSensorModified,
+                    onEvent = onEvent,
+                )
+            }
+
+            if (displayedVirtualSensors.isNotEmpty()) {
+                ChannelSelectorSection(
+                    title = stringResource(Res.string.virtual_sensors_header),
+                ) {
+                    SensorSelectionTiles(
+                        sensors = displayedVirtualSensors,
+                        selectedChannel = selectedSensor?.channel,
+                        isModified = state::isSensorModified,
+                        onEvent = onEvent,
                     )
                 }
-            } else {
-                null
-            },
-        selectorContent = {
-            displayedSensors.forEach { sensor ->
-                val isSelected = sensor.channel == selectedSensor?.channel
-                val temp = sensor.effectiveTempCelsius
-                val sensorName = sensor.resolveName()
-                val sensorPin = sensor.resolvePinLabel()
-                SensorSelectionTile(
-                    name = sensorName,
-                    pinLabel = sensorPin,
-                    tempCelsius = temp,
-                    selected = isSelected,
-                    targetType = sensor.targetType,
-                    hasPendingChanges = state.isSensorModified(sensor),
-                    feederStatus = sensor.feederStatus,
-                    onClick = { onEvent(SensorsUiEvent.SelectSensor(sensor.channel)) },
-                    onDoubleClick = { onEvent(SensorsUiEvent.StartRenamingSensor(sensor.channel)) },
-                )
             }
         },
         detailContent = {
@@ -1222,6 +1239,30 @@ private fun VirtualSensorFeedError.resolveMessage(
             stringResource(Res.string.sensor_feeder_error_generic)
         }
     }
+
+@Composable
+private fun SensorSelectionTiles(
+    sensors: List<SensorItem>,
+    selectedChannel: Int?,
+    isModified: (SensorItem) -> Boolean,
+    onEvent: (SensorsUiEvent) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    sensors.forEach { sensor ->
+        SensorSelectionTile(
+            name = sensor.resolveName(),
+            pinLabel = sensor.resolvePinLabel(),
+            tempCelsius = sensor.effectiveTempCelsius,
+            selected = sensor.channel == selectedChannel,
+            targetType = sensor.targetType,
+            hasPendingChanges = isModified(sensor),
+            feederStatus = sensor.feederStatus,
+            onClick = { onEvent(SensorsUiEvent.SelectSensor(sensor.channel)) },
+            onDoubleClick = { onEvent(SensorsUiEvent.StartRenamingSensor(sensor.channel)) },
+            modifier = modifier,
+        )
+    }
+}
 
 @Composable
 fun SensorSelectionTile(
