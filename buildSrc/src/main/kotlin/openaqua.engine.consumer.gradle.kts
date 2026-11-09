@@ -1,29 +1,21 @@
 import io.github.lamba92.gradle.plugins.engine.ARCH_ATTRIBUTE
-import io.github.lamba92.gradle.plugins.engine.Arch
+import io.github.lamba92.gradle.plugins.engine.EngineBinariesConsumerExtension
 import io.github.lamba92.gradle.plugins.engine.OS_ATTRIBUTE
-import io.github.lamba92.gradle.plugins.engine.Os
+import io.github.lamba92.gradle.plugins.platform.PlatformExtension
 import org.gradle.api.attributes.Usage
-import org.gradle.api.model.ObjectFactory
-import org.gradle.api.provider.Property
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
-import javax.inject.Inject
 
-open class EngineBinariesConsumerExtension
-    @Inject
-    constructor(
-        objects: ObjectFactory,
-    ) {
-        val os: Property<Os> = objects.property<Os>().convention(Os.current())
-        val arch: Property<Arch> = objects.property<Arch>().convention(Arch.current())
-        val bundleAll: Property<Boolean> = objects.property<Boolean>().convention(false)
+plugins {
+    id("openaqua.platform")
+}
 
-        fun all() {
-            bundleAll = true
-        }
-    }
+val platform = extensions.getByType<PlatformExtension>()
 
 val engineBinariesExtension =
     extensions.create<EngineBinariesConsumerExtension>("engineBinaries")
+
+engineBinariesExtension.os.convention(platform.os)
+engineBinariesExtension.arch.convention(platform.arch)
 
 val engineBinaries =
     configurations.create("engineBinaries") {

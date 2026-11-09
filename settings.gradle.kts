@@ -10,13 +10,13 @@ pluginManagement {
 plugins {
     id("com.gradle.develocity") version "3.19.2"
 }
-
+val isCI = System.getenv("CI")?.equals("true", ignoreCase = true) == true
 develocity {
     buildScan {
         termsOfUseUrl = "https://gradle.com/terms-of-service"
         termsOfUseAgree = "yes"
-        if (System.getenv("CI") != null) {
-            publishing.onlyIf { true }
+        publishing.onlyIf { isCI }
+        if (isCI) {
             tag("CI")
             System.getenv("GITHUB_WORKFLOW")?.let { tag(it) }
         }
@@ -37,7 +37,9 @@ dependencyResolutionManagement {
 include(
     ":app-compose",
     ":app-compose:app-compose-mock",
-    ":app-compose:app-compose-prod",
+    ":app-compose:app-compose-linux-x64",
+    ":app-compose:app-compose-linux-arm64",
+    ":app-compose:app-compose-windows-x64",
     ":app-compose:app-compose-screenshots",
     ":assets",
     ":core-model",
@@ -53,4 +55,7 @@ include(
     ":engine:engine-host:engine-host-mock",
     ":engine:engine-host:engine-host-windows",
     ":packaging",
+    ":packaging:packaging-linux-x64",
+    ":packaging:packaging-linux-arm64",
+    ":packaging:packaging-windows-x64",
 )

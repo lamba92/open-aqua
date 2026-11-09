@@ -242,7 +242,7 @@ $ echo '{"sensors":{"0":45.2,"1":58.0}}' | open-aqua-device-engine feed-virtual-
 ### Build Desktop Application
 ```bash
 # Run desktop application in development mode
-./gradlew :app-compose:app-compose-prod:run
+./gradlew :app-compose:app-compose-linux-x64:run
 
 # Package AppImage (Linux)
 ./gradlew :packaging:packageReleaseAppImage
