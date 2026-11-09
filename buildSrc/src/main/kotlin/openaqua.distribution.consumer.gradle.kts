@@ -318,26 +318,30 @@ val packageReleaseMsix =
             finalMsix.parentFile.mkdirs()
             finalMsix.delete()
 
-            val outputStream = java.io.ByteArrayOutputStream()
-            val result =
-                providers
-                    .exec {
-                        commandLine(
-                            makeAppxExe.absolutePath,
-                            "pack",
-                            "/d",
-                            targetStagingDir.absolutePath,
-                            "/p",
-                            finalMsix.absolutePath,
-                            "/nv",
-                        )
-                        standardOutput = outputStream
-                        errorOutput = outputStream
-                        isIgnoreExitValue = true
-                    }.result
-                    .get()
-
-            val logText = outputStream.toString()
+            val execOutput =
+                providers.exec {
+                    commandLine(
+                        makeAppxExe.absolutePath,
+                        "pack",
+                        "/d",
+                        targetStagingDir.absolutePath,
+                        "/p",
+                        finalMsix.absolutePath,
+                        "/nv",
+                    )
+                    isIgnoreExitValue = true
+                }
+            val result = execOutput.result.get()
+            val stdout = execOutput.standardOutput.asText.get()
+            val stderr = execOutput.standardError.asText.get()
+            val logText =
+                buildString {
+                    if (stdout.isNotBlank()) append(stdout)
+                    if (stderr.isNotBlank()) {
+                        if (isNotEmpty()) appendLine()
+                        append(stderr)
+                    }
+                }
             if (logText.isNotBlank()) {
                 logger.lifecycle("MakeAppx output:\n$logText")
             }
