@@ -113,7 +113,8 @@ sealed interface SensorsUiState {
 }
 
 sealed interface SensorsUiEvent {
-    data class SelectSensor(
+    @JvmInline
+    value class SelectSensor(
         val channel: Int,
     ) : SensorsUiEvent
 
@@ -122,7 +123,8 @@ sealed interface SensorsUiEvent {
         val name: ChannelName,
     ) : SensorsUiEvent
 
-    data class StartRenamingSensor(
+    @JvmInline
+    value class StartRenamingSensor(
         val channel: Int,
     ) : SensorsUiEvent
 
@@ -140,11 +142,13 @@ sealed interface SensorsUiEvent {
         val draft: VirtualSensorFeedDraft,
     ) : SensorsUiEvent
 
-    data class ApplyVirtualFeed(
+    @JvmInline
+    value class ApplyVirtualFeed(
         val channel: Int,
     ) : SensorsUiEvent
 
-    data class DiscardVirtualFeedDraft(
+    @JvmInline
+    value class DiscardVirtualFeedDraft(
         val channel: Int,
     ) : SensorsUiEvent
 
@@ -153,11 +157,13 @@ sealed interface SensorsUiEvent {
         val offset: Double,
     ) : SensorsUiEvent
 
-    data class FlashOffset(
+    @JvmInline
+    value class FlashOffset(
         val channel: Int,
     ) : SensorsUiEvent
 
-    data class DiscardOffsetDraft(
+    @JvmInline
+    value class DiscardOffsetDraft(
         val channel: Int,
     ) : SensorsUiEvent
 }

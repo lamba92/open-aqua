@@ -9,6 +9,9 @@ plugins {
 
 kotlin {
     jvmToolchain(21)
+    compilerOptions {
+        freeCompilerArgs.add("-XXLanguage:+JvmInlineMultiFieldValueClasses")
+    }
     targets.withType<KotlinNativeTarget>().configureEach {
         compilations.configureEach {
             compileTaskProvider.configure {

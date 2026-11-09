@@ -227,7 +227,8 @@ sealed interface FansUiState {
 }
 
 sealed interface FansUiEvent {
-    data class SelectFan(
+    @JvmInline
+    value class SelectFan(
         val channel: Int,
     ) : FansUiEvent
 
@@ -236,7 +237,8 @@ sealed interface FansUiEvent {
         val name: ChannelName,
     ) : FansUiEvent
 
-    data class StartRenamingFan(
+    @JvmInline
+    value class StartRenamingFan(
         val channel: Int,
     ) : FansUiEvent
 
@@ -258,65 +260,80 @@ sealed interface FansUiEvent {
 sealed interface CurveStudioEvent : FansUiEvent {
     data object ToggleHideDisconnectedSensors : CurveStudioEvent
 
-    data class ChangeMode(
+    @JvmInline
+    value class ChangeMode(
         val mode: CurveMode,
     ) : CurveStudioEvent
 
-    data class ChangeFixedPwm(
+    @JvmInline
+    value class ChangeFixedPwm(
         val pwm: Double,
     ) : CurveStudioEvent
 
-    data class ChangeSensorIndex(
+    @JvmInline
+    value class ChangeSensorIndex(
         val sensorIndex: Int,
     ) : CurveStudioEvent
 
-    data class ChangeTMin(
+    @JvmInline
+    value class ChangeTMin(
         val tMin: Double,
     ) : CurveStudioEvent
 
-    data class ChangeTMax(
+    @JvmInline
+    value class ChangeTMax(
         val tMax: Double,
     ) : CurveStudioEvent
 
-    data class ChangePMin(
+    @JvmInline
+    value class ChangePMin(
         val pMin: Double,
     ) : CurveStudioEvent
 
-    data class ChangePMax(
+    @JvmInline
+    value class ChangePMax(
         val pMax: Double,
     ) : CurveStudioEvent
 
-    data class ChangeShape(
+    @JvmInline
+    value class ChangeShape(
         val shape: Double,
     ) : CurveStudioEvent
 
-    data class ChangeCopySource(
+    @JvmInline
+    value class ChangeCopySource(
         val sourceChannel: Int,
     ) : CurveStudioEvent
 
-    data class ChangeTargetTemp(
+    @JvmInline
+    value class ChangeTargetTemp(
         val targetTemp: Double,
     ) : CurveStudioEvent
 }
 
 sealed interface FanLimitsEvent : FansUiEvent {
-    data class ChangeMinPower(
+    @JvmInline
+    value class ChangeMinPower(
         val minPowerPercent: Double,
     ) : FanLimitsEvent
 
-    data class ChangeMaxPower(
+    @JvmInline
+    value class ChangeMaxPower(
         val maxPowerPercent: Double,
     ) : FanLimitsEvent
 
-    data class ChangeFallbackPower(
+    @JvmInline
+    value class ChangeFallbackPower(
         val fallbackPowerPercent: Double,
     ) : FanLimitsEvent
 
-    data class ChangeStartBoost(
+    @JvmInline
+    value class ChangeStartBoost(
         val startBoost: Boolean,
     ) : FanLimitsEvent
 
-    data class ChangeHoldMinPower(
+    @JvmInline
+    value class ChangeHoldMinPower(
         val holdMinPower: Boolean,
     ) : FanLimitsEvent
 

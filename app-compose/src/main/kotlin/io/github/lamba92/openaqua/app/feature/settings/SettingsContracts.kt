@@ -56,39 +56,48 @@ sealed interface SettingsEvent {
 
     data object ConfirmRemoveUdevRule : SettingsEvent
 
-    data class SelectColorScheme(
+    @JvmInline
+    value class SelectColorScheme(
         val scheme: AppColorScheme,
     ) : SettingsEvent
 
-    data class SelectMetricsScale(
+    @JvmInline
+    value class SelectMetricsScale(
         val scale: AppMetricsScale,
     ) : SettingsEvent
 
-    data class SetFontSp(
+    @JvmInline
+    value class SetFontSp(
         val sp: Int,
     ) : SettingsEvent
 
-    data class SelectFontFamily(
+    @JvmInline
+    value class SelectFontFamily(
         val family: AppFontFamily,
     ) : SettingsEvent
 
-    data class SelectLanguage(
+    @JvmInline
+    value class SelectLanguage(
         val language: AppLanguage,
     ) : SettingsEvent
 
-    data class ToggleHideDisconnectedFans(
+    @JvmInline
+    value class ToggleHideDisconnectedFans(
         val hide: Boolean,
     ) : SettingsEvent
 
-    data class ToggleHideDisconnectedSensorsInFans(
+    @JvmInline
+    value class ToggleHideDisconnectedSensorsInFans(
         val hide: Boolean,
     ) : SettingsEvent
 
-    data class ToggleHideDisconnectedSensors(
+    @JvmInline
+    value class ToggleHideDisconnectedSensors(
         val hide: Boolean,
     ) : SettingsEvent
 
-    data class ToggleHideUnconfiguredVirtualSensors(
+    @JvmInline
+    value class ToggleHideUnconfiguredVirtualSensors(
         val hide: Boolean,
     ) : SettingsEvent
 }
