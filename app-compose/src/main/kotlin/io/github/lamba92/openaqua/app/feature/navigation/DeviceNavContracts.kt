@@ -1,5 +1,6 @@
 package io.github.lamba92.openaqua.app.feature.navigation
 
+import io.github.lamba92.openaqua.app.feature.about.AboutTab
 import io.github.lamba92.openaqua.app.feature.device.common.CommonDeviceTab
 import io.github.lamba92.openaqua.app.feature.settings.SettingsTab
 import io.github.lamba92.openaqua.app.model.NavigationSelectionStoredData
@@ -39,7 +40,9 @@ data class DeviceNavState(
 
         data object BugReport : SelectedItem
 
-        data object About : SelectedItem
+        data class About(
+            val selectedTab: AboutTab = AboutTab.OPEN_AQUA,
+        ) : SelectedItem
 
         data class Settings(
             val selectedTab: SettingsTab = SettingsTab.GENERAL,
@@ -52,7 +55,7 @@ fun DeviceNavState.SelectedItem.toStoredData(): NavigationSelectionStoredData? =
         DeviceNavState.SelectedItem.Host -> NavigationSelectionStoredData.Host
         is DeviceNavState.SelectedItem.Device -> NavigationSelectionStoredData.Device(deviceId, selectedTab)
         DeviceNavState.SelectedItem.BugReport -> NavigationSelectionStoredData.BugReport
-        DeviceNavState.SelectedItem.About -> NavigationSelectionStoredData.About
+        is DeviceNavState.SelectedItem.About -> NavigationSelectionStoredData.About(selectedTab)
         is DeviceNavState.SelectedItem.Settings -> NavigationSelectionStoredData.Settings(selectedTab)
         DeviceNavState.SelectedItem.PermissionError -> null
     }
@@ -62,7 +65,7 @@ fun NavigationSelectionStoredData.toSelectedItem(): DeviceNavState.SelectedItem 
         NavigationSelectionStoredData.Host -> DeviceNavState.SelectedItem.Host
         is NavigationSelectionStoredData.Device -> DeviceNavState.SelectedItem.Device(deviceId, tab)
         NavigationSelectionStoredData.BugReport -> DeviceNavState.SelectedItem.BugReport
-        NavigationSelectionStoredData.About -> DeviceNavState.SelectedItem.About
+        is NavigationSelectionStoredData.About -> DeviceNavState.SelectedItem.About(tab)
         is NavigationSelectionStoredData.Settings -> DeviceNavState.SelectedItem.Settings(tab)
     }
 
@@ -82,6 +85,10 @@ sealed interface DeviceNavEvent {
     data object SelectBugReport : DeviceNavEvent
 
     data object SelectAbout : DeviceNavEvent
+
+    data class SelectAboutTab(
+        val tab: AboutTab,
+    ) : DeviceNavEvent
 
     data object SelectSettings : DeviceNavEvent
 

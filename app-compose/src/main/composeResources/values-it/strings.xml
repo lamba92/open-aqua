@@ -366,6 +366,22 @@
     <string name="about_github_title">Repository GitHub</string>
     <string name="about_github_desc">Visualizza il codice sorgente, segnala problemi e segui lo sviluppo su GitHub.</string>
     <string name="about_github_button">Apri su GitHub</string>
+
+    <!-- About Navigation & Tabs -->
+    <string name="about_tab_open_aqua">OpenAqua</string>
+    <string name="about_tab_supported_devices">Dispositivi supportati</string>
+    <string name="about_tab_subtitle">Informazioni &amp; Hardware</string>
+
+    <!-- Supported Devices -->
+    <string name="supported_devices_screen_title">Dispositivi supportati</string>
+    <string name="supported_devices_screen_subtitle">Hardware Aquacomputer supportato da OpenAqua per ventole, pompe, sensori e illuminazione</string>
+    <string name="supported_devices_search_placeholder">Filtra dispositivi per nome, PID o funzionalità...</string>
+    <string name="supported_devices_filter_all">Tutti (%1$d)</string>
+    <string name="supported_devices_filter_fans">Controller ventole (%1$d)</string>
+    <string name="supported_devices_filter_pumps">Pompe smart (%1$d)</string>
+    <string name="supported_devices_filter_sensors">Sensori &amp; Protezione (%1$d)</string>
+    <string name="supported_devices_filter_lighting">Illuminazione (%1$d)</string>
+    <string name="supported_devices_no_results">Nessun dispositivo trovato per \"%1$s\"</string>
 <!-- Permissions Dialog & Banners -->
     <string name="permission_dialog_linux_title">Permessi Dispositivo Richiesti</string>
     <string name="permission_dialog_linux_desc">OpenAqua richiede i permessi udev per comunicare con i dispositivi Aqua Computer tramite USB e hidraw. L'installazione di una regola udev in /etc/udev/rules.d/60-open-aqua.rules garantirà l'accesso al tuo account utente senza richiedere i permessi di root.</string>

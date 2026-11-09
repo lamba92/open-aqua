@@ -14,18 +14,27 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.NavigationDrawerItem
+import androidx.compose.material3.NavigationDrawerItemDefaults
+import androidx.compose.material3.PermanentDrawerSheet
+import androidx.compose.material3.PermanentNavigationDrawer
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.lamba92.openaqua.app.build.OpenAquaBuildInfo
@@ -49,15 +58,174 @@ import open_aqua.app_compose.generated.resources.about_project_desc
 import open_aqua.app_compose.generated.resources.about_project_title
 import open_aqua.app_compose.generated.resources.about_screen_subtitle
 import open_aqua.app_compose.generated.resources.about_screen_title
+import open_aqua.app_compose.generated.resources.about_tab_open_aqua
+import open_aqua.app_compose.generated.resources.about_tab_subtitle
+import open_aqua.app_compose.generated.resources.about_tab_supported_devices
+import open_aqua.app_compose.generated.resources.ic_device
 import open_aqua.app_compose.generated.resources.ic_info
 import open_aqua.app_compose.generated.resources.ic_openaqua
+import open_aqua.app_compose.generated.resources.nav_about
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
 private const val GITHUB_REPO_URL = "https://github.com/lamba92/open-aqua"
 
 @Composable
-fun AboutScreen(modifier: Modifier = Modifier) {
+fun AboutScreen(
+    selectedTab: AboutTab = AboutTab.OPEN_AQUA,
+    onSelectTab: (AboutTab) -> Unit = {},
+    modifier: Modifier = Modifier,
+) {
+    val saveableStateHolder = rememberSaveableStateHolder()
+    val openAquaScrollState = rememberSaveable(saver = ScrollState.Saver) { ScrollState(0) }
+    val supportedDevicesScrollState = rememberSaveable(saver = ScrollState.Saver) { ScrollState(0) }
+
+    AboutDrawerScaffold(
+        selectedTab = selectedTab,
+        onSelectTab = onSelectTab,
+        modifier = modifier,
+    ) {
+        saveableStateHolder.SaveableStateProvider(selectedTab) {
+            when (selectedTab) {
+                AboutTab.OPEN_AQUA -> {
+                    AboutOpenAquaContent(scrollState = openAquaScrollState)
+                }
+
+                AboutTab.SUPPORTED_DEVICES -> {
+                    SupportedDevicesContent(scrollState = supportedDevicesScrollState)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AboutDrawerScaffold(
+    selectedTab: AboutTab,
+    onSelectTab: (AboutTab) -> Unit,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    val colors = OpenAquaTheme.colors
+    val drawerMetrics = OpenAquaTheme.metrics.navigationDrawer
+    PermanentNavigationDrawer(
+        drawerContent = {
+            PermanentDrawerSheet(
+                modifier =
+                    Modifier
+                        .width(drawerMetrics.width)
+                        .fillMaxHeight(),
+                drawerContainerColor = colors.surfaceLow,
+                drawerContentColor = colors.textPrimary,
+                drawerShape = RoundedCornerShape(0.dp),
+            ) {
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxHeight()
+                            .padding(
+                                horizontal = drawerMetrics.headerPaddingHorizontal,
+                                vertical = drawerMetrics.headerPaddingVertical,
+                            ),
+                    verticalArrangement = Arrangement.spacedBy(drawerMetrics.itemSpacing),
+                ) {
+                    Text(
+                        text = stringResource(Res.string.nav_about),
+                        color = colors.textPrimary,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(horizontal = 12.dp),
+                    )
+                    Text(
+                        text = stringResource(Res.string.about_tab_subtitle),
+                        color = colors.primary,
+                        fontSize = 13.sp,
+                        fontFamily = FontFamily.Monospace,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(horizontal = 12.dp),
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    HorizontalDivider(color = colors.borderOutline)
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    val drawerColors =
+                        NavigationDrawerItemDefaults.colors(
+                            selectedContainerColor = colors.surfaceHigh,
+                            unselectedContainerColor = Color.Transparent,
+                            selectedIconColor = colors.primaryBright,
+                            unselectedIconColor = colors.textSecondary,
+                            selectedTextColor = colors.textPrimary,
+                            unselectedTextColor = colors.textSecondary,
+                        )
+
+                    NavigationDrawerItem(
+                        label = {
+                            Text(
+                                text = stringResource(Res.string.about_tab_open_aqua),
+                                fontSize = 15.sp,
+                                lineHeight = 22.sp,
+                                fontWeight = if (selectedTab == AboutTab.OPEN_AQUA) FontWeight.SemiBold else FontWeight.Medium,
+                                maxLines = 1,
+                                softWrap = false,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        },
+                        icon = {
+                            Icon(
+                                painter = painterResource(Res.drawable.ic_openaqua),
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        },
+                        selected = selectedTab == AboutTab.OPEN_AQUA,
+                        onClick = { onSelectTab(AboutTab.OPEN_AQUA) },
+                        colors = drawerColors,
+                        shape = RoundedCornerShape(8.dp),
+                    )
+
+                    NavigationDrawerItem(
+                        label = {
+                            Text(
+                                text = stringResource(Res.string.about_tab_supported_devices),
+                                fontSize = 15.sp,
+                                lineHeight = 22.sp,
+                                fontWeight = if (selectedTab == AboutTab.SUPPORTED_DEVICES) FontWeight.SemiBold else FontWeight.Medium,
+                                maxLines = 1,
+                                softWrap = false,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        },
+                        icon = {
+                            Icon(
+                                painter = painterResource(Res.drawable.ic_device),
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        },
+                        selected = selectedTab == AboutTab.SUPPORTED_DEVICES,
+                        onClick = { onSelectTab(AboutTab.SUPPORTED_DEVICES) },
+                        colors = drawerColors,
+                        shape = RoundedCornerShape(8.dp),
+                    )
+                }
+            }
+        },
+        modifier = modifier.fillMaxSize(),
+        content = content,
+    )
+}
+
+@Composable
+private fun AboutOpenAquaContent(
+    scrollState: ScrollState,
+    modifier: Modifier = Modifier,
+) {
     val colors = OpenAquaTheme.colors
     val metrics = OpenAquaTheme.metrics
     val uriHandler = LocalUriHandler.current
@@ -69,8 +237,6 @@ fun AboutScreen(modifier: Modifier = Modifier) {
                 title = stringResource(Res.string.about_screen_title),
                 subtitle = stringResource(Res.string.about_screen_subtitle),
             )
-
-            val scrollState = rememberSaveable(saver = ScrollState.Saver) { ScrollState(0) }
 
             Box(
                 modifier =

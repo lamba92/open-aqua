@@ -362,6 +362,22 @@
     <string name="about_github_desc">View source code, report issues, and follow development on GitHub.</string>
     <string name="about_github_button">Open on GitHub</string>
 
+    <!-- About Navigation & Tabs -->
+    <string name="about_tab_open_aqua">OpenAqua</string>
+    <string name="about_tab_supported_devices">Supported Devices</string>
+    <string name="about_tab_subtitle">Information &amp; Hardware</string>
+
+    <!-- Supported Devices -->
+    <string name="supported_devices_screen_title">Supported Devices</string>
+    <string name="supported_devices_screen_subtitle">Aquacomputer hardware supported by OpenAqua across fans, pumps, sensors, and lighting</string>
+    <string name="supported_devices_search_placeholder">Filter devices by name, PID, or capability...</string>
+    <string name="supported_devices_filter_all">All (%1$d)</string>
+    <string name="supported_devices_filter_fans">Fan Controllers (%1$d)</string>
+    <string name="supported_devices_filter_pumps">Smart Pumps (%1$d)</string>
+    <string name="supported_devices_filter_sensors">Sensors &amp; Protection (%1$d)</string>
+    <string name="supported_devices_filter_lighting">Lighting (%1$d)</string>
+    <string name="supported_devices_no_results">No supported devices match \"%1$s\"</string>
+
     <!-- Settings Tabs & Logs -->
     <string name="settings_tab_general">General</string>
     <string name="settings_tab_logs">Logs</string>

@@ -353,6 +353,22 @@
     <string name="about_github_title">GitHub-Repository</string>
     <string name="about_github_desc">Quellcode ansehen, Fehler melden und Entwicklung auf GitHub verfolgen.</string>
     <string name="about_github_button">Auf GitHub öffnen</string>
+
+    <!-- About Navigation & Tabs -->
+    <string name="about_tab_open_aqua">OpenAqua</string>
+    <string name="about_tab_supported_devices">Unterstützte Geräte</string>
+    <string name="about_tab_subtitle">Informationen &amp; Hardware</string>
+
+    <!-- Supported Devices -->
+    <string name="supported_devices_screen_title">Unterstützte Geräte</string>
+    <string name="supported_devices_screen_subtitle">Von OpenAqua unterstützte Aquacomputer-Hardware für Lüftersteuerung, Telemetrie, Beleuchtung und Schutz</string>
+    <string name="supported_devices_search_placeholder">Geräte nach Name, PID oder Funktion filtern...</string>
+    <string name="supported_devices_filter_all">Alle (%1$d)</string>
+    <string name="supported_devices_filter_fans">Lüftersteuerungen (%1$d)</string>
+    <string name="supported_devices_filter_pumps">Intelligente Pumpen (%1$d)</string>
+    <string name="supported_devices_filter_sensors">Sensoren &amp; Schutz (%1$d)</string>
+    <string name="supported_devices_filter_lighting">Beleuchtung (%1$d)</string>
+    <string name="supported_devices_no_results">Keine Geräte gefunden für \"%1$s\"</string>
     <string name="settings_tab_general">Allgemein</string>
     <string name="settings_tab_logs">Protokolle</string>
     <string name="settings_tab_subtitle">Einstellungen &amp; Diagnose</string>

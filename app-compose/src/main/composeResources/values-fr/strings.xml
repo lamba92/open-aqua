@@ -353,6 +353,22 @@
     <string name="about_github_title">Dépôt GitHub</string>
     <string name="about_github_desc">Consultez le code source, signalez des problèmes et suivez le développement sur GitHub.</string>
     <string name="about_github_button">Ouvrir sur GitHub</string>
+
+    <!-- About Navigation & Tabs -->
+    <string name="about_tab_open_aqua">OpenAqua</string>
+    <string name="about_tab_supported_devices">Appareils pris en charge</string>
+    <string name="about_tab_subtitle">Informations &amp; Matériel</string>
+
+    <!-- Supported Devices -->
+    <string name="supported_devices_screen_title">Appareils pris en charge</string>
+    <string name="supported_devices_screen_subtitle">Matériel Aquacomputer pris en charge par OpenAqua pour le contrôle des ventilateurs, la télémétrie, l'éclairage et la sécurité</string>
+    <string name="supported_devices_search_placeholder">Filtrer les appareils par nom, PID ou capacité...</string>
+    <string name="supported_devices_filter_all">Tous (%1$d)</string>
+    <string name="supported_devices_filter_fans">Contrôleurs de ventilateurs (%1$d)</string>
+    <string name="supported_devices_filter_pumps">Pompes intelligentes (%1$d)</string>
+    <string name="supported_devices_filter_sensors">Capteurs &amp; Protection (%1$d)</string>
+    <string name="supported_devices_filter_lighting">Éclairage (%1$d)</string>
+    <string name="supported_devices_no_results">Aucun appareil trouvé pour \"%1$s\"</string>
     <string name="settings_tab_general">Général</string>
     <string name="settings_tab_logs">Journaux</string>
     <string name="settings_tab_subtitle">Préférences &amp; Diagnostics</string>
