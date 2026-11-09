@@ -5,6 +5,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.WindowPlacement
 import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.WindowState
+import io.github.lamba92.openaqua.app.feature.about.AboutTab
 import io.github.lamba92.openaqua.app.feature.device.common.ChannelName
 import io.github.lamba92.openaqua.app.feature.device.common.CommonDeviceTab
 import io.github.lamba92.openaqua.app.feature.settings.SettingsTab
@@ -58,7 +59,9 @@ sealed interface NavigationSelectionStoredData {
 
     @Serializable
     @SerialName("about")
-    data object About : NavigationSelectionStoredData
+    data class About(
+        val tab: AboutTab = AboutTab.OPEN_AQUA,
+    ) : NavigationSelectionStoredData
 
     @Serializable
     @SerialName("settings")

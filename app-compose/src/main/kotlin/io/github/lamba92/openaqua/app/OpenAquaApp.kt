@@ -52,8 +52,11 @@ fun OpenAquaApp(navViewModel: DeviceNavViewModel = rememberInstance()) {
                     )
                 }
 
-                DeviceNavState.SelectedItem.About -> {
-                    AboutScreen()
+                is DeviceNavState.SelectedItem.About -> {
+                    AboutScreen(
+                        selectedTab = item.selectedTab,
+                        onSelectTab = { navViewModel.onEvent(DeviceNavEvent.SelectAboutTab(it)) },
+                    )
                 }
 
                 is DeviceNavState.SelectedItem.Settings -> {

@@ -84,7 +84,7 @@ sealed interface Scene {
     data class About(
         val navState: DeviceNavState =
             createMockNavState(
-                selectedItem = DeviceNavState.SelectedItem.About,
+                selectedItem = DeviceNavState.SelectedItem.About(),
             ),
     ) : Scene
 }

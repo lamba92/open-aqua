@@ -3,6 +3,7 @@ package io.github.lamba92.openaqua.app.feature.navigation
 import io.github.lamba92.openaqua.app.coroutine.CoroutineScopeProvider
 import io.github.lamba92.openaqua.app.coroutine.LoggingScope
 import io.github.lamba92.openaqua.app.coroutine.getScope
+import io.github.lamba92.openaqua.app.feature.about.AboutTab
 import io.github.lamba92.openaqua.app.feature.device.common.CommonDeviceTab
 import io.github.lamba92.openaqua.app.feature.settings.SettingsTab
 import io.github.lamba92.openaqua.app.model.NavigationSelectionStoredData
@@ -163,8 +164,8 @@ class DeviceNavViewModel(
                                 DeviceNavState.SelectedItem.BugReport
                             }
 
-                            NavigationSelectionStoredData.About -> {
-                                DeviceNavState.SelectedItem.About
+                            is NavigationSelectionStoredData.About -> {
+                                DeviceNavState.SelectedItem.About(savedSelection.tab)
                             }
 
                             is NavigationSelectionStoredData.Settings -> {
@@ -213,6 +214,7 @@ class DeviceNavViewModel(
                 DeviceNavEvent.SelectPermissionError -> selectPermissionError()
                 DeviceNavEvent.SelectBugReport -> selectBugReport()
                 DeviceNavEvent.SelectAbout -> selectAbout()
+                is DeviceNavEvent.SelectAboutTab -> selectAboutTab(event.tab)
                 DeviceNavEvent.SelectSettings -> selectSettings()
                 is DeviceNavEvent.SelectSettingsTab -> selectSettingsTab(event.tab)
                 DeviceNavEvent.ToggleNavigationRailExpanded -> toggleNavigationRailExpanded()
@@ -256,7 +258,7 @@ class DeviceNavViewModel(
                 DeviceNavState.SelectedItem.Host,
                 DeviceNavState.SelectedItem.PermissionError,
                 DeviceNavState.SelectedItem.BugReport,
-                DeviceNavState.SelectedItem.About,
+                is DeviceNavState.SelectedItem.About,
                 is DeviceNavState.SelectedItem.Settings,
                 -> {
                     currentState
@@ -283,9 +285,17 @@ class DeviceNavViewModel(
     private fun selectAbout() {
         viewModelLogger.i { "Navigating to About screen" }
         state.update { currentState ->
-            currentState.copy(selectedItem = DeviceNavState.SelectedItem.About)
+            currentState.copy(selectedItem = DeviceNavState.SelectedItem.About(AboutTab.OPEN_AQUA))
         }
-        appDataRepository.setNavigationSelection(NavigationSelectionStoredData.About)
+        appDataRepository.setNavigationSelection(NavigationSelectionStoredData.About(AboutTab.OPEN_AQUA))
+    }
+
+    private fun selectAboutTab(tab: AboutTab) {
+        viewModelLogger.i { "Navigating to About tab '$tab'" }
+        state.update { currentState ->
+            currentState.copy(selectedItem = DeviceNavState.SelectedItem.About(tab))
+        }
+        appDataRepository.setNavigationSelection(NavigationSelectionStoredData.About(tab))
     }
 
     private fun selectSettings() {
