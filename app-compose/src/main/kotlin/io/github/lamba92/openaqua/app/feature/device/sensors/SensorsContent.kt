@@ -218,23 +218,12 @@ fun SensorsContent(
                 null
             },
         selectorContent = {
-            displayedPhysicalSensors.forEach { sensor ->
-                val isSelected = sensor.channel == selectedSensor?.channel
-                val temp = sensor.effectiveTempCelsius
-                val sensorName = sensor.resolveName()
-                val sensorPin = sensor.resolvePinLabel()
-                SensorSelectionTile(
-                    name = sensorName,
-                    pinLabel = sensorPin,
-                    tempCelsius = temp,
-                    selected = isSelected,
-                    targetType = sensor.targetType,
-                    hasPendingChanges = state.isSensorModified(sensor),
-                    feederStatus = sensor.feederStatus,
-                    onClick = { onEvent(SensorsUiEvent.SelectSensor(sensor.channel)) },
-                    onDoubleClick = { onEvent(SensorsUiEvent.StartRenamingSensor(sensor.channel)) },
-                )
-            }
+            SensorSelectionTiles(
+                sensors = displayedPhysicalSensors,
+                selectedChannel = selectedSensor?.channel,
+                isModified = state::isSensorModified,
+                onEvent = onEvent,
+            )
         },
         secondarySelectorHeader =
             if (displayedVirtualSensors.isNotEmpty()) {
@@ -245,23 +234,12 @@ fun SensorsContent(
         secondarySelectorContent =
             if (displayedVirtualSensors.isNotEmpty()) {
                 {
-                    displayedVirtualSensors.forEach { sensor ->
-                        val isSelected = sensor.channel == selectedSensor?.channel
-                        val temp = sensor.effectiveTempCelsius
-                        val sensorName = sensor.resolveName()
-                        val sensorPin = sensor.resolvePinLabel()
-                        SensorSelectionTile(
-                            name = sensorName,
-                            pinLabel = sensorPin,
-                            tempCelsius = temp,
-                            selected = isSelected,
-                            targetType = sensor.targetType,
-                            hasPendingChanges = state.isSensorModified(sensor),
-                            feederStatus = sensor.feederStatus,
-                            onClick = { onEvent(SensorsUiEvent.SelectSensor(sensor.channel)) },
-                            onDoubleClick = { onEvent(SensorsUiEvent.StartRenamingSensor(sensor.channel)) },
-                        )
-                    }
+                    SensorSelectionTiles(
+                        sensors = displayedVirtualSensors,
+                        selectedChannel = selectedSensor?.channel,
+                        isModified = state::isSensorModified,
+                        onEvent = onEvent,
+                    )
                 }
             } else {
                 null
@@ -1263,6 +1241,30 @@ private fun VirtualSensorFeedError.resolveMessage(
             stringResource(Res.string.sensor_feeder_error_generic)
         }
     }
+
+@Composable
+private fun SensorSelectionTiles(
+    sensors: List<SensorItem>,
+    selectedChannel: Int?,
+    isModified: (SensorItem) -> Boolean,
+    onEvent: (SensorsUiEvent) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    sensors.forEach { sensor ->
+        SensorSelectionTile(
+            name = sensor.resolveName(),
+            pinLabel = sensor.resolvePinLabel(),
+            tempCelsius = sensor.effectiveTempCelsius,
+            selected = sensor.channel == selectedChannel,
+            targetType = sensor.targetType,
+            hasPendingChanges = isModified(sensor),
+            feederStatus = sensor.feederStatus,
+            onClick = { onEvent(SensorsUiEvent.SelectSensor(sensor.channel)) },
+            onDoubleClick = { onEvent(SensorsUiEvent.StartRenamingSensor(sensor.channel)) },
+            modifier = modifier,
+        )
+    }
+}
 
 @Composable
 fun SensorSelectionTile(
