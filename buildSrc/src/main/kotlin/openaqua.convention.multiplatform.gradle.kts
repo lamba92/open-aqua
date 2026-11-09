@@ -12,17 +12,13 @@ kotlin {
     compilerOptions {
         freeCompilerArgs.add("-XXLanguage:+JvmInlineMultiFieldValueClasses")
     }
-    targets.withType<KotlinNativeTarget>().configureEach {
-        compilations.configureEach {
-            compileTaskProvider.configure {
-                compilerOptions.optIn.add("kotlinx.cinterop.ExperimentalForeignApi")
-            }
-        }
-    }
 }
 
 ktlint {
     filter {
-        exclude { it.file.path.contains("/build/") || it.file.path.contains("/generated/") }
+        exclude {
+            it.file.path.contains("/build/") ||
+                it.file.path.contains("/generated/")
+        }
     }
 }
