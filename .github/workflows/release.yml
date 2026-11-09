@@ -214,6 +214,7 @@ jobs:
         uses: snapcore/action-build@v1
         with:
           path: /tmp/snap-payload
+          snapcraft-args: --destructive-mode
         env:
           SNAP_TOKEN: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
 
