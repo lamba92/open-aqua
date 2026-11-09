@@ -26,6 +26,7 @@ kotlin {
                 baseName = "open-aqua-device-engine"
                 entryPoint = "io.github.lamba92.openaqua.engine.device.prod.main"
                 disableNativeCache(version = DisableCacheInKotlinVersion.`2_4_0`, reason = "Clikt duplicate symbol workaround")
+                linkerOpts("-Wl,--as-needed")
             }
             getTest("debug").disableNativeCache(version = DisableCacheInKotlinVersion.`2_4_0`, reason = "Clikt duplicate symbol workaround")
         }
@@ -36,6 +37,7 @@ kotlin {
                 baseName = "open-aqua-device-engine"
                 entryPoint = "io.github.lamba92.openaqua.engine.device.prod.main"
                 disableNativeCache(version = DisableCacheInKotlinVersion.`2_4_0`, reason = "Clikt duplicate symbol workaround")
+                linkerOpts("-Wl,--as-needed")
             }
             getTest("debug").disableNativeCache(version = DisableCacheInKotlinVersion.`2_4_0`, reason = "Clikt duplicate symbol workaround")
         }

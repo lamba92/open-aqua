@@ -14,6 +14,7 @@ kotlin {
                 baseName = "open-aqua-host-engine"
                 entryPoint = "io.github.lamba92.openaqua.engine.host.linux.main"
                 disableNativeCache(version = DisableCacheInKotlinVersion.`2_4_0`, reason = "Clikt duplicate symbol workaround")
+                linkerOpts("-Wl,--as-needed")
             }
         }
     }
@@ -23,6 +24,7 @@ kotlin {
                 baseName = "open-aqua-host-engine"
                 entryPoint = "io.github.lamba92.openaqua.engine.host.linux.main"
                 disableNativeCache(version = DisableCacheInKotlinVersion.`2_4_0`, reason = "Clikt duplicate symbol workaround")
+                linkerOpts("-Wl,--as-needed")
             }
         }
     }
