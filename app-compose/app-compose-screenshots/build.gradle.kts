@@ -17,7 +17,7 @@ compose.desktop {
 tasks.register<JavaExec>("generateScreenshots") {
     group = "documentation"
     description = "Generates application screenshots using headless ImageComposeScene"
-    mainClass.set("io.github.lamba92.openaqua.screenshots.MainKt")
+    mainClass = "io.github.lamba92.openaqua.screenshots.MainKt"
     classpath = sourceSets["main"].runtimeClasspath
     val screenshotsDir = rootProject.file("docs/screenshots")
     outputs.dir(screenshotsDir)

@@ -11,6 +11,9 @@
 -dontwarn org.apache.logging.**
 -dontwarn org.json.**
 
+# Suppress informational notes from dependencies and serializers
+-dontnote
+
 # Kermit & Coroutines reflection
 -keep class co.touchlab.kermit.** { *; }
 -keep class kotlinx.coroutines.** { *; }
