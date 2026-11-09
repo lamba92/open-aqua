@@ -25,9 +25,19 @@ data class FlatpakManifest(
 data class FlatpakModule(
     val name: String,
     val buildsystem: String,
+    @SerialName("only-arches")
+    val onlyArches: List<String>? = null,
+    @SerialName("build-options")
+    val buildOptions: FlatpakBuildOptions? = null,
     @SerialName("build-commands")
     val buildCommands: List<String>,
     val sources: List<FlatpakSource>,
+)
+
+@Serializable
+data class FlatpakBuildOptions(
+    @SerialName("no-debuginfo")
+    val noDebuginfo: Boolean? = null,
 )
 
 @Serializable
@@ -62,7 +72,7 @@ fun generateFlatpakYaml(
             finishArgs =
                 listOf(
                     "--share=ipc",
-                    "--socket=x11",
+                    "--socket=fallback-x11",
                     "--socket=wayland",
                     "--device=all",
                     "--filesystem=/sys:ro",
@@ -72,11 +82,13 @@ fun generateFlatpakYaml(
                     FlatpakModule(
                         name = metadata.executable,
                         buildsystem = "simple",
+                        onlyArches = listOf("x86_64"),
+                        buildOptions = FlatpakBuildOptions(noDebuginfo = true),
                         buildCommands =
                             listOf(
                                 "install -d /app/lib/${metadata.executable} /app/bin /app/share/applications " +
                                     "/app/share/icons/hicolor/512x512/apps /app/share/metainfo",
-                                "cp -r ${metadata.executable}/* /app/lib/${metadata.executable}/",
+                                "cp -r bin lib /app/lib/${metadata.executable}/",
                                 "chmod +x /app/lib/${metadata.executable}/bin/${metadata.executable}",
                                 "ln -s /app/lib/${metadata.executable}/bin/${metadata.executable} /app/bin/${metadata.executable}",
                                 "install -Dm644 ${metadata.id}.desktop /app/share/applications/${metadata.id}.desktop",
@@ -90,12 +102,12 @@ fun generateFlatpakYaml(
                                     type = "archive",
                                     url =
                                         "https://github.com/${metadata.project.githubRepo}/releases/download" +
-                                            "/v$version/${metadata.executable}-$version-linux-x64.tar.gz",
+                                            "/$version/${metadata.executable}-$version-linux-x64.tar.gz",
                                     sha256 = "0000000000000000000000000000000000000000000000000000000000000000",
                                 ),
-                                FlatpakSource(type = "file", path = "../metadata/${metadata.id}.desktop"),
-                                FlatpakSource(type = "file", path = "../metadata/${metadata.iconName}.png"),
-                                FlatpakSource(type = "file", path = "../metadata/${metadata.id}.metainfo.xml"),
+                                FlatpakSource(type = "file", path = "${metadata.id}.desktop"),
+                                FlatpakSource(type = "file", path = "${metadata.iconName}.png"),
+                                FlatpakSource(type = "file", path = "${metadata.id}.metainfo.xml"),
                             ),
                     ),
                 ),

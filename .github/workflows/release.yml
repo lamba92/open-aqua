@@ -137,6 +137,7 @@ jobs:
             exit 0
           }
           cd flathub-repo
+          cp ../packaging/build/generated/packaging/flatpak/io.github.lamba92.openaqua.yaml .
           sed -i -E "s|url: https://.*/open-aqua-.*-linux-x64.tar.gz|url: https://github.com/lamba92/open-aqua/releases/download/${TAG}/open-aqua-${VERSION}-linux-x64.tar.gz|g" io.github.lamba92.openaqua.yaml
           sed -i -E "s|sha256: [a-f0-9]{64}|sha256: ${SHA256}|g" io.github.lamba92.openaqua.yaml
           git config user.name "github-actions[bot]"
