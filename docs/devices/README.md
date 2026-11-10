@@ -11,3 +11,10 @@ This directory contains technical specifications, reverse-engineering documentat
   * Virtual sensor bulk report (`0x04`) payload layouts (OCTO 51-byte vs. QUADRO 67-byte).
   * Real-world empirical findings, hardware quirks, and lessons learned (flow sensor indexing gap, firmware curve power rescaling, USB endpoint stability).
   * Device hardware matrix for OCTO, QUADRO, and D5 NEXT.
+
+* **[LED_DESIGN.md](../LED_DESIGN.md)**: **LED & RGBpx Architecture and UI/UX Design Specification**
+  * Subsystem audit: Core Model, Device Engine Mock vs. Production Engine.
+  * Low-level hardware protocols: WS2812B/RGBpx virtual controllers and routing tables, fixed HSV zones, 13-bit PWM analog RGB.
+  * Domain models and state management: `LightingZoneConfig`, `TempReactiveConfig`, `AppStoredData`.
+  * Compose Multiplatform UI: Navigation integration, interactive WS2812B canvas simulator, autonomous temperature-reactive mode, and accessory library.
+  * Step-by-step implementation roadmap across engine and app layers.
