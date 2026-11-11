@@ -14,6 +14,8 @@ import io.github.lamba92.openaqua.model.device.descriptor
 import io.github.lamba92.openaqua.model.device.findCapability
 import io.github.lamba92.openaqua.model.device.virtualSensorsChannelRange
 import io.github.lamba92.openaqua.model.device.virtualSensorsStartChannel
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 
 class FeedVirtualSensorsCommand(
@@ -37,16 +39,24 @@ class FeedVirtualSensorsCommand(
         val startChannel = descriptor.virtualSensorsStartChannel
         val maxChannel = descriptor.virtualSensorsChannelRange.last
 
-        while (true) {
-            val line = readlnOrNull() ?: break
-            val trimmed = line.trim()
-            if (trimmed.isEmpty()) continue
-            val request = Json.decodeFromString<FeedVirtualSensorsRequest>(trimmed)
-            validateAndFeed(request, target, startChannel, maxChannel)
+        val requestsFlow =
+            flow {
+                while (true) {
+                    val line = readlnOrNull() ?: break
+                    val trimmed = line.trim()
+                    if (trimmed.isEmpty()) continue
+                    val request = Json.decodeFromString<FeedVirtualSensorsRequest>(trimmed)
+                    validateRequest(request, target, startChannel, maxChannel)
+                    emit(request.sensors)
+                }
+            }
+
+        runBlocking {
+            controller.feedVirtualSensors(target, requestsFlow)
         }
     }
 
-    private fun validateAndFeed(
+    private fun validateRequest(
         request: FeedVirtualSensorsRequest,
         target: DetectedHardwareDevice,
         startChannel: Int,
@@ -70,6 +80,5 @@ class FeedVirtualSensorsCommand(
                     "Valid virtual sensors are channels $startChannel..$maxChannel."
             }
         }
-        controller.feedVirtualSensors(target, request.sensors)
     }
 }

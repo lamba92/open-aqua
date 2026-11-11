@@ -55,7 +55,16 @@ internal const val DEFAULT_HID_REPORT_TIMEOUT_MS = 1200
 
 // -----------------------------------------------------------------------------
 // Linux ioctl command builder for HIDIOCSFEATURE (Set Feature Report)
+// and HIDIOCGFEATURE (Get Feature Report)
 // -----------------------------------------------------------------------------
+
+private const val HIDIOCGFEATURE_BASE: ULong = 0xC0004807UL
+
+/**
+ * Encodes `_IOC(_IOC_WRITE|_IOC_READ, 'H', 0x07, length)` matching the kernel
+ * definition in `<linux/hidraw.h>` for getting a feature report.
+ */
+internal fun hidiocgfeature(length: Int): ULong = HIDIOCGFEATURE_BASE or ((length.toULong() and 0x3FFFUL) shl 16)
 
 /**
  * Encodes `_IOC(_IOC_WRITE|_IOC_READ, 'H', 0x06, length)` matching the kernel
