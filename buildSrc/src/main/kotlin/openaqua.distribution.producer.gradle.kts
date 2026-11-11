@@ -56,8 +56,12 @@ val prepareAppDistributable =
     tasks.register<Sync>("prepareAppDistributable") {
         group = "distribution"
         description = "Syncs unpacked release application directory for distribution consumption"
-        into(layout.buildDirectory.dir("distributions/app-distributable"))
+        val targetDir = layout.buildDirectory.dir("distributions/app-distributable")
+        into(targetDir)
         from(appDistributableDir)
+        doFirst {
+            targetDir.get().asFile.deleteRecursively()
+        }
     }
 appDistributableElements.outgoing.artifact(prepareAppDistributable)
 

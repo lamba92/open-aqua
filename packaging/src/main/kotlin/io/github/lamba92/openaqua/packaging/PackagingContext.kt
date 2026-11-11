@@ -15,7 +15,7 @@ data class PackagingContext(
 fun loadAppMetadata(file: Path? = null): AppMetadata {
     if (file == null) {
         val rootDir = System.getenv("OPENAQUA_ROOT_DIR")?.let { Path(it) } ?: Path(".")
-        return loadAppMetadata(rootDir.resolve("packaging/app-metadata.json"))
+        return loadAppMetadata(rootDir.resolve("packaging/metadata.json"))
     }
     if (!file.exists()) {
         error("Metadata file not found at: ${file.toAbsolutePath()}")

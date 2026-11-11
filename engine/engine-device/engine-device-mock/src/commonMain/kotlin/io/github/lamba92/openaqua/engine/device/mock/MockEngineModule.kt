@@ -9,7 +9,7 @@ import org.kodein.di.instance
 
 val mockEngineModule =
     DI.Module("mockEngine") {
-        bindSingleton<HardwareController> { MockHardwareController() }
+        bindSingleton<HardwareController> { HardwareController(MockRawHidDeviceTransport()) }
         bindSingleton { FailCommand() }
         inBindSet<CliktCommand> {
             addSingleton { instance<FailCommand>() }

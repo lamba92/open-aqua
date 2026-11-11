@@ -134,7 +134,15 @@ val standalonePackage =
         platform.os.flatMap { targetOs ->
             when (targetOs) {
                 Os.LINUX -> {
-                    packageReleaseAppImage.map { listOf(it.outputAppImage.get().asFile) }
+                    when {
+                        OperatingSystem.current().isLinux && platform.arch.get() == Arch.current() -> {
+                            packageReleaseAppImage.map { listOf(it.outputAppImage.get().asFile) }
+                        }
+
+                        else -> {
+                            provider { emptyList<File>() }
+                        }
+                    }
                 }
 
                 Os.WINDOWS -> {

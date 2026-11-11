@@ -18,6 +18,7 @@ import io.github.lamba92.openaqua.model.device.SensorTelemetry
 import io.github.lamba92.openaqua.model.device.TargetTempFanConfig
 import io.github.lamba92.openaqua.model.device.TwoPointFanConfig
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -96,7 +97,7 @@ class OctoHardwareTest {
                     "Safety check failed: Virtual sensor channel $channel is not allowed in AllowedSpecs"
                 }
             }
-            controller.feedVirtualSensors(octo, sensors)
+            runBlocking { controller.feedVirtualSensors(octo, flowOf(sensors)) }
         }
     }
 
