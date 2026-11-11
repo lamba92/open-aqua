@@ -64,6 +64,7 @@ import open_aqua.app_compose.generated.resources.host_component_cpu
 import open_aqua.app_compose.generated.resources.host_component_gpu
 import open_aqua.app_compose.generated.resources.host_component_motherboard
 import open_aqua.app_compose.generated.resources.host_component_other
+import open_aqua.app_compose.generated.resources.host_component_ram
 import open_aqua.app_compose.generated.resources.host_component_storage
 import open_aqua.app_compose.generated.resources.host_no_sensors
 import open_aqua.app_compose.generated.resources.host_status_connected
@@ -267,6 +268,7 @@ private fun HostContent(
             HostDeviceType.CPU to Res.string.host_component_cpu,
             HostDeviceType.GPU to Res.string.host_component_gpu,
             HostDeviceType.MOTHERBOARD to Res.string.host_component_motherboard,
+            HostDeviceType.RAM to Res.string.host_component_ram,
             HostDeviceType.STORAGE to Res.string.host_component_storage,
             HostDeviceType.OTHER to Res.string.host_component_other,
         )
@@ -313,6 +315,7 @@ private fun HostDeviceTypeSection(
             HostDeviceType.CPU -> Icons.Outlined.Memory
             HostDeviceType.GPU -> Icons.Outlined.Tv
             HostDeviceType.MOTHERBOARD -> Icons.Outlined.DeveloperBoard
+            HostDeviceType.RAM -> Icons.Outlined.Memory
             HostDeviceType.STORAGE -> Icons.Outlined.Storage
             HostDeviceType.OTHER -> Icons.Outlined.Devices
         }

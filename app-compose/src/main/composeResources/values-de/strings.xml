@@ -255,6 +255,7 @@
     <string name="host_component_gpu">Grafik (GPU)</string>
     <string name="host_component_motherboard">Mainboard &amp; Chipsatz</string>
     <string name="host_component_storage">Speicher (NVMe / SSD)</string>
+    <string name="host_component_ram">Arbeitsspeicher (RAM)</string>
     <string name="host_component_other">Sonstige Komponenten</string>
     <string name="host_no_sensors">Keine Sensoren für diese Komponente erkannt</string>
     <string name="host_status_connected">Aktiv</string>

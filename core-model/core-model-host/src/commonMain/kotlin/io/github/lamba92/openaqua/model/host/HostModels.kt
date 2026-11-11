@@ -37,10 +37,27 @@ value class HostSensorId(
 }
 
 @Serializable
+@JvmInline
+value class HostFanId(
+    val value: String,
+) {
+    init {
+        require(value.isNotBlank()) { "HostFanId cannot be blank" }
+    }
+
+    override fun toString(): String = value
+
+    companion object {
+        fun from(string: String): HostFanId = HostFanId(string.trim())
+    }
+}
+
+@Serializable
 enum class HostDeviceType {
     CPU,
     MOTHERBOARD,
     GPU,
+    RAM,
     STORAGE,
     OTHER,
 }
@@ -52,11 +69,35 @@ data class HostSensorDescriptor(
 )
 
 @Serializable
+sealed interface HostFanDescriptor {
+    val id: HostFanId
+    val name: String
+
+    @Serializable
+    @SerialName("controllable")
+    data class Controllable(
+        override val id: HostFanId,
+        override val name: String,
+    ) : HostFanDescriptor
+
+    @Serializable
+    @SerialName("read-only")
+    data class ReadOnly(
+        override val id: HostFanId,
+        override val name: String,
+    ) : HostFanDescriptor
+}
+
+val HostFanDescriptor.isControllable: Boolean
+    get() = this is HostFanDescriptor.Controllable
+
+@Serializable
 data class HostDevice(
     val id: HostDeviceId,
     val name: String,
     val type: HostDeviceType,
-    val sensors: List<HostSensorDescriptor>,
+    val sensors: List<HostSensorDescriptor> = emptyList(),
+    val fans: List<HostFanDescriptor> = emptyList(),
 )
 
 @Serializable
@@ -83,11 +124,46 @@ sealed interface HostSensorTelemetry {
     ) : HostSensorTelemetry
 }
 
-val HostSensorTelemetry.tempCelsiusOrNull: Double?
-    get() = (this as? HostSensorTelemetry.Connected)?.tempCelsius
+@Serializable
+sealed interface HostFanTelemetry {
+    val id: HostFanId
+
+    @Serializable
+    @SerialName("controllable")
+    data class Controllable(
+        override val id: HostFanId,
+        val rpm: Int,
+        val pwmPercent: Double,
+        val isFollowingBiosCurve: Boolean,
+    ) : HostFanTelemetry
+
+    @Serializable
+    @SerialName("read-only")
+    data class ReadOnly(
+        override val id: HostFanId,
+        val rpm: Int,
+    ) : HostFanTelemetry
+
+    @Serializable
+    @SerialName("disconnected")
+    data class Disconnected(
+        override val id: HostFanId,
+    ) : HostFanTelemetry
+}
 
 @Serializable
 @SerialName("host-telemetry")
 data class HostTelemetry(
-    val sensors: List<HostSensorTelemetry>,
+    val sensors: List<HostSensorTelemetry> = emptyList(),
+    val fans: List<HostFanTelemetry> = emptyList(),
 )
+
+@Serializable
+data class HostFanControlRequest(
+    val channel: HostFanId,
+    val pwmPercent: Double,
+) {
+    init {
+        require(pwmPercent in 0.0..100.0) { "pwmPercent must be between 0.0 and 100.0, was $pwmPercent" }
+    }
+}
