@@ -45,3 +45,33 @@ fun Path.listDirectory(fileSystem: FileSystem = SystemFileSystem): List<Path> =
             emptyList()
         }
     }
+
+fun Path.exists(fileSystem: FileSystem = SystemFileSystem): Boolean = fileSystem.exists(this)
+
+fun Path.delete(fileSystem: FileSystem = SystemFileSystem) {
+    fileSystem.delete(this)
+}
+
+fun Path.deleteIfExists(fileSystem: FileSystem = SystemFileSystem): Boolean =
+    try {
+        if (fileSystem.exists(this)) {
+            fileSystem.delete(this)
+            true
+        } else {
+            false
+        }
+    } catch (_: Throwable) {
+        false
+    }
+
+fun Path.createDirectories(
+    mustCreate: Boolean = false,
+    fileSystem: FileSystem = SystemFileSystem,
+) {
+    fileSystem.createDirectories(this, mustCreate)
+}
+
+fun Path.resolve(child: String): Path = Path(this, child)
+
+val Path.nameWithoutExtension: String
+    get() = name.substringBeforeLast('.', missingDelimiterValue = name)

@@ -1,4 +1,4 @@
-package io.github.lamba92.openaqua.model
+package io.github.lamba92.openaqua.engine.util
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow

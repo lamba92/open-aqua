@@ -3,8 +3,8 @@ package io.github.lamba92.openaqua.engine.host.command
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.Context
 import io.github.lamba92.openaqua.engine.host.hardware.HostHardwareController
+import io.github.lamba92.openaqua.engine.util.readNdjsonFromStdin
 import io.github.lamba92.openaqua.model.host.HostFanControlRequest
-import io.github.lamba92.openaqua.model.readNdjsonFromStdin
 import kotlinx.coroutines.runBlocking
 
 class StreamFansCommand(
