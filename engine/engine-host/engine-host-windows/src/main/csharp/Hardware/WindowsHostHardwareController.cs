@@ -62,6 +62,19 @@ public sealed class WindowsHostHardwareController : IHostHardwareController
         }
     }
 
+    public async Task StreamFanControlAsync(IAsyncEnumerable<HostFanControlRequest> requests, CancellationToken cancellationToken = default)
+    {
+        await foreach (var request in requests.WithCancellation(cancellationToken))
+        {
+            // Windows LHM fan control implementation in Task 4
+        }
+    }
+
+    public void RestoreFanDefaults()
+    {
+        // Windows LHM fan restore in Task 4
+    }
+
     private void AddHardwareAndSubHardware(IHardware hardware, List<HostDevice> devices)
     {
         var tempSensors = hardware.Sensors
@@ -121,6 +134,7 @@ public sealed class WindowsHostHardwareController : IHostHardwareController
         HardwareType.Cpu => HostDeviceType.CPU,
         HardwareType.GpuNvidia or HardwareType.GpuAmd or HardwareType.GpuIntel => HostDeviceType.GPU,
         HardwareType.Motherboard or HardwareType.SuperIO => HostDeviceType.MOTHERBOARD,
+        HardwareType.Memory => HostDeviceType.RAM,
         HardwareType.Storage => HostDeviceType.STORAGE,
         _ => HostDeviceType.OTHER
     };

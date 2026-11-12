@@ -30,6 +30,8 @@ public static class Program
             {
                 "info" => InfoCommand.Execute(controller, args.Contains("--pretty")),
                 "stream-telemetry" => await StreamTelemetryCommand.ExecuteAsync(controller, TimeSpan.FromSeconds(1), cts.Token),
+                "stream-fans" => await StreamFansCommand.ExecuteAsync(controller, cts.Token),
+                "restore-fan-defaults" => RestoreFanDefaultsCommand.Execute(controller, args.Contains("--pretty")),
                 _ => PrintUnknownCommand(args[0])
             };
         }
@@ -52,12 +54,14 @@ public static class Program
         Usage: open-aqua-host-engine <command> [options]
 
         Commands:
-          info               Discover connected host devices and sensor descriptors
-          stream-telemetry   Stream live host telemetry as NDJSON at 1 Hz
+          info                  Discover connected host devices and sensor descriptors
+          stream-telemetry      Stream live host telemetry as NDJSON at 1 Hz
+          stream-fans           Continuously stream fan duty cycle updates via NDJSON on stdin
+          restore-fan-defaults  Restore all host fan speed controls to BIOS/hardware defaults
 
         Options:
-          --pretty           Format JSON output with indentation (info command only)
-          -h, --help         Show help information
+          --pretty              Format JSON output with indentation (info command only)
+          -h, --help            Show help information
         """);
     }
 

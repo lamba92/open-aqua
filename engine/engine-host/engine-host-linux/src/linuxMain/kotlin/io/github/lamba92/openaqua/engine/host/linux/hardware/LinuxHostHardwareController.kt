@@ -5,6 +5,7 @@ import io.github.lamba92.openaqua.model.every
 import io.github.lamba92.openaqua.model.host.HostDevice
 import io.github.lamba92.openaqua.model.host.HostDeviceId
 import io.github.lamba92.openaqua.model.host.HostDeviceType
+import io.github.lamba92.openaqua.model.host.HostFanControlRequest
 import io.github.lamba92.openaqua.model.host.HostInfo
 import io.github.lamba92.openaqua.model.host.HostSensorDescriptor
 import io.github.lamba92.openaqua.model.host.HostSensorId
@@ -41,6 +42,7 @@ class LinuxHostHardwareController(
                     hwmonName in gpuHwmonNames -> HostDeviceType.GPU
                     hwmonName.startsWith("nvme") -> HostDeviceType.STORAGE
                     isMotherboardHwmon(hwmonName) -> HostDeviceType.MOTHERBOARD
+                    hwmonName.startsWith("spd") || hwmonName.startsWith("ee1004") || hwmonName.startsWith("jc42") -> HostDeviceType.RAM
                     else -> HostDeviceType.OTHER
                 }
 
@@ -97,6 +99,7 @@ class LinuxHostHardwareController(
                                     ),
                             )
                         }
+
                 NvidiaCapability.NotAvailable -> emptyList()
             }
         devices.addAll(gpus)
@@ -108,6 +111,16 @@ class LinuxHostHardwareController(
         return every(pollingInterval) {
             info.getTelemetry(nvidiaCapability)
         }
+    }
+
+    override suspend fun streamFanControl(requests: Flow<HostFanControlRequest>) {
+        requests.collect { _ ->
+            // Linux sysfs hwmon implementation in Task 3
+        }
+    }
+
+    override fun restoreFanDefaults() {
+        // Linux sysfs hwmon implementation in Task 3
     }
 }
 
@@ -205,6 +218,7 @@ private fun resolveDeviceName(
         HostDeviceType.GPU ->
             Path(entry, "device/product").readTextOrNull() ?: "GPU (${hwmonName.replaceFirstChar { it.uppercase() }})"
 
+        HostDeviceType.RAM -> "System Memory (RAM)"
         HostDeviceType.OTHER -> hwmonName.replaceFirstChar { it.uppercase() }
     }
 

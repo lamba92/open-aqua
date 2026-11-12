@@ -14,9 +14,9 @@ import io.github.lamba92.openaqua.model.device.descriptor
 import io.github.lamba92.openaqua.model.device.findCapability
 import io.github.lamba92.openaqua.model.device.virtualSensorsChannelRange
 import io.github.lamba92.openaqua.model.device.virtualSensorsStartChannel
-import kotlinx.coroutines.flow.flow
+import io.github.lamba92.openaqua.model.readNdjsonFromStdin
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.json.Json
 
 class FeedVirtualSensorsCommand(
     private val controller: HardwareController,
@@ -40,16 +40,11 @@ class FeedVirtualSensorsCommand(
         val maxChannel = descriptor.virtualSensorsChannelRange.last
 
         val requestsFlow =
-            flow {
-                while (true) {
-                    val line = readlnOrNull() ?: break
-                    val trimmed = line.trim()
-                    if (trimmed.isEmpty()) continue
-                    val request = Json.decodeFromString<FeedVirtualSensorsRequest>(trimmed)
+            readNdjsonFromStdin<FeedVirtualSensorsRequest>()
+                .map { request ->
                     validateRequest(request, target, startChannel, maxChannel)
-                    emit(request.sensors)
+                    request.sensors
                 }
-            }
 
         runBlocking {
             controller.feedVirtualSensors(target, requestsFlow)
