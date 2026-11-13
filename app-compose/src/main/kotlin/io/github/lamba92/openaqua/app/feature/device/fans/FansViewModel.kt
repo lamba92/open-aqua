@@ -13,6 +13,7 @@ import io.github.lamba92.openaqua.app.repository.AppDataRepository
 import io.github.lamba92.openaqua.app.repository.DeviceDataCacheService
 import io.github.lamba92.openaqua.app.repository.DeviceState
 import io.github.lamba92.openaqua.app.repository.resolveFeedSourceValue
+import io.github.lamba92.openaqua.model.device.CurveMath
 import io.github.lamba92.openaqua.model.device.DeviceId
 import io.github.lamba92.openaqua.model.device.FlashConfigRequest
 import kotlinx.coroutines.Job
@@ -119,24 +120,9 @@ class FansViewModel(
                     }
                 }
 
-                is FansUiEvent.StartRenamingFan -> {
-                    state.update { current ->
-                        if (current is FansUiState.Ready) current.copy(renamingChannel = event.channel) else current
-                    }
-                }
-
-                is FansUiEvent.DismissRenameDialog -> {
-                    state.update { current ->
-                        if (current is FansUiState.Ready) current.copy(renamingChannel = null) else current
-                    }
-                }
-
                 is FansUiEvent.RenameFan -> {
                     logger.i { "Renamed fan channel ${event.channel} on device '$deviceId' to '${event.name}'" }
                     appDataRepository.setFanName(deviceId = deviceId, channel = event.channel, name = event.name)
-                    state.update { current ->
-                        if (current is FansUiState.Ready) current.copy(renamingChannel = null) else current
-                    }
                 }
 
                 FansUiEvent.ToggleHideDisconnectedFans -> {
@@ -238,9 +224,8 @@ class FansViewModel(
 
                             is CurveStudioEvent.ChangeTMin -> {
                                 if (currentDraft is FanDraft.AutoCurve) {
-                                    val newTMin = event.tMin
-                                    val newTMax = if (currentDraft.tMax <= newTMin) (newTMin + 1.0).coerceAtMost(85.0) else currentDraft.tMax
-                                    currentDraft.copy(tMin = newTMin, tMax = newTMax)
+                                    val (tMin, tMax) = CurveMath.adjustTMin(event.tMin, currentDraft.tMax, maxAllowed = 85.0)
+                                    currentDraft.copy(tMin = tMin, tMax = tMax)
                                 } else {
                                     currentDraft
                                 }
@@ -248,9 +233,8 @@ class FansViewModel(
 
                             is CurveStudioEvent.ChangeTMax -> {
                                 if (currentDraft is FanDraft.AutoCurve) {
-                                    val newTMax = event.tMax
-                                    val newTMin = if (currentDraft.tMin >= newTMax) (newTMax - 1.0).coerceAtLeast(10.0) else currentDraft.tMin
-                                    currentDraft.copy(tMin = newTMin, tMax = newTMax)
+                                    val (tMin, tMax) = CurveMath.adjustTMax(event.tMax, currentDraft.tMin, minAllowed = 10.0)
+                                    currentDraft.copy(tMin = tMin, tMax = tMax)
                                 } else {
                                     currentDraft
                                 }
@@ -373,6 +357,7 @@ class FansViewModel(
                     }
 
                     viewModelScope.launch {
+                        var success = false
                         try {
                             logger.i { "Flashing fan configuration for device '$deviceId' (channels: ${updates.keys})..." }
                             val initialConfig = (cacheService.getAquaDeviceStateFlow(deviceId).first() as? DeviceState.Aqua.Ready)?.config
@@ -390,14 +375,13 @@ class FansViewModel(
                                 }
                             }
                             logger.i { "Flashed configuration active and verified for device '$deviceId'" }
-                        } catch (e: Exception) {
-                            logger.e(e) { "Failed to flash fan configuration for device '$deviceId': ${e.message}" }
+                            success = true
                         } finally {
                             state.update { current ->
                                 when (current) {
                                     is FansUiState.Ready -> {
                                         current.copy(
-                                            fanDrafts = current.fanDrafts - updates.keys,
+                                            fanDrafts = if (success) current.fanDrafts - updates.keys else current.fanDrafts,
                                             flashDialogState = FlashDialogState.NotShown,
                                         )
                                     }

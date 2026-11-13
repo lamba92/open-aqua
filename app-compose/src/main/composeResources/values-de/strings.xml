@@ -81,6 +81,7 @@
     <string name="d5_fan_pin">PWM-LÜFTER</string>
     <string name="fan_settings_title">%1$s Einstellungen</string>
     <string name="fan_settings_title_suffix">Einstellungen</string>
+    <string name="fan_options">Lüfteroptionen</string>
     <string name="fan_hardware_pin">Hardware-Pin: %1$s</string>
     <string name="fan_rpm_value">%1$d RPM</string>
     <string name="fan_rpm_short_disconnected">-- RPM</string>
@@ -255,6 +256,7 @@
     <string name="host_component_gpu">Grafik (GPU)</string>
     <string name="host_component_motherboard">Mainboard &amp; Chipsatz</string>
     <string name="host_component_storage">Speicher (NVMe / SSD)</string>
+    <string name="host_component_ram">Arbeitsspeicher (RAM)</string>
     <string name="host_component_other">Sonstige Komponenten</string>
     <string name="host_no_sensors">Keine Sensoren für diese Komponente erkannt</string>
     <string name="host_status_connected">Aktiv</string>
@@ -404,4 +406,24 @@
     <string name="settings_linux_permissions_dialog_title">udev-Regel entfernen?</string>
     <string name="settings_linux_permissions_dialog_desc">Das Entfernen der udev-Regel entzieht den Root-freien Zugriff auf Aqua Computer-Geräte. Zum Entfernen sind Administratorrechte erforderlich.</string>
     <string name="settings_linux_permissions_dialog_confirm">Entfernen</string>
+    <!-- Host Fan Control -->
+    <string name="host_fans_screen_title">Host-Lüfter &amp; PWM-Steuerung</string>
+    <string name="host_fans_screen_subtitle">Motherboard- und Plattformlüfter-Telemetrie und Software-Kurven</string>
+    <string name="host_fans_channels_header">HOST-LÜFTERKANÄLE</string>
+    <string name="host_fan_mode_follow_bios">BIOS folgen</string>
+    <string name="host_fan_mode_follow_bios_desc">Überlässt die Steuerung den Hardware-Motherboard-BIOS-Kurven</string>
+    <string name="host_fan_mode_fixed">Feste PWM</string>
+    <string name="host_fan_mode_auto_curve">Auto-Kurve</string>
+    <string name="host_fan_restore_defaults">BIOS-Standards wiederherstellen</string>
+    <string name="host_fan_restore_defaults_desc">Setzt alle Plattform-Lüftersteuerungen auf Standard-BIOS-Kurven zurück</string>
+    <string name="host_fan_restore_defaults_dialog_title">BIOS-Standardkurven wiederherstellen?</string>
+    <string name="host_fan_restore_defaults_dialog_desc">Dadurch werden alle Host-Lüfter auf die automatische BIOS-Steuerung zurückgesetzt und aktive Software-Überschreibungen verworfen. Sind Sie sicher?</string>
+    <string name="host_fan_status_bios">BIOS-gesteuert</string>
+    <string name="host_fan_status_software">Software-Überschreibung</string>
+    <string name="host_fan_status_read_only">Nur Drehzahlmesser</string>
+    <string name="host_fan_read_only_badge">Nur Lesen</string>
+    <string name="host_fan_read_only_notice">Dieser Lüfteranschluss unterstützt keine Software-PWM-Steuerung und dient nur zur Überwachung.</string>
+    <string name="host_fan_restoring">Wiederherstellen...</string>
+    <string name="host_fan_action_apply">Änderungen anwenden</string>
+    <string name="host_fan_action_apply_all">Alle anwenden (%d)</string>
 </resources>

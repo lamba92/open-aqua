@@ -15,6 +15,7 @@ import io.github.lamba92.openaqua.app.feature.device.DeviceViewModel
 import io.github.lamba92.openaqua.app.feature.device.fans.FansViewModel
 import io.github.lamba92.openaqua.app.feature.device.sensors.SensorsViewModel
 import io.github.lamba92.openaqua.app.feature.host.HostViewModel
+import io.github.lamba92.openaqua.app.feature.host.fans.HostFansViewModel
 import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavViewModel
 import io.github.lamba92.openaqua.app.feature.permission.PermissionViewModel
 import io.github.lamba92.openaqua.app.feature.settings.SettingsViewModel
@@ -29,6 +30,8 @@ import io.github.lamba92.openaqua.app.permission.LinuxDevicePermissionService
 import io.github.lamba92.openaqua.app.permission.WindowsDevicePermissionService
 import io.github.lamba92.openaqua.app.repository.AppDataRepository
 import io.github.lamba92.openaqua.app.repository.DeviceDataCacheService
+import io.github.lamba92.openaqua.app.repository.ExecutableOpenAquaDeviceEngineApi
+import io.github.lamba92.openaqua.app.repository.ExecutableOpenAquaHostEngineApi
 import io.github.lamba92.openaqua.app.repository.OpenAquaDeviceEngineApi
 import io.github.lamba92.openaqua.app.repository.OpenAquaHostEngineApi
 import io.github.lamba92.openaqua.app.repository.VirtualSensorFeederService
@@ -92,11 +95,7 @@ val appModule =
                 scopeProvider = instance(),
             )
         }
-        bindSingleton { EngineExtractor.extract(logger = instance()) }
-        bindSingleton { instance<ExtractedEngines>().deviceEngine }
-        bindSingleton { instance<ExtractedEngines>().hostEngine }
-        bindSingleton { OpenAquaDeviceEngineApi(deviceEnginePath = instance()) }
-        bindSingleton { OpenAquaHostEngineApi(hostEnginePath = instance()) }
+        import(executableEngineModule)
         bindSingleton { AppDataRepository(coroutineScopeProvider = instance(), baseAppDataDir = instance()) }
         bindSingleton {
             DeviceDataCacheService(
@@ -173,6 +172,13 @@ val appModule =
                 scopeProvider = instance(),
             )
         }
+        bindSingleton {
+            HostFansViewModel(
+                cacheService = instance(),
+                appDataRepository = instance(),
+                scopeProvider = instance(),
+            )
+        }
         bindMultiton { deviceId: DeviceId ->
             DeviceViewModel(
                 cacheService = instance(),
@@ -201,9 +207,19 @@ val appModule =
         }
     }
 
-fun createOpenAquaDI(): DI =
+val executableEngineModule =
+    DI.Module("executableEngineModule") {
+        bindSingleton { EngineExtractor.extract(logger = instance()) }
+        bindSingleton { instance<ExtractedEngines>().deviceEngine }
+        bindSingleton { instance<ExtractedEngines>().hostEngine }
+        bindSingleton<OpenAquaDeviceEngineApi> { ExecutableOpenAquaDeviceEngineApi(deviceEnginePath = instance()) }
+        bindSingleton<OpenAquaHostEngineApi> { ExecutableOpenAquaHostEngineApi(hostEnginePath = instance()) }
+    }
+
+fun createOpenAquaDI(vararg overrideModules: DI.Module): DI =
     DI {
         import(appModule)
+        overrideModules.forEach { import(it, allowOverride = true) }
     }
 
 val LocalDI = staticCompositionLocalOf<DI> { error("No DI container provided") }

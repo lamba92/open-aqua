@@ -42,7 +42,7 @@ val DeviceType.drawable: DrawableResource
             DeviceType.OCTO -> Res.drawable.device_octo
             DeviceType.QUADRO -> Res.drawable.device_quadro
             DeviceType.D5_NEXT -> Res.drawable.device_d5_next
-            DeviceType.FARBWERK360 -> Res.drawable.device_farbwerk360
+            DeviceType.FARBWERK_360 -> Res.drawable.device_farbwerk360
             DeviceType.FARBWERK -> Res.drawable.device_farbwerk
             DeviceType.HIGH_FLOW_NEXT -> Res.drawable.device_high_flow_next
             DeviceType.LEAKSHIELD -> Res.drawable.device_leakshield

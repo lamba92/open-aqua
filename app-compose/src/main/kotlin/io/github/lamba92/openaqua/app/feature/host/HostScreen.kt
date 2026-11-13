@@ -28,21 +28,36 @@ import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material.icons.outlined.Tv
 import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.NavigationDrawerItem
+import androidx.compose.material3.NavigationDrawerItemColors
+import androidx.compose.material3.NavigationDrawerItemDefaults
+import androidx.compose.material3.PermanentDrawerSheet
+import androidx.compose.material3.PermanentNavigationDrawer
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.lamba92.openaqua.app.di.rememberInstance
+import io.github.lamba92.openaqua.app.feature.host.fans.HostFansTabContent
+import io.github.lamba92.openaqua.app.model.HostTab
 import io.github.lamba92.openaqua.app.model.SensorTargetType
 import io.github.lamba92.openaqua.app.model.color
 import io.github.lamba92.openaqua.app.model.progressFraction
@@ -64,6 +79,7 @@ import open_aqua.app_compose.generated.resources.host_component_cpu
 import open_aqua.app_compose.generated.resources.host_component_gpu
 import open_aqua.app_compose.generated.resources.host_component_motherboard
 import open_aqua.app_compose.generated.resources.host_component_other
+import open_aqua.app_compose.generated.resources.host_component_ram
 import open_aqua.app_compose.generated.resources.host_component_storage
 import open_aqua.app_compose.generated.resources.host_no_sensors
 import open_aqua.app_compose.generated.resources.host_status_connected
@@ -71,27 +87,61 @@ import open_aqua.app_compose.generated.resources.host_status_connecting
 import open_aqua.app_compose.generated.resources.host_status_error
 import open_aqua.app_compose.generated.resources.host_telemetry_subtitle
 import open_aqua.app_compose.generated.resources.host_telemetry_title
+import open_aqua.app_compose.generated.resources.ic_fan
+import open_aqua.app_compose.generated.resources.ic_sensor
+import open_aqua.app_compose.generated.resources.nav_fans
+import open_aqua.app_compose.generated.resources.nav_host
+import open_aqua.app_compose.generated.resources.nav_sensors
 import open_aqua.app_compose.generated.resources.sensor_temp_disconnected
 import open_aqua.app_compose.generated.resources.sensor_temp_short_value
+import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
+
+private val HostDrawerLineHeightStyle =
+    LineHeightStyle(
+        alignment = LineHeightStyle.Alignment.Center,
+        trim = LineHeightStyle.Trim.Both,
+    )
 
 @Composable
 fun HostScreen(
-    viewModel: HostViewModel = rememberInstance(),
+    selectedTab: HostTab = HostTab.SENSORS,
+    onSelectTab: (HostTab) -> Unit = {},
     modifier: Modifier = Modifier,
-    scrollState: ScrollState = rememberScrollState(),
+    viewModel: HostViewModel = rememberInstance(),
 ) {
     val state by viewModel.state.collectAsState()
-    HostScreen(
-        state = state,
-        onEvent = viewModel::onEvent,
+    val saveableStateHolder = rememberSaveableStateHolder()
+    val sensorsScrollState = rememberSaveable(saver = ScrollState.Saver) { ScrollState(0) }
+    val fansScrollState = rememberSaveable(saver = ScrollState.Saver) { ScrollState(0) }
+
+    HostDrawerScaffold(
+        selectedTab = selectedTab,
+        onSelectTab = onSelectTab,
         modifier = modifier,
-        scrollState = scrollState,
-    )
+    ) {
+        saveableStateHolder.SaveableStateProvider(selectedTab) {
+            when (selectedTab) {
+                HostTab.SENSORS -> {
+                    HostSensorsContent(
+                        state = state,
+                        onEvent = viewModel::onEvent,
+                        scrollState = sensorsScrollState,
+                    )
+                }
+
+                HostTab.FANS -> {
+                    HostFansTabContent(
+                        scrollState = fansScrollState,
+                    )
+                }
+            }
+        }
+    }
 }
 
 @Composable
-fun HostScreen(
+fun HostSensorsContent(
     state: HostState,
     onEvent: (HostEvent) -> Unit,
     modifier: Modifier = Modifier,
@@ -267,6 +317,7 @@ private fun HostContent(
             HostDeviceType.CPU to Res.string.host_component_cpu,
             HostDeviceType.GPU to Res.string.host_component_gpu,
             HostDeviceType.MOTHERBOARD to Res.string.host_component_motherboard,
+            HostDeviceType.RAM to Res.string.host_component_ram,
             HostDeviceType.STORAGE to Res.string.host_component_storage,
             HostDeviceType.OTHER to Res.string.host_component_other,
         )
@@ -313,6 +364,7 @@ private fun HostDeviceTypeSection(
             HostDeviceType.CPU -> Icons.Outlined.Memory
             HostDeviceType.GPU -> Icons.Outlined.Tv
             HostDeviceType.MOTHERBOARD -> Icons.Outlined.DeveloperBoard
+            HostDeviceType.RAM -> Icons.Outlined.Memory
             HostDeviceType.STORAGE -> Icons.Outlined.Storage
             HostDeviceType.OTHER -> Icons.Outlined.Devices
         }
@@ -523,4 +575,128 @@ private fun HostSensorTile(
             }
         }
     }
+}
+
+@Composable
+fun HostDrawerScaffold(
+    selectedTab: HostTab,
+    onSelectTab: (HostTab) -> Unit,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    val colors = OpenAquaTheme.colors
+    val drawerMetrics = OpenAquaTheme.metrics.navigationDrawer
+    PermanentNavigationDrawer(
+        drawerContent = {
+            PermanentDrawerSheet(
+                modifier =
+                    Modifier
+                        .width(drawerMetrics.width)
+                        .fillMaxHeight(),
+                drawerContainerColor = colors.surfaceLow,
+                drawerContentColor = colors.textPrimary,
+                drawerShape = RoundedCornerShape(0.dp),
+            ) {
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxHeight()
+                            .padding(
+                                horizontal = drawerMetrics.headerPaddingHorizontal,
+                                vertical = drawerMetrics.headerPaddingVertical,
+                            ),
+                    verticalArrangement = Arrangement.spacedBy(drawerMetrics.itemSpacing),
+                ) {
+                    Text(
+                        text = stringResource(Res.string.nav_host),
+                        color = colors.textPrimary,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(horizontal = 12.dp),
+                    )
+                    Text(
+                        text = "Local System",
+                        color = colors.primary,
+                        fontSize = 13.sp,
+                        fontFamily = FontFamily.Monospace,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(horizontal = 12.dp),
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    HorizontalDivider(color = colors.borderOutline)
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    val drawerColors =
+                        NavigationDrawerItemDefaults.colors(
+                            selectedContainerColor = colors.surfaceHigh,
+                            unselectedContainerColor = Color.Transparent,
+                            selectedIconColor = colors.primaryBright,
+                            unselectedIconColor = colors.textSecondary,
+                            selectedTextColor = colors.textPrimary,
+                            unselectedTextColor = colors.textSecondary,
+                        )
+
+                    HostDrawerTabItem(
+                        label = stringResource(Res.string.nav_fans),
+                        icon = painterResource(Res.drawable.ic_fan),
+                        selected = selectedTab == HostTab.FANS,
+                        onClick = { onSelectTab(HostTab.FANS) },
+                        colors = drawerColors,
+                    )
+
+                    HostDrawerTabItem(
+                        label = stringResource(Res.string.nav_sensors),
+                        icon = painterResource(Res.drawable.ic_sensor),
+                        selected = selectedTab == HostTab.SENSORS,
+                        onClick = { onSelectTab(HostTab.SENSORS) },
+                        colors = drawerColors,
+                    )
+                }
+            }
+        },
+        modifier = modifier.fillMaxSize(),
+        content = content,
+    )
+}
+
+@Composable
+private fun HostDrawerTabItem(
+    label: String,
+    icon: Painter,
+    selected: Boolean,
+    onClick: () -> Unit,
+    colors: NavigationDrawerItemColors,
+    modifier: Modifier = Modifier,
+) {
+    NavigationDrawerItem(
+        label = {
+            Text(
+                text = label,
+                fontSize = 15.sp,
+                lineHeight = 22.sp,
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
+                style = LocalTextStyle.current.copy(lineHeightStyle = HostDrawerLineHeightStyle),
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Ellipsis,
+            )
+        },
+        icon = {
+            Icon(
+                painter = icon,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+            )
+        },
+        selected = selected,
+        onClick = onClick,
+        colors = colors,
+        shape = RoundedCornerShape(8.dp),
+        modifier = modifier,
+    )
 }

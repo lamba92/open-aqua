@@ -181,24 +181,9 @@ class SensorsViewModel(
                     }
                 }
 
-                is SensorsUiEvent.StartRenamingSensor -> {
-                    state.update { current ->
-                        if (current is SensorsUiState.Ready) current.copy(renamingChannel = event.channel) else current
-                    }
-                }
-
-                is SensorsUiEvent.DismissRenameDialog -> {
-                    state.update { current ->
-                        if (current is SensorsUiState.Ready) current.copy(renamingChannel = null) else current
-                    }
-                }
-
                 is SensorsUiEvent.RenameSensor -> {
                     viewModelLogger.i { "Renamed sensor channel ${event.channel} on device '$deviceId' to '${event.name}'" }
                     appDataRepository.setSensorName(deviceId = deviceId, channel = event.channel, name = event.name)
-                    state.update { current ->
-                        if (current is SensorsUiState.Ready) current.copy(renamingChannel = null) else current
-                    }
                 }
 
                 SensorsUiEvent.ToggleShowAllSensors -> {
@@ -302,19 +287,19 @@ class SensorsViewModel(
                     state.update { current ->
                         if (current is SensorsUiState.Ready) current.copy(isFlashingOffset = true) else current
                     }
+                    var success = false
                     try {
                         cacheService.flashConfig(
                             deviceId = deviceId,
                             config = FlashConfigRequest(sensorOffsets = mapOf(event.channel to offset)),
                         )
-                    } catch (e: Exception) {
-                        viewModelLogger.e(e) { "Failed to flash sensor offset: ${e.message}" }
+                        success = true
                     } finally {
                         state.update { current ->
                             if (current is SensorsUiState.Ready) {
                                 current.copy(
                                     isFlashingOffset = false,
-                                    offsetDrafts = current.offsetDrafts - event.channel,
+                                    offsetDrafts = if (success) current.offsetDrafts - event.channel else current.offsetDrafts,
                                 )
                             } else {
                                 current

@@ -81,6 +81,7 @@
     <string name="d5_fan_pin">VENTOLA PWM</string>
     <string name="fan_settings_title">Impostazioni %1$s</string>
     <string name="fan_settings_title_suffix">Impostazioni</string>
+    <string name="fan_options">Opzioni ventola</string>
     <string name="fan_hardware_pin">Pin hardware: %1$s</string>
     <string name="fan_rpm_value">%1$d RPM</string>
     <string name="fan_rpm_short_disconnected">-- RPM</string>
@@ -268,6 +269,7 @@
     <string name="host_component_gpu">Grafica (GPU)</string>
     <string name="host_component_motherboard">Scheda Madre &amp; Chipset</string>
     <string name="host_component_storage">Archiviazione (NVMe / SSD)</string>
+    <string name="host_component_ram">Memoria (RAM)</string>
     <string name="host_component_other">Altri Componenti</string>
     <string name="host_no_sensors">Nessun sensore rilevato per questo componente</string>
     <string name="host_status_connected">Attivo</string>
@@ -406,4 +408,24 @@
     <string name="settings_linux_permissions_dialog_title">Rimuovere la regola udev?</string>
     <string name="settings_linux_permissions_dialog_desc">La rimozione della regola udev revocherà l'accesso senza root ai dispositivi Aqua Computer. Saranno necessari i privilegi di amministratore per rimuoverla.</string>
     <string name="settings_linux_permissions_dialog_confirm">Rimuovi</string>
+    <!-- Host Fan Control -->
+    <string name="host_fans_screen_title">Ventole Host &amp; Controllo PWM</string>
+    <string name="host_fans_screen_subtitle">Telemetria ventole scheda madre e curve di velocità software</string>
+    <string name="host_fans_channels_header">CANALI VENTOLA HOST</string>
+    <string name="host_fan_mode_follow_bios">Segui BIOS</string>
+    <string name="host_fan_mode_follow_bios_desc">Affida il controllo del duty cycle alle curve BIOS della scheda madre</string>
+    <string name="host_fan_mode_fixed">PWM Fisso</string>
+    <string name="host_fan_mode_auto_curve">Curva Automatica</string>
+    <string name="host_fan_restore_defaults">Ripristina Predefiniti BIOS</string>
+    <string name="host_fan_restore_defaults_desc">Ripristina tutti i controlli delle ventole alle curve BIOS predefinite</string>
+    <string name="host_fan_restore_defaults_dialog_title">Ripristinare le curve BIOS predefinite?</string>
+    <string name="host_fan_restore_defaults_dialog_desc">Questo reimposterà tutte le ventole dell\'host sul controllo automatico del BIOS e scarterà le modifiche software attive. Sei sicuro?</string>
+    <string name="host_fan_status_bios">Gestito da BIOS</string>
+    <string name="host_fan_status_software">Override Software</string>
+    <string name="host_fan_status_read_only">Solo Tachimetro</string>
+    <string name="host_fan_read_only_badge">Sola Lettura</string>
+    <string name="host_fan_read_only_notice">Questo connettore per ventola non supporta il controllo PWM software ed è utilizzabile solo come monitoraggio.</string>
+    <string name="host_fan_restoring">Ripristino in corso...</string>
+    <string name="host_fan_action_apply">Applica modifiche</string>
+    <string name="host_fan_action_apply_all">Applica tutto (%d)</string>
 </resources>

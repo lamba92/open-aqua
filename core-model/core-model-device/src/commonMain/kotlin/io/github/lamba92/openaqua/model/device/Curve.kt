@@ -148,4 +148,42 @@ object CurveMath {
             }
         return round(median * 10.0) / 10.0
     }
+
+    /**
+     * Adjusts `tMin`, shifting `currentTMax` upward if `currentTMax <= newTMin`.
+     *
+     * @param newTMin Requested minimum temperature.
+     * @param currentTMax Current maximum temperature.
+     * @param maxAllowed Upper clamp bound for tMax (default 95.0°C).
+     * @param minGap Minimum difference between tMin and tMax (default 1.0°C).
+     * @return Pair of (tMin, tMax).
+     */
+    fun adjustTMin(
+        newTMin: Double,
+        currentTMax: Double,
+        maxAllowed: Double = 95.0,
+        minGap: Double = 1.0,
+    ): Pair<Double, Double> {
+        val newTMax = if (currentTMax <= newTMin) (newTMin + minGap).coerceAtMost(maxAllowed) else currentTMax
+        return newTMin to newTMax
+    }
+
+    /**
+     * Adjusts `tMax`, shifting `currentTMin` downward if `currentTMin >= newTMax`.
+     *
+     * @param newTMax Requested maximum temperature.
+     * @param currentTMin Current minimum temperature.
+     * @param minAllowed Lower clamp bound for tMin (default 10.0°C).
+     * @param minGap Minimum difference between tMin and tMax (default 1.0°C).
+     * @return Pair of (tMin, tMax).
+     */
+    fun adjustTMax(
+        newTMax: Double,
+        currentTMin: Double,
+        minAllowed: Double = 10.0,
+        minGap: Double = 1.0,
+    ): Pair<Double, Double> {
+        val newTMin = if (currentTMin >= newTMax) (newTMax - minGap).coerceAtLeast(minAllowed) else currentTMin
+        return newTMin to newTMax
+    }
 }

@@ -31,6 +31,7 @@
     <string name="host_component_gpu">Graphics (GPU)</string>
     <string name="host_component_motherboard">Motherboard &amp; Chipset</string>
     <string name="host_component_storage">Storage (NVMe / SSD)</string>
+    <string name="host_component_ram">Memory (RAM)</string>
     <string name="host_component_other">Other Components</string>
     <string name="host_no_sensors">No sensors detected for this component</string>
     <string name="host_status_connected">Active</string>
@@ -97,6 +98,7 @@
     <string name="d5_fan_pin">PWM FAN</string>
     <string name="fan_settings_title">%1$s Settings</string>
     <string name="fan_settings_title_suffix">Settings</string>
+    <string name="fan_options">Fan options</string>
     <string name="fan_hardware_pin">Hardware Pin: %1$s</string>
     <string name="fan_rpm_value">%1$d RPM</string>
     <string name="fan_rpm_short_disconnected">-- RPM</string>
@@ -415,4 +417,24 @@
     <string name="settings_linux_permissions_dialog_title">Remove udev rule?</string>
     <string name="settings_linux_permissions_dialog_desc">Removing the udev rule will revoke non-root access to Aqua Computer devices. You will need administrator privileges to remove it.</string>
     <string name="settings_linux_permissions_dialog_confirm">Remove</string>
+    <!-- Host Fan Control -->
+    <string name="host_fans_screen_title">Host Fans &amp; PWM Control</string>
+    <string name="host_fans_screen_subtitle">Motherboard and platform fan telemetry and software speed curves</string>
+    <string name="host_fans_channels_header">HOST FAN CHANNELS</string>
+    <string name="host_fan_mode_follow_bios">Follow BIOS</string>
+    <string name="host_fan_mode_follow_bios_desc">Yields duty cycle control to hardware motherboard BIOS curves</string>
+    <string name="host_fan_mode_fixed">Fixed PWM</string>
+    <string name="host_fan_mode_auto_curve">Auto Curve</string>
+    <string name="host_fan_restore_defaults">Restore BIOS Defaults</string>
+    <string name="host_fan_restore_defaults_desc">Restore all platform fan controls back to default BIOS curves</string>
+    <string name="host_fan_restore_defaults_dialog_title">Restore BIOS Default Curves?</string>
+    <string name="host_fan_restore_defaults_dialog_desc">This will reset all host fans back to automatic hardware BIOS management and discard active software overrides. Are you sure?</string>
+    <string name="host_fan_status_bios">BIOS Controlled</string>
+    <string name="host_fan_status_software">Software Override</string>
+    <string name="host_fan_status_read_only">Tachometer Only</string>
+    <string name="host_fan_read_only_badge">Read-Only</string>
+    <string name="host_fan_read_only_notice">This fan header does not support software PWM control and is tachometer-only.</string>
+    <string name="host_fan_restoring">Restoring...</string>
+    <string name="host_fan_action_apply">Apply Changes</string>
+    <string name="host_fan_action_apply_all">Apply All (%d)</string>
 </resources>

@@ -92,7 +92,7 @@ object DeviceLayoutRegistry {
         listOf(
             DeviceLayout(
                 fwRange = FirmwareRange.ANY,
-                descriptor = DeviceRegistry.FARBWERK360,
+                descriptor = DeviceRegistry.FARBWERK_360,
             ),
         )
 
@@ -174,7 +174,7 @@ object DeviceLayoutRegistry {
             DeviceType.OCTO to OCTO_LAYOUTS,
             DeviceType.QUADRO to QUADRO_LAYOUTS,
             DeviceType.D5_NEXT to D5_NEXT_LAYOUTS,
-            DeviceType.FARBWERK360 to FARBWERK360_LAYOUTS,
+            DeviceType.FARBWERK_360 to FARBWERK360_LAYOUTS,
             DeviceType.FARBWERK to FARBWERK_LAYOUTS,
             DeviceType.HIGH_FLOW_NEXT to HIGH_FLOW_NEXT_LAYOUTS,
             DeviceType.LEAKSHIELD to LEAKSHIELD_LAYOUTS,

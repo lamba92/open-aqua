@@ -22,7 +22,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -148,6 +150,7 @@ fun FansContent(
             ?: state.fans.firstOrNull()
 
     val hasPump = remember(state.fans) { state.fans.any { it.telemetry.kind == CoolingChannelKind.PUMP } }
+    var renamingFan by remember { mutableStateOf<FanItem?>(null) }
 
     FansPageScaffold(
         modifier = modifier,
@@ -185,7 +188,7 @@ fun FansContent(
                     selected = fan.channel == selectedFan?.channel,
                     hasPendingChanges = hasPending,
                     onClick = { onEvent(FansUiEvent.SelectFan(fan.channel)) },
-                    onDoubleClick = { onEvent(FansUiEvent.StartRenamingFan(fan.channel)) },
+                    onDoubleClick = { renamingFan = fan },
                 )
             }
         },
@@ -219,13 +222,13 @@ fun FansContent(
                     onLimitsEvent = onEvent,
                     onDiscard = { onEvent(FansUiEvent.DiscardFanDraft) },
                     onRequestFlash = { onEvent(FansUiEvent.RequestFlash) },
-                    onRenameClick = { onEvent(FansUiEvent.StartRenamingFan(selectedFan.channel)) },
+                    onRenameClick = { renamingFan = selectedFan },
                 )
             }
         },
     )
 
-    val activeRenamingFan = state.renamingFan
+    val activeRenamingFan = renamingFan
     if (activeRenamingFan != null) {
         RenameDialog(
             title = stringResource(Res.string.rename_dialog_title, activeRenamingFan.resolveName(hasPump)),
@@ -233,8 +236,9 @@ fun FansContent(
             icon = painterResource(Res.drawable.ic_edit),
             onConfirm = { newName ->
                 onEvent(FansUiEvent.RenameFan(activeRenamingFan.channel, newName))
+                renamingFan = null
             },
-            onDismiss = { onEvent(FansUiEvent.DismissRenameDialog) },
+            onDismiss = { renamingFan = null },
         )
     }
 

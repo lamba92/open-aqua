@@ -48,8 +48,8 @@ class DeviceLayoutRegistryTest {
         assertEquals(DeviceType.D5_NEXT, d5Next.type)
         assertEquals(0xF00E, d5Next.productId)
 
-        val farbwerk360 = DeviceLayoutRegistry.resolveDescriptor(DeviceType.FARBWERK360, 1010)
-        assertEquals(DeviceType.FARBWERK360, farbwerk360.type)
+        val farbwerk360 = DeviceLayoutRegistry.resolveDescriptor(DeviceType.FARBWERK_360, 1010)
+        assertEquals(DeviceType.FARBWERK_360, farbwerk360.type)
         assertEquals(0xF010, farbwerk360.productId)
 
         val farbwerk = DeviceLayoutRegistry.resolveDescriptor(DeviceType.FARBWERK, null)
@@ -102,7 +102,7 @@ class DeviceLayoutRegistryTest {
         assertEquals(0x0D, DeviceRegistry.OCTO.protocol.firmwareVersionOffset)
         assertEquals(0x0D, DeviceRegistry.QUADRO.protocol.firmwareVersionOffset)
         assertEquals(0x0D, DeviceRegistry.D5_NEXT.protocol.firmwareVersionOffset)
-        assertEquals(0x0D, DeviceRegistry.FARBWERK360.protocol.firmwareVersionOffset)
+        assertEquals(0x0D, DeviceRegistry.FARBWERK_360.protocol.firmwareVersionOffset)
         assertEquals(0x0D, DeviceRegistry.FARBWERK.protocol.firmwareVersionOffset)
         assertEquals(0x0D, DeviceRegistry.HIGH_FLOW_NEXT.protocol.firmwareVersionOffset)
         assertEquals(0x0D, DeviceRegistry.LEAKSHIELD.protocol.firmwareVersionOffset)
@@ -163,7 +163,7 @@ class DeviceLayoutRegistryTest {
     fun testDevicesMissingFansCapability() {
         val devicesWithoutFans =
             listOf(
-                DeviceRegistry.FARBWERK360,
+                DeviceRegistry.FARBWERK_360,
                 DeviceRegistry.FARBWERK,
                 DeviceRegistry.HIGH_FLOW_NEXT,
                 DeviceRegistry.LEAKSHIELD,
@@ -207,7 +207,7 @@ class DeviceLayoutRegistryTest {
         assertEquals(CommitStrategy.SecondaryReport(), flashable(DeviceRegistry.OCTO).commitStrategy)
         assertEquals(CommitStrategy.SecondaryReport(), flashable(DeviceRegistry.QUADRO).commitStrategy)
         assertEquals(CommitStrategy.SecondaryReport(), flashable(DeviceRegistry.D5_NEXT).commitStrategy)
-        assertEquals(CommitStrategy.SecondaryReport(), flashable(DeviceRegistry.FARBWERK360).commitStrategy)
+        assertEquals(CommitStrategy.SecondaryReport(), flashable(DeviceRegistry.FARBWERK_360).commitStrategy)
         assertEquals(CommitStrategy.SecondaryReport(), flashable(DeviceRegistry.FARBWERK).commitStrategy)
         assertEquals(CommitStrategy.SecondaryReport(), flashable(DeviceRegistry.HIGH_FLOW_NEXT).commitStrategy)
         assertEquals(CommitStrategy.SecondaryReport(), flashable(DeviceRegistry.LEAKSHIELD).commitStrategy)

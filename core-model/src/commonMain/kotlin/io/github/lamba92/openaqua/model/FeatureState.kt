@@ -19,10 +19,3 @@ sealed interface FeatureState<out T> {
     @SerialName("unsupported")
     data object Unsupported : FeatureState<Nothing>
 }
-
-val <T> FeatureState<T>.valueOrNull: T?
-    get() =
-        when (this) {
-            is FeatureState.Active -> value
-            is FeatureState.Disconnected, is FeatureState.Unsupported -> null
-        }

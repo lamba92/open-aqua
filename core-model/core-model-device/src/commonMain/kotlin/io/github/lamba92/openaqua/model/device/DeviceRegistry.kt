@@ -192,9 +192,9 @@ object DeviceRegistry {
         )
 
     /** Descriptor for Aquacomputer FARBWERK 360: 4 addressable RGBpx ports (up to 360 LEDs) and 4 temp sensor inputs. */
-    val FARBWERK360 =
+    val FARBWERK_360 =
         DeviceDescriptor(
-            type = DeviceType.FARBWERK360,
+            type = DeviceType.FARBWERK_360,
             name = "Aquacomputer Farbwerk 360",
             productId = 0xF010,
             protocol =
@@ -635,7 +635,7 @@ object DeviceRegistry {
             OCTO,
             QUADRO,
             D5_NEXT,
-            FARBWERK360,
+            FARBWERK_360,
             FARBWERK,
             HIGH_FLOW_NEXT,
             LEAKSHIELD,

@@ -150,6 +150,10 @@ class DeviceDataCacheService(
             list.filterIsInstance<DeviceState.Host>().firstOrNull()
         }
 
+    suspend fun restoreHostFanDefaults() {
+        openAquaHostEngineApi.restoreFanDefaults()
+    }
+
     fun getAquaDeviceStateFlow(deviceId: DeviceId): Flow<DeviceState.Aqua> =
         state.mapNotNull { list ->
             list

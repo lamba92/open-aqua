@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -43,7 +42,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
-import io.github.lamba92.openaqua.app.ui.components.DeviceIllustration
 import io.github.lamba92.openaqua.app.ui.components.OpenAquaVerticalScrollbar
 import io.github.lamba92.openaqua.app.ui.components.ScreenHeaderSection
 import io.github.lamba92.openaqua.app.ui.components.drawable
@@ -57,7 +55,6 @@ import io.github.lamba92.openaqua.model.device.DisplayKind
 import io.github.lamba92.openaqua.model.device.findCapability
 import open_aqua.app_compose.generated.resources.Res
 import open_aqua.app_compose.generated.resources.ic_computer
-import open_aqua.app_compose.generated.resources.ic_device
 import open_aqua.app_compose.generated.resources.ic_fan
 import open_aqua.app_compose.generated.resources.ic_memory
 import open_aqua.app_compose.generated.resources.ic_sensor
@@ -103,7 +100,7 @@ fun DeviceDescriptor.getCategory(): SupportedDeviceCategory =
         DeviceType.HIGH_FLOW_USB,
         -> SupportedDeviceCategory.SENSORS
 
-        DeviceType.FARBWERK360,
+        DeviceType.FARBWERK_360,
         DeviceType.FARBWERK,
         -> SupportedDeviceCategory.LIGHTING
     }
@@ -131,7 +128,7 @@ fun DeviceDescriptor.getDescription(): String =
             "High-performance D5 water pump with integrated OLED graphic display, coolant temperature sensor, auxiliary PWM fan channel, RGBpx, and virtual sensor telemetry."
         }
 
-        DeviceType.FARBWERK360 -> {
+        DeviceType.FARBWERK_360 -> {
             "4-port addressable RGBpx lighting controller with 4 physical temperature sensor inputs, 16 virtual sensors, and support for up to 360 addressable LEDs."
         }
 

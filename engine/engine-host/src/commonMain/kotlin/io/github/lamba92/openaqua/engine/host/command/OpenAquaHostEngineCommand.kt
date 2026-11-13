@@ -8,7 +8,7 @@ class OpenAquaHostEngineCommand :
         name = "open-aqua-host-engine",
     ) {
     override fun help(context: Context): String =
-        "OpenAqua host machine hardware engine CLI. Provides system hardware monitoring for CPU, GPU, motherboard, and storage sensors."
+        "OpenAqua host machine hardware engine CLI. Provides system hardware monitoring and fan control for CPU, GPU, motherboard, and storage sensors."
 
     override fun run() = Unit
 }

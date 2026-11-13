@@ -81,6 +81,7 @@
     <string name="d5_fan_pin">VENTILATEUR PWM</string>
     <string name="fan_settings_title">Paramètres de %1$s</string>
     <string name="fan_settings_title_suffix">Paramètres</string>
+    <string name="fan_options">Options du ventilateur</string>
     <string name="fan_hardware_pin">Broche matérielle : %1$s</string>
     <string name="fan_rpm_value">%1$d tr/min</string>
     <string name="fan_rpm_short_disconnected">-- tr/min</string>
@@ -255,6 +256,7 @@
     <string name="host_component_gpu">Graphiques (GPU)</string>
     <string name="host_component_motherboard">Carte mère &amp; Chipset</string>
     <string name="host_component_storage">Stockage (NVMe / SSD)</string>
+    <string name="host_component_ram">Mémoire vive (RAM)</string>
     <string name="host_component_other">Autres composants</string>
     <string name="host_no_sensors">Aucun capteur détecté pour ce composant</string>
     <string name="host_status_connected">Actif</string>
@@ -404,4 +406,24 @@
     <string name="settings_linux_permissions_dialog_title">Supprimer la règle udev ?</string>
     <string name="settings_linux_permissions_dialog_desc">La suppression de la règle udev révoquera l'accès sans root aux périphériques Aqua Computer. Vous aurez besoin de privilèges administrateur pour la supprimer.</string>
     <string name="settings_linux_permissions_dialog_confirm">Supprimer</string>
+    <!-- Host Fan Control -->
+    <string name="host_fans_screen_title">Ventilateurs hôte et contrôle PWM</string>
+    <string name="host_fans_screen_subtitle">Télémétrie des ventilateurs de la carte mère et courbes logicielles</string>
+    <string name="host_fans_channels_header">CANAUX DE VENTILATEUR HÔTE</string>
+    <string name="host_fan_mode_follow_bios">Suivre le BIOS</string>
+    <string name="host_fan_mode_follow_bios_desc">Laisse le contrôle du cycle de travail aux courbes du BIOS de la carte mère</string>
+    <string name="host_fan_mode_fixed">PWM fixe</string>
+    <string name="host_fan_mode_auto_curve">Courbe auto</string>
+    <string name="host_fan_restore_defaults">Restaurer les paramètres du BIOS</string>
+    <string name="host_fan_restore_defaults_desc">Restaure tous les contrôles de ventilateurs de la plateforme aux courbes du BIOS</string>
+    <string name="host_fan_restore_defaults_dialog_title">Restaurer les courbes du BIOS par défaut ?</string>
+    <string name="host_fan_restore_defaults_dialog_desc">Cela réinitialisera tous les ventilateurs de l\'hôte sur la gestion automatique du BIOS et supprimera les commandes logicielles actives. Êtes-vous sûr ?</string>
+    <string name="host_fan_status_bios">Contrôlé par le BIOS</string>
+    <string name="host_fan_status_software">Contrôle logiciel</string>
+    <string name="host_fan_status_read_only">Tachymètre seul</string>
+    <string name="host_fan_read_only_badge">Lecture seule</string>
+    <string name="host_fan_read_only_notice">Ce connecteur de ventilateur ne prend pas en charge le contrôle PWM logiciel et est uniquement destiné à la surveillance.</string>
+    <string name="host_fan_restoring">Restauration...</string>
+    <string name="host_fan_action_apply">Appliquer les modifications</string>
+    <string name="host_fan_action_apply_all">Tout appliquer (%d)</string>
 </resources>
