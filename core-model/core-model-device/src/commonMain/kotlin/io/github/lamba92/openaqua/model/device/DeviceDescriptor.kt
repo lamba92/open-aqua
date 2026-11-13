@@ -17,7 +17,7 @@ enum class DeviceType {
     D5_NEXT,
 
     /** 4-port addressable RGBpx controller with 4 temp sensor inputs. */
-    FARBWERK360,
+    FARBWERK_360,
 
     /** Classic 4-channel analog 12V RGB controller. */
     FARBWERK,

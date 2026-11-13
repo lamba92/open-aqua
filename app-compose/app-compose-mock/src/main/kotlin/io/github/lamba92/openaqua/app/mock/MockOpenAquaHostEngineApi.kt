@@ -1,7 +1,6 @@
-package io.github.lamba92.openaqua.engine.host.mock
+package io.github.lamba92.openaqua.app.mock
 
-import io.github.lamba92.openaqua.engine.host.hardware.HostHardwareController
-import io.github.lamba92.openaqua.model.every
+import io.github.lamba92.openaqua.app.repository.OpenAquaHostEngineApi
 import io.github.lamba92.openaqua.model.host.HostDevice
 import io.github.lamba92.openaqua.model.host.HostDeviceId
 import io.github.lamba92.openaqua.model.host.HostDeviceType
@@ -14,14 +13,19 @@ import io.github.lamba92.openaqua.model.host.HostSensorDescriptor
 import io.github.lamba92.openaqua.model.host.HostSensorId
 import io.github.lamba92.openaqua.model.host.HostSensorTelemetry
 import io.github.lamba92.openaqua.model.host.HostTelemetry
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.isActive
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.round
 import kotlin.random.Random
-import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 
-class MockHostHardwareController : HostHardwareController {
+class MockOpenAquaHostEngineApi : OpenAquaHostEngineApi {
     private val baseTemperatures =
-        mutableMapOf(
+        mapOf(
             "mock-cpu:package" to 58.0,
             "mock-cpu:core-avg" to 52.0,
             "mock-cpu:ccd1" to 55.0,
@@ -36,7 +40,7 @@ class MockHostHardwareController : HostHardwareController {
             "mock-nvme1:flash" to 46.0,
         )
 
-    private val fanPwmLevels = mutableMapOf<HostFanId, Double>()
+    private val fanPwmLevels = ConcurrentHashMap<HostFanId, Double>()
 
     private val cachedInfo =
         HostInfo(
@@ -101,54 +105,59 @@ class MockHostHardwareController : HostHardwareController {
                 ),
         )
 
-    override fun getHostInfo(): HostInfo = cachedInfo
+    override suspend fun getHostInfo(): HostInfo = cachedInfo
 
-    override fun getTelemetryFlow(pollingInterval: Duration): Flow<HostTelemetry> =
-        every(pollingInterval) {
-            val telemetryList =
-                cachedInfo.devices
-                    .flatMap { it.sensors }
-                    .map { sensor ->
-                        val base = baseTemperatures[sensor.id.value] ?: 40.0
-                        val jitter = Random.nextDouble(-0.7, 0.7)
-                        val temp = round((base + jitter) * 10.0) / 10.0
-                        HostSensorTelemetry.Connected(
-                            id = sensor.id,
-                            tempCelsius = temp,
-                        )
-                    }
+    override fun getTelemetryStream(): Flow<HostTelemetry> =
+        flow {
+            while (currentCoroutineContext().isActive) {
+                val telemetryList =
+                    cachedInfo.devices
+                        .flatMap { it.sensors }
+                        .map { sensor ->
+                            val base = baseTemperatures[sensor.id.value] ?: 40.0
+                            val jitter = Random.nextDouble(-0.7, 0.7)
+                            val temp = round((base + jitter) * 10.0) / 10.0
+                            HostSensorTelemetry.Connected(
+                                id = sensor.id,
+                                tempCelsius = temp,
+                            )
+                        }
 
-            val fanTelemetryList =
-                cachedInfo.devices
-                    .flatMap { it.fans }
-                    .map { fan ->
-                        when (fan) {
-                            is HostFanDescriptor.Controllable -> {
-                                val pwm = fanPwmLevels[fan.id] ?: 50.0
-                                val baseRpm = (pwm / 100.0 * 1800.0).toInt()
-                                val jitter = Random.nextInt(-15, 16)
-                                HostFanTelemetry.Controllable(
-                                    id = fan.id,
-                                    rpm = (baseRpm + jitter).coerceAtLeast(0),
-                                    pwmPercent = pwm,
-                                    isFollowingBiosCurve = fan.id !in fanPwmLevels,
-                                )
-                            }
+                val fanTelemetryList =
+                    cachedInfo.devices
+                        .flatMap { it.fans }
+                        .map { fan ->
+                            when (fan) {
+                                is HostFanDescriptor.Controllable -> {
+                                    val pwm = fanPwmLevels[fan.id] ?: 50.0
+                                    val baseRpm = (pwm / 100.0 * 1800.0).toInt()
+                                    val jitter = Random.nextInt(-15, 16)
+                                    HostFanTelemetry.Controllable(
+                                        id = fan.id,
+                                        rpm = (baseRpm + jitter).coerceAtLeast(0),
+                                        pwmPercent = pwm,
+                                        isFollowingBiosCurve = !fanPwmLevels.containsKey(fan.id),
+                                    )
+                                }
 
-                            is HostFanDescriptor.ReadOnly -> {
-                                val jitter = Random.nextInt(-15, 16)
-                                HostFanTelemetry.ReadOnly(
-                                    id = fan.id,
-                                    rpm = (950 + jitter).coerceAtLeast(0),
-                                )
+                                is HostFanDescriptor.ReadOnly -> {
+                                    val jitter = Random.nextInt(-15, 16)
+                                    HostFanTelemetry.ReadOnly(
+                                        id = fan.id,
+                                        rpm = (950 + jitter).coerceAtLeast(0),
+                                    )
+                                }
                             }
                         }
-                    }
 
-            HostTelemetry(
-                sensors = telemetryList,
-                fans = fanTelemetryList,
-            )
+                emit(
+                    HostTelemetry(
+                        sensors = telemetryList,
+                        fans = fanTelemetryList,
+                    ),
+                )
+                delay(1000.milliseconds)
+            }
         }
 
     override suspend fun streamFanControl(requests: Flow<HostFanControlRequest>) {
@@ -157,7 +166,7 @@ class MockHostHardwareController : HostHardwareController {
         }
     }
 
-    override fun restoreFanDefaults() {
+    override suspend fun restoreFanDefaults() {
         fanPwmLevels.clear()
     }
 }

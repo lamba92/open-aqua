@@ -34,17 +34,21 @@ import open_aqua.app_compose.generated.resources.ic_app_icon
 import open_aqua.app_compose.generated.resources.window_title
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
+import org.kodein.di.DI
 import org.kodein.di.instance
 import java.awt.Taskbar
 import javax.imageio.ImageIO
 import kotlin.time.Duration.Companion.milliseconds
 
-@OptIn(FlowPreview::class)
 fun main() {
+    startOpenAquaApplication(createOpenAquaDI())
+}
+
+@OptIn(FlowPreview::class)
+fun startOpenAquaApplication(di: DI = createOpenAquaDI()) {
     acquireOrNotify()
     configureTaskbarIcon()
 
-    val di = createOpenAquaDI()
     val appDataRepository by di.instance<AppDataRepository>()
     val scopeProvider by di.instance<CoroutineScopeProvider>()
     val foregroundRequestService by di.instance<ForegroundRequestService>()

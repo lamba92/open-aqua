@@ -5,18 +5,15 @@ plugins {
     id(libs.plugins.kotlin.compose)
     id(libs.plugins.compose.multiplatform)
     id(libs.plugins.compose.hot.reload)
-    openaqua.engine.consumer
 }
 
 dependencies {
     implementation(projects.appCompose)
-    engineBinaries(projects.engine.engineDevice.engineDeviceMock)
-    engineBinaries(projects.engine.engineHost.engineHostMock)
 }
 
 compose.desktop {
     application {
-        mainClass = "io.github.lamba92.openaqua.app.MainKt"
+        mainClass = "io.github.lamba92.openaqua.app.mock.MainKt"
 
         nativeDistributions {
             targetFormats(TargetFormat.Deb, TargetFormat.Rpm)
