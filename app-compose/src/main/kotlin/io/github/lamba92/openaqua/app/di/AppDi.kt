@@ -15,6 +15,7 @@ import io.github.lamba92.openaqua.app.feature.device.DeviceViewModel
 import io.github.lamba92.openaqua.app.feature.device.fans.FansViewModel
 import io.github.lamba92.openaqua.app.feature.device.sensors.SensorsViewModel
 import io.github.lamba92.openaqua.app.feature.host.HostViewModel
+import io.github.lamba92.openaqua.app.feature.host.fans.HostFansViewModel
 import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavViewModel
 import io.github.lamba92.openaqua.app.feature.permission.PermissionViewModel
 import io.github.lamba92.openaqua.app.feature.settings.SettingsViewModel
@@ -167,6 +168,13 @@ val appModule =
         bindSingleton {
             HostViewModel(
                 dataCacheService = instance(),
+                appDataRepository = instance(),
+                scopeProvider = instance(),
+            )
+        }
+        bindSingleton {
+            HostFansViewModel(
+                cacheService = instance(),
                 appDataRepository = instance(),
                 scopeProvider = instance(),
             )

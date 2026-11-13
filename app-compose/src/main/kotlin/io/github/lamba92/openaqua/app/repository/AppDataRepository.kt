@@ -5,14 +5,17 @@ import io.github.lamba92.openaqua.app.coroutine.getLogger
 import io.github.lamba92.openaqua.app.coroutine.getScope
 import io.github.lamba92.openaqua.app.coroutine.logger
 import io.github.lamba92.openaqua.app.feature.device.common.ChannelName
+import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavState
 import io.github.lamba92.openaqua.app.model.AppStoredData
 import io.github.lamba92.openaqua.app.model.BaseAppDataDir
 import io.github.lamba92.openaqua.app.model.DeviceStoredData
 import io.github.lamba92.openaqua.app.model.FanStoredData
-import io.github.lamba92.openaqua.app.model.NavigationSelectionStoredData
+import io.github.lamba92.openaqua.app.model.HostFanConfig
 import io.github.lamba92.openaqua.app.model.SensorStoredData
 import io.github.lamba92.openaqua.app.model.VirtualSensorFeedSource
 import io.github.lamba92.openaqua.app.model.WindowStateStoredData
+import io.github.lamba92.openaqua.app.model.withHostFanConfig
+import io.github.lamba92.openaqua.app.model.withHostFanCustomName
 import io.github.lamba92.openaqua.app.model.withVirtualSensorFeed
 import io.github.lamba92.openaqua.app.util.atomicMove
 import io.github.lamba92.openaqua.app.util.deleteIfExists
@@ -21,6 +24,7 @@ import io.github.lamba92.openaqua.app.util.readText
 import io.github.lamba92.openaqua.app.util.resolveSibling
 import io.github.lamba92.openaqua.app.util.writeText
 import io.github.lamba92.openaqua.model.device.DeviceId
+import io.github.lamba92.openaqua.model.host.HostFanId
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -47,7 +51,7 @@ class AppDataRepository(
         ) : State
     }
 
-    fun setNavigationSelection(selection: NavigationSelectionStoredData?) {
+    fun setNavigationSelection(selection: DeviceNavState.SelectedItem?) {
         update { it.copy(navigationSelection = selection) }
     }
 
@@ -183,6 +187,28 @@ class AppDataRepository(
         feedSource: VirtualSensorFeedSource?,
     ) {
         update { it.withVirtualSensorFeed(deviceId, channel, feedSource) }
+    }
+
+    fun setHostFanConfig(
+        fanId: HostFanId,
+        config: HostFanConfig,
+    ) {
+        update { it.withHostFanConfig(fanId, config) }
+    }
+
+    fun setHostFanConfigs(configs: Map<HostFanId, HostFanConfig>) {
+        update {
+            configs.entries.fold(it) { acc, (fanId, config) ->
+                acc.withHostFanConfig(fanId, config)
+            }
+        }
+    }
+
+    fun setHostFanName(
+        fanId: HostFanId,
+        name: ChannelName,
+    ) {
+        update { it.withHostFanCustomName(fanId, name) }
     }
 
     private fun loadFromDisk(): AppStoredData =

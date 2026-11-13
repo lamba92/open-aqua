@@ -204,13 +204,9 @@ sealed interface FansUiState {
         val sensors: List<SensorItem>,
         val fanDrafts: Map<Int, FanDraft> = emptyMap(),
         val flashDialogState: FlashDialogState = FlashDialogState.NotShown,
-        val renamingChannel: Int? = null,
         val hideDisconnectedFans: Boolean = false,
         val hideDisconnectedSensors: Boolean = false,
     ) : FansUiState {
-        val renamingFan: FanItem?
-            get() = renamingChannel?.let { ch -> fans.firstOrNull { it.channel == ch } }
-
         fun isFanModified(fan: FanItem): Boolean {
             val draft = fanDrafts[fan.channel] ?: return false
             return draft.toFanChannelConfig(fans, fanDrafts) != fan.config
@@ -236,13 +232,6 @@ sealed interface FansUiEvent {
         val channel: Int,
         val name: ChannelName,
     ) : FansUiEvent
-
-    @JvmInline
-    value class StartRenamingFan(
-        val channel: Int,
-    ) : FansUiEvent
-
-    data object DismissRenameDialog : FansUiEvent
 
     data object DiscardFanDraft : FansUiEvent
 

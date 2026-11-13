@@ -146,7 +146,16 @@ fun CurveStudio(
                 }
 
                 is FanDraft.Fixed -> {
-                    null
+                    val sensorIdx =
+                        when (val currentCfg = resolveEffectiveFanConfig(fan.config, allFans)) {
+                            is AutoCurveFanConfig -> currentCfg.sensorIndex
+                            is CurveFanConfig -> currentCfg.sensorIndex
+                            is TargetTempFanConfig -> currentCfg.sensorIndex
+                            else -> null
+                        }
+                    sensors.firstOrNull { it.channel == sensorIdx }
+                        ?: sensors.firstOrNull { it.effectiveTempCelsius != null }
+                        ?: sensors.firstOrNull()
                 }
             }
         }

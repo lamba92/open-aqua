@@ -67,8 +67,11 @@ fun OpenAquaApp(navViewModel: DeviceNavViewModel = rememberInstance()) {
                     )
                 }
 
-                DeviceNavState.SelectedItem.Host -> {
-                    HostScreen(viewModel = rememberInstance())
+                is DeviceNavState.SelectedItem.Host -> {
+                    HostScreen(
+                        selectedTab = item.selectedTab,
+                        onSelectTab = { navViewModel.onEvent(DeviceNavEvent.SelectHostTab(it)) },
+                    )
                 }
 
                 is DeviceNavState.SelectedItem.Device -> {

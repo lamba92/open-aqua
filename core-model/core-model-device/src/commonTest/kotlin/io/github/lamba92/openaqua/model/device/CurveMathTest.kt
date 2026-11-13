@@ -60,4 +60,32 @@ class CurveMathTest {
         val flatPoints = (0 until 16).map { CurvePoint(20.0 + it, 50.0) }
         assertEquals(0.0, CurveMath.inferShape(flatPoints))
     }
+
+    @Test
+    fun testAdjustTMinAndTMax() {
+        // Normal adjustment: tMin < tMax, neither shifts the other
+        val (tMin1, tMax1) = CurveMath.adjustTMin(30.0, 60.0)
+        assertEquals(30.0, tMin1)
+        assertEquals(60.0, tMax1)
+
+        // tMin pushed up past tMax -> shifts tMax
+        val (tMin2, tMax2) = CurveMath.adjustTMin(65.0, 60.0)
+        assertEquals(65.0, tMin2)
+        assertEquals(66.0, tMax2)
+
+        // tMax clamped to maxAllowed
+        val (tMin3, tMax3) = CurveMath.adjustTMin(95.0, 60.0, maxAllowed = 95.0)
+        assertEquals(95.0, tMin3)
+        assertEquals(95.0, tMax3)
+
+        // tMax pushed down past tMin -> shifts tMin
+        val (tMin4, tMax4) = CurveMath.adjustTMax(25.0, 40.0)
+        assertEquals(24.0, tMin4)
+        assertEquals(25.0, tMax4)
+
+        // tMin clamped to minAllowed
+        val (tMin5, tMax5) = CurveMath.adjustTMax(10.0, 40.0, minAllowed = 10.0)
+        assertEquals(10.0, tMin5)
+        assertEquals(10.0, tMax5)
+    }
 }

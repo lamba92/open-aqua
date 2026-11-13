@@ -173,6 +173,9 @@ class MockOpenAquaDeviceEngineApi : OpenAquaDeviceEngineApi {
                 val fansTelemetry =
                     desc.findCapability<DeviceCapability.Fans>()?.channels?.map { channelSpec ->
                         val fanConfig = currentConfig.fans.firstOrNull { it.channel == channelSpec.channel }
+                        val isDisconnectedHeader =
+                            (desc.type == DeviceType.OCTO && channelSpec.channel in 6..7) ||
+                                (desc.type == DeviceType.QUADRO && channelSpec.channel == 3)
                         val pwm =
                             when (fanConfig) {
                                 is FixedFanConfig -> fanConfig.powerPercent
@@ -180,7 +183,7 @@ class MockOpenAquaDeviceEngineApi : OpenAquaDeviceEngineApi {
                                 is AutoCurveFanConfig -> 55.0
                                 else -> 50.0
                             }
-                        if (pwm > 0.0) {
+                        if (pwm > 0.0 && !isDisconnectedHeader) {
                             val baseRpm = (pwm / 100.0 * 2000.0).toInt()
                             val jitter = Random.nextInt(-15, 16)
                             val rpm = (baseRpm + jitter).coerceAtLeast(0)
@@ -205,17 +208,25 @@ class MockOpenAquaDeviceEngineApi : OpenAquaDeviceEngineApi {
 
                 val physicalSensors =
                     desc.findCapability<DeviceCapability.TemperatureSensors>()?.sensors?.map { sensorSpec ->
-                        val offset =
-                            currentConfig.sensorOffsets
-                                .firstOrNull { it.channel == sensorSpec.channel }
-                                ?.offsetCelsius ?: 0.0
-                        val jitter = Random.nextDouble(-0.3, 0.3)
-                        val temp = 28.5 + (sensorSpec.channel * 2.5) + offset + jitter
-                        SensorTelemetry.Connected(
-                            channel = sensorSpec.channel,
-                            kind = SensorChannelKind.PHYSICAL_NTC,
-                            tempCelsius = kotlin.math.round(temp * 10.0) / 10.0,
-                        )
+                        val isSensorDisconnected = sensorSpec.channel == 3
+                        if (isSensorDisconnected) {
+                            SensorTelemetry.Disconnected(
+                                channel = sensorSpec.channel,
+                                kind = SensorChannelKind.PHYSICAL_NTC,
+                            )
+                        } else {
+                            val offset =
+                                currentConfig.sensorOffsets
+                                    .firstOrNull { it.channel == sensorSpec.channel }
+                                    ?.offsetCelsius ?: 0.0
+                            val jitter = Random.nextDouble(-0.3, 0.3)
+                            val temp = 28.5 + (sensorSpec.channel * 2.5) + offset + jitter
+                            SensorTelemetry.Connected(
+                                channel = sensorSpec.channel,
+                                kind = SensorChannelKind.PHYSICAL_NTC,
+                                tempCelsius = kotlin.math.round(temp * 10.0) / 10.0,
+                            )
+                        }
                     } ?: emptyList()
 
                 val virtualSensors =

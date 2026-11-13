@@ -177,6 +177,7 @@ fun SensorsContent(
         remember(state.sensors) {
             state.sensors.count { it.canBeHidden }
         }
+    var renamingSensor by remember { mutableStateOf<SensorItem?>(null) }
 
     val displayedSensors =
         remember(state.sensors, state.hideDisconnectedSensors, state.hideUnconfiguredVirtualSensors) {
@@ -226,6 +227,7 @@ fun SensorsContent(
                     selectedChannel = selectedSensor?.channel,
                     isModified = state::isSensorModified,
                     onEvent = onEvent,
+                    onStartRenaming = { renamingSensor = it },
                 )
             }
 
@@ -238,6 +240,7 @@ fun SensorsContent(
                         selectedChannel = selectedSensor?.channel,
                         isModified = state::isSensorModified,
                         onEvent = onEvent,
+                        onStartRenaming = { renamingSensor = it },
                     )
                 }
             }
@@ -270,6 +273,11 @@ fun SensorsContent(
                                 horizontalArrangement = Arrangement.spacedBy(metrics.spacingSm),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
+                                OpenAquaOutlinedButton(
+                                    text = stringResource(Res.string.action_rename),
+                                    icon = painterResource(Res.drawable.ic_edit),
+                                    onClick = { renamingSensor = selectedSensor },
+                                )
                                 if (selectedSensor.telemetry.kind != SensorChannelKind.VIRTUAL) {
                                     SensorTargetTypeMenuButton(
                                         targetType = selectedSensor.targetType,
@@ -278,11 +286,6 @@ fun SensorsContent(
                                         },
                                     )
                                 }
-                                OpenAquaOutlinedButton(
-                                    text = stringResource(Res.string.action_rename),
-                                    icon = painterResource(Res.drawable.ic_edit),
-                                    onClick = { onEvent(SensorsUiEvent.StartRenamingSensor(selectedSensor.channel)) },
-                                )
                             }
                         },
                     )
@@ -351,7 +354,7 @@ fun SensorsContent(
         modifier = modifier,
     )
 
-    val activeRenamingSensor = state.renamingSensor
+    val activeRenamingSensor = renamingSensor
     if (activeRenamingSensor != null) {
         RenameDialog(
             title = stringResource(Res.string.rename_dialog_title, activeRenamingSensor.resolveName()),
@@ -359,8 +362,9 @@ fun SensorsContent(
             icon = painterResource(Res.drawable.ic_edit),
             onConfirm = { newName ->
                 onEvent(SensorsUiEvent.RenameSensor(activeRenamingSensor.channel, newName))
+                renamingSensor = null
             },
-            onDismiss = { onEvent(SensorsUiEvent.DismissRenameDialog) },
+            onDismiss = { renamingSensor = null },
         )
     }
 }
@@ -1247,6 +1251,7 @@ private fun SensorSelectionTiles(
     isModified: (SensorItem) -> Boolean,
     onEvent: (SensorsUiEvent) -> Unit,
     modifier: Modifier = Modifier,
+    onStartRenaming: (SensorItem) -> Unit = {},
 ) {
     sensors.forEach { sensor ->
         SensorSelectionTile(
@@ -1258,7 +1263,7 @@ private fun SensorSelectionTiles(
             hasPendingChanges = isModified(sensor),
             feederStatus = sensor.feederStatus,
             onClick = { onEvent(SensorsUiEvent.SelectSensor(sensor.channel)) },
-            onDoubleClick = { onEvent(SensorsUiEvent.StartRenamingSensor(sensor.channel)) },
+            onDoubleClick = { onStartRenaming(sensor) },
             modifier = modifier,
         )
     }

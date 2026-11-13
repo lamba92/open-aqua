@@ -83,13 +83,18 @@ class MockOpenAquaHostEngineApi : OpenAquaHostEngineApi {
                                 HostSensorDescriptor(HostSensorId("mock-mb:chipset"), "Motherboard Chipset"),
                                 HostSensorDescriptor(HostSensorId("mock-mb:vrm"), "Motherboard VRM"),
                                 HostSensorDescriptor(HostSensorId("mock-mb:ambient"), "Motherboard Ambient"),
+                                HostSensorDescriptor(HostSensorId("mock-mb:t-sensor1"), "External 2-Pin T-Sensor"),
+                                HostSensorDescriptor(HostSensorId("mock-mb:w-pump-sensor"), "Water In/Out Sensor"),
                             ),
                         fans =
                             listOf(
                                 HostFanDescriptor.Controllable(HostFanId("mock-mb:cpu-fan"), "CPU Fan Header"),
                                 HostFanDescriptor.Controllable(HostFanId("mock-mb:cha-fan1"), "Chassis Fan 1"),
                                 HostFanDescriptor.Controllable(HostFanId("mock-mb:cha-fan2"), "Chassis Fan 2"),
+                                HostFanDescriptor.Controllable(HostFanId("mock-mb:cha-fan3"), "Chassis Fan 3"),
+                                HostFanDescriptor.Controllable(HostFanId("mock-mb:aio-pump"), "AIO Pump Header"),
                                 HostFanDescriptor.ReadOnly(HostFanId("mock-mb:pwr-fan"), "Power Fan Header"),
+                                HostFanDescriptor.ReadOnly(HostFanId("mock-mb:opt-fan"), "CPU Optional Fan Header"),
                             ),
                     ),
                     HostDevice(
@@ -105,6 +110,9 @@ class MockOpenAquaHostEngineApi : OpenAquaHostEngineApi {
                 ),
         )
 
+    private val disconnectedFans = setOf("mock-mb:cha-fan3", "mock-mb:aio-pump", "mock-mb:opt-fan")
+    private val disconnectedSensors = setOf("mock-mb:t-sensor1", "mock-mb:w-pump-sensor")
+
     override suspend fun getHostInfo(): HostInfo = cachedInfo
 
     override fun getTelemetryStream(): Flow<HostTelemetry> =
@@ -114,38 +122,46 @@ class MockOpenAquaHostEngineApi : OpenAquaHostEngineApi {
                     cachedInfo.devices
                         .flatMap { it.sensors }
                         .map { sensor ->
-                            val base = baseTemperatures[sensor.id.value] ?: 40.0
-                            val jitter = Random.nextDouble(-0.7, 0.7)
-                            val temp = round((base + jitter) * 10.0) / 10.0
-                            HostSensorTelemetry.Connected(
-                                id = sensor.id,
-                                tempCelsius = temp,
-                            )
+                            if (sensor.id.value in disconnectedSensors) {
+                                HostSensorTelemetry.Disconnected(sensor.id)
+                            } else {
+                                val base = baseTemperatures[sensor.id.value] ?: 40.0
+                                val jitter = Random.nextDouble(-0.7, 0.7)
+                                val temp = round((base + jitter) * 10.0) / 10.0
+                                HostSensorTelemetry.Connected(
+                                    id = sensor.id,
+                                    tempCelsius = temp,
+                                )
+                            }
                         }
 
                 val fanTelemetryList =
                     cachedInfo.devices
                         .flatMap { it.fans }
                         .map { fan ->
-                            when (fan) {
-                                is HostFanDescriptor.Controllable -> {
-                                    val pwm = fanPwmLevels[fan.id] ?: 50.0
-                                    val baseRpm = (pwm / 100.0 * 1800.0).toInt()
-                                    val jitter = Random.nextInt(-15, 16)
-                                    HostFanTelemetry.Controllable(
-                                        id = fan.id,
-                                        rpm = (baseRpm + jitter).coerceAtLeast(0),
-                                        pwmPercent = pwm,
-                                        isFollowingBiosCurve = !fanPwmLevels.containsKey(fan.id),
-                                    )
-                                }
+                            if (fan.id.value in disconnectedFans) {
+                                HostFanTelemetry.Disconnected(fan.id)
+                            } else {
+                                when (fan) {
+                                    is HostFanDescriptor.Controllable -> {
+                                        val pwm = fanPwmLevels[fan.id] ?: 50.0
+                                        val baseRpm = (pwm / 100.0 * 1800.0).toInt()
+                                        val jitter = Random.nextInt(-15, 16)
+                                        HostFanTelemetry.Controllable(
+                                            id = fan.id,
+                                            rpm = (baseRpm + jitter).coerceAtLeast(0),
+                                            pwmPercent = pwm,
+                                            isFollowingBiosCurve = !fanPwmLevels.containsKey(fan.id),
+                                        )
+                                    }
 
-                                is HostFanDescriptor.ReadOnly -> {
-                                    val jitter = Random.nextInt(-15, 16)
-                                    HostFanTelemetry.ReadOnly(
-                                        id = fan.id,
-                                        rpm = (950 + jitter).coerceAtLeast(0),
-                                    )
+                                    is HostFanDescriptor.ReadOnly -> {
+                                        val jitter = Random.nextInt(-15, 16)
+                                        HostFanTelemetry.ReadOnly(
+                                            id = fan.id,
+                                            rpm = (950 + jitter).coerceAtLeast(0),
+                                        )
+                                    }
                                 }
                             }
                         }

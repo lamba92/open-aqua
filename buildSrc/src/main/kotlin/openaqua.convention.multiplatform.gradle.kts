@@ -9,9 +9,6 @@ plugins {
 
 kotlin {
     jvmToolchain(21)
-    compilerOptions {
-        freeCompilerArgs.add("-XXLanguage:+JvmInlineMultiFieldValueClasses")
-    }
 }
 
 ktlint {

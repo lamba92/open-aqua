@@ -3,10 +3,12 @@ package io.github.lamba92.openaqua.app.feature.navigation
 import io.github.lamba92.openaqua.app.feature.about.AboutTab
 import io.github.lamba92.openaqua.app.feature.device.common.CommonDeviceTab
 import io.github.lamba92.openaqua.app.feature.settings.SettingsTab
-import io.github.lamba92.openaqua.app.model.NavigationSelectionStoredData
+import io.github.lamba92.openaqua.app.model.HostTab
 import io.github.lamba92.openaqua.app.permission.DevicePermissionState
 import io.github.lamba92.openaqua.app.repository.DeviceState
 import io.github.lamba92.openaqua.model.device.DeviceId
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 sealed interface NavigationTargets {
     data object Loading : NavigationTargets
@@ -28,49 +30,54 @@ data class DeviceNavState(
     val selectedItem: SelectedItem? = null,
     val isExpanded: Boolean = false,
 ) {
+    @Serializable
     sealed interface SelectedItem {
-        data object Host : SelectedItem
+        @Serializable
+        @SerialName("host")
+        data class Host(
+            @SerialName("tab")
+            val selectedTab: HostTab = HostTab.SENSORS,
+        ) : SelectedItem
 
+        @Serializable
+        @SerialName("device")
         data class Device(
             val deviceId: DeviceId,
+            @SerialName("tab")
             val selectedTab: CommonDeviceTab = CommonDeviceTab.DEVICE_INFO,
         ) : SelectedItem
 
+        @Serializable
+        @SerialName("permission_error")
         data object PermissionError : SelectedItem
 
+        @Serializable
+        @SerialName("bug_report")
         data object BugReport : SelectedItem
 
+        @Serializable
+        @SerialName("about")
         data class About(
+            @SerialName("tab")
             val selectedTab: AboutTab = AboutTab.OPEN_AQUA,
         ) : SelectedItem
 
+        @Serializable
+        @SerialName("settings")
         data class Settings(
+            @SerialName("tab")
             val selectedTab: SettingsTab = SettingsTab.GENERAL,
         ) : SelectedItem
     }
 }
 
-fun DeviceNavState.SelectedItem.toStoredData(): NavigationSelectionStoredData? =
-    when (this) {
-        DeviceNavState.SelectedItem.Host -> NavigationSelectionStoredData.Host
-        is DeviceNavState.SelectedItem.Device -> NavigationSelectionStoredData.Device(deviceId, selectedTab)
-        DeviceNavState.SelectedItem.BugReport -> NavigationSelectionStoredData.BugReport
-        is DeviceNavState.SelectedItem.About -> NavigationSelectionStoredData.About(selectedTab)
-        is DeviceNavState.SelectedItem.Settings -> NavigationSelectionStoredData.Settings(selectedTab)
-        DeviceNavState.SelectedItem.PermissionError -> null
-    }
-
-fun NavigationSelectionStoredData.toSelectedItem(): DeviceNavState.SelectedItem =
-    when (this) {
-        NavigationSelectionStoredData.Host -> DeviceNavState.SelectedItem.Host
-        is NavigationSelectionStoredData.Device -> DeviceNavState.SelectedItem.Device(deviceId, tab)
-        NavigationSelectionStoredData.BugReport -> DeviceNavState.SelectedItem.BugReport
-        is NavigationSelectionStoredData.About -> DeviceNavState.SelectedItem.About(tab)
-        is NavigationSelectionStoredData.Settings -> DeviceNavState.SelectedItem.Settings(tab)
-    }
-
 sealed interface DeviceNavEvent {
     data object SelectHost : DeviceNavEvent
+
+    @JvmInline
+    value class SelectHostTab(
+        val tab: HostTab,
+    ) : DeviceNavEvent
 
     @JvmInline
     value class SelectDevice(

@@ -8,11 +8,13 @@ import androidx.compose.ui.window.WindowState
 import io.github.lamba92.openaqua.app.feature.about.AboutTab
 import io.github.lamba92.openaqua.app.feature.device.common.ChannelName
 import io.github.lamba92.openaqua.app.feature.device.common.CommonDeviceTab
+import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavState
 import io.github.lamba92.openaqua.app.feature.settings.SettingsTab
 import io.github.lamba92.openaqua.app.theme.AppFontFamily
 import io.github.lamba92.openaqua.app.theme.AppMetricsScale
 import io.github.lamba92.openaqua.app.theme.FontScaleConstants
 import io.github.lamba92.openaqua.model.device.DeviceId
+import io.github.lamba92.openaqua.model.host.HostFanId
 import io.github.lamba92.openaqua.model.host.HostSensorId
 import io.github.lamba92.openaqua.theme.AppColorScheme
 import kotlinx.serialization.SerialName
@@ -32,8 +34,9 @@ data class AppStoredData(
     val sensorTypes: SensorTypesStoredData = SensorTypesStoredData.DEFAULT,
     val windowState: WindowStateStoredData = WindowStateStoredData.DEFAULT,
     val navigationRailExpanded: Boolean = false,
-    val navigationSelection: NavigationSelectionStoredData? = null,
+    val navigationSelection: DeviceNavState.SelectedItem? = null,
     val devices: Map<DeviceId, DeviceStoredData> = emptyMap(),
+    val hostFans: Map<HostFanId, HostFanStoredData> = emptyMap(),
 ) {
     companion object {
         val DEFAULT = AppStoredData()
@@ -41,33 +44,9 @@ data class AppStoredData(
 }
 
 @Serializable
-sealed interface NavigationSelectionStoredData {
-    @Serializable
-    @SerialName("host")
-    data object Host : NavigationSelectionStoredData
-
-    @Serializable
-    @SerialName("device")
-    data class Device(
-        val deviceId: DeviceId,
-        val tab: CommonDeviceTab = CommonDeviceTab.DEVICE_INFO,
-    ) : NavigationSelectionStoredData
-
-    @Serializable
-    @SerialName("bug_report")
-    data object BugReport : NavigationSelectionStoredData
-
-    @Serializable
-    @SerialName("about")
-    data class About(
-        val tab: AboutTab = AboutTab.OPEN_AQUA,
-    ) : NavigationSelectionStoredData
-
-    @Serializable
-    @SerialName("settings")
-    data class Settings(
-        val tab: SettingsTab = SettingsTab.GENERAL,
-    ) : NavigationSelectionStoredData
+enum class HostTab {
+    SENSORS,
+    FANS,
 }
 
 @Serializable
@@ -154,6 +133,42 @@ sealed interface VirtualSensorFeedSource {
     ) : VirtualSensorFeedSource
 }
 
+typealias SensorSource = VirtualSensorFeedSource
+
+@Serializable
+sealed interface HostFanConfig {
+    @Serializable
+    @SerialName("follow_bios")
+    data object FollowBios : HostFanConfig
+
+    @Serializable
+    @SerialName("fixed")
+    data class Fixed(
+        val pwmPercent: Double = 50.0,
+    ) : HostFanConfig
+
+    @Serializable
+    @SerialName("auto_curve")
+    data class AutoCurve(
+        val sensorSource: SensorSource,
+        val tMin: Double = 30.0,
+        val tMax: Double = 60.0,
+        val pMin: Double = 20.0,
+        val pMax: Double = 100.0,
+        val shape: Double = 0.0,
+    ) : HostFanConfig
+}
+
+@Serializable
+data class HostFanStoredData(
+    val name: ChannelName = ChannelName.Default,
+    val config: HostFanConfig = HostFanConfig.FollowBios,
+) {
+    companion object {
+        val DEFAULT = HostFanStoredData()
+    }
+}
+
 @Serializable
 data class DeviceStoredData(
     val name: ChannelName = ChannelName.Default,
@@ -208,4 +223,30 @@ fun AppStoredData.withVirtualSensorFeed(
             devices - deviceId
         }
     return copy(devices = updatedDevices)
+}
+
+fun AppStoredData.withHostFanConfig(
+    fanId: HostFanId,
+    config: HostFanConfig,
+): AppStoredData {
+    val current = hostFans[fanId] ?: HostFanStoredData.DEFAULT
+    val updated = current.copy(config = config)
+    return if (updated == HostFanStoredData.DEFAULT) {
+        copy(hostFans = hostFans - fanId)
+    } else {
+        copy(hostFans = hostFans + (fanId to updated))
+    }
+}
+
+fun AppStoredData.withHostFanCustomName(
+    fanId: HostFanId,
+    name: ChannelName,
+): AppStoredData {
+    val current = hostFans[fanId] ?: HostFanStoredData.DEFAULT
+    val updated = current.copy(name = name)
+    return if (updated == HostFanStoredData.DEFAULT) {
+        copy(hostFans = hostFans - fanId)
+    } else {
+        copy(hostFans = hostFans + (fanId to updated))
+    }
 }

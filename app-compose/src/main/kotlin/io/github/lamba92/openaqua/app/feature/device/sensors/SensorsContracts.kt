@@ -76,7 +76,6 @@ sealed interface SensorsUiState {
     data class Ready(
         val sensors: List<SensorItem>,
         val selectedSensorChannel: Int,
-        val renamingChannel: Int? = null,
         val hideDisconnectedSensors: Boolean = false,
         val hideUnconfiguredVirtualSensors: Boolean = false,
         val availableHostSensors: List<HostSensorOption> = emptyList(),
@@ -86,9 +85,6 @@ sealed interface SensorsUiState {
         val isFlashingOffset: Boolean = false,
         val isApplyingVirtualFeed: Boolean = false,
     ) : SensorsUiState {
-        val renamingSensor: SensorItem?
-            get() = renamingChannel?.let { ch -> sensors.firstOrNull { it.channel == ch } }
-
         val selectedSensor: SensorItem?
             get() = sensors.firstOrNull { it.channel == selectedSensorChannel }
 
@@ -122,13 +118,6 @@ sealed interface SensorsUiEvent {
         val channel: Int,
         val name: ChannelName,
     ) : SensorsUiEvent
-
-    @JvmInline
-    value class StartRenamingSensor(
-        val channel: Int,
-    ) : SensorsUiEvent
-
-    data object DismissRenameDialog : SensorsUiEvent
 
     data object ToggleShowAllSensors : SensorsUiEvent
 
