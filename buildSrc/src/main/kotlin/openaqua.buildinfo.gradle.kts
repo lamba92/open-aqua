@@ -63,10 +63,6 @@ private data class ResolvedCatalogLibrary(
 )
 
 val generateOpenAquaBuildInfo by tasks.registering {
-    val jvmVer = "21"
-    val jvmVend = "OpenJDK"
-    val osName = System.getProperty("os.name") ?: "unknown"
-    val osArch = System.getProperty("os.arch") ?: "unknown"
     val kotlinVer = libs.versions.kotlin.get()
 
     val versionCatalogs =
@@ -91,10 +87,6 @@ val generateOpenAquaBuildInfo by tasks.registering {
     inputs.property("version", extension.version)
     inputs.property("buildTimestamp", extension.buildTimestamp)
     inputs.property("gradleVersion", gradle.gradleVersion)
-    inputs.property("jvmVersion", jvmVer)
-    inputs.property("jvmVendor", jvmVend)
-    inputs.property("osName", osName)
-    inputs.property("osArch", osArch)
     inputs.property("kotlinVersion", kotlinVer)
     inputs.property("catalogLibraries", catalogLibraries.map { "${it.alias}=${it.group}:${it.artifact}:${it.version}" })
     outputs.dir(extension.outputDirectory)
@@ -198,27 +190,39 @@ val generateOpenAquaBuildInfo by tasks.registering {
                 ).addProperty(
                     PropertySpec
                         .builder("JVM_VERSION", String::class)
-                        .addModifiers(KModifier.CONST)
-                        .initializer("%S", jvmVer)
-                        .build(),
+                        .getter(
+                            FunSpec
+                                .getterBuilder()
+                                .addStatement("return System.getProperty(%S) ?: %S", "java.version", "unknown")
+                                .build(),
+                        ).build(),
                 ).addProperty(
                     PropertySpec
                         .builder("JVM_VENDOR", String::class)
-                        .addModifiers(KModifier.CONST)
-                        .initializer("%S", jvmVend)
-                        .build(),
+                        .getter(
+                            FunSpec
+                                .getterBuilder()
+                                .addStatement("return System.getProperty(%S) ?: %S", "java.vendor", "unknown")
+                                .build(),
+                        ).build(),
                 ).addProperty(
                     PropertySpec
                         .builder("OS_NAME", String::class)
-                        .addModifiers(KModifier.CONST)
-                        .initializer("%S", osName)
-                        .build(),
+                        .getter(
+                            FunSpec
+                                .getterBuilder()
+                                .addStatement("return System.getProperty(%S) ?: %S", "os.name", "unknown")
+                                .build(),
+                        ).build(),
                 ).addProperty(
                     PropertySpec
                         .builder("OS_ARCH", String::class)
-                        .addModifiers(KModifier.CONST)
-                        .initializer("%S", osArch)
-                        .build(),
+                        .getter(
+                            FunSpec
+                                .getterBuilder()
+                                .addStatement("return System.getProperty(%S) ?: %S", "os.arch", "unknown")
+                                .build(),
+                        ).build(),
                 ).addType(libraryTypeSpec)
                 .addProperty(
                     PropertySpec
