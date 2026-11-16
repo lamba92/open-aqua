@@ -312,8 +312,10 @@
 
     <!-- Window & System Tray Settings -->
     <string name="settings_window_behavior_title">Window &amp; System Tray</string>
-    <string name="settings_window_behavior_desc">Configure application launch behavior and system tray minimization</string>
-    <string name="settings_start_minimized_title">Start minimized to tray</string>
+    <string name="settings_window_behavior_desc">Configure application window behavior and system tray minimization</string>
+    <string name="settings_minimize_to_tray_on_close_title">Minimize to tray when closed</string>
+    <string name="settings_minimize_to_tray_on_close_desc">Keep OpenAqua running in the system tray when closing the window</string>
+    <string name="settings_start_minimized_title">Start minimized</string>
     <string name="settings_start_minimized_desc">Launch OpenAqua hidden in the system tray instead of opening the main window</string>
     <string name="tray_menu_open">Open OpenAqua</string>
     <string name="tray_menu_exit">Exit</string>

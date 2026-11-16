@@ -228,6 +228,8 @@
     <!-- Window & System Tray Settings -->
     <string name="settings_window_behavior_title">Ventana &amp; Bandeja del sistema</string>
     <string name="settings_window_behavior_desc">Configurar el comportamiento al iniciar y la minimización en la bandeja del sistema</string>
+    <string name="settings_minimize_to_tray_on_close_title">Minimizar en la bandeja al cerrar</string>
+    <string name="settings_minimize_to_tray_on_close_desc">Mantener OpenAqua en ejecución en la bandeja del sistema al cerrar la ventana</string>
     <string name="settings_start_minimized_title">Iniciar minimizado en la bandeja</string>
     <string name="settings_start_minimized_desc">Iniciar OpenAqua oculto en la bandeja del sistema en lugar de abrir la ventana principal</string>
     <string name="tray_menu_open">Abrir OpenAqua</string>

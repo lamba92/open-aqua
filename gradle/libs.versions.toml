@@ -29,6 +29,7 @@ compose-desktop-macos-x64 = { module = "org.jetbrains.compose.desktop:desktop-jv
 compose-desktop-windows-x64 = { module = "org.jetbrains.compose.desktop:desktop-jvm-windows-x64", version.ref = "compose-plugin" }
 compose-material-icons-extended = { module = "org.jetbrains.compose.material:material-icons-extended", version = "1.7.3" }
 compose-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "compose-plugin" }
+composenativetray = { module = "dev.nucleusframework:composenativetray", version = "2.1.7" }
 kaml = { module = "com.charleskorn.kaml:kaml", version.ref = "kaml" }
 kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
 kermit-io = { module = "co.touchlab:kermit-io", version.ref = "kermit" }

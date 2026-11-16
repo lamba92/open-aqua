@@ -32,5 +32,6 @@ dependencies {
     api(projects.coreModel.coreModelHost)
     api(projects.coreTheme)
     api(libs.clikt)
+    api(libs.composenativetray)
     testImplementation(kotlin("test"))
 }

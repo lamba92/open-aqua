@@ -1,6 +1,7 @@
 import io.github.lamba92.gradle.plugins.distribution.NativeDistributionSpec
 import io.github.lamba92.gradle.plugins.platform.PlatformExtension
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+import org.jetbrains.compose.desktop.application.tasks.AbstractProguardTask
 
 plugins {
     id("openaqua.convention.jvm")
@@ -52,4 +53,15 @@ compose.desktop {
             }
         }
     }
+}
+
+val javaToolchains = extensions.getByType<JavaToolchainService>()
+val javaLauncher =
+    javaToolchains.launcherFor(
+        extensions.getByType<JavaPluginExtension>().toolchain,
+    )
+
+tasks.withType<org.jetbrains.compose.desktop.application.tasks.AbstractProguardTask>().configureEach {
+    javaHome.set(javaLauncher.map { it.metadata.installationPath.asFile.absolutePath })
+    outputs.cacheIf { true }
 }

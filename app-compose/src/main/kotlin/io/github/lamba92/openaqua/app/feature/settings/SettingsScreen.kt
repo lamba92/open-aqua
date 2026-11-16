@@ -50,6 +50,7 @@ import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
@@ -119,6 +120,8 @@ import open_aqua.app_compose.generated.resources.settings_linux_permissions_rule
 import open_aqua.app_compose.generated.resources.settings_linux_permissions_title
 import open_aqua.app_compose.generated.resources.settings_metrics_scale_desc
 import open_aqua.app_compose.generated.resources.settings_metrics_scale_title
+import open_aqua.app_compose.generated.resources.settings_minimize_to_tray_on_close_desc
+import open_aqua.app_compose.generated.resources.settings_minimize_to_tray_on_close_title
 import open_aqua.app_compose.generated.resources.settings_open_data_folder_button
 import open_aqua.app_compose.generated.resources.settings_open_data_folder_desc
 import open_aqua.app_compose.generated.resources.settings_open_data_folder_title
@@ -276,6 +279,10 @@ private fun GeneralSettingsContent(
 
                     // Window & System Tray section
                     WindowBehaviorSection(
+                        minimizeToTrayOnClose = state.storedData.minimizeToTrayOnClose,
+                        onToggleMinimizeToTrayOnClose = {
+                            viewModel.onEvent(SettingsEvent.ToggleMinimizeToTrayOnClose(it))
+                        },
                         startMinimized = state.storedData.startMinimized,
                         onToggleStartMinimized = {
                             viewModel.onEvent(SettingsEvent.ToggleStartMinimized(it))
@@ -775,6 +782,8 @@ private fun ChannelVisibilitySection(
 
 @Composable
 private fun WindowBehaviorSection(
+    minimizeToTrayOnClose: Boolean,
+    onToggleMinimizeToTrayOnClose: (Boolean) -> Unit,
     startMinimized: Boolean,
     onToggleStartMinimized: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
@@ -804,10 +813,18 @@ private fun WindowBehaviorSection(
         )
 
         SettingToggleRow(
+            title = stringResource(Res.string.settings_minimize_to_tray_on_close_title),
+            description = stringResource(Res.string.settings_minimize_to_tray_on_close_desc),
+            checked = minimizeToTrayOnClose,
+            onCheckedChange = onToggleMinimizeToTrayOnClose,
+        )
+
+        SettingToggleRow(
             title = stringResource(Res.string.settings_start_minimized_title),
             description = stringResource(Res.string.settings_start_minimized_desc),
-            checked = startMinimized,
+            checked = startMinimized && minimizeToTrayOnClose,
             onCheckedChange = onToggleStartMinimized,
+            enabled = minimizeToTrayOnClose,
         )
     }
 }
@@ -819,12 +836,14 @@ private fun SettingToggleRow(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
 ) {
     val colors = OpenAquaTheme.colors
     val metrics = OpenAquaTheme.metrics
+    val alpha = if (enabled) 1f else 0.38f
 
     Row(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().alpha(alpha),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -847,7 +866,8 @@ private fun SettingToggleRow(
 
         Switch(
             checked = checked,
-            onCheckedChange = onCheckedChange,
+            onCheckedChange = if (enabled) onCheckedChange else null,
+            enabled = enabled,
             colors =
                 SwitchDefaults.colors(
                     checkedThumbColor = colors.surfaceLowest,
@@ -856,6 +876,11 @@ private fun SettingToggleRow(
                     uncheckedThumbColor = colors.textMuted,
                     uncheckedTrackColor = colors.surfaceHigh,
                     uncheckedBorderColor = colors.borderOutline,
+                    disabledCheckedThumbColor = colors.surfaceLowest.copy(alpha = 0.4f),
+                    disabledCheckedTrackColor = colors.primary.copy(alpha = 0.4f),
+                    disabledUncheckedThumbColor = colors.textMuted.copy(alpha = 0.4f),
+                    disabledUncheckedTrackColor = colors.surfaceHigh.copy(alpha = 0.4f),
+                    disabledUncheckedBorderColor = colors.borderOutline.copy(alpha = 0.4f),
                 ),
         )
     }

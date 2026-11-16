@@ -228,8 +228,10 @@
     <!-- Window & System Tray Settings -->
     <string name="settings_window_behavior_title">Fenster &amp; Infobereich</string>
     <string name="settings_window_behavior_desc">Startverhalten der Anwendung und Minimierung in den Infobereich konfigurieren</string>
+    <string name="settings_minimize_to_tray_on_close_title">Beim Schließen im Infobereich minimieren</string>
+    <string name="settings_minimize_to_tray_on_close_desc">OpenAqua beim Schließen des Fensters im Infobereich weiter ausführen</string>
     <string name="settings_start_minimized_title">Im Infobereich minimiert starten</string>
-    <string name="settings_start_minimized_desc">OpenAqua im Infobereich (System Tray) minimiert starten, anstatt das Hauptfenster zu öffnen</string>
+    <string name="settings_start_minimized_desc">OpenAqua im Infobereich minimiert starten, anstatt das Hauptfenster zu öffnen</string>
     <string name="tray_menu_open">OpenAqua öffnen</string>
     <string name="tray_menu_exit">Beenden</string>
 

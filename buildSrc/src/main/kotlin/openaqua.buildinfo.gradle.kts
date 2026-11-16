@@ -38,7 +38,22 @@ extension.outputDirectory.convention(
         extension.packageName.map { "generated/kotlin/main/${it.replace('.', '/')}" },
     ),
 )
-extension.buildTimestamp.convention(provider { Instant.now().toString() })
+val gitTimestampProvider =
+    providers
+        .environmentVariable("BUILD_TIMESTAMP")
+        .orElse(providers.environmentVariable("SOURCE_DATE_EPOCH"))
+        .orElse(
+            providers
+                .exec {
+                    commandLine("git", "log", "-1", "--format=%cI")
+                    isIgnoreExitValue = true
+                }.standardOutput
+                .asText
+                .map { it.trim() }
+                .filter { it.isNotEmpty() },
+        ).orElse("1970-01-01T00:00:00Z")
+
+extension.buildTimestamp.convention(gitTimestampProvider)
 
 private data class ResolvedCatalogLibrary(
     val alias: String,
@@ -48,8 +63,8 @@ private data class ResolvedCatalogLibrary(
 )
 
 val generateOpenAquaBuildInfo by tasks.registering {
-    val jvmVer = System.getProperty("java.version") ?: "unknown"
-    val jvmVend = System.getProperty("java.vendor") ?: "unknown"
+    val jvmVer = "21"
+    val jvmVend = "OpenJDK"
     val osName = System.getProperty("os.name") ?: "unknown"
     val osArch = System.getProperty("os.arch") ?: "unknown"
     val kotlinVer = libs.versions.kotlin.get()

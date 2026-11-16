@@ -119,8 +119,21 @@ class AppDataRepository(
         update { it.copy(hideUnconfiguredVirtualSensors = hide) }
     }
 
+    fun setMinimizeToTrayOnClose(minimize: Boolean) {
+        update {
+            it.copy(
+                minimizeToTrayOnClose = minimize,
+                startMinimized = if (minimize) it.startMinimized else false,
+            )
+        }
+    }
+
     fun setStartMinimized(startMinimized: Boolean) {
-        update { it.copy(startMinimized = startMinimized) }
+        update {
+            it.copy(
+                startMinimized = if (it.minimizeToTrayOnClose) startMinimized else false,
+            )
+        }
     }
 
     fun openDataFolder() {

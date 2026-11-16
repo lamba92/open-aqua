@@ -228,6 +228,8 @@
     <!-- Window & System Tray Settings -->
     <string name="settings_window_behavior_title">Fenêtre &amp; Zone de notification</string>
     <string name="settings_window_behavior_desc">Configurer le comportement au lancement et la réduction dans la barre des tâches</string>
+    <string name="settings_minimize_to_tray_on_close_title">Réduire dans la zone de notification à la fermeture</string>
+    <string name="settings_minimize_to_tray_on_close_desc">Garder OpenAqua en cours d'exécution dans la zone de notification lors de la fermeture de la fenêtre</string>
     <string name="settings_start_minimized_title">Démarrer réduit dans la zone de notification</string>
     <string name="settings_start_minimized_desc">Lancer OpenAqua réduit dans la zone de notification au lieu d'ouvrir la fenêtre principale</string>
     <string name="tray_menu_open">Ouvrir OpenAqua</string>

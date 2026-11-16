@@ -228,6 +228,8 @@
     <!-- Window & System Tray Settings -->
     <string name="settings_window_behavior_title">Finestra &amp; Barra delle Applicazioni</string>
     <string name="settings_window_behavior_desc">Configura il comportamento di avvio dell'applicazione e la minimizzazione nella barra delle applicazioni</string>
+    <string name="settings_minimize_to_tray_on_close_title">Minimizza nella barra di sistema alla chiusura</string>
+    <string name="settings_minimize_to_tray_on_close_desc">Mantieni OpenAqua in esecuzione nell'area di notifica quando chiudi la finestra</string>
     <string name="settings_start_minimized_title">Avvia minimizzato nella barra di sistema</string>
     <string name="settings_start_minimized_desc">Avvia OpenAqua nascosto nell'area di notifica invece di aprire la finestra principale</string>
     <string name="tray_menu_open">Apri OpenAqua</string>

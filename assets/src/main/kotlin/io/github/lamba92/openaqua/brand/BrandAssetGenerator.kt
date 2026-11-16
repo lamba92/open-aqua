@@ -39,6 +39,7 @@ fun main(args: Array<String>) {
 
     // 1. Generate Master SVGs
     val iconTransparentSvg = SvgGenerator.iconTransparent()
+    val trayIconWhiteSvg = SvgGenerator.trayIconWhite()
     val appIconSquircleSvg = SvgGenerator.appIconSquircle()
     val faviconOptimizedSvg = SvgGenerator.faviconOptimized()
     val bannerSocialSvg = SvgGenerator.bannerSocial()
@@ -46,6 +47,7 @@ fun main(args: Array<String>) {
     val bannerReadmeDarkSvg = SvgGenerator.bannerReadme(darkMode = true)
 
     File(assetsDir, "icon-transparent.svg").writeText(iconTransparentSvg)
+    File(assetsDir, "tray-icon-white.svg").writeText(trayIconWhiteSvg)
     File(assetsDir, "app-icon-squircle.svg").writeText(appIconSquircleSvg)
     File(assetsDir, "favicon-optimized.svg").writeText(faviconOptimizedSvg)
     File(assetsDir, "banner-social-1200x630.svg").writeText(bannerSocialSvg)
@@ -56,11 +58,13 @@ fun main(args: Array<String>) {
     val appleTouchPng = RasterRenderer.renderSquircleIconPng(180)
     val icon192Png = RasterRenderer.renderSquircleIconPng(192)
     val icon512Png = RasterRenderer.renderSquircleIconPng(512)
+    val trayIconWhite64Png = RasterRenderer.renderTrayIconWhitePng(64)
     val bannerSocialPng = RasterRenderer.renderSocialBannerPng()
 
     File(assetsDir, "apple-touch-icon.png").writeBytes(appleTouchPng)
     File(assetsDir, "icon-192.png").writeBytes(icon192Png)
     File(assetsDir, "icon-512.png").writeBytes(icon512Png)
+    File(assetsDir, "tray-icon-white-64.png").writeBytes(trayIconWhite64Png)
     File(assetsDir, "banner-social-1200x630.png").writeBytes(bannerSocialPng)
 
     // 3. Generate multi-resolution ICO & macOS ICNS containers
@@ -72,6 +76,7 @@ fun main(args: Array<String>) {
 
     // 4. Sync runtime icons into Compose Multiplatform resources
     File(composeDrawableDir, "ic_openaqua.svg").writeText(iconTransparentSvg)
+    File(composeDrawableDir, "ic_tray_icon.svg").writeText(trayIconWhiteSvg)
     File(composeDrawableDir, "ic_app_icon.png").writeBytes(icon512Png)
 
     println("Generated and synced OpenAqua brand assets to:")
@@ -84,7 +89,12 @@ object SvgGenerator {
     private val aquaBlueHex = OpenAquaPalette.AquaBlue.hex
     private val pureWhiteHex = OpenAquaPalette.PureWhite.hex
 
-    private fun primaryMarkGroup(transform: MarkTransform): String =
+    private fun primaryMarkGroup(
+        transform: MarkTransform,
+        strokeColorHex: String = aquaBlueHex,
+        dropletStroke: Int = 30,
+        bracketStroke: Int = 28,
+    ): String =
         """
         <g transform="translate(${formatNum(
             transform.translateX,
@@ -92,24 +102,24 @@ object SvgGenerator {
           <path
             d="M 256 64 C 256 64 112 236 112 332 A 144 144 0 0 0 400 332 C 400 236 256 64 256 64 Z"
             fill="none"
-            stroke="$aquaBlueHex"
-            stroke-width="30"
+            stroke="$strokeColorHex"
+            stroke-width="$dropletStroke"
             stroke-linecap="round"
             stroke-linejoin="round"
           />
           <polyline
             points="222,276 168,330 222,384"
             fill="none"
-            stroke="$aquaBlueHex"
-            stroke-width="28"
+            stroke="$strokeColorHex"
+            stroke-width="$bracketStroke"
             stroke-linecap="round"
             stroke-linejoin="round"
           />
           <polyline
             points="290,276 344,330 290,384"
             fill="none"
-            stroke="$aquaBlueHex"
-            stroke-width="28"
+            stroke="$strokeColorHex"
+            stroke-width="$bracketStroke"
             stroke-linecap="round"
             stroke-linejoin="round"
           />
@@ -120,6 +130,13 @@ object SvgGenerator {
         """
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
 ${primaryMarkGroup(BrandTransforms.transparentIcon)}
+</svg>
+        """.trimIndent() + "\n"
+
+    fun trayIconWhite(): String =
+        """
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+${primaryMarkGroup(BrandTransforms.transparentIcon, strokeColorHex = pureWhiteHex, dropletStroke = 32, bracketStroke = 30)}
 </svg>
         """.trimIndent() + "\n"
 
@@ -214,6 +231,20 @@ object RasterRenderer {
             g.color = deepNavyAwt
             g.fill(RoundRectangle2D.Double(0.0, 0.0, 512.0, 512.0, 192.0, 192.0))
             drawMark(g, BrandTransforms.faviconOptimized, optimized = true)
+        }
+
+    fun renderTrayIconWhitePng(size: Int): ByteArray =
+        renderToPng(size, size) { g ->
+            val scale = size / 512.0
+            g.scale(scale, scale)
+            g.translate(BrandTransforms.transparentIcon.translateX, BrandTransforms.transparentIcon.translateY)
+            g.scale(BrandTransforms.transparentIcon.scale, BrandTransforms.transparentIcon.scale)
+            g.color = pureWhiteAwt
+            g.stroke = BasicStroke(32f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND)
+            g.draw(createDropletPath(optimized = false))
+            g.stroke = BasicStroke(30f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND)
+            g.draw(createPolyline(222.0, 276.0, 168.0, 330.0, 222.0, 384.0))
+            g.draw(createPolyline(290.0, 276.0, 344.0, 330.0, 290.0, 384.0))
         }
 
     fun renderSocialBannerPng(): ByteArray =
