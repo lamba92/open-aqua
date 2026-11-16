@@ -30,8 +30,10 @@
 -keep class org.jetbrains.compose.resources.** { *; }
 -keep class * implements kotlinx.serialization.KSerializer { *; }
 
-# Clikt CLI
+# Clikt & Mordant CLI
 -keep class com.github.ajalt.clikt.** { *; }
+-keep class com.github.ajalt.mordant.** { *; }
+-keep interface com.github.ajalt.mordant.** { *; }
 
 # Native Tray & JNI bindings
 -keep class dev.nucleusframework.composenativetray.** { *; }
