@@ -4,7 +4,11 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.window.Tray
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
@@ -12,6 +16,10 @@ import co.touchlab.kermit.Logger
 import coil3.ImageLoader
 import coil3.compose.setSingletonImageLoaderFactory
 import coil3.svg.SvgDecoder
+import com.github.ajalt.clikt.core.CliktCommand
+import com.github.ajalt.clikt.core.main
+import com.github.ajalt.clikt.parameters.options.flag
+import com.github.ajalt.clikt.parameters.options.option
 import io.github.lamba92.openaqua.app.coroutine.CoroutineScopeProvider
 import io.github.lamba92.openaqua.app.di.LocalDI
 import io.github.lamba92.openaqua.app.di.createOpenAquaDI
@@ -31,21 +39,36 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.runBlocking
 import open_aqua.app_compose.generated.resources.Res
 import open_aqua.app_compose.generated.resources.ic_app_icon
+import open_aqua.app_compose.generated.resources.tray_menu_exit
+import open_aqua.app_compose.generated.resources.tray_menu_open
 import open_aqua.app_compose.generated.resources.window_title
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.kodein.di.DI
 import org.kodein.di.instance
+import java.awt.SystemTray
 import java.awt.Taskbar
 import javax.imageio.ImageIO
 import kotlin.time.Duration.Companion.milliseconds
 
-fun main() {
-    startOpenAquaApplication(createOpenAquaDI())
+class OpenAquaAppCommand : CliktCommand(name = "open-aqua") {
+    val minimized by option("-m", "--minimized", help = "Start OpenAqua minimized to the system tray").flag(default = false)
+
+    override fun run() {
+        startOpenAquaApplication(createOpenAquaDI(), startMinimized = minimized)
+    }
+}
+
+fun main(args: Array<String>) {
+    System.setProperty("apple.awt.application.name", "OpenAqua")
+    OpenAquaAppCommand().main(args)
 }
 
 @OptIn(FlowPreview::class)
-fun startOpenAquaApplication(di: DI = createOpenAquaDI()) {
+fun startOpenAquaApplication(
+    di: DI = createOpenAquaDI(),
+    startMinimized: Boolean = false,
+) {
     acquireOrNotify()
     configureTaskbarIcon()
 
@@ -70,6 +93,10 @@ fun startOpenAquaApplication(di: DI = createOpenAquaDI()) {
                 is AppDataRepository.State.Ready -> state.data
             }
 
+        val shouldStartMinimized = startMinimized || storedData.startMinimized
+        var isWindowVisible by remember { mutableStateOf(!shouldStartMinimized) }
+        val isTraySupported = remember { SystemTray.isSupported() }
+
         val windowState =
             rememberWindowState(
                 placement = storedData.windowState.placement,
@@ -86,14 +113,44 @@ fun startOpenAquaApplication(di: DI = createOpenAquaDI()) {
                 }
         }
 
+        if (isTraySupported) {
+            Tray(
+                icon = painterResource(Res.drawable.ic_app_icon),
+                tooltip = stringResource(Res.string.window_title),
+                onAction = {
+                    isWindowVisible = true
+                    windowState.isMinimized = false
+                },
+                menu = {
+                    Item(
+                        text = stringResource(Res.string.tray_menu_open),
+                        onClick = {
+                            isWindowVisible = true
+                            windowState.isMinimized = false
+                        },
+                    )
+                    Separator()
+                    Item(
+                        text = stringResource(Res.string.tray_menu_exit),
+                        onClick = {
+                            mainLogger.i { "Application exiting via tray menu..." }
+                            appDataRepository.saveWindowStateSync(windowState.toStoredData(storedData.windowState))
+                            scopeProvider.cancelAll()
+                            foregroundRequestService.close()
+                            exitApplication()
+                        },
+                    )
+                },
+            )
+        }
+
         AppLocaleProvider(storedData.language.locale) {
             Window(
+                visible = isWindowVisible,
                 onCloseRequest = {
-                    mainLogger.i { "Application closing, cancelling active scopes..." }
+                    mainLogger.i { "Window close requested, hiding to tray..." }
                     appDataRepository.saveWindowStateSync(windowState.toStoredData(storedData.windowState))
-                    scopeProvider.cancelAll()
-                    foregroundRequestService.close()
-                    exitApplication()
+                    isWindowVisible = false
                 },
                 state = windowState,
                 title = stringResource(Res.string.window_title),
@@ -102,6 +159,7 @@ fun startOpenAquaApplication(di: DI = createOpenAquaDI()) {
                 LaunchedEffect(Unit) {
                     foregroundRequestService.focusRequests.collect {
                         mainLogger.i { "Focus requested by secondary instance, restoring window..." }
+                        isWindowVisible = true
                         window.restoreAndFocus(windowState)
                     }
                 }

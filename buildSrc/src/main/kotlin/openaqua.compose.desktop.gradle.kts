@@ -28,6 +28,7 @@ val releasePackageVersion =
 compose.desktop {
     application {
         mainClass = "io.github.lamba92.openaqua.app.MainKt"
+        jvmArgs += listOf("-Xdock:name=OpenAqua")
 
         buildTypes.release.proguard {
             configurationFiles.from(rootProject.file("app-compose/proguard-rules.pro"))

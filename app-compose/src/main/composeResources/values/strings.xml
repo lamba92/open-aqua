@@ -310,6 +310,14 @@
     <string name="settings_hide_unconfigured_virtual_sensors_title">Hide unconfigured virtual sensors</string>
     <string name="settings_hide_unconfigured_virtual_sensors_desc">Hide virtual software sensor slots that have not received host temperature telemetry</string>
 
+    <!-- Window & System Tray Settings -->
+    <string name="settings_window_behavior_title">Window &amp; System Tray</string>
+    <string name="settings_window_behavior_desc">Configure application launch behavior and system tray minimization</string>
+    <string name="settings_start_minimized_title">Start minimized to tray</string>
+    <string name="settings_start_minimized_desc">Launch OpenAqua hidden in the system tray instead of opening the main window</string>
+    <string name="tray_menu_open">Open OpenAqua</string>
+    <string name="tray_menu_exit">Exit</string>
+
     <!-- Visibility Filter In-Screen Controls -->
     <string name="visibility_filter_hidden_count">%1$d hidden</string>
     <string name="visibility_filter_hide_inactive">Hide inactive</string>

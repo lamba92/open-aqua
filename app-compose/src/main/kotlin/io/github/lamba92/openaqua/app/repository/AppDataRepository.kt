@@ -119,6 +119,10 @@ class AppDataRepository(
         update { it.copy(hideUnconfiguredVirtualSensors = hide) }
     }
 
+    fun setStartMinimized(startMinimized: Boolean) {
+        update { it.copy(startMinimized = startMinimized) }
+    }
+
     fun openDataFolder() {
         coroutineScope.launch {
             baseAppDataDir.path.openInDesktopEnvironment()

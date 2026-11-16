@@ -131,9 +131,13 @@ import open_aqua.app_compose.generated.resources.settings_restore_defaults_desc
 import open_aqua.app_compose.generated.resources.settings_restore_defaults_title
 import open_aqua.app_compose.generated.resources.settings_screen_subtitle
 import open_aqua.app_compose.generated.resources.settings_screen_title
+import open_aqua.app_compose.generated.resources.settings_start_minimized_desc
+import open_aqua.app_compose.generated.resources.settings_start_minimized_title
 import open_aqua.app_compose.generated.resources.settings_tab_general
 import open_aqua.app_compose.generated.resources.settings_tab_logs
 import open_aqua.app_compose.generated.resources.settings_tab_subtitle
+import open_aqua.app_compose.generated.resources.settings_window_behavior_desc
+import open_aqua.app_compose.generated.resources.settings_window_behavior_title
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import kotlin.math.roundToInt
@@ -265,6 +269,16 @@ private fun GeneralSettingsContent(
                         },
                         onToggleHideUnconfiguredVirtualSensors = {
                             viewModel.onEvent(SettingsEvent.ToggleHideUnconfiguredVirtualSensors(it))
+                        },
+                    )
+
+                    HorizontalDivider(color = colors.borderOutline)
+
+                    // Window & System Tray section
+                    WindowBehaviorSection(
+                        startMinimized = state.storedData.startMinimized,
+                        onToggleStartMinimized = {
+                            viewModel.onEvent(SettingsEvent.ToggleStartMinimized(it))
                         },
                     )
 
@@ -755,6 +769,45 @@ private fun ChannelVisibilitySection(
             description = stringResource(Res.string.settings_hide_unconfigured_virtual_sensors_desc),
             checked = hideUnconfiguredVirtualSensors,
             onCheckedChange = onToggleHideUnconfiguredVirtualSensors,
+        )
+    }
+}
+
+@Composable
+private fun WindowBehaviorSection(
+    startMinimized: Boolean,
+    onToggleStartMinimized: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = OpenAquaTheme.colors
+    val metrics = OpenAquaTheme.metrics
+
+    Column(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(metrics.radiusLarge))
+                .background(colors.surfaceLow)
+                .border(metrics.strokeThin, colors.borderOutline, RoundedCornerShape(metrics.radiusLarge))
+                .padding(metrics.spacingXl),
+        verticalArrangement = Arrangement.spacedBy(metrics.spacingLg),
+    ) {
+        SectionHeader(
+            icon = painterResource(Res.drawable.ic_settings),
+            title = stringResource(Res.string.settings_window_behavior_title),
+        )
+
+        Text(
+            text = stringResource(Res.string.settings_window_behavior_desc),
+            color = colors.textMuted,
+            fontSize = 14.sp,
+        )
+
+        SettingToggleRow(
+            title = stringResource(Res.string.settings_start_minimized_title),
+            description = stringResource(Res.string.settings_start_minimized_desc),
+            checked = startMinimized,
+            onCheckedChange = onToggleStartMinimized,
         )
     }
 }

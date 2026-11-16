@@ -31,6 +31,7 @@ data class AppStoredData(
     val hideDisconnectedSensorsInFans: Boolean = false,
     val hideDisconnectedSensors: Boolean = false,
     val hideUnconfiguredVirtualSensors: Boolean = false,
+    val startMinimized: Boolean = false,
     val sensorTypes: SensorTypesStoredData = SensorTypesStoredData.DEFAULT,
     val windowState: WindowStateStoredData = WindowStateStoredData.DEFAULT,
     val navigationRailExpanded: Boolean = false,

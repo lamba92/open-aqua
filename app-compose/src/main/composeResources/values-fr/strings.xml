@@ -225,6 +225,14 @@
     <string name="settings_hide_unconfigured_virtual_sensors_title">Masquer les capteurs virtuels non configurés</string>
     <string name="settings_hide_unconfigured_virtual_sensors_desc">Masquer les emplacements logiciels virtuels n'ayant pas reçu de télémétrie de l'hôte</string>
 
+    <!-- Window & System Tray Settings -->
+    <string name="settings_window_behavior_title">Fenêtre &amp; Zone de notification</string>
+    <string name="settings_window_behavior_desc">Configurer le comportement au lancement et la réduction dans la barre des tâches</string>
+    <string name="settings_start_minimized_title">Démarrer réduit dans la zone de notification</string>
+    <string name="settings_start_minimized_desc">Lancer OpenAqua réduit dans la zone de notification au lieu d'ouvrir la fenêtre principale</string>
+    <string name="tray_menu_open">Ouvrir OpenAqua</string>
+    <string name="tray_menu_exit">Quitter</string>
+
     <!-- Visibility Filter In-Screen Controls -->
     <string name="visibility_filter_hidden_count">%1$d masqué(s)</string>
     <string name="visibility_filter_hide_inactive">Masquer inactifs</string>

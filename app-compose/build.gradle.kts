@@ -31,5 +31,6 @@ dependencies {
     api(projects.coreModel.coreModelDevice)
     api(projects.coreModel.coreModelHost)
     api(projects.coreTheme)
+    api(libs.clikt)
     testImplementation(kotlin("test"))
 }

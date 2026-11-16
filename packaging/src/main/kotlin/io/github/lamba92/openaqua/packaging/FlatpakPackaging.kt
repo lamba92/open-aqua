@@ -76,6 +76,7 @@ fun generateFlatpakYaml(
                     "--socket=wayland",
                     "--device=all",
                     "--filesystem=/sys:ro",
+                    "--talk-name=org.kde.StatusNotifierWatcher",
                 ),
             modules =
                 listOf(

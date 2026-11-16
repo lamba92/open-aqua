@@ -225,6 +225,14 @@
     <string name="settings_hide_unconfigured_virtual_sensors_title">Ocultar sensores virtuales no configurados</string>
     <string name="settings_hide_unconfigured_virtual_sensors_desc">Ocultar ranuras de sensores virtuales de software que aún no han recibido telemetría de temperatura del host</string>
 
+    <!-- Window & System Tray Settings -->
+    <string name="settings_window_behavior_title">Ventana &amp; Bandeja del sistema</string>
+    <string name="settings_window_behavior_desc">Configurar el comportamiento al iniciar y la minimización en la bandeja del sistema</string>
+    <string name="settings_start_minimized_title">Iniciar minimizado en la bandeja</string>
+    <string name="settings_start_minimized_desc">Iniciar OpenAqua oculto en la bandeja del sistema en lugar de abrir la ventana principal</string>
+    <string name="tray_menu_open">Abrir OpenAqua</string>
+    <string name="tray_menu_exit">Salir</string>
+
     <!-- Visibility Filter In-Screen Controls -->
     <string name="visibility_filter_hidden_count">%1$d ocultos</string>
     <string name="visibility_filter_hide_inactive">Ocultar inactivos</string>
