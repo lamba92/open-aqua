@@ -60,6 +60,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.lamba92.openaqua.app.di.rememberInstance
+import io.github.lamba92.openaqua.app.di.rememberViewModel
 import io.github.lamba92.openaqua.app.feature.settings.logs.LogsContent
 import io.github.lamba92.openaqua.app.feature.settings.updates.AppUpdateService
 import io.github.lamba92.openaqua.app.feature.settings.updates.UpdatesContent
@@ -182,7 +183,7 @@ fun SettingsScreen(
 fun GeneralSettingsContent(
     scrollState: ScrollState = rememberScrollState(),
     modifier: Modifier = Modifier,
-    viewModel: SettingsViewModel = rememberInstance(),
+    viewModel: SettingsViewModel = rememberViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
     when (val currentState = state) {

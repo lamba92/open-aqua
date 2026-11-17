@@ -32,7 +32,7 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import io.github.lamba92.openaqua.app.di.rememberInstance
+import io.github.lamba92.openaqua.app.di.rememberViewModel
 import io.github.lamba92.openaqua.app.feature.device.common.DeviceLoadingContent
 import io.github.lamba92.openaqua.app.feature.device.common.FanItem
 import io.github.lamba92.openaqua.app.feature.device.common.SensorItem
@@ -544,7 +544,7 @@ fun FansTabContent(
     modifier: Modifier = Modifier,
     scrollState: ScrollState = rememberScrollState(),
 ) = FansTabContent(
-    viewModel = rememberInstance(arg = deviceId),
+    viewModel = rememberViewModel(arg = deviceId),
     modifier = modifier,
     scrollState = scrollState,
 )

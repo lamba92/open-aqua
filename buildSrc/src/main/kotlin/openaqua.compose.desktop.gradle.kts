@@ -37,6 +37,14 @@ compose.desktop {
         mainClass = "io.github.lamba92.openaqua.app.MainKt"
         javaHome = javaLauncher.get().metadata.installationPath.asFile.absolutePath
 
+        jvmArgs(
+            "-XX:+UseG1GC",
+            "-XX:G1PeriodicGCInterval=10000",
+            "-XX:G1PeriodicGCSystemLoadThreshold=0",
+            "-XX:MinHeapFreeRatio=10",
+            "-XX:MaxHeapFreeRatio=25",
+        )
+
         buildTypes.release.proguard {
             configurationFiles.from(rootProject.file("app-compose/proguard-rules.pro"))
         }

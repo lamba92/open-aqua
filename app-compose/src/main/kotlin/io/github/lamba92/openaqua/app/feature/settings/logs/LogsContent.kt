@@ -39,7 +39,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import co.touchlab.kermit.Severity
-import io.github.lamba92.openaqua.app.di.rememberInstance
+import io.github.lamba92.openaqua.app.di.rememberViewModel
 import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
 import io.github.lamba92.openaqua.app.ui.components.OpenAquaOutlinedButton
 import io.github.lamba92.openaqua.app.ui.components.ScreenHeaderSection
@@ -62,7 +62,7 @@ import kotlin.time.Duration.Companion.seconds
 @Composable
 fun LogsContent(
     modifier: Modifier = Modifier,
-    viewModel: LogsViewModel = rememberInstance(),
+    viewModel: LogsViewModel = rememberViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
     LogsContent(

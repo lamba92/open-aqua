@@ -1,6 +1,7 @@
 package io.github.lamba92.openaqua.app.di
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import co.touchlab.kermit.CommonWriter
@@ -27,6 +28,7 @@ import io.github.lamba92.openaqua.app.logging.AppLogService
 import io.github.lamba92.openaqua.app.logging.SharedLogSource
 import io.github.lamba92.openaqua.app.model.BaseAppDataDir
 import io.github.lamba92.openaqua.app.model.LogsDirectory
+import io.github.lamba92.openaqua.app.mvi.MVIViewModel
 import io.github.lamba92.openaqua.app.permission.AlwaysGrantedDevicePermissionService
 import io.github.lamba92.openaqua.app.permission.DevicePermissionService
 import io.github.lamba92.openaqua.app.permission.LinuxDevicePermissionService
@@ -42,9 +44,12 @@ import io.github.lamba92.openaqua.app.util.EngineExtractor
 import io.github.lamba92.openaqua.app.util.ExtractedEngines
 import io.github.lamba92.openaqua.app.util.nameWithoutExtension
 import io.github.lamba92.openaqua.model.device.DeviceId
+import kotlinx.coroutines.cancel
 import org.kodein.di.DI
 import org.kodein.di.bindEagerSingleton
+import org.kodein.di.bindFactory
 import org.kodein.di.bindMultiton
+import org.kodein.di.bindProvider
 import org.kodein.di.bindSingleton
 import org.kodein.di.direct
 import org.kodein.di.instance
@@ -152,32 +157,32 @@ val appModule =
                 scopeProvider = instance(),
             )
         }
-        bindSingleton {
+        bindProvider {
             PermissionViewModel(
                 permissionService = instance(),
                 scopeProvider = instance(),
             )
         }
-        bindSingleton {
+        bindProvider {
             BugReportViewModel(
                 appLogService = instance(),
                 openAquaDeviceEngineApi = instance(),
                 scopeProvider = instance(),
             )
         }
-        bindSingleton {
+        bindProvider {
             UpdatesViewModel(
                 updateService = instance(),
                 scopeProvider = instance(),
             )
         }
-        bindSingleton {
+        bindProvider {
             LogsViewModel(
                 appLogService = instance(),
                 scopeProvider = instance(),
             )
         }
-        bindSingleton {
+        bindProvider {
             SettingsViewModel(
                 appDataRepository = instance(),
                 permissionService = instance(),
@@ -185,21 +190,21 @@ val appModule =
                 baseAppDataDir = instance(),
             )
         }
-        bindSingleton {
+        bindProvider {
             HostViewModel(
                 dataCacheService = instance(),
                 appDataRepository = instance(),
                 scopeProvider = instance(),
             )
         }
-        bindSingleton {
+        bindProvider {
             HostFansViewModel(
                 cacheService = instance(),
                 appDataRepository = instance(),
                 scopeProvider = instance(),
             )
         }
-        bindMultiton { deviceId: DeviceId ->
+        bindFactory { deviceId: DeviceId ->
             DeviceViewModel(
                 cacheService = instance(),
                 feederService = instance(),
@@ -208,7 +213,7 @@ val appModule =
                 deviceId = deviceId,
             )
         }
-        bindMultiton { deviceId: DeviceId ->
+        bindFactory { deviceId: DeviceId ->
             FansViewModel(
                 cacheService = instance(),
                 appDataRepository = instance(),
@@ -216,7 +221,7 @@ val appModule =
                 deviceId = deviceId,
             )
         }
-        bindMultiton { deviceId: DeviceId ->
+        bindFactory { deviceId: DeviceId ->
             SensorsViewModel(
                 cacheService = instance(),
                 appDataRepository = instance(),
@@ -257,4 +262,31 @@ inline fun <reified T : Any, reified A : Any> rememberInstance(
 ): T {
     val di = LocalDI.current
     return remember(di, tag, arg) { di.direct.instance(tag, arg) }
+}
+
+@Composable
+inline fun <X, Y, Z, reified T : MVIViewModel<X, Y, Z>> rememberViewModel(tag: Any? = null): T {
+    val di = LocalDI.current
+    val vm = remember(di, tag) { di.direct.instance<T>(tag) }
+    DisposableEffect(vm) {
+        onDispose {
+            vm.viewModelScope.cancel()
+        }
+    }
+    return vm
+}
+
+@Composable
+inline fun <X, Y, Z, reified T : MVIViewModel<X, Y, Z>, reified A : Any> rememberViewModel(
+    arg: A,
+    tag: Any? = null,
+): T {
+    val di = LocalDI.current
+    val vm: T = remember(di, tag, arg) { di.direct.instance<A, T>(tag, arg) }
+    DisposableEffect(vm) {
+        onDispose {
+            vm.viewModelScope.cancel()
+        }
+    }
+    return vm
 }

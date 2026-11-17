@@ -28,7 +28,7 @@ class AppLogService(
             .windowed(min = 0, max = maxInMemoryLines)
             .stateIn(
                 scope = scope,
-                started = SharingStarted.Eagerly,
+                started = SharingStarted.WhileSubscribed(5000),
                 initialValue = emptyList(),
             )
 

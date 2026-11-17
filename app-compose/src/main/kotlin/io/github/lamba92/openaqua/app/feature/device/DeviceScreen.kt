@@ -8,7 +8,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Modifier
-import io.github.lamba92.openaqua.app.di.rememberInstance
+import io.github.lamba92.openaqua.app.di.rememberViewModel
 import io.github.lamba92.openaqua.app.feature.device.common.CommonDeviceTab
 import io.github.lamba92.openaqua.app.feature.device.common.DeviceDrawerScaffold
 import io.github.lamba92.openaqua.app.feature.device.common.DeviceErrorContent
@@ -26,7 +26,7 @@ fun DeviceScreen(
     selectedTab: CommonDeviceTab,
     onSelectTab: (CommonDeviceTab) -> Unit,
     modifier: Modifier = Modifier,
-    deviceViewModel: DeviceViewModel = rememberInstance(arg = deviceId),
+    deviceViewModel: DeviceViewModel = rememberViewModel(arg = deviceId),
 ) {
     val state by deviceViewModel.state.collectAsState()
     val saveableStateHolder = rememberSaveableStateHolder()

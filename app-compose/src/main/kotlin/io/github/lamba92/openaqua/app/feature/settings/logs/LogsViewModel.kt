@@ -9,14 +9,12 @@ import io.github.lamba92.openaqua.app.mvi.MVIViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class LogsViewModel(
@@ -25,20 +23,18 @@ class LogsViewModel(
 ) : MVIViewModel<LogsState, LogsEvent, LogsEffect> {
     override val viewModelScope: LoggingScope = scopeProvider.getScope()
 
-    override val state: StateFlow<LogsState>
-        field = MutableStateFlow(LogsState())
+    override val state: StateFlow<LogsState> =
+        appLogService.logLines
+            .map { lines -> LogsState(logs = lines.toLogLines()) }
+            .flowOn(Dispatchers.Default)
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = LogsState(),
+            )
 
     override val effects: SharedFlow<LogsEffect>
         field = MutableSharedFlow()
-
-    init {
-        appLogService.logLines
-            .map { it.toLogLines() }
-            .flowOn(Dispatchers.Default)
-            .onEach { lines ->
-                state.update { LogsState(logs = lines) }
-            }.launchIn(viewModelScope)
-    }
 
     override fun onEvent(event: LogsEvent): Job =
         viewModelScope.launch {
