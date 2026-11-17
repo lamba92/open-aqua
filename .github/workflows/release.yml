@@ -50,7 +50,7 @@ jobs:
           build-scan-terms-of-use-agree: "yes"
 
       - name: Install Linux AppImage packaging dependencies
-        run: |\
+        run: |
           sudo apt-get update
           sudo apt-get install -y libfuse2 file libasound2-dev
 
@@ -60,7 +60,7 @@ jobs:
       - name: Upload to GitHub Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |\
+        run: |
           gh release upload "${{ env.TAG_NAME }}" build/releases/* --clobber
 
   release-windows:
@@ -91,7 +91,7 @@ jobs:
       - name: Upload to GitHub Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |\
+        run: |
           gh release upload "${{ env.TAG_NAME }}" build/releases/* --clobber
 
       - name: Resolve MSIX Package for Store Deployment
@@ -100,7 +100,7 @@ jobs:
         shell: pwsh
         env:
           MICROSOFT_CLIENT_SECRET: ${{ secrets.MICROSOFT_CLIENT_SECRET }}
-        run: |\
+        run: |
           $deployDir = New-Item -ItemType Directory -Path "$env:RUNNER_TEMP/msix-deploy" -Force
           $msix = Get-ChildItem "build/releases" -Filter "*.msix" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
           if (-not $msix) {
@@ -154,7 +154,7 @@ jobs:
         id: release_info
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |\
+        run: |
           TAG="${{ env.TAG_NAME }}"
           VERSION="${TAG#v}"
           echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
@@ -175,7 +175,7 @@ jobs:
           TAG: ${{ steps.release_info.outputs.tag }}
           VERSION: ${{ steps.release_info.outputs.version }}
           SHA256: ${{ steps.release_info.outputs.sha256 }}
-        run: |\
+        run: |
           echo "Syncing Flathub repository (io.github.lamba92.openaqua)..."
           git clone "https://x-access-token:${FLATHUB_TOKEN}@github.com/flathub/io.github.lamba92.openaqua.git" flathub-repo || {
             echo "::warning::Flathub repository clone failed. Verify FLATHUB_PUSH_TOKEN and repository status."
@@ -197,7 +197,7 @@ jobs:
           TAG: ${{ steps.release_info.outputs.tag }}
           VERSION: ${{ steps.release_info.outputs.version }}
           SHA256: ${{ steps.release_info.outputs.sha256 }}
-        run: |\
+        run: |
           echo "Deploying to AUR (open-aqua-bin)..."
           mkdir -p ~/.ssh
           echo "${AUR_KEY}" > ~/.ssh/aur_key
@@ -223,7 +223,7 @@ jobs:
         if: env.SNAP_TOKEN != ''
         env:
           VERSION: ${{ steps.release_info.outputs.version }}
-        run: |\
+        run: |
           echo "Preparing Snap payload..."
           mkdir -p /tmp/snap-payload
           cp packaging/build/generated/packaging/snap/snapcraft.yaml /tmp/snap-payload/
@@ -237,7 +237,7 @@ jobs:
       - name: Build Snap Package
         if: env.SNAP_TOKEN != ''
         id: snap_build
-        run: |\
+        run: |
           cd /tmp/snap-payload
           sudo snapcraft pack --destructive-mode
           SNAP_PATH=$(ls /tmp/snap-payload/*.snap | head -n 1)
