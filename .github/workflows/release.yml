@@ -148,7 +148,7 @@ jobs:
           build-scan-terms-of-use-agree: "yes"
 
       - name: Generate Packaging Descriptors
-        run: ./gradlew :packaging:generatePackagingFiles --scan --stacktrace
+        run: ./gradlew :packaging:packaging-linux-x64:generatePackagingFiles --scan --stacktrace
 
       - name: Extract Release Metadata & Checksum
         id: release_info
@@ -182,7 +182,7 @@ jobs:
             exit 0
           }
           cd flathub-repo
-          cp ../packaging/build/generated/packaging/flatpak/io.github.lamba92.openaqua.yaml .
+          cp ../packaging/packaging-linux-x64/build/generated/packaging/flatpak/io.github.lamba92.openaqua.yaml .
           sed -i -E "s|url: https://.*/open-aqua-.*-linux-x64.tar.gz|url: https://github.com/lamba92/open-aqua/releases/download/${TAG}/open-aqua-${VERSION}-linux-x64.tar.gz|g" io.github.lamba92.openaqua.yaml
           sed -i -E "s|sha256: [a-f0-9]{64}|sha256: ${SHA256}|g" io.github.lamba92.openaqua.yaml
           git config user.name "github-actions[bot]"
@@ -209,7 +209,7 @@ jobs:
             exit 0
           }
           cd aur-repo
-          cp ../packaging/build/generated/packaging/aur/PKGBUILD .
+          cp ../packaging/packaging-linux-x64/build/generated/packaging/aur/PKGBUILD .
           sed -i -E "s|^pkgver=.*|pkgver=${VERSION}|g" PKGBUILD
           sed -i -E "s|^pkgrel=.*|pkgrel=1|g" PKGBUILD
           sed -i -E "0,/'SKIP'/{s/'SKIP'/'${SHA256}'/}" PKGBUILD
@@ -226,7 +226,7 @@ jobs:
         run: |
           echo "Preparing Snap payload..."
           mkdir -p /tmp/snap-payload
-          cp packaging/build/generated/packaging/snap/snapcraft.yaml /tmp/snap-payload/
+          cp packaging/packaging-linux-x64/build/generated/packaging/snap/snapcraft.yaml /tmp/snap-payload/
           sed -i -E "s|^version:.*|version: '${VERSION}'|g" /tmp/snap-payload/snapcraft.yaml
           tar -xzf "/tmp/assets/open-aqua-${VERSION}-linux-x64.tar.gz" -C /tmp/snap-payload/ --strip-components=1
 

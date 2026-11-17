@@ -3,6 +3,7 @@ import io.github.lamba92.gradle.plugins.distribution.DistributionType
 import io.github.lamba92.gradle.plugins.distribution.NativeDistributionSpec
 import io.github.lamba92.gradle.plugins.distribution.PACKAGE_FORMAT_ATTRIBUTE
 import io.github.lamba92.gradle.plugins.distribution.PackageFormat
+import io.github.lamba92.gradle.plugins.engine.Os
 import io.github.lamba92.gradle.plugins.platform.PlatformExtension
 import org.gradle.api.attributes.Usage
 import org.gradle.api.tasks.bundling.Compression
@@ -111,54 +112,68 @@ val prepareWindowsDistributions =
         from(packageReleaseZip.flatMap { it.archiveFile })
     }
 
-nativeDistributions.all {
-    val spec = this
-    when (spec.format.orNull ?: if (spec.name == "appDir") PackageFormat.APP_DIR else null) {
-        PackageFormat.APP_DIR -> {
-            prepareAppDistributable.configure { dependsOn(spec.files) }
-            packageReleaseTarGz.configure { dependsOn(spec.files) }
-            packageReleaseZip.configure { dependsOn(spec.files) }
+afterEvaluate {
+    when (targetOs.get()) {
+        Os.LINUX -> {
+            distributionPackagesElements.outgoing.artifact(prepareLinuxDistributions)
         }
 
-        PackageFormat.DEB -> {
-            prepareLinuxDistributions.configure {
-                dependsOn(spec.files)
-                from(layout.buildDirectory.dir("compose/binaries/main-release/deb")) { include("*.deb") }
-            }
-            if (distributionPackagesElements.outgoing.artifacts.isEmpty()) {
-                distributionPackagesElements.outgoing.artifact(prepareLinuxDistributions)
-            }
+        Os.WINDOWS -> {
+            distributionPackagesElements.outgoing.artifact(prepareWindowsDistributions)
         }
 
-        PackageFormat.RPM -> {
-            prepareLinuxDistributions.configure {
-                dependsOn(spec.files)
-                from(layout.buildDirectory.dir("compose/binaries/main-release/rpm")) { include("*.rpm") }
-            }
-            if (distributionPackagesElements.outgoing.artifacts.isEmpty()) {
-                distributionPackagesElements.outgoing.artifact(prepareLinuxDistributions)
-            }
-        }
+        else -> {}
+    }
 
-        PackageFormat.MSI -> {
-            prepareWindowsDistributions.configure {
-                dependsOn(spec.files)
-                from(layout.buildDirectory.dir("compose/binaries/main-release/msi")) { include("*.msi") }
+    nativeDistributions.all {
+        val spec = this
+        val resolvedFormat =
+            spec.format.orNull ?: when (spec.name.lowercase()) {
+                "appdir" -> PackageFormat.APP_DIR
+                "deb" -> PackageFormat.DEB
+                "rpm" -> PackageFormat.RPM
+                "msi" -> PackageFormat.MSI
+                else -> null
             }
-            if (distributionPackagesElements.outgoing.artifacts.isEmpty()) {
-                distributionPackagesElements.outgoing.artifact(prepareWindowsDistributions)
+        when (resolvedFormat) {
+            PackageFormat.APP_DIR -> {
+                prepareAppDistributable.configure { dependsOn(spec.files) }
+                packageReleaseTarGz.configure { dependsOn(spec.files) }
+                packageReleaseZip.configure { dependsOn(spec.files) }
             }
-        }
 
-        else -> {
-            prepareLinuxDistributions.configure {
-                dependsOn(spec.files)
-                from(spec.files)
+            PackageFormat.DEB -> {
+                prepareLinuxDistributions.configure {
+                    dependsOn(spec.files)
+                    from(layout.buildDirectory.dir("compose/binaries/main-release/deb")) { include("*.deb") }
+                }
             }
-            prepareWindowsDistributions.configure {
-                dependsOn(spec.files)
-                from(spec.files)
+
+            PackageFormat.RPM -> {
+                prepareLinuxDistributions.configure {
+                    dependsOn(spec.files)
+                    from(layout.buildDirectory.dir("compose/binaries/main-release/rpm")) { include("*.rpm") }
+                }
+            }
+
+            PackageFormat.MSI -> {
+                prepareWindowsDistributions.configure {
+                    dependsOn(spec.files)
+                    from(layout.buildDirectory.dir("compose/binaries/main-release/msi")) { include("*.msi") }
+                }
+            }
+
+            else -> {
+                prepareLinuxDistributions.configure {
+                    dependsOn(spec.files)
+                    from(spec.files)
+                }
+                prepareWindowsDistributions.configure {
+                    dependsOn(spec.files)
+                    from(spec.files)
+                }
             }
         }
     }
 }
+
