@@ -210,6 +210,16 @@ class SettingsViewModel(
                     viewModelLogger.i { "Set hide unconfigured virtual sensors: ${event.hide}" }
                     appDataRepository.setHideUnconfiguredVirtualSensors(event.hide)
                 }
+
+                is SettingsEvent.ToggleMinimizeToTrayOnClose -> {
+                    viewModelLogger.i { "Set minimize to tray on close: ${event.minimize}" }
+                    appDataRepository.setMinimizeToTrayOnClose(event.minimize)
+                }
+
+                is SettingsEvent.ToggleStartMinimized -> {
+                    viewModelLogger.i { "Set start minimized: ${event.startMinimized}" }
+                    appDataRepository.setStartMinimized(event.startMinimized)
+                }
             }
         }
 }

@@ -100,6 +100,16 @@ sealed interface SettingsEvent {
     value class ToggleHideUnconfiguredVirtualSensors(
         val hide: Boolean,
     ) : SettingsEvent
+
+    @JvmInline
+    value class ToggleMinimizeToTrayOnClose(
+        val minimize: Boolean,
+    ) : SettingsEvent
+
+    @JvmInline
+    value class ToggleStartMinimized(
+        val startMinimized: Boolean,
+    ) : SettingsEvent
 }
 
 sealed interface SettingsEffect

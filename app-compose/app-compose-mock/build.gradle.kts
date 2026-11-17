@@ -14,6 +14,7 @@ dependencies {
 compose.desktop {
     application {
         mainClass = "io.github.lamba92.openaqua.app.mock.MainKt"
+        jvmArgs += listOf("-Xdock:name=OpenAqua")
 
         nativeDistributions {
             targetFormats(TargetFormat.Deb, TargetFormat.Rpm)

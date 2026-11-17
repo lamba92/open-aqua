@@ -50,3 +50,5 @@ All master brand assets are stored in [`assets/generated/`](generated/) (with ru
 | [`generated/apple-touch-icon.png`](generated/apple-touch-icon.png) | `180x180` | Apple Touch icon rendered from `app-icon-squircle.svg` |
 | [`generated/icon-192.png`](generated/icon-192.png) | `192x192` | Standard `192x192` app icon |
 | [`generated/icon-512.png`](generated/icon-512.png) | `512x512` | High-resolution `512x512` app icon for desktop windowing and Linux packaging |
+| [`generated/tray-icon-white.svg`](generated/tray-icon-white.svg) | `512x512` | Monochrome white tray icon mark for Windows, Linux, and macOS status bars |
+| [`generated/tray-icon-white-64.png`](generated/tray-icon-white-64.png) | `64x64` | High-DPI rasterized monochrome white tray icon |

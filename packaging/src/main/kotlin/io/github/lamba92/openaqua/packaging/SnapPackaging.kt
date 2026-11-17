@@ -64,7 +64,7 @@ fun generateSnapcraftYaml(
                         SnapcraftApp(
                             command = "bin/${metadata.executable}",
                             extensions = listOf("gnome"),
-                            plugs = listOf("raw-usb", "hardware-observe", "system-observe", "network"),
+                            plugs = listOf("raw-usb", "hardware-observe", "system-observe", "network", "unity7"),
                         ),
                 ),
             parts =

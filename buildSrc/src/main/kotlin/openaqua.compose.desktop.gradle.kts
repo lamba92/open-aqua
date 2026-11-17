@@ -1,6 +1,7 @@
 import io.github.lamba92.gradle.plugins.distribution.NativeDistributionSpec
 import io.github.lamba92.gradle.plugins.platform.PlatformExtension
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+import org.jetbrains.compose.desktop.application.tasks.AbstractProguardTask
 
 plugins {
     id("openaqua.convention.jvm")
@@ -25,9 +26,16 @@ val releasePackageVersion =
         .removePrefix("v")
         .substringBefore("-")
 
+val javaToolchains = extensions.getByType<JavaToolchainService>()
+val javaLauncher =
+    javaToolchains.launcherFor(
+        extensions.getByType<JavaPluginExtension>().toolchain,
+    )
+
 compose.desktop {
     application {
         mainClass = "io.github.lamba92.openaqua.app.MainKt"
+        javaHome = javaLauncher.get().metadata.installationPath.asFile.absolutePath
 
         buildTypes.release.proguard {
             configurationFiles.from(rootProject.file("app-compose/proguard-rules.pro"))
@@ -51,4 +59,9 @@ compose.desktop {
             }
         }
     }
+}
+
+tasks.withType<org.jetbrains.compose.desktop.application.tasks.AbstractProguardTask>().configureEach {
+    javaHome = javaLauncher.map { it.metadata.installationPath.asFile.absolutePath }
+    outputs.cacheIf { true }
 }
