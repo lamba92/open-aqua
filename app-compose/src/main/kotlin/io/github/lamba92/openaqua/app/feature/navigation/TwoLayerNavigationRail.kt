@@ -23,15 +23,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationDrawerItemColors
 import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.material3.NavigationRail
-import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.NavigationRailItemColors
 import androidx.compose.material3.NavigationRailItemDefaults
 import androidx.compose.material3.Surface
@@ -146,7 +145,8 @@ fun DeviceNavigationRailScaffold(
         ) {
             when (val targets = state.targets) {
                 NavigationTargets.Loading -> {
-                    DeviceNavigationLoadingItem(
+                    NavigationLoadingItem(
+                        label = stringResource(Res.string.permission_loading_desc),
                         metrics = metrics,
                         isExpanded = state.isExpanded,
                         modifier = Modifier.weight(1f).fillMaxWidth(),
@@ -170,7 +170,6 @@ fun DeviceNavigationRailScaffold(
                         metrics = metrics,
                         onEvent = onEvent,
                         railItemColors = railItemColors,
-                        drawerItemColors = drawerItemColors,
                         isExpanded = state.isExpanded,
                     )
 
@@ -187,7 +186,6 @@ fun DeviceNavigationRailScaffold(
                         selectedItem = state.selectedItem,
                         onSelectDevice = { onEvent(DeviceNavEvent.SelectDevice(it)) },
                         railItemColors = railItemColors,
-                        drawerItemColors = drawerItemColors,
                         containerColor = colors.container,
                         metrics = metrics,
                         isExpanded = state.isExpanded,
@@ -198,16 +196,10 @@ fun DeviceNavigationRailScaffold(
 
             // Pinned Footer (Bug Report + About + Settings)
             NavigationRailFooter(
-                isBugReportSelected = state.selectedItem is DeviceNavState.SelectedItem.BugReport,
-                onBugReportClick = { onEvent(DeviceNavEvent.SelectBugReport) },
-                isAboutSelected = state.selectedItem is DeviceNavState.SelectedItem.About,
-                onAboutClick = { onEvent(DeviceNavEvent.SelectAbout) },
-                isSettingsSelected = state.selectedItem is DeviceNavState.SelectedItem.Settings,
-                onSettingsClick = { onEvent(DeviceNavEvent.SelectSettings) },
+                state = state,
+                onEvent = onEvent,
                 railColors = railItemColors,
-                drawerColors = drawerItemColors,
                 metrics = metrics,
-                isExpanded = state.isExpanded,
             )
         }
 
@@ -224,13 +216,13 @@ private fun HostItem(
     metrics: NavigationRailMetrics,
     onEvent: (DeviceNavEvent) -> Unit,
     railItemColors: NavigationRailItemColors,
-    drawerItemColors: NavigationDrawerItemColors,
     isExpanded: Boolean,
     modifier: Modifier = Modifier,
 ) {
     when (host) {
         is DeviceState.Host.Loading -> {
-            HostLoadingItem(
+            NavigationLoadingItem(
+                label = stringResource(Res.string.nav_host),
                 metrics = metrics,
                 isExpanded = isExpanded,
                 modifier = modifier,
@@ -246,7 +238,6 @@ private fun HostItem(
                 isSelected = isSelected,
                 onClick = { onEvent(DeviceNavEvent.SelectHost) },
                 railColors = railItemColors,
-                drawerColors = drawerItemColors,
                 metrics = metrics,
                 isExpanded = isExpanded,
                 modifier = modifier,
@@ -262,7 +253,6 @@ private fun DeviceNavigationRailList(
     selectedItem: DeviceNavState.SelectedItem?,
     onSelectDevice: (DeviceId) -> Unit,
     railItemColors: NavigationRailItemColors,
-    drawerItemColors: NavigationDrawerItemColors,
     containerColor: Color,
     metrics: NavigationRailMetrics,
     isExpanded: Boolean,
@@ -293,7 +283,6 @@ private fun DeviceNavigationRailList(
                             selectedItem.deviceId == deviceState.device.id,
                     onClick = { onSelectDevice(deviceState.device.id) },
                     railColors = railItemColors,
-                    drawerColors = drawerItemColors,
                     metrics = metrics,
                     isExpanded = isExpanded,
                 )
@@ -406,49 +395,14 @@ private fun NavigationRailHeader(
     }
 }
 
-private data class FooterItemData(
-    val icon: Painter,
-    val label: String,
-    val isSelected: Boolean,
-    val onClick: () -> Unit,
-)
-
 @Composable
 private fun NavigationRailFooter(
-    isBugReportSelected: Boolean,
-    onBugReportClick: () -> Unit,
-    isAboutSelected: Boolean,
-    onAboutClick: () -> Unit,
-    isSettingsSelected: Boolean,
-    onSettingsClick: () -> Unit,
+    state: DeviceNavState,
+    onEvent: (DeviceNavEvent) -> Unit,
     railColors: NavigationRailItemColors,
-    drawerColors: NavigationDrawerItemColors,
     metrics: NavigationRailMetrics,
-    isExpanded: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val items =
-        listOf(
-            FooterItemData(
-                icon = painterResource(Res.drawable.ic_bug_report),
-                label = stringResource(Res.string.nav_bug_report),
-                isSelected = isBugReportSelected,
-                onClick = onBugReportClick,
-            ),
-            FooterItemData(
-                icon = painterResource(Res.drawable.ic_info),
-                label = stringResource(Res.string.nav_about),
-                isSelected = isAboutSelected,
-                onClick = onAboutClick,
-            ),
-            FooterItemData(
-                icon = painterResource(Res.drawable.ic_settings),
-                label = stringResource(Res.string.nav_settings),
-                isSelected = isSettingsSelected,
-                onClick = onSettingsClick,
-            ),
-        )
-
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier.padding(bottom = 14.dp),
@@ -459,23 +413,40 @@ private fun NavigationRailFooter(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
         )
         Spacer(modifier = Modifier.height(4.dp))
-        items.forEach { item ->
-            SimpleNavigationRailItem(
-                icon = item.icon,
-                label = item.label,
-                isSelected = item.isSelected,
-                onClick = item.onClick,
-                railColors = railColors,
-                drawerColors = drawerColors,
-                metrics = metrics,
-                isExpanded = isExpanded,
-            )
-        }
+        SimpleNavigationRailItem(
+            icon = painterResource(Res.drawable.ic_bug_report),
+            label = stringResource(Res.string.nav_bug_report),
+            isSelected = state.selectedItem is DeviceNavState.SelectedItem.BugReport,
+            onClick = { onEvent(DeviceNavEvent.SelectBugReport) },
+            railColors = railColors,
+            metrics = metrics,
+            isExpanded = state.isExpanded,
+        )
+        SimpleNavigationRailItem(
+            icon = painterResource(Res.drawable.ic_info),
+            label = stringResource(Res.string.nav_about),
+            isSelected = state.selectedItem is DeviceNavState.SelectedItem.About,
+            onClick = { onEvent(DeviceNavEvent.SelectAbout) },
+            railColors = railColors,
+            metrics = metrics,
+            isExpanded = state.isExpanded,
+        )
+        SimpleNavigationRailItem(
+            icon = painterResource(Res.drawable.ic_settings),
+            label = stringResource(Res.string.nav_settings),
+            isSelected = state.selectedItem is DeviceNavState.SelectedItem.Settings,
+            onClick = { onEvent(DeviceNavEvent.SelectSettings) },
+            hasBadge = state.isUpdateAvailable,
+            railColors = railColors,
+            metrics = metrics,
+            isExpanded = state.isExpanded,
+        )
     }
 }
 
 @Composable
-private fun HostLoadingItem(
+private fun NavigationLoadingItem(
+    label: String,
     metrics: NavigationRailMetrics,
     isExpanded: Boolean,
     modifier: Modifier = Modifier,
@@ -510,56 +481,7 @@ private fun HostLoadingItem(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = stringResource(Res.string.nav_host),
-                    fontSize = metrics.labelTextSize,
-                    fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
-                    color = OpenAquaTheme.colors.textMuted,
-                    maxLines = 1,
-                    softWrap = false,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun DeviceNavigationLoadingItem(
-    metrics: NavigationRailMetrics,
-    isExpanded: Boolean,
-    modifier: Modifier = Modifier,
-) {
-    val fixedSlotWidth = metrics.collapsedWidth - 16.dp
-
-    Row(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .height(metrics.itemIconSize + 16.dp)
-                .padding(horizontal = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(
-            modifier = Modifier.width(fixedSlotWidth),
-            contentAlignment = Alignment.Center,
-        ) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(metrics.itemIconSize),
-                strokeWidth = 2.dp,
-                color = OpenAquaTheme.colors.primaryBright,
-            )
-        }
-        AnimatedVisibility(
-            visible = isExpanded,
-            enter = fadeIn(animationSpec = tween(durationMillis = 200, delayMillis = 50)),
-            exit = fadeOut(animationSpec = tween(durationMillis = 150)),
-        ) {
-            Row(
-                modifier = Modifier.padding(start = 6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = stringResource(Res.string.permission_loading_desc),
+                    text = label,
                     fontSize = metrics.labelTextSize,
                     fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
                     color = OpenAquaTheme.colors.textMuted,
@@ -655,8 +577,6 @@ private fun BaseNavigationRailItem(
     label: String,
     isSelected: Boolean,
     onClick: () -> Unit,
-    railColors: NavigationRailItemColors,
-    drawerColors: NavigationDrawerItemColors,
     metrics: NavigationRailMetrics,
     isExpanded: Boolean,
     modifier: Modifier = Modifier,
@@ -745,25 +665,34 @@ private fun SimpleNavigationRailItem(
     isSelected: Boolean,
     onClick: () -> Unit,
     railColors: NavigationRailItemColors,
-    drawerColors: NavigationDrawerItemColors,
     metrics: NavigationRailMetrics,
     isExpanded: Boolean,
     modifier: Modifier = Modifier,
+    hasBadge: Boolean = false,
 ) {
     BaseNavigationRailItem(
         icon = {
-            Icon(
-                painter = icon,
-                contentDescription = label,
-                tint = if (isSelected) railColors.selectedIconColor else railColors.unselectedIconColor,
-                modifier = Modifier.size(metrics.itemIconSize),
-            )
+            Box(contentAlignment = Alignment.TopEnd) {
+                Icon(
+                    painter = icon,
+                    contentDescription = label,
+                    tint = if (isSelected) railColors.selectedIconColor else railColors.unselectedIconColor,
+                    modifier = Modifier.size(metrics.itemIconSize),
+                )
+                if (hasBadge) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .size(8.dp)
+                                .clip(CircleShape)
+                                .background(OpenAquaTheme.colors.primaryBright),
+                    )
+                }
+            }
         },
         label = label,
         isSelected = isSelected,
         onClick = onClick,
-        railColors = railColors,
-        drawerColors = drawerColors,
         metrics = metrics,
         isExpanded = isExpanded,
         modifier = modifier,
@@ -778,7 +707,6 @@ private fun StatusNavigationRailItem(
     isSelected: Boolean,
     onClick: () -> Unit,
     railColors: NavigationRailItemColors,
-    drawerColors: NavigationDrawerItemColors,
     metrics: NavigationRailMetrics,
     isExpanded: Boolean,
     modifier: Modifier = Modifier,
@@ -801,8 +729,6 @@ private fun StatusNavigationRailItem(
         label = label,
         isSelected = isSelected,
         onClick = onClick,
-        railColors = railColors,
-        drawerColors = drawerColors,
         metrics = metrics,
         isExpanded = isExpanded,
         modifier = modifier,
@@ -815,7 +741,6 @@ private fun HostNavigationRailItem(
     isSelected: Boolean,
     onClick: () -> Unit,
     railColors: NavigationRailItemColors,
-    drawerColors: NavigationDrawerItemColors,
     metrics: NavigationRailMetrics,
     isExpanded: Boolean,
     modifier: Modifier = Modifier,
@@ -838,7 +763,6 @@ private fun HostNavigationRailItem(
         isSelected = isSelected,
         onClick = onClick,
         railColors = railColors,
-        drawerColors = drawerColors,
         metrics = metrics,
         isExpanded = isExpanded,
         modifier = modifier,
@@ -851,7 +775,6 @@ private fun AquaDeviceNavigationRailItem(
     isSelected: Boolean,
     onClick: () -> Unit,
     railColors: NavigationRailItemColors,
-    drawerColors: NavigationDrawerItemColors,
     metrics: NavigationRailMetrics,
     isExpanded: Boolean,
     modifier: Modifier = Modifier,
@@ -872,7 +795,6 @@ private fun AquaDeviceNavigationRailItem(
         isSelected = isSelected,
         onClick = onClick,
         railColors = railColors,
-        drawerColors = drawerColors,
         metrics = metrics,
         isExpanded = isExpanded,
         modifier = modifier,

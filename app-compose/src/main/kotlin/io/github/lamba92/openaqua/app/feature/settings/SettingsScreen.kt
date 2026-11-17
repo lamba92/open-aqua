@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -25,6 +26,7 @@ import androidx.compose.material.icons.automirrored.outlined.Article
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -45,7 +47,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -58,6 +59,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import io.github.lamba92.openaqua.app.di.rememberInstance
+import io.github.lamba92.openaqua.app.feature.settings.logs.LogsContent
+import io.github.lamba92.openaqua.app.feature.settings.updates.AppUpdateService
+import io.github.lamba92.openaqua.app.feature.settings.updates.UpdatesContent
+import io.github.lamba92.openaqua.app.feature.settings.updates.UpdatesState
 import io.github.lamba92.openaqua.app.model.AppLanguage
 import io.github.lamba92.openaqua.app.model.stringResource
 import io.github.lamba92.openaqua.app.theme.AppFontFamily
@@ -139,6 +145,7 @@ import open_aqua.app_compose.generated.resources.settings_start_minimized_title
 import open_aqua.app_compose.generated.resources.settings_tab_general
 import open_aqua.app_compose.generated.resources.settings_tab_logs
 import open_aqua.app_compose.generated.resources.settings_tab_subtitle
+import open_aqua.app_compose.generated.resources.settings_tab_updates
 import open_aqua.app_compose.generated.resources.settings_window_behavior_desc
 import open_aqua.app_compose.generated.resources.settings_window_behavior_title
 import org.jetbrains.compose.resources.painterResource
@@ -147,62 +154,66 @@ import kotlin.math.roundToInt
 
 @Composable
 fun SettingsScreen(
-    viewModel: SettingsViewModel,
     selectedTab: SettingsTab = SettingsTab.GENERAL,
     onSelectTab: (SettingsTab) -> Unit = {},
     modifier: Modifier = Modifier,
+    updateService: AppUpdateService = rememberInstance(),
 ) {
-    val state by viewModel.state.collectAsState()
+    val updateState by updateService.state.collectAsState()
     val saveableStateHolder = rememberSaveableStateHolder()
-    val generalScrollState = rememberSaveable(saver = ScrollState.Saver) { ScrollState(0) }
 
     SettingsDrawerScaffold(
         selectedTab = selectedTab,
         onSelectTab = onSelectTab,
+        hasUpdatesBadge = updateState is UpdatesState.UpdateAvailable,
         modifier = modifier,
     ) {
         saveableStateHolder.SaveableStateProvider(selectedTab) {
-            when (val currentState = state) {
-                SettingsState.Loading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        CircularProgressIndicator(
-                            color = OpenAquaTheme.colors.primaryBright,
-                            modifier = Modifier.size(48.dp),
-                        )
-                    }
-                }
-
-                is SettingsState.Ready -> {
-                    when (selectedTab) {
-                        SettingsTab.GENERAL -> {
-                            GeneralSettingsContent(
-                                state = currentState,
-                                viewModel = viewModel,
-                                scrollState = generalScrollState,
-                            )
-                        }
-
-                        SettingsTab.LOGS -> {
-                            LogsContent(
-                                logs = currentState.logs,
-                                onOpenLogsFolder = { viewModel.onEvent(SettingsEvent.OpenLogsFolder) },
-                            )
-                        }
-                    }
-                }
+            when (selectedTab) {
+                SettingsTab.GENERAL -> GeneralSettingsContent()
+                SettingsTab.UPDATES -> UpdatesContent()
+                SettingsTab.LOGS -> LogsContent()
             }
         }
     }
 }
 
 @Composable
-private fun GeneralSettingsContent(
+fun GeneralSettingsContent(
+    scrollState: ScrollState = rememberScrollState(),
+    modifier: Modifier = Modifier,
+    viewModel: SettingsViewModel = rememberInstance(),
+) {
+    val state by viewModel.state.collectAsState()
+    when (val currentState = state) {
+        SettingsState.Loading -> {
+            Box(
+                modifier = modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                CircularProgressIndicator(
+                    color = OpenAquaTheme.colors.primaryBright,
+                    modifier = Modifier.size(48.dp),
+                )
+            }
+        }
+
+        is SettingsState.Ready -> {
+            GeneralSettingsContent(
+                state = currentState,
+                onEvent = viewModel::onEvent,
+                scrollState = scrollState,
+                modifier = modifier,
+            )
+        }
+    }
+}
+
+@Composable
+fun GeneralSettingsContent(
     state: SettingsState.Ready,
-    viewModel: SettingsViewModel,
-    scrollState: ScrollState,
+    onEvent: (SettingsEvent) -> Unit,
+    scrollState: ScrollState = rememberScrollState(),
     modifier: Modifier = Modifier,
 ) {
     val colors = OpenAquaTheme.colors
@@ -246,11 +257,11 @@ private fun GeneralSettingsContent(
                         selectedFontFamily = state.storedData.fontFamily,
                         selectedFontSp = state.storedData.fontSp,
                         selectedLanguage = state.storedData.language,
-                        onSelectColorScheme = { viewModel.onEvent(SettingsEvent.SelectColorScheme(it)) },
-                        onSelectMetricsScale = { viewModel.onEvent(SettingsEvent.SelectMetricsScale(it)) },
-                        onSelectFontFamily = { viewModel.onEvent(SettingsEvent.SelectFontFamily(it)) },
-                        onSetFontSp = { viewModel.onEvent(SettingsEvent.SetFontSp(it)) },
-                        onSelectLanguage = { viewModel.onEvent(SettingsEvent.SelectLanguage(it)) },
+                        onSelectColorScheme = { onEvent(SettingsEvent.SelectColorScheme(it)) },
+                        onSelectMetricsScale = { onEvent(SettingsEvent.SelectMetricsScale(it)) },
+                        onSelectFontFamily = { onEvent(SettingsEvent.SelectFontFamily(it)) },
+                        onSetFontSp = { onEvent(SettingsEvent.SetFontSp(it)) },
+                        onSelectLanguage = { onEvent(SettingsEvent.SelectLanguage(it)) },
                     )
 
                     HorizontalDivider(color = colors.borderOutline)
@@ -262,16 +273,16 @@ private fun GeneralSettingsContent(
                         hideDisconnectedSensors = state.storedData.hideDisconnectedSensors,
                         hideUnconfiguredVirtualSensors = state.storedData.hideUnconfiguredVirtualSensors,
                         onToggleHideDisconnectedFans = {
-                            viewModel.onEvent(SettingsEvent.ToggleHideDisconnectedFans(it))
+                            onEvent(SettingsEvent.ToggleHideDisconnectedFans(it))
                         },
                         onToggleHideDisconnectedSensorsInFans = {
-                            viewModel.onEvent(SettingsEvent.ToggleHideDisconnectedSensorsInFans(it))
+                            onEvent(SettingsEvent.ToggleHideDisconnectedSensorsInFans(it))
                         },
                         onToggleHideDisconnectedSensors = {
-                            viewModel.onEvent(SettingsEvent.ToggleHideDisconnectedSensors(it))
+                            onEvent(SettingsEvent.ToggleHideDisconnectedSensors(it))
                         },
                         onToggleHideUnconfiguredVirtualSensors = {
-                            viewModel.onEvent(SettingsEvent.ToggleHideUnconfiguredVirtualSensors(it))
+                            onEvent(SettingsEvent.ToggleHideUnconfiguredVirtualSensors(it))
                         },
                     )
 
@@ -281,11 +292,11 @@ private fun GeneralSettingsContent(
                     WindowBehaviorSection(
                         minimizeToTrayOnClose = state.storedData.minimizeToTrayOnClose,
                         onToggleMinimizeToTrayOnClose = {
-                            viewModel.onEvent(SettingsEvent.ToggleMinimizeToTrayOnClose(it))
+                            onEvent(SettingsEvent.ToggleMinimizeToTrayOnClose(it))
                         },
                         startMinimized = state.storedData.startMinimized,
                         onToggleStartMinimized = {
-                            viewModel.onEvent(SettingsEvent.ToggleStartMinimized(it))
+                            onEvent(SettingsEvent.ToggleStartMinimized(it))
                         },
                     )
 
@@ -295,7 +306,7 @@ private fun GeneralSettingsContent(
                     if (osSettings is CurrentOSSettings.Linux) {
                         LinuxPermissionsSection(
                             osSettings = osSettings,
-                            onRemoveUdevRule = { viewModel.onEvent(SettingsEvent.RequestRemoveUdevRule) },
+                            onRemoveUdevRule = { onEvent(SettingsEvent.RequestRemoveUdevRule) },
                         )
 
                         HorizontalDivider(color = colors.borderOutline)
@@ -304,8 +315,8 @@ private fun GeneralSettingsContent(
                     // App data vertical section
                     AppDataSection(
                         dataFolderPath = state.dataFolderPath,
-                        onOpenDataFolder = { viewModel.onEvent(SettingsEvent.OpenDataFolder) },
-                        onRestoreDefaults = { viewModel.onEvent(SettingsEvent.RequestRestoreDefaults) },
+                        onOpenDataFolder = { onEvent(SettingsEvent.OpenDataFolder) },
+                        onRestoreDefaults = { onEvent(SettingsEvent.RequestRestoreDefaults) },
                     )
                 }
 
@@ -327,8 +338,8 @@ private fun GeneralSettingsContent(
                 confirmText = stringResource(Res.string.settings_reset_dialog_confirm),
                 dismissText = stringResource(Res.string.settings_reset_dialog_cancel),
                 icon = painterResource(Res.drawable.ic_warning),
-                onDismiss = { viewModel.onEvent(SettingsEvent.DismissRestoreDefaults) },
-                onConfirm = { viewModel.onEvent(SettingsEvent.ConfirmRestoreDefaults) },
+                onDismiss = { onEvent(SettingsEvent.DismissRestoreDefaults) },
+                onConfirm = { onEvent(SettingsEvent.ConfirmRestoreDefaults) },
             )
         }
 
@@ -339,8 +350,8 @@ private fun GeneralSettingsContent(
                 confirmText = stringResource(Res.string.settings_linux_permissions_dialog_confirm),
                 dismissText = stringResource(Res.string.permission_dialog_cancel),
                 icon = painterResource(Res.drawable.ic_warning),
-                onDismiss = { viewModel.onEvent(SettingsEvent.DismissRemoveUdevRule) },
-                onConfirm = { viewModel.onEvent(SettingsEvent.ConfirmRemoveUdevRule) },
+                onDismiss = { onEvent(SettingsEvent.DismissRemoveUdevRule) },
+                onConfirm = { onEvent(SettingsEvent.ConfirmRemoveUdevRule) },
             )
         }
     }
@@ -351,6 +362,7 @@ private fun SettingsDrawerScaffold(
     selectedTab: SettingsTab,
     onSelectTab: (SettingsTab) -> Unit,
     modifier: Modifier = Modifier,
+    hasUpdatesBadge: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val colors = OpenAquaTheme.colors
@@ -432,6 +444,46 @@ private fun SettingsDrawerScaffold(
                         },
                         selected = selectedTab == SettingsTab.GENERAL,
                         onClick = { onSelectTab(SettingsTab.GENERAL) },
+                        colors = drawerColors,
+                        shape = RoundedCornerShape(8.dp),
+                    )
+
+                    NavigationDrawerItem(
+                        label = {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(
+                                    text = stringResource(Res.string.settings_tab_updates),
+                                    fontSize = 15.sp,
+                                    lineHeight = 22.sp,
+                                    fontWeight = if (selectedTab == SettingsTab.UPDATES) FontWeight.SemiBold else FontWeight.Medium,
+                                    maxLines = 1,
+                                    softWrap = false,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                                if (hasUpdatesBadge) {
+                                    Box(
+                                        modifier =
+                                            Modifier
+                                                .size(8.dp)
+                                                .clip(CircleShape)
+                                                .background(colors.primaryBright),
+                                    )
+                                }
+                            }
+                        },
+                        icon = {
+                            Icon(
+                                imageVector = Icons.Default.SystemUpdate,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        },
+                        selected = selectedTab == SettingsTab.UPDATES,
+                        onClick = { onSelectTab(SettingsTab.UPDATES) },
                         colors = drawerColors,
                         shape = RoundedCornerShape(8.dp),
                     )

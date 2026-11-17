@@ -1,6 +1,5 @@
 package io.github.lamba92.openaqua.app.feature.settings
 
-import co.touchlab.kermit.Severity
 import io.github.lamba92.openaqua.app.model.AppLanguage
 import io.github.lamba92.openaqua.app.model.AppStoredData
 import io.github.lamba92.openaqua.app.theme.AppFontFamily
@@ -9,13 +8,9 @@ import io.github.lamba92.openaqua.theme.AppColorScheme
 
 enum class SettingsTab {
     GENERAL,
+    UPDATES,
     LOGS,
 }
-
-data class LogLine(
-    val text: String,
-    val severity: Severity? = null,
-)
 
 sealed interface CurrentOSSettings {
     data object None : CurrentOSSettings
@@ -35,7 +30,6 @@ sealed interface SettingsState {
         val dataFolderPath: String,
         val storedData: AppStoredData,
         val osSettings: CurrentOSSettings,
-        val logs: List<LogLine>,
     ) : SettingsState
 }
 
@@ -43,8 +37,6 @@ sealed interface SettingsEvent {
     data object OpenDataFolder : SettingsEvent
 
     data object RequestRestoreDefaults : SettingsEvent
-
-    data object OpenLogsFolder : SettingsEvent
 
     data object DismissRestoreDefaults : SettingsEvent
 

@@ -19,3 +19,11 @@ group = "io.github.lamba92.openaqua"
 val resolvedVersion = releaseTag ?: "1.0.0-SNAPSHOT"
 version = resolvedVersion
 rootProject.version = resolvedVersion
+
+tasks {
+    if ("clean" !in names) {
+        register("clean") {
+            delete(layout.buildDirectory)
+        }
+    }
+}

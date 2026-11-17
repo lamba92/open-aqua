@@ -29,6 +29,7 @@ data class DeviceNavState(
     val devicesWithFeedErrors: Set<DeviceId> = emptySet(),
     val selectedItem: SelectedItem? = null,
     val isExpanded: Boolean = false,
+    val isUpdateAvailable: Boolean = false,
 ) {
     @Serializable
     sealed interface SelectedItem {

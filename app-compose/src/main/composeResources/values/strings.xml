@@ -393,8 +393,25 @@
 
     <!-- Settings Tabs & Logs -->
     <string name="settings_tab_general">General</string>
+    <string name="settings_tab_updates">Updates</string>
     <string name="settings_tab_logs">Logs</string>
     <string name="settings_tab_subtitle">Preferences &amp; Diagnostics</string>
+    <string name="settings_updates_title">Application Updates</string>
+    <string name="settings_updates_subtitle">Check for new versions and view release notes</string>
+    <string name="settings_updates_current_version">Current Version: %1$s</string>
+    <string name="settings_updates_check_button">Check for Updates</string>
+    <string name="settings_updates_checking">Checking for updates...</string>
+    <string name="settings_updates_up_to_date">Up to Date</string>
+    <string name="settings_updates_up_to_date_desc">You are running the latest version of OpenAqua.</string>
+    <string name="settings_updates_available_title">Update Available!</string>
+    <string name="settings_updates_available_desc">A new version of OpenAqua (%1$s) is available to download.</string>
+    <string name="settings_updates_download_button">Download Update</string>
+    <string name="settings_updates_view_on_github">View on GitHub</string>
+    <string name="settings_updates_release_history_title">Release History</string>
+    <string name="settings_updates_retry_button">Retry</string>
+    <string name="settings_updates_error_network">Unable to connect to GitHub. Please check your network connection.</string>
+    <string name="settings_updates_error_rate_limited">GitHub rate limit exceeded. Please try again later.</string>
+    <string name="settings_updates_error_generic">Failed to check for updates.</string>
     <string name="settings_logs_title">Application Logs</string>
     <string name="settings_logs_subtitle">Live diagnostic output and engine communication logs</string>
     <string name="settings_logs_clear">Clear logs</string>

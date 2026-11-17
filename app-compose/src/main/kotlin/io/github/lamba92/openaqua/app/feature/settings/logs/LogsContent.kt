@@ -1,4 +1,4 @@
-package io.github.lamba92.openaqua.app.feature.settings
+package io.github.lamba92.openaqua.app.feature.settings.logs
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -24,6 +24,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,6 +39,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import co.touchlab.kermit.Severity
+import io.github.lamba92.openaqua.app.di.rememberInstance
 import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
 import io.github.lamba92.openaqua.app.ui.components.OpenAquaOutlinedButton
 import io.github.lamba92.openaqua.app.ui.components.ScreenHeaderSection
@@ -59,10 +61,24 @@ import kotlin.time.Duration.Companion.seconds
 
 @Composable
 fun LogsContent(
-    logs: List<LogLine>,
-    onOpenLogsFolder: () -> Unit,
+    modifier: Modifier = Modifier,
+    viewModel: LogsViewModel = rememberInstance(),
+) {
+    val state by viewModel.state.collectAsState()
+    LogsContent(
+        state = state,
+        onEvent = viewModel::onEvent,
+        modifier = modifier,
+    )
+}
+
+@Composable
+fun LogsContent(
+    state: LogsState,
+    onEvent: (LogsEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val logs = state.logs
     val colors = OpenAquaTheme.colors
     val metrics = OpenAquaTheme.metrics
     val coroutineScope = rememberCoroutineScope()
@@ -99,7 +115,7 @@ fun LogsContent(
             ) {
                 OpenAquaOutlinedButton(
                     text = stringResource(Res.string.settings_logs_open_folder),
-                    onClick = onOpenLogsFolder,
+                    onClick = { onEvent(LogsEvent.OpenLogsFolder) },
                     icon = rememberVectorPainter(Icons.Outlined.FolderOpen),
                 )
 

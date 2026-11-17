@@ -259,8 +259,25 @@
 
     <!-- Settings Tabs & Logs -->
     <string name="settings_tab_general">Generale</string>
+    <string name="settings_tab_updates">Aggiornamenti</string>
     <string name="settings_tab_logs">Log</string>
     <string name="settings_tab_subtitle">Preferenze &amp; Diagnostica</string>
+    <string name="settings_updates_title">Aggiornamenti Applicazione</string>
+    <string name="settings_updates_subtitle">Controlla nuove versioni e visualizza le note di rilascio</string>
+    <string name="settings_updates_current_version">Versione Corrente: %1$s</string>
+    <string name="settings_updates_check_button">Controlla Aggiornamenti</string>
+    <string name="settings_updates_checking">Verifica aggiornamenti in corso...</string>
+    <string name="settings_updates_up_to_date">Aggiornato</string>
+    <string name="settings_updates_up_to_date_desc">Stai utilizzando la versione più recente di OpenAqua.</string>
+    <string name="settings_updates_available_title">Aggiornamento Disponibile!</string>
+    <string name="settings_updates_available_desc">È disponibile per il download una nuova versione di OpenAqua (%1$s).</string>
+    <string name="settings_updates_download_button">Scarica Aggiornamento</string>
+    <string name="settings_updates_view_on_github">Visualizza su GitHub</string>
+    <string name="settings_updates_release_history_title">Cronologia Rilasci</string>
+    <string name="settings_updates_retry_button">Riprova</string>
+    <string name="settings_updates_error_network">Impossibile connettersi a GitHub. Controlla la tua connessione di rete.</string>
+    <string name="settings_updates_error_rate_limited">Limite di richieste GitHub superato. Riprova più tardi.</string>
+    <string name="settings_updates_error_generic">Impossibile verificare gli aggiornamenti.</string>
     <string name="settings_logs_title">Log dell\'Applicazione</string>
     <string name="settings_logs_subtitle">Output diagnostico in tempo reale e log di comunicazione con i motori</string>
     <string name="settings_logs_clear">Cancella log</string>
