@@ -40,3 +40,10 @@
 -keepclasseswithmembernames class * {
     native <methods>;
 }
+
+# ServiceLoader and Ktor Serialization
+-keep class io.ktor.** { *; }
+-keep interface io.ktor.** { *; }
+-keep class * implements io.ktor.serialization.kotlinx.KotlinxSerializationExtensionProvider { *; }
+-keep class * implements org.slf4j.spi.SLF4JServiceProvider { *; }
+-keep class io.github.lamba92.openaqua.app.logging.KermitSlf4jServiceProvider { *; }

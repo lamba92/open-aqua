@@ -55,6 +55,7 @@ class OpenAquaAppCommand : CliktCommand(name = "open-aqua") {
     val minimized by option("-m", "--minimized", help = "Start OpenAqua minimized to the system tray").flag(default = false)
 
     override fun run() {
+        acquireOrNotify()
         startOpenAquaApplication(createOpenAquaDI(), startMinimized = minimized)
     }
 }
@@ -69,7 +70,6 @@ fun startOpenAquaApplication(
     di: DI = createOpenAquaDI(),
     startMinimized: Boolean = false,
 ) {
-    acquireOrNotify()
     configureTaskbarIcon()
 
     val appDataRepository by di.instance<AppDataRepository>()
@@ -103,6 +103,14 @@ fun startOpenAquaApplication(
                 position = storedData.windowState.toPosition(),
                 size = storedData.windowState.toSize(),
             )
+
+        LaunchedEffect(Unit) {
+            foregroundRequestService.focusRequests.collect {
+                mainLogger.i { "Focus requested by secondary instance, restoring window..." }
+                isWindowVisible = true
+                windowState.isMinimized = false
+            }
+        }
 
         LaunchedEffect(windowState) {
             snapshotFlow { windowState.toStoredData(storedData.windowState) }
@@ -162,10 +170,8 @@ fun startOpenAquaApplication(
                 title = stringResource(Res.string.window_title),
                 icon = painterResource(Res.drawable.ic_app_icon),
             ) {
-                LaunchedEffect(Unit) {
-                    foregroundRequestService.focusRequests.collect {
-                        mainLogger.i { "Focus requested by secondary instance, restoring window..." }
-                        isWindowVisible = true
+                LaunchedEffect(isWindowVisible) {
+                    if (isWindowVisible) {
                         window.restoreAndFocus(windowState)
                     }
                 }

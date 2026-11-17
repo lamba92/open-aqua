@@ -6,6 +6,8 @@ import io.github.lamba92.openaqua.app.coroutine.getScope
 import io.github.lamba92.openaqua.app.feature.about.AboutTab
 import io.github.lamba92.openaqua.app.feature.device.common.CommonDeviceTab
 import io.github.lamba92.openaqua.app.feature.settings.SettingsTab
+import io.github.lamba92.openaqua.app.feature.settings.updates.AppUpdateService
+import io.github.lamba92.openaqua.app.feature.settings.updates.UpdatesState
 import io.github.lamba92.openaqua.app.model.HostTab
 import io.github.lamba92.openaqua.app.mvi.MVIViewModel
 import io.github.lamba92.openaqua.app.mvi.viewModelLogger
@@ -39,6 +41,7 @@ class DeviceNavViewModel(
     private val appDataRepository: AppDataRepository,
     private val feederService: VirtualSensorFeederService,
     private val permissionService: DevicePermissionService,
+    private val updateService: AppUpdateService,
     scopeProvider: CoroutineScopeProvider,
 ) : MVIViewModel<DeviceNavState, DeviceNavEvent, DeviceNavEffect> {
     override val viewModelScope: LoggingScope = scopeProvider.getScope()
@@ -60,7 +63,8 @@ class DeviceNavViewModel(
             permissionService.state,
             dataCacheService.state,
             feederService.state,
-        ) { permState, deviceStates, feedErrors ->
+            updateService.state,
+        ) { permState, deviceStates, feedErrors, updateState ->
             val newTargets = resolveNavigationTargets(permState, deviceStates)
 
             state.update { currentState ->
@@ -69,6 +73,7 @@ class DeviceNavViewModel(
                     targets = newTargets,
                     devicesWithFeedErrors = feedErrors.filterValues { it.isNotEmpty() }.keys,
                     selectedItem = newSelectedItem,
+                    isUpdateAvailable = updateState is UpdatesState.UpdateAvailable,
                 )
             }
         }.launchIn(viewModelScope)

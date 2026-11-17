@@ -19,6 +19,9 @@ import io.github.lamba92.openaqua.app.feature.host.fans.HostFansViewModel
 import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavViewModel
 import io.github.lamba92.openaqua.app.feature.permission.PermissionViewModel
 import io.github.lamba92.openaqua.app.feature.settings.SettingsViewModel
+import io.github.lamba92.openaqua.app.feature.settings.logs.LogsViewModel
+import io.github.lamba92.openaqua.app.feature.settings.updates.AppUpdateService
+import io.github.lamba92.openaqua.app.feature.settings.updates.UpdatesViewModel
 import io.github.lamba92.openaqua.app.instance.ForegroundRequestService
 import io.github.lamba92.openaqua.app.logging.AppLogService
 import io.github.lamba92.openaqua.app.logging.SharedLogSource
@@ -134,12 +137,18 @@ val appModule =
                 }
             }
         }
+        bindEagerSingleton {
+            AppUpdateService(
+                scopeProvider = instance(),
+            )
+        }
         bindSingleton {
             DeviceNavViewModel(
                 dataCacheService = instance(),
                 appDataRepository = instance(),
                 feederService = instance(),
                 permissionService = instance(),
+                updateService = instance(),
                 scopeProvider = instance(),
             )
         }
@@ -157,9 +166,20 @@ val appModule =
             )
         }
         bindSingleton {
+            UpdatesViewModel(
+                updateService = instance(),
+                scopeProvider = instance(),
+            )
+        }
+        bindSingleton {
+            LogsViewModel(
+                appLogService = instance(),
+                scopeProvider = instance(),
+            )
+        }
+        bindSingleton {
             SettingsViewModel(
                 appDataRepository = instance(),
-                appLogService = instance(),
                 permissionService = instance(),
                 scopeProvider = instance(),
                 baseAppDataDir = instance(),

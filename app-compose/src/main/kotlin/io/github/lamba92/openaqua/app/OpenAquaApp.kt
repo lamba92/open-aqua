@@ -63,7 +63,6 @@ fun OpenAquaApp(navViewModel: DeviceNavViewModel = rememberInstance()) {
                     SettingsScreen(
                         selectedTab = item.selectedTab,
                         onSelectTab = { navViewModel.onEvent(DeviceNavEvent.SelectSettingsTab(it)) },
-                        viewModel = rememberInstance(),
                     )
                 }
 
