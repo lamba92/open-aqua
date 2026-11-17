@@ -12,6 +12,7 @@ kotlin {
 }
 
 ktlint {
+    version = "1.8.0"
     filter {
         exclude {
             it.file.path.contains("/build/") ||

@@ -193,7 +193,7 @@ val generateOpenAquaBuildInfo by tasks.registering {
                         .getter(
                             FunSpec
                                 .getterBuilder()
-                                .addStatement("return System.getProperty(%S) ?: %S", "java.version", "unknown")
+                                .addStatement("return io.github.lamba92.openaqua.app.platform.PlatformInfo.jvmVersion")
                                 .build(),
                         ).build(),
                 ).addProperty(
@@ -202,7 +202,7 @@ val generateOpenAquaBuildInfo by tasks.registering {
                         .getter(
                             FunSpec
                                 .getterBuilder()
-                                .addStatement("return System.getProperty(%S) ?: %S", "java.vendor", "unknown")
+                                .addStatement("return io.github.lamba92.openaqua.app.platform.PlatformInfo.jvmVendor")
                                 .build(),
                         ).build(),
                 ).addProperty(
@@ -211,7 +211,7 @@ val generateOpenAquaBuildInfo by tasks.registering {
                         .getter(
                             FunSpec
                                 .getterBuilder()
-                                .addStatement("return System.getProperty(%S) ?: %S", "os.name", "unknown")
+                                .addStatement("return io.github.lamba92.openaqua.app.platform.PlatformInfo.osName")
                                 .build(),
                         ).build(),
                 ).addProperty(
@@ -220,7 +220,7 @@ val generateOpenAquaBuildInfo by tasks.registering {
                         .getter(
                             FunSpec
                                 .getterBuilder()
-                                .addStatement("return System.getProperty(%S) ?: %S", "os.arch", "unknown")
+                                .addStatement("return io.github.lamba92.openaqua.app.platform.PlatformInfo.osArch")
                                 .build(),
                         ).build(),
                 ).addType(libraryTypeSpec)

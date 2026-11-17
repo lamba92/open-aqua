@@ -165,8 +165,10 @@ abstract class VerifyLocalizationConsistencyTask : DefaultTask() {
 
 val verifyLocalization =
     tasks.register<VerifyLocalizationConsistencyTask>("verifyLocalizationConsistency") {
+        val commonMainRes = layout.projectDirectory.dir("src/commonMain/composeResources")
+        val mainRes = layout.projectDirectory.dir("src/main/composeResources")
         composeResourcesDirectory.convention(
-            layout.projectDirectory.dir("src/main/composeResources"),
+            if (commonMainRes.asFile.exists()) commonMainRes else mainRes,
         )
     }
 
