@@ -36,7 +36,7 @@ import androidx.compose.ui.unit.sp
 import com.mikepenz.markdown.m3.Markdown
 import com.mikepenz.markdown.m3.markdownColor
 import io.github.lamba92.openaqua.app.build.OpenAquaBuildInfo
-import io.github.lamba92.openaqua.app.di.rememberInstance
+import io.github.lamba92.openaqua.app.di.rememberViewModel
 import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
 import io.github.lamba92.openaqua.app.ui.components.OpenAquaButton
 import io.github.lamba92.openaqua.app.ui.components.OpenAquaOutlinedButton
@@ -69,7 +69,7 @@ import org.jetbrains.compose.resources.stringResource
 fun UpdatesContent(
     scrollState: ScrollState = rememberScrollState(),
     modifier: Modifier = Modifier,
-    viewModel: UpdatesViewModel = rememberInstance(),
+    viewModel: UpdatesViewModel = rememberViewModel(),
 ) {
     val updates by viewModel.state.collectAsState()
     UpdatesContent(

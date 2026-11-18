@@ -18,7 +18,7 @@ import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import io.github.lamba92.openaqua.app.di.rememberInstance
+import io.github.lamba92.openaqua.app.di.rememberViewModel
 import io.github.lamba92.openaqua.app.feature.about.BuildInfoRow
 import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
 import io.github.lamba92.openaqua.app.ui.components.OpenAquaButton
@@ -49,7 +49,7 @@ import org.jetbrains.compose.resources.stringResource
 fun BugReportScreen(
     onNavigateToLogs: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: BugReportViewModel = rememberInstance(),
+    viewModel: BugReportViewModel = rememberViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
     val colors = OpenAquaTheme.colors

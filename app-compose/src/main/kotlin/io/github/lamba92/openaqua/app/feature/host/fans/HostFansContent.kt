@@ -56,7 +56,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import io.github.lamba92.openaqua.app.di.rememberInstance
+import io.github.lamba92.openaqua.app.di.rememberViewModel
 import io.github.lamba92.openaqua.app.feature.device.fans.FanSelectionTile
 import io.github.lamba92.openaqua.app.model.HostFanConfig
 import io.github.lamba92.openaqua.app.model.SensorSource
@@ -130,7 +130,7 @@ import kotlin.math.roundToInt
 fun HostFansTabContent(
     scrollState: ScrollState = rememberScrollState(),
     modifier: Modifier = Modifier,
-    viewModel: HostFansViewModel = rememberInstance(),
+    viewModel: HostFansViewModel = rememberViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
     when (val s = state) {

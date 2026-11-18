@@ -47,7 +47,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import io.github.lamba92.openaqua.app.di.rememberInstance
+import io.github.lamba92.openaqua.app.di.rememberViewModel
 import io.github.lamba92.openaqua.app.permission.DevicePermissionState
 import io.github.lamba92.openaqua.app.permission.LINUX_UDEV_RULE_INSTALL_SCRIPT
 import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
@@ -72,7 +72,7 @@ import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun PermissionScreen(
-    viewModel: PermissionViewModel = rememberInstance(),
+    viewModel: PermissionViewModel = rememberViewModel(),
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.state.collectAsState()

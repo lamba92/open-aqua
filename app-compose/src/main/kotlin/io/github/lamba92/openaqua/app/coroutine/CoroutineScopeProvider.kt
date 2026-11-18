@@ -10,7 +10,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.currentCoroutineContext
-import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.coroutines.CoroutineContext
 
 class CoroutineLogger(
@@ -62,7 +61,6 @@ class DefaultCoroutineScopeProvider(
     private val baseLogger: Logger = Logger,
 ) : CoroutineScopeProvider {
     private val rootSupervisor = SupervisorJob()
-    private val scopes = CopyOnWriteArrayList<CoroutineScope>()
 
     override fun getScope(
         name: String,
@@ -80,16 +78,10 @@ class DefaultCoroutineScopeProvider(
                 onException?.invoke(ctx, throwable)
             }
         val context = childJob + effectiveDispatcher + coroutineLogger + exceptionHandler + CoroutineName(name)
-        val scope = LoggingScopeImpl(context, logger)
-        scopes.add(scope)
-        return scope
+        return LoggingScopeImpl(context, logger)
     }
 
     override fun cancelAll(cause: CancellationException?) {
-        for (scope in scopes) {
-            scope.coroutineContext[Job]?.cancel(cause)
-        }
-        scopes.clear()
         rootSupervisor.cancel(cause)
     }
 }

@@ -1,6 +1,7 @@
 package io.github.lamba92.openaqua.app
 
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -151,33 +152,47 @@ fun startOpenAquaApplication(
             }
         }
 
-        AppLocaleProvider(storedData.language.locale) {
-            Window(
-                visible = isWindowVisible,
-                onCloseRequest = {
-                    appDataRepository.saveWindowStateSync(windowState.toStoredData(storedData.windowState))
-                    if (isTrayEnabled) {
-                        mainLogger.i { "Window close requested, hiding to tray..." }
-                        isWindowVisible = false
-                    } else {
-                        mainLogger.i { "Application closing, cancelling active scopes..." }
-                        scopeProvider.cancelAll()
-                        foregroundRequestService.close()
-                        exitApplication()
+        if (isWindowVisible) {
+            AppLocaleProvider(storedData.language.locale) {
+                Window(
+                    onCloseRequest = {
+                        appDataRepository.saveWindowStateSync(windowState.toStoredData(storedData.windowState))
+                        if (isTrayEnabled) {
+                            mainLogger.i { "Window close requested, hiding to tray..." }
+                            isWindowVisible = false
+                        } else {
+                            mainLogger.i { "Application closing, cancelling active scopes..." }
+                            scopeProvider.cancelAll()
+                            foregroundRequestService.close()
+                            exitApplication()
+                        }
+                    },
+                    state = windowState,
+                    title = stringResource(Res.string.window_title),
+                    icon = painterResource(Res.drawable.ic_app_icon),
+                ) {
+                    LaunchedEffect(windowState.isMinimized) {
+                        if (!windowState.isMinimized) {
+                            window.restoreAndFocus(windowState)
+                        }
                     }
-                },
-                state = windowState,
-                title = stringResource(Res.string.window_title),
-                icon = painterResource(Res.drawable.ic_app_icon),
-            ) {
-                LaunchedEffect(isWindowVisible) {
-                    if (isWindowVisible) {
-                        window.restoreAndFocus(windowState)
+
+                    LaunchedEffect(Unit) {
+                        foregroundRequestService.focusRequests.collect {
+                            window.restoreAndFocus(windowState)
+                        }
+                    }
+
+                    CompositionLocalProvider(LocalDI provides di) {
+                        OpenAquaThemedApp(storedData)
                     }
                 }
+            }
 
-                CompositionLocalProvider(LocalDI provides di) {
-                    OpenAquaThemedApp(storedData)
+            DisposableEffect(Unit) {
+                onDispose {
+                    mainLogger.i { "Window disposed, triggering garbage collection..." }
+                    System.gc()
                 }
             }
         }

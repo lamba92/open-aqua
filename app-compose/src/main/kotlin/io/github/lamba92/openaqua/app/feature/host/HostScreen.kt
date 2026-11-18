@@ -55,7 +55,7 @@ import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import io.github.lamba92.openaqua.app.di.rememberInstance
+import io.github.lamba92.openaqua.app.di.rememberViewModel
 import io.github.lamba92.openaqua.app.feature.host.fans.HostFansTabContent
 import io.github.lamba92.openaqua.app.model.HostTab
 import io.github.lamba92.openaqua.app.model.SensorTargetType
@@ -108,7 +108,7 @@ fun HostScreen(
     selectedTab: HostTab = HostTab.SENSORS,
     onSelectTab: (HostTab) -> Unit = {},
     modifier: Modifier = Modifier,
-    viewModel: HostViewModel = rememberInstance(),
+    viewModel: HostViewModel = rememberViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
     val saveableStateHolder = rememberSaveableStateHolder()
