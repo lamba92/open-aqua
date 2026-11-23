@@ -76,6 +76,7 @@ fun RenameDialog(
     }
     val focusRequester = remember { FocusRequester() }
     val colors = OpenAquaTheme.colors
+    val metrics = OpenAquaTheme.metrics
     val resolvedIconTint = if (iconTint.isSpecified) iconTint else colors.primaryBright
 
     LaunchedEffect(Unit) {
@@ -98,10 +99,10 @@ fun RenameDialog(
             modifier =
                 modifier
                     .width(440.dp)
-                    .clip(RoundedCornerShape(16.dp))
+                    .clip(RoundedCornerShape(metrics.radiusLarge))
                     .background(colors.surfaceLow)
-                    .border(1.dp, colors.borderOutline, RoundedCornerShape(16.dp))
-                    .padding(24.dp)
+                    .border(metrics.strokeThin, colors.borderOutline, RoundedCornerShape(metrics.radiusLarge))
+                    .padding(metrics.spacingXxl)
                     .onPreviewKeyEvent { event ->
                         when (event.type) {
                             KeyEventType.KeyDown -> {
@@ -127,24 +128,25 @@ fun RenameDialog(
                             }
                         }
                     },
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(metrics.spacingLg),
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalArrangement = Arrangement.spacedBy(metrics.spacingSm),
             ) {
                 if (icon != null) {
                     Icon(
                         painter = icon,
                         contentDescription = null,
                         tint = resolvedIconTint,
-                        modifier = Modifier.size(24.dp),
+                        modifier = Modifier.size(metrics.iconLg),
                     )
                 }
                 Text(
                     text = title,
                     color = colors.textPrimary,
-                    fontSize = 20.sp,
+                    fontSize = metrics.fontSizeXl,
+                    lineHeight = metrics.lineHeightXl,
                     fontWeight = FontWeight.Bold,
                 )
             }
@@ -157,7 +159,7 @@ fun RenameDialog(
                         .fillMaxWidth()
                         .focusRequester(focusRequester),
                 singleLine = true,
-                shape = RoundedCornerShape(10.dp),
+                shape = RoundedCornerShape(metrics.radiusMedium),
                 label = { Text(text = label) },
                 placeholder = { Text(text = placeholder, color = colors.textMuted) },
                 colors =
@@ -186,7 +188,7 @@ fun RenameDialog(
                 )
 
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(metrics.spacingMd),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     OpenAquaOutlinedButton(

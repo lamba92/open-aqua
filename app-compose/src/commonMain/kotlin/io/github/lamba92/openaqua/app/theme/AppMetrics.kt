@@ -13,322 +13,643 @@ enum class AppMetricsScale {
     COMFORTABLE,
 }
 
-data class ChannelSelectionTileMetrics(
-    val width: Dp = 260.dp,
-    val height: Dp = 86.dp,
-    val cornerRadius: Dp = 14.dp,
-    val padding: Dp = 14.dp,
-    val iconSize: Dp = 38.dp,
-    val titleTextSize: TextUnit = 18.sp,
-    val titleLineHeight: TextUnit = 22.sp,
-    val badgeTextSize: TextUnit = 14.sp,
-    val badgeLineHeight: TextUnit = 18.sp,
-    val valueTextSize: TextUnit = 22.sp,
-    val valueLineHeight: TextUnit = 26.sp,
-    val selectedBorderWidth: Dp = 2.dp,
-    val unselectedBorderWidth: Dp = 1.dp,
-)
-
-typealias SquareSelectionButtonMetrics = ChannelSelectionTileMetrics
-
-data class MetricCardMetrics(
-    val width: Dp = 220.dp,
-    val cornerRadius: Dp = 10.dp,
-    val padding: Dp = 12.dp,
-    val verticalSpacing: Dp = 4.dp,
-    val labelTextSize: TextUnit = 13.sp,
-    val labelLineHeight: TextUnit = 16.sp,
-    val valueTextSize: TextUnit = 16.sp,
-    val valueLineHeight: TextUnit = 20.sp,
-    val borderWidth: Dp = 1.dp,
-)
-
-data class ScreenHeaderMetrics(
-    val titleTextSize: TextUnit = 26.sp,
-    val titleLineHeight: TextUnit = 30.sp,
-    val subtitleTextSize: TextUnit = 15.sp,
-    val subtitleLineHeight: TextUnit = 20.sp,
-    val verticalSpacing: Dp = 4.dp,
-)
-
-data class SectionHeaderMetrics(
-    val iconSize: Dp = 20.dp,
-    val titleTextSize: TextUnit = 16.sp,
-    val titleLineHeight: TextUnit = 20.sp,
-    val horizontalSpacing: Dp = 8.dp,
-)
-
-data class ChannelDetailHeaderMetrics(
-    val iconSize: Dp = 20.dp,
-    val titleTextSize: TextUnit = 18.sp,
-    val titleLineHeight: TextUnit = 22.sp,
-    val subtitleTextSize: TextUnit = 14.sp,
-    val subtitleLineHeight: TextUnit = 18.sp,
-    val horizontalSpacing: Dp = 10.dp,
-    val verticalSpacing: Dp = 2.dp,
-)
-
-data class FeaturePlaceholderBoxMetrics(
-    val iconSize: Dp = 32.dp,
-    val cornerRadius: Dp = 12.dp,
-    val padding: Dp = 24.dp,
-    val verticalSpacing: Dp = 8.dp,
-    val titleTextSize: TextUnit = 16.sp,
-    val titleLineHeight: TextUnit = 20.sp,
-    val descriptionTextSize: TextUnit = 14.sp,
-    val descriptionLineHeight: TextUnit = 18.sp,
-    val borderWidth: Dp = 1.dp,
-)
-
-data class NavigationRailMetrics(
-    val collapsedWidth: Dp = 80.dp,
-    val expandedWidth: Dp = 250.dp,
-    val width: Dp = collapsedWidth,
-    val itemIconSize: Dp = 32.dp,
-    val labelTextSize: TextUnit = 14.sp,
-    val itemSpacing: Dp = 8.dp,
-    val headerLogoSize: Dp = 48.dp,
-    val headerIconSize: Dp = 28.dp,
-    val headerCornerRadius: Dp = 12.dp,
-    val statusDotSize: Dp = 8.dp,
-    val dividerWidth: Dp = 56.dp,
-)
-
-data class NavigationDrawerMetrics(
-    val width: Dp = 250.dp,
-    val itemSpacing: Dp = 8.dp,
-    val headerPaddingHorizontal: Dp = 12.dp,
-    val headerPaddingVertical: Dp = 16.dp,
-)
-
-data class DropdownMenuMetrics(
-    val cornerRadius: Dp = 8.dp,
-    val borderWidth: Dp = 1.dp,
-    val headerPaddingHorizontal: Dp = 14.dp,
-    val headerPaddingTop: Dp = 8.dp,
-    val headerPaddingBottom: Dp = 4.dp,
-    val headerTextSize: TextUnit = 13.sp,
-    val headerLineHeight: TextUnit = 16.sp,
-    val itemPaddingHorizontal: Dp = 6.dp,
-    val itemPaddingVertical: Dp = 2.dp,
-    val itemCornerRadius: Dp = 8.dp,
-    val itemTextSize: TextUnit = 15.sp,
-    val itemLineHeight: TextUnit = 18.sp,
-    val itemIconSize: Dp = 16.dp,
-    val dividerPaddingHorizontal: Dp = 6.dp,
-    val dividerPaddingVertical: Dp = 4.dp,
-)
-
-data class AppMetrics(
-    val scale: AppMetricsScale = AppMetricsScale.STANDARD,
-    // Base Spacings
-    val spacingXs: Dp = 4.dp,
-    val spacingSm: Dp = 8.dp,
-    val spacingMd: Dp = 12.dp,
-    val spacingLg: Dp = 16.dp,
-    val spacingXl: Dp = 20.dp,
-    val spacingXxl: Dp = 24.dp,
-    // Base Radiuses
-    val radiusSmall: Dp = 8.dp,
-    val radiusMedium: Dp = 12.dp,
-    val radiusLarge: Dp = 16.dp,
-    // Base Borders
+data class AppMetricsTokens(
+    val scale: AppMetricsScale,
+    // Spacing scale
+    val spacingXs: Dp,
+    val spacingSm: Dp,
+    val spacingMd: Dp,
+    val spacingLg: Dp,
+    val spacingXl: Dp,
+    val spacingXxl: Dp,
+    // Corner radius scale
+    val radiusXs: Dp,
+    val radiusSm: Dp,
+    val radiusMd: Dp,
+    val radiusLg: Dp,
+    val radiusXl: Dp,
+    // Stroke scale
     val strokeThin: Dp = 1.dp,
     val strokeFocused: Dp = 2.dp,
-    // Component Metrics
-    val channelSelectionTile: ChannelSelectionTileMetrics = ChannelSelectionTileMetrics(),
-    val squareSelectionButton: ChannelSelectionTileMetrics = channelSelectionTile,
-    val metricCard: MetricCardMetrics = MetricCardMetrics(),
-    val screenHeader: ScreenHeaderMetrics = ScreenHeaderMetrics(),
-    val sectionHeader: SectionHeaderMetrics = SectionHeaderMetrics(),
-    val channelDetailHeader: ChannelDetailHeaderMetrics = ChannelDetailHeaderMetrics(),
-    val featurePlaceholderBox: FeaturePlaceholderBoxMetrics = FeaturePlaceholderBoxMetrics(),
-    val navigationRail: NavigationRailMetrics = NavigationRailMetrics(),
-    val navigationDrawer: NavigationDrawerMetrics = NavigationDrawerMetrics(),
-    val dropdownMenu: DropdownMenuMetrics = DropdownMenuMetrics(),
+    // Icon size scale
+    val iconXs: Dp,
+    val iconSm: Dp,
+    val iconMd: Dp,
+    val iconLg: Dp,
+    val iconXl: Dp,
+    // Base Type Scale (Font sizes & Line heights)
+    val fontXs: TextUnit,
+    val lineHeightXs: TextUnit,
+    val fontSm: TextUnit,
+    val lineHeightSm: TextUnit,
+    val fontMd: TextUnit,
+    val lineHeightMd: TextUnit,
+    val fontLg: TextUnit,
+    val lineHeightLg: TextUnit,
+    val fontXl: TextUnit,
+    val lineHeightXl: TextUnit,
+    val fontXxl: TextUnit,
+    val lineHeightXxl: TextUnit,
 ) {
     companion object {
         val Compact =
-            AppMetrics(
+            AppMetricsTokens(
                 scale = AppMetricsScale.COMPACT,
-                spacingXs = 3.dp,
-                spacingSm = 6.dp,
-                spacingMd = 10.dp,
-                spacingLg = 14.dp,
-                spacingXl = 18.dp,
+                spacingXs = 2.dp,
+                spacingSm = 4.dp,
+                spacingMd = 8.dp,
+                spacingLg = 12.dp,
+                spacingXl = 16.dp,
                 spacingXxl = 20.dp,
-                channelSelectionTile =
-                    ChannelSelectionTileMetrics(
-                        width = 230.dp,
-                        height = 76.dp,
-                        cornerRadius = 12.dp,
-                        padding = 12.dp,
-                        iconSize = 34.dp,
-                        titleTextSize = 16.sp,
-                        titleLineHeight = 20.sp,
-                        badgeTextSize = 13.sp,
-                        badgeLineHeight = 17.sp,
-                        valueTextSize = 19.sp,
-                        valueLineHeight = 23.sp,
-                    ),
-                metricCard =
-                    MetricCardMetrics(
-                        width = 180.dp,
-                        padding = 10.dp,
-                        labelTextSize = 13.sp,
-                        labelLineHeight = 16.sp,
-                        valueTextSize = 16.sp,
-                        valueLineHeight = 20.sp,
-                    ),
-                navigationRail =
-                    NavigationRailMetrics(
-                        collapsedWidth = 72.dp,
-                        expandedWidth = 220.dp,
-                        width = 72.dp,
-                        itemIconSize = 28.dp,
-                        labelTextSize = 13.sp,
-                        itemSpacing = 6.dp,
-                        headerLogoSize = 40.dp,
-                        headerIconSize = 24.dp,
-                        headerCornerRadius = 10.dp,
-                        statusDotSize = 7.dp,
-                        dividerWidth = 48.dp,
-                    ),
-                navigationDrawer =
-                    NavigationDrawerMetrics(
-                        width = 220.dp,
-                        itemSpacing = 6.dp,
-                        headerPaddingHorizontal = 10.dp,
-                        headerPaddingVertical = 14.dp,
-                    ),
-                dropdownMenu =
-                    DropdownMenuMetrics(
-                        cornerRadius = 6.dp,
-                        headerPaddingHorizontal = 10.dp,
-                        headerPaddingTop = 6.dp,
-                        headerPaddingBottom = 3.dp,
-                        headerTextSize = 12.sp,
-                        headerLineHeight = 14.sp,
-                        itemPaddingHorizontal = 4.dp,
-                        itemPaddingVertical = 2.dp,
-                        itemCornerRadius = 6.dp,
-                        itemTextSize = 14.sp,
-                        itemLineHeight = 17.sp,
-                        itemIconSize = 14.dp,
-                    ),
+                radiusXs = 3.dp,
+                radiusSm = 6.dp,
+                radiusMd = 8.dp,
+                radiusLg = 10.dp,
+                radiusXl = 12.dp,
+                strokeThin = 1.dp,
+                strokeFocused = 2.dp,
+                iconXs = 8.dp,
+                iconSm = 12.dp,
+                iconMd = 18.dp,
+                iconLg = 20.dp,
+                iconXl = 28.dp,
+                fontXs = 10.sp,
+                lineHeightXs = 13.sp,
+                fontSm = 11.sp,
+                lineHeightSm = 14.sp,
+                fontMd = 13.sp,
+                lineHeightMd = 18.sp,
+                fontLg = 14.sp,
+                lineHeightLg = 20.sp,
+                fontXl = 15.sp,
+                lineHeightXl = 18.sp,
+                fontXxl = 20.sp,
+                lineHeightXxl = 24.sp,
             )
 
         val Standard =
-            AppMetrics(
+            AppMetricsTokens(
                 scale = AppMetricsScale.STANDARD,
-                channelSelectionTile = ChannelSelectionTileMetrics(),
-                metricCard = MetricCardMetrics(),
-                screenHeader = ScreenHeaderMetrics(),
-                sectionHeader = SectionHeaderMetrics(),
-                channelDetailHeader = ChannelDetailHeaderMetrics(),
-                featurePlaceholderBox = FeaturePlaceholderBoxMetrics(),
-                navigationRail = NavigationRailMetrics(),
-                navigationDrawer = NavigationDrawerMetrics(),
-                dropdownMenu = DropdownMenuMetrics(),
+                spacingXs = 4.dp,
+                spacingSm = 8.dp,
+                spacingMd = 12.dp,
+                spacingLg = 16.dp,
+                spacingXl = 20.dp,
+                spacingXxl = 24.dp,
+                radiusXs = 4.dp,
+                radiusSm = 6.dp,
+                radiusMd = 10.dp,
+                radiusLg = 12.dp,
+                radiusXl = 16.dp,
+                strokeThin = 1.dp,
+                strokeFocused = 2.dp,
+                iconXs = 10.dp,
+                iconSm = 14.dp,
+                iconMd = 20.dp,
+                iconLg = 24.dp,
+                iconXl = 32.dp,
+                fontXs = 11.sp,
+                lineHeightXs = 14.sp,
+                fontSm = 12.sp,
+                lineHeightSm = 16.sp,
+                fontMd = 14.sp,
+                lineHeightMd = 20.sp,
+                fontLg = 16.sp,
+                lineHeightLg = 22.sp,
+                fontXl = 18.sp,
+                lineHeightXl = 22.sp,
+                fontXxl = 22.sp,
+                lineHeightXxl = 28.sp,
             )
 
         val Comfortable =
-            AppMetrics(
+            AppMetricsTokens(
                 scale = AppMetricsScale.COMFORTABLE,
                 spacingXs = 6.dp,
                 spacingSm = 10.dp,
                 spacingMd = 14.dp,
                 spacingLg = 18.dp,
-                spacingXl = 22.dp,
-                spacingXxl = 28.dp,
-                channelSelectionTile =
-                    ChannelSelectionTileMetrics(
-                        width = 290.dp,
-                        height = 96.dp,
-                        cornerRadius = 16.dp,
-                        padding = 16.dp,
-                        iconSize = 44.dp,
-                        titleTextSize = 20.sp,
-                        titleLineHeight = 24.sp,
-                        badgeTextSize = 16.sp,
-                        badgeLineHeight = 20.sp,
-                        valueTextSize = 25.sp,
-                        valueLineHeight = 30.sp,
-                    ),
-                metricCard =
-                    MetricCardMetrics(
-                        width = 250.dp,
-                        padding = 14.dp,
-                        verticalSpacing = 6.dp,
-                        labelTextSize = 15.sp,
-                        labelLineHeight = 18.sp,
-                        valueTextSize = 18.sp,
-                        valueLineHeight = 22.sp,
-                    ),
-                sectionHeader =
-                    SectionHeaderMetrics(
-                        iconSize = 22.dp,
-                        horizontalSpacing = 10.dp,
-                        titleTextSize = 18.sp,
-                        titleLineHeight = 22.sp,
-                    ),
-                channelDetailHeader =
-                    ChannelDetailHeaderMetrics(
-                        iconSize = 22.dp,
-                        horizontalSpacing = 12.dp,
-                        verticalSpacing = 4.dp,
-                        titleTextSize = 18.sp,
-                        titleLineHeight = 22.sp,
-                        subtitleTextSize = 14.sp,
-                        subtitleLineHeight = 18.sp,
-                    ),
-                featurePlaceholderBox =
-                    FeaturePlaceholderBoxMetrics(
-                        iconSize = 36.dp,
-                        padding = 28.dp,
-                        verticalSpacing = 10.dp,
-                        titleTextSize = 16.sp,
-                        titleLineHeight = 20.sp,
-                        descriptionTextSize = 14.sp,
-                        descriptionLineHeight = 18.sp,
-                    ),
-                navigationRail =
-                    NavigationRailMetrics(
-                        collapsedWidth = 92.dp,
-                        expandedWidth = 280.dp,
-                        width = 92.dp,
-                        itemIconSize = 36.dp,
-                        labelTextSize = 16.sp,
-                        itemSpacing = 12.dp,
-                        headerLogoSize = 56.dp,
-                        headerIconSize = 34.dp,
-                        headerCornerRadius = 14.dp,
-                        statusDotSize = 10.dp,
-                        dividerWidth = 68.dp,
-                    ),
-                navigationDrawer =
-                    NavigationDrawerMetrics(
-                        width = 280.dp,
-                        itemSpacing = 10.dp,
-                        headerPaddingHorizontal = 14.dp,
-                        headerPaddingVertical = 18.dp,
-                    ),
-                dropdownMenu =
-                    DropdownMenuMetrics(
-                        cornerRadius = 10.dp,
-                        headerPaddingHorizontal = 16.dp,
-                        headerPaddingTop = 10.dp,
-                        headerPaddingBottom = 6.dp,
-                        headerTextSize = 14.sp,
-                        headerLineHeight = 18.sp,
-                        itemPaddingHorizontal = 8.dp,
-                        itemPaddingVertical = 3.dp,
-                        itemCornerRadius = 10.dp,
-                        itemTextSize = 16.sp,
-                        itemLineHeight = 20.sp,
-                        itemIconSize = 18.dp,
-                    ),
+                spacingXl = 24.dp,
+                spacingXxl = 32.dp,
+                radiusXs = 6.dp,
+                radiusSm = 8.dp,
+                radiusMd = 12.dp,
+                radiusLg = 14.dp,
+                radiusXl = 18.dp,
+                strokeThin = 1.dp,
+                strokeFocused = 2.dp,
+                iconXs = 12.dp,
+                iconSm = 16.dp,
+                iconMd = 22.dp,
+                iconLg = 28.dp,
+                iconXl = 36.dp,
+                fontXs = 12.sp,
+                lineHeightXs = 15.sp,
+                fontSm = 13.sp,
+                lineHeightSm = 18.sp,
+                fontMd = 15.sp,
+                lineHeightMd = 22.sp,
+                fontLg = 17.sp,
+                lineHeightLg = 24.sp,
+                fontXl = 20.sp,
+                lineHeightXl = 24.sp,
+                fontXxl = 24.sp,
+                lineHeightXxl = 30.sp,
             )
+    }
+}
+
+data class ChannelSelectionTileMetrics(
+    val width: Dp = 220.dp,
+    val height: Dp = 64.dp,
+    val cornerRadius: Dp = 12.dp,
+    val padding: Dp = 12.dp,
+    val iconSize: Dp = 24.dp,
+    val titleTextSize: TextUnit = 16.sp,
+    val titleLineHeight: TextUnit = 22.sp,
+    val badgeTextSize: TextUnit = 12.sp,
+    val badgeLineHeight: TextUnit = 16.sp,
+    val valueTextSize: TextUnit = 18.sp,
+    val valueLineHeight: TextUnit = 22.sp,
+    val selectedBorderWidth: Dp = 2.dp,
+    val unselectedBorderWidth: Dp = 1.dp,
+) {
+    companion object {
+        fun fromTokens(tokens: AppMetricsTokens): ChannelSelectionTileMetrics =
+            ChannelSelectionTileMetrics(
+                width =
+                    when (tokens.scale) {
+                        AppMetricsScale.COMPACT -> 190.dp
+                        AppMetricsScale.STANDARD -> 220.dp
+                        AppMetricsScale.COMFORTABLE -> 240.dp
+                    },
+                height =
+                    when (tokens.scale) {
+                        AppMetricsScale.COMPACT -> 54.dp
+                        AppMetricsScale.STANDARD -> 64.dp
+                        AppMetricsScale.COMFORTABLE -> 72.dp
+                    },
+                cornerRadius = tokens.radiusLg,
+                padding = tokens.spacingMd,
+                iconSize = tokens.iconLg,
+                titleTextSize = tokens.fontLg,
+                titleLineHeight = tokens.lineHeightLg,
+                badgeTextSize = tokens.fontSm,
+                badgeLineHeight = tokens.lineHeightSm,
+                valueTextSize = tokens.fontXl,
+                valueLineHeight = tokens.lineHeightXl,
+                selectedBorderWidth = tokens.strokeFocused,
+                unselectedBorderWidth = tokens.strokeThin,
+            )
+    }
+}
+
+typealias SquareSelectionButtonMetrics = ChannelSelectionTileMetrics
+
+data class MetricCardMetrics(
+    val width: Dp = 180.dp,
+    val cornerRadius: Dp = 10.dp,
+    val padding: Dp = 10.dp,
+    val verticalSpacing: Dp = 4.dp,
+    val labelTextSize: TextUnit = 12.sp,
+    val labelLineHeight: TextUnit = 16.sp,
+    val valueTextSize: TextUnit = 16.sp,
+    val valueLineHeight: TextUnit = 22.sp,
+    val borderWidth: Dp = 1.dp,
+) {
+    companion object {
+        fun fromTokens(tokens: AppMetricsTokens): MetricCardMetrics =
+            MetricCardMetrics(
+                width =
+                    when (tokens.scale) {
+                        AppMetricsScale.COMPACT -> 150.dp
+                        AppMetricsScale.STANDARD -> 180.dp
+                        AppMetricsScale.COMFORTABLE -> 200.dp
+                    },
+                cornerRadius = tokens.radiusMd,
+                padding =
+                    when (tokens.scale) {
+                        AppMetricsScale.COMPACT -> tokens.spacingMd
+                        AppMetricsScale.STANDARD -> 10.dp
+                        AppMetricsScale.COMFORTABLE -> tokens.spacingMd
+                    },
+                verticalSpacing = tokens.spacingXs,
+                labelTextSize = tokens.fontSm,
+                labelLineHeight = tokens.lineHeightSm,
+                valueTextSize = tokens.fontLg,
+                valueLineHeight = tokens.lineHeightLg,
+                borderWidth = tokens.strokeThin,
+            )
+    }
+}
+
+data class ScreenHeaderMetrics(
+    val titleTextSize: TextUnit = 22.sp,
+    val titleLineHeight: TextUnit = 28.sp,
+    val subtitleTextSize: TextUnit = 14.sp,
+    val subtitleLineHeight: TextUnit = 20.sp,
+    val verticalSpacing: Dp = 4.dp,
+) {
+    companion object {
+        fun fromTokens(tokens: AppMetricsTokens): ScreenHeaderMetrics =
+            ScreenHeaderMetrics(
+                titleTextSize = tokens.fontXxl,
+                titleLineHeight = tokens.lineHeightXxl,
+                subtitleTextSize = tokens.fontMd,
+                subtitleLineHeight = tokens.lineHeightMd,
+                verticalSpacing = tokens.spacingXs,
+            )
+    }
+}
+
+data class SectionHeaderMetrics(
+    val iconSize: Dp = 20.dp,
+    val titleTextSize: TextUnit = 16.sp,
+    val titleLineHeight: TextUnit = 22.sp,
+    val horizontalSpacing: Dp = 8.dp,
+) {
+    companion object {
+        fun fromTokens(tokens: AppMetricsTokens): SectionHeaderMetrics =
+            SectionHeaderMetrics(
+                iconSize = tokens.iconMd,
+                titleTextSize = tokens.fontLg,
+                titleLineHeight = tokens.lineHeightLg,
+                horizontalSpacing = tokens.spacingSm,
+            )
+    }
+}
+
+data class ChannelDetailHeaderMetrics(
+    val iconSize: Dp = 20.dp,
+    val titleTextSize: TextUnit = 16.sp,
+    val titleLineHeight: TextUnit = 22.sp,
+    val subtitleTextSize: TextUnit = 12.sp,
+    val subtitleLineHeight: TextUnit = 16.sp,
+    val horizontalSpacing: Dp = 8.dp,
+    val verticalSpacing: Dp = 4.dp,
+) {
+    companion object {
+        fun fromTokens(tokens: AppMetricsTokens): ChannelDetailHeaderMetrics =
+            ChannelDetailHeaderMetrics(
+                iconSize = tokens.iconMd,
+                titleTextSize = tokens.fontLg,
+                titleLineHeight = tokens.lineHeightLg,
+                subtitleTextSize = tokens.fontSm,
+                subtitleLineHeight = tokens.lineHeightSm,
+                horizontalSpacing = tokens.spacingSm,
+                verticalSpacing = tokens.spacingXs,
+            )
+    }
+}
+
+data class FeaturePlaceholderBoxMetrics(
+    val iconSize: Dp = 32.dp,
+    val cornerRadius: Dp = 10.dp,
+    val padding: Dp = 20.dp,
+    val verticalSpacing: Dp = 8.dp,
+    val titleTextSize: TextUnit = 16.sp,
+    val titleLineHeight: TextUnit = 22.sp,
+    val descriptionTextSize: TextUnit = 12.sp,
+    val descriptionLineHeight: TextUnit = 16.sp,
+    val borderWidth: Dp = 1.dp,
+) {
+    companion object {
+        fun fromTokens(tokens: AppMetricsTokens): FeaturePlaceholderBoxMetrics =
+            FeaturePlaceholderBoxMetrics(
+                iconSize = tokens.iconXl,
+                cornerRadius = tokens.radiusMd,
+                padding = tokens.spacingXl,
+                verticalSpacing = tokens.spacingSm,
+                titleTextSize = tokens.fontLg,
+                titleLineHeight = tokens.lineHeightLg,
+                descriptionTextSize = tokens.fontSm,
+                descriptionLineHeight = tokens.lineHeightSm,
+                borderWidth = tokens.strokeThin,
+            )
+    }
+}
+
+data class NavigationRailMetrics(
+    val collapsedWidth: Dp = 72.dp,
+    val expandedWidth: Dp = 240.dp,
+    val width: Dp = collapsedWidth,
+    val itemIconSize: Dp = 24.dp,
+    val labelTextSize: TextUnit = 12.sp,
+    val itemSpacing: Dp = 8.dp,
+    val headerLogoSize: Dp = 32.dp,
+    val headerIconSize: Dp = 24.dp,
+    val headerCornerRadius: Dp = 10.dp,
+    val headerTitleTextSize: TextUnit = 16.sp,
+    val statusDotSize: Dp = 7.dp,
+    val dividerWidth: Dp = 48.dp,
+) {
+    companion object {
+        fun fromTokens(tokens: AppMetricsTokens): NavigationRailMetrics =
+            NavigationRailMetrics(
+                collapsedWidth =
+                    when (tokens.scale) {
+                        AppMetricsScale.COMPACT -> 64.dp
+                        AppMetricsScale.STANDARD -> 72.dp
+                        AppMetricsScale.COMFORTABLE -> 80.dp
+                    },
+                expandedWidth =
+                    when (tokens.scale) {
+                        AppMetricsScale.COMPACT -> 200.dp
+                        AppMetricsScale.STANDARD -> 240.dp
+                        AppMetricsScale.COMFORTABLE -> 260.dp
+                    },
+                width =
+                    when (tokens.scale) {
+                        AppMetricsScale.COMPACT -> 64.dp
+                        AppMetricsScale.STANDARD -> 72.dp
+                        AppMetricsScale.COMFORTABLE -> 80.dp
+                    },
+                itemIconSize = tokens.iconLg,
+                labelTextSize = tokens.fontSm,
+                itemSpacing = tokens.spacingSm,
+                headerLogoSize = tokens.iconXl,
+                headerIconSize = tokens.iconLg,
+                headerCornerRadius = tokens.radiusMd,
+                headerTitleTextSize = tokens.fontLg,
+                statusDotSize =
+                    when (tokens.scale) {
+                        AppMetricsScale.COMPACT -> 6.dp
+                        AppMetricsScale.STANDARD -> 7.dp
+                        AppMetricsScale.COMFORTABLE -> 8.dp
+                    },
+                dividerWidth =
+                    when (tokens.scale) {
+                        AppMetricsScale.COMPACT -> 40.dp
+                        AppMetricsScale.STANDARD -> 48.dp
+                        AppMetricsScale.COMFORTABLE -> 56.dp
+                    },
+            )
+    }
+}
+
+data class NavigationDrawerMetrics(
+    val width: Dp = 240.dp,
+    val itemSpacing: Dp = 8.dp,
+    val headerPaddingHorizontal: Dp = 10.dp,
+    val headerPaddingVertical: Dp = 12.dp,
+    val headerTitleTextSize: TextUnit = 16.sp,
+    val headerTitleLineHeight: TextUnit = 22.sp,
+    val headerSubtitleTextSize: TextUnit = 12.sp,
+    val headerSubtitleLineHeight: TextUnit = 16.sp,
+    val itemTextSize: TextUnit = 14.sp,
+    val itemLineHeight: TextUnit = 20.sp,
+    val itemIconSize: Dp = 20.dp,
+) {
+    companion object {
+        fun fromTokens(tokens: AppMetricsTokens): NavigationDrawerMetrics =
+            NavigationDrawerMetrics(
+                width =
+                    when (tokens.scale) {
+                        AppMetricsScale.COMPACT -> 200.dp
+                        AppMetricsScale.STANDARD -> 240.dp
+                        AppMetricsScale.COMFORTABLE -> 260.dp
+                    },
+                itemSpacing = tokens.spacingSm,
+                headerPaddingHorizontal =
+                    when (tokens.scale) {
+                        AppMetricsScale.COMPACT -> tokens.spacingSm
+                        AppMetricsScale.STANDARD -> 10.dp
+                        AppMetricsScale.COMFORTABLE -> tokens.spacingMd
+                    },
+                headerPaddingVertical = tokens.spacingMd,
+                headerTitleTextSize = tokens.fontLg,
+                headerTitleLineHeight = tokens.lineHeightLg,
+                headerSubtitleTextSize = tokens.fontSm,
+                headerSubtitleLineHeight = tokens.lineHeightSm,
+                itemTextSize = tokens.fontMd,
+                itemLineHeight = tokens.lineHeightMd,
+                itemIconSize = tokens.iconMd,
+            )
+    }
+}
+
+data class ChipMetrics(
+    val paddingHorizontal: Dp = 12.dp,
+    val paddingVertical: Dp = 6.dp,
+    val textSize: TextUnit = 14.sp,
+    val iconSize: Dp = 10.dp,
+    val cornerRadius: Dp = 6.dp,
+) {
+    companion object {
+        fun fromTokens(tokens: AppMetricsTokens): ChipMetrics =
+            ChipMetrics(
+                paddingHorizontal = tokens.spacingMd,
+                paddingVertical =
+                    when (tokens.scale) {
+                        AppMetricsScale.COMPACT -> 4.dp
+                        AppMetricsScale.STANDARD -> 6.dp
+                        AppMetricsScale.COMFORTABLE -> 8.dp
+                    },
+                textSize = tokens.fontMd,
+                iconSize = tokens.iconXs,
+                cornerRadius = tokens.radiusSm,
+            )
+    }
+}
+
+data class SettingRowMetrics(
+    val titleTextSize: TextUnit = 16.sp,
+    val titleLineHeight: TextUnit = 22.sp,
+    val descriptionTextSize: TextUnit = 12.sp,
+    val descriptionLineHeight: TextUnit = 16.sp,
+    val verticalSpacing: Dp = 4.dp,
+) {
+    companion object {
+        fun fromTokens(tokens: AppMetricsTokens): SettingRowMetrics =
+            SettingRowMetrics(
+                titleTextSize = tokens.fontLg,
+                titleLineHeight = tokens.lineHeightLg,
+                descriptionTextSize = tokens.fontSm,
+                descriptionLineHeight = tokens.lineHeightSm,
+                verticalSpacing = tokens.spacingXs,
+            )
+    }
+}
+
+data class DropdownMenuMetrics(
+    val cornerRadius: Dp = 6.dp,
+    val borderWidth: Dp = 1.dp,
+    val headerPaddingHorizontal: Dp = 12.dp,
+    val headerPaddingTop: Dp = 6.dp,
+    val headerPaddingBottom: Dp = 3.dp,
+    val headerTextSize: TextUnit = 12.sp,
+    val headerLineHeight: TextUnit = 16.sp,
+    val itemPaddingHorizontal: Dp = 6.dp,
+    val itemPaddingVertical: Dp = 2.dp,
+    val itemCornerRadius: Dp = 6.dp,
+    val itemTextSize: TextUnit = 14.sp,
+    val itemLineHeight: TextUnit = 20.sp,
+    val itemIconSize: Dp = 14.dp,
+    val dividerPaddingHorizontal: Dp = 6.dp,
+    val dividerPaddingVertical: Dp = 4.dp,
+) {
+    companion object {
+        fun fromTokens(tokens: AppMetricsTokens): DropdownMenuMetrics =
+            DropdownMenuMetrics(
+                cornerRadius = tokens.radiusSm,
+                borderWidth = tokens.strokeThin,
+                headerPaddingHorizontal = tokens.spacingMd,
+                headerPaddingTop =
+                    when (tokens.scale) {
+                        AppMetricsScale.COMPACT -> 4.dp
+                        AppMetricsScale.STANDARD -> 6.dp
+                        AppMetricsScale.COMFORTABLE -> 8.dp
+                    },
+                headerPaddingBottom =
+                    when (tokens.scale) {
+                        AppMetricsScale.COMPACT -> 2.dp
+                        AppMetricsScale.STANDARD -> 3.dp
+                        AppMetricsScale.COMFORTABLE -> 4.dp
+                    },
+                headerTextSize = tokens.fontSm,
+                headerLineHeight = tokens.lineHeightSm,
+                itemPaddingHorizontal = tokens.spacingSm,
+                itemPaddingVertical = 2.dp,
+                itemCornerRadius = tokens.radiusSm,
+                itemTextSize = tokens.fontMd,
+                itemLineHeight = tokens.lineHeightMd,
+                itemIconSize = tokens.iconSm,
+                dividerPaddingHorizontal = tokens.spacingSm,
+                dividerPaddingVertical = tokens.spacingXs,
+            )
+    }
+}
+
+data class ButtonMetrics(
+    val cornerRadius: Dp = 10.dp,
+    val iconSize: Dp = 20.dp,
+    val textSize: TextUnit = 14.sp,
+    val spacing: Dp = 8.dp,
+    val strokeWidth: Dp = 1.dp,
+) {
+    companion object {
+        fun fromTokens(tokens: AppMetricsTokens): ButtonMetrics =
+            ButtonMetrics(
+                cornerRadius = tokens.radiusMd,
+                iconSize = tokens.iconMd,
+                textSize = tokens.fontMd,
+                spacing = tokens.spacingSm,
+                strokeWidth = tokens.strokeThin,
+            )
+    }
+}
+
+data class AppMetrics(
+    val scale: AppMetricsScale = AppMetricsScale.STANDARD,
+    val tokens: AppMetricsTokens = AppMetricsTokens.Standard,
+    // Base Spacings
+    val spacingXs: Dp = tokens.spacingXs,
+    val spacingSm: Dp = tokens.spacingSm,
+    val spacingMd: Dp = tokens.spacingMd,
+    val spacingLg: Dp = tokens.spacingLg,
+    val spacingXl: Dp = tokens.spacingXl,
+    val spacingXxl: Dp = tokens.spacingXxl,
+    // Base Radiuses
+    val radiusXs: Dp = tokens.radiusXs,
+    val radiusSm: Dp = tokens.radiusSm,
+    val radiusMd: Dp = tokens.radiusMd,
+    val radiusLg: Dp = tokens.radiusLg,
+    val radiusXl: Dp = tokens.radiusXl,
+    val radiusSmall: Dp = tokens.radiusSm,
+    val radiusMedium: Dp = tokens.radiusMd,
+    val radiusLarge: Dp = tokens.radiusLg,
+    // Base Borders
+    val strokeThin: Dp = tokens.strokeThin,
+    val strokeFocused: Dp = tokens.strokeFocused,
+    // Base Icons
+    val iconXs: Dp = tokens.iconXs,
+    val iconSm: Dp = tokens.iconSm,
+    val iconMd: Dp = tokens.iconMd,
+    val iconLg: Dp = tokens.iconLg,
+    val iconXl: Dp = tokens.iconXl,
+    // Base Font Sizes & Line Heights
+    val fontSizeXs: TextUnit = tokens.fontXs,
+    val lineHeightXs: TextUnit = tokens.lineHeightXs,
+    val fontSizeSm: TextUnit = tokens.fontSm,
+    val lineHeightSm: TextUnit = tokens.lineHeightSm,
+    val fontSizeMd: TextUnit = tokens.fontMd,
+    val lineHeightMd: TextUnit = tokens.lineHeightMd,
+    val fontSizeLg: TextUnit = tokens.fontLg,
+    val lineHeightLg: TextUnit = tokens.lineHeightLg,
+    val fontSizeXl: TextUnit = tokens.fontXl,
+    val lineHeightXl: TextUnit = tokens.lineHeightXl,
+    val fontSizeXxl: TextUnit = tokens.fontXxl,
+    val lineHeightXxl: TextUnit = tokens.lineHeightXxl,
+    // Component Metrics
+    val channelSelectionTile: ChannelSelectionTileMetrics = ChannelSelectionTileMetrics.fromTokens(tokens),
+    val squareSelectionButton: ChannelSelectionTileMetrics = channelSelectionTile,
+    val metricCard: MetricCardMetrics = MetricCardMetrics.fromTokens(tokens),
+    val screenHeader: ScreenHeaderMetrics = ScreenHeaderMetrics.fromTokens(tokens),
+    val sectionHeader: SectionHeaderMetrics = SectionHeaderMetrics.fromTokens(tokens),
+    val channelDetailHeader: ChannelDetailHeaderMetrics = ChannelDetailHeaderMetrics.fromTokens(tokens),
+    val featurePlaceholderBox: FeaturePlaceholderBoxMetrics = FeaturePlaceholderBoxMetrics.fromTokens(tokens),
+    val navigationRail: NavigationRailMetrics = NavigationRailMetrics.fromTokens(tokens),
+    val navigationDrawer: NavigationDrawerMetrics = NavigationDrawerMetrics.fromTokens(tokens),
+    val dropdownMenu: DropdownMenuMetrics = DropdownMenuMetrics.fromTokens(tokens),
+    val chip: ChipMetrics = ChipMetrics.fromTokens(tokens),
+    val settingRow: SettingRowMetrics = SettingRowMetrics.fromTokens(tokens),
+    val button: ButtonMetrics = ButtonMetrics.fromTokens(tokens),
+) {
+    companion object {
+        fun fromTokens(tokens: AppMetricsTokens): AppMetrics =
+            AppMetrics(
+                scale = tokens.scale,
+                tokens = tokens,
+                spacingXs = tokens.spacingXs,
+                spacingSm = tokens.spacingSm,
+                spacingMd = tokens.spacingMd,
+                spacingLg = tokens.spacingLg,
+                spacingXl = tokens.spacingXl,
+                spacingXxl = tokens.spacingXxl,
+                radiusXs = tokens.radiusXs,
+                radiusSm = tokens.radiusSm,
+                radiusMd = tokens.radiusMd,
+                radiusLg = tokens.radiusLg,
+                radiusXl = tokens.radiusXl,
+                radiusSmall = tokens.radiusSm,
+                radiusMedium = tokens.radiusMd,
+                radiusLarge = tokens.radiusLg,
+                strokeThin = tokens.strokeThin,
+                strokeFocused = tokens.strokeFocused,
+                iconXs = tokens.iconXs,
+                iconSm = tokens.iconSm,
+                iconMd = tokens.iconMd,
+                iconLg = tokens.iconLg,
+                iconXl = tokens.iconXl,
+                fontSizeXs = tokens.fontXs,
+                lineHeightXs = tokens.lineHeightXs,
+                fontSizeSm = tokens.fontSm,
+                lineHeightSm = tokens.lineHeightSm,
+                fontSizeMd = tokens.fontMd,
+                lineHeightMd = tokens.lineHeightMd,
+                fontSizeLg = tokens.fontLg,
+                lineHeightLg = tokens.lineHeightLg,
+                fontSizeXl = tokens.fontXl,
+                lineHeightXl = tokens.lineHeightXl,
+                fontSizeXxl = tokens.fontXxl,
+                lineHeightXxl = tokens.lineHeightXxl,
+                channelSelectionTile = ChannelSelectionTileMetrics.fromTokens(tokens),
+                metricCard = MetricCardMetrics.fromTokens(tokens),
+                screenHeader = ScreenHeaderMetrics.fromTokens(tokens),
+                sectionHeader = SectionHeaderMetrics.fromTokens(tokens),
+                channelDetailHeader = ChannelDetailHeaderMetrics.fromTokens(tokens),
+                featurePlaceholderBox = FeaturePlaceholderBoxMetrics.fromTokens(tokens),
+                navigationRail = NavigationRailMetrics.fromTokens(tokens),
+                navigationDrawer = NavigationDrawerMetrics.fromTokens(tokens),
+                dropdownMenu = DropdownMenuMetrics.fromTokens(tokens),
+                chip = ChipMetrics.fromTokens(tokens),
+                settingRow = SettingRowMetrics.fromTokens(tokens),
+                button = ButtonMetrics.fromTokens(tokens),
+            )
+
+        val Compact: AppMetrics = fromTokens(AppMetricsTokens.Compact)
+        val Standard: AppMetrics = fromTokens(AppMetricsTokens.Standard)
+        val Comfortable: AppMetrics = fromTokens(AppMetricsTokens.Comfortable)
 
         val all: List<AppMetrics> = listOf(Compact, Standard, Comfortable)
 

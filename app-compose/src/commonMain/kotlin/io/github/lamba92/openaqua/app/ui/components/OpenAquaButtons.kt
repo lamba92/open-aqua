@@ -41,6 +41,7 @@ fun OpenAquaButton(
     iconTint: Color = Color.Unspecified,
 ) {
     val colors = OpenAquaTheme.colors
+    val buttonMetrics = OpenAquaTheme.button
     val resolvedContainerColor = if (containerColor.isSpecified) containerColor else colors.primaryBright
     val resolvedContentColor = if (contentColor.isSpecified) contentColor else colors.background
     val resolvedIconTint = if (iconTint.isSpecified) iconTint else resolvedContentColor
@@ -48,7 +49,7 @@ fun OpenAquaButton(
     Button(
         onClick = { if (!isLoading) onClick() },
         enabled = enabled && !isLoading,
-        shape = RoundedCornerShape(10.dp),
+        shape = RoundedCornerShape(buttonMetrics.cornerRadius),
         colors =
             ButtonDefaults.buttonColors(
                 containerColor = resolvedContainerColor,
@@ -73,23 +74,23 @@ fun OpenAquaButton(
     ) {
         if (isLoading) {
             CircularProgressIndicator(
-                modifier = Modifier.size(16.dp),
-                strokeWidth = 2.dp,
+                modifier = Modifier.size(buttonMetrics.iconSize - 2.dp),
+                strokeWidth = buttonMetrics.strokeWidth * 2,
                 color = resolvedContentColor,
             )
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(buttonMetrics.spacing))
         } else if (icon != null) {
             Icon(
                 painter = icon,
                 contentDescription = null,
                 tint = resolvedIconTint,
-                modifier = Modifier.size(18.dp),
+                modifier = Modifier.size(buttonMetrics.iconSize),
             )
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(buttonMetrics.spacing))
         }
         Text(
             text = if (isLoading && loadingText != null) loadingText else text,
-            fontSize = 15.sp,
+            fontSize = buttonMetrics.textSize,
             fontWeight = FontWeight.Bold,
         )
     }
@@ -108,6 +109,7 @@ fun OpenAquaOutlinedButton(
     iconTint: Color = Color.Unspecified,
 ) {
     val colors = OpenAquaTheme.colors
+    val buttonMetrics = OpenAquaTheme.button
     val resolvedBorderColor = if (borderColor.isSpecified) borderColor else colors.borderOutline
     val resolvedContainerColor = if (containerColor.isSpecified) containerColor else colors.surfaceHigh
     val resolvedContentColor = if (contentColor.isSpecified) contentColor else colors.textPrimary
@@ -116,8 +118,8 @@ fun OpenAquaOutlinedButton(
     OutlinedButton(
         onClick = onClick,
         enabled = enabled,
-        shape = RoundedCornerShape(10.dp),
-        border = BorderStroke(1.dp, if (enabled) resolvedBorderColor else colors.borderOutline.copy(alpha = 0.4f)),
+        shape = RoundedCornerShape(buttonMetrics.cornerRadius),
+        border = BorderStroke(buttonMetrics.strokeWidth, if (enabled) resolvedBorderColor else colors.borderOutline.copy(alpha = 0.4f)),
         colors =
             ButtonDefaults.outlinedButtonColors(
                 containerColor = resolvedContainerColor,
@@ -144,13 +146,13 @@ fun OpenAquaOutlinedButton(
                 painter = icon,
                 contentDescription = null,
                 tint = if (enabled) resolvedIconTint else colors.textMuted,
-                modifier = Modifier.size(18.dp),
+                modifier = Modifier.size(buttonMetrics.iconSize),
             )
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(buttonMetrics.spacing))
         }
         Text(
             text = text,
-            fontSize = 15.sp,
+            fontSize = buttonMetrics.textSize,
             fontWeight = FontWeight.Medium,
             maxLines = 1,
             softWrap = false,
@@ -169,13 +171,14 @@ fun OpenAquaTextButton(
     iconTint: Color = Color.Unspecified,
 ) {
     val colors = OpenAquaTheme.colors
+    val buttonMetrics = OpenAquaTheme.button
     val resolvedContentColor = if (contentColor.isSpecified) contentColor else colors.textSecondary
     val resolvedIconTint = if (iconTint.isSpecified) iconTint else colors.primaryBright
 
     TextButton(
         onClick = onClick,
         enabled = enabled,
-        shape = RoundedCornerShape(10.dp),
+        shape = RoundedCornerShape(buttonMetrics.cornerRadius),
         colors =
             ButtonDefaults.textButtonColors(
                 contentColor = resolvedContentColor,
@@ -200,13 +203,13 @@ fun OpenAquaTextButton(
                 painter = icon,
                 contentDescription = null,
                 tint = if (enabled) resolvedIconTint else colors.textMuted,
-                modifier = Modifier.size(18.dp),
+                modifier = Modifier.size(buttonMetrics.iconSize),
             )
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(buttonMetrics.spacing))
         }
         Text(
             text = text,
-            fontSize = 15.sp,
+            fontSize = buttonMetrics.textSize,
             fontWeight = FontWeight.Medium,
             maxLines = 1,
             softWrap = false,

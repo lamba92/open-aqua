@@ -1,8 +1,11 @@
+import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
+import org.jetbrains.kotlin.gradle.tasks.KotlinNativeLink
+
 plugins {
     openaqua.convention.multiplatform
     id(libs.plugins.kotlin.compose)
     id(libs.plugins.compose.multiplatform)
-    alias(libs.plugins.compose.desktop.native.bridge)
+    id("com.bitsycore.compose-desktop-native.bridge")
 }
 
 kotlin {
@@ -12,6 +15,7 @@ kotlin {
                 "-L${System.getProperty("user.home")}/.local/lib",
                 "-L/home/linuxbrew/.linuxbrew/lib",
                 "-L/usr/lib64",
+                "-Wl,--allow-multiple-definition",
             )
         }
     }

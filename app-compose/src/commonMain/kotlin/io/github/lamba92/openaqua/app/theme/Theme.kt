@@ -60,6 +60,10 @@ val LocalNavigationDrawerMetrics = staticCompositionLocalOf { AppMetrics.Standar
 val LocalDropdownMenuMetrics = staticCompositionLocalOf { AppMetrics.Standard.dropdownMenu }
 val LocalDropdownMenuColors = staticCompositionLocalOf { AppColors.fromPalette(ThemePalette.HydroDark).dropdownMenu }
 
+val LocalChipMetrics = staticCompositionLocalOf { AppMetrics.Standard.chip }
+val LocalSettingRowMetrics = staticCompositionLocalOf { AppMetrics.Standard.settingRow }
+val LocalButtonMetrics = staticCompositionLocalOf { AppMetrics.Standard.button }
+
 val AppColorScheme.stringResource: StringResource
     get() =
         when (this) {
@@ -97,6 +101,21 @@ object OpenAquaTheme {
         @Composable
         @ReadOnlyComposable
         get() = LocalAppTypography.current
+
+    val chip: ChipMetrics
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalChipMetrics.current
+
+    val settingRow: SettingRowMetrics
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalSettingRowMetrics.current
+
+    val button: ButtonMetrics
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalButtonMetrics.current
 }
 
 @Composable
@@ -165,7 +184,10 @@ fun OpenAquaTheme(
     val currentDensity = LocalDensity.current
     val scaledDensity =
         remember(currentDensity, fontScaleFactor) {
-            createScaledDensity(currentDensity, fontScaleFactor)
+            Density(
+                density = currentDensity.density,
+                fontScale = currentDensity.fontScale * fontScaleFactor,
+            )
         }
 
     val scrollbarStyle =
@@ -205,6 +227,9 @@ fun OpenAquaTheme(
         LocalNavigationDrawerMetrics provides metrics.navigationDrawer,
         LocalDropdownMenuMetrics provides metrics.dropdownMenu,
         LocalDropdownMenuColors provides appColors.dropdownMenu,
+        LocalChipMetrics provides metrics.chip,
+        LocalSettingRowMetrics provides metrics.settingRow,
+        LocalButtonMetrics provides metrics.button,
         LocalScrollbarStyle provides scrollbarStyle,
     ) {
         MaterialTheme(

@@ -351,7 +351,7 @@ private fun NavigationRailHeader(
                     Text(
                         text = "OpenAqua",
                         color = OpenAquaTheme.colors.textPrimary,
-                        fontSize = 17.sp,
+                        fontSize = metrics.headerTitleTextSize,
                         fontWeight = FontWeight.Bold,
                         fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
                         maxLines = 1,
@@ -403,16 +403,17 @@ private fun NavigationRailFooter(
     metrics: NavigationRailMetrics,
     modifier: Modifier = Modifier,
 ) {
+    val appMetrics = OpenAquaTheme.metrics
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = modifier.padding(bottom = 14.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+        modifier = modifier.padding(bottom = appMetrics.spacingMd),
+        verticalArrangement = Arrangement.spacedBy(metrics.itemSpacing),
     ) {
         HorizontalDivider(
             color = OpenAquaTheme.colors.borderOutline,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = appMetrics.spacingMd),
         )
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(appMetrics.spacingXs))
         SimpleNavigationRailItem(
             icon = painterResource(Res.drawable.ic_bug_report),
             label = stringResource(Res.string.nav_bug_report),

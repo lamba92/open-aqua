@@ -78,10 +78,10 @@ fun DeviceIllustration(
             modifier =
                 Modifier
                     .align(Alignment.BottomEnd)
-                    .padding(8.dp),
+                    .padding(OpenAquaTheme.metrics.spacingSm),
             color = CyanBright.copy(alpha = 0.6f),
-            fontSize = 13.sp,
-            lineHeight = 16.sp,
+            fontSize = OpenAquaTheme.metrics.fontSizeSm,
+            lineHeight = OpenAquaTheme.metrics.lineHeightSm,
             fontWeight = FontWeight.Bold,
             fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
         )

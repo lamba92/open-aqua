@@ -390,7 +390,8 @@ private fun SettingsDrawerScaffold(
                     Text(
                         text = stringResource(Res.string.settings_screen_title),
                         color = colors.textPrimary,
-                        fontSize = 16.sp,
+                        fontSize = drawerMetrics.headerTitleTextSize,
+                        lineHeight = drawerMetrics.headerTitleLineHeight,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
                         softWrap = false,
@@ -400,10 +401,11 @@ private fun SettingsDrawerScaffold(
                     Text(
                         text = stringResource(Res.string.settings_tab_subtitle),
                         color = colors.primary,
-                        fontSize = 13.sp,
+                        fontSize = drawerMetrics.headerSubtitleTextSize,
+                        lineHeight = drawerMetrics.headerSubtitleLineHeight,
                         fontFamily = FontFamily.Monospace,
-                        maxLines = 1,
-                        softWrap = false,
+                        maxLines = 2,
+                        softWrap = true,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.padding(horizontal = 12.dp),
                     )
@@ -426,8 +428,8 @@ private fun SettingsDrawerScaffold(
                         label = {
                             Text(
                                 text = stringResource(Res.string.settings_tab_general),
-                                fontSize = 15.sp,
-                                lineHeight = 22.sp,
+                                fontSize = drawerMetrics.itemTextSize,
+                                lineHeight = drawerMetrics.itemLineHeight,
                                 fontWeight = if (selectedTab == SettingsTab.GENERAL) FontWeight.SemiBold else FontWeight.Medium,
                                 maxLines = 1,
                                 softWrap = false,
@@ -438,7 +440,7 @@ private fun SettingsDrawerScaffold(
                             Icon(
                                 painter = painterResource(Res.drawable.ic_tune),
                                 contentDescription = null,
-                                modifier = Modifier.size(20.dp),
+                                modifier = Modifier.size(drawerMetrics.itemIconSize),
                             )
                         },
                         selected = selectedTab == SettingsTab.GENERAL,
@@ -456,8 +458,8 @@ private fun SettingsDrawerScaffold(
                             ) {
                                 Text(
                                     text = stringResource(Res.string.settings_tab_updates),
-                                    fontSize = 15.sp,
-                                    lineHeight = 22.sp,
+                                    fontSize = drawerMetrics.itemTextSize,
+                                    lineHeight = drawerMetrics.itemLineHeight,
                                     fontWeight = if (selectedTab == SettingsTab.UPDATES) FontWeight.SemiBold else FontWeight.Medium,
                                     maxLines = 1,
                                     softWrap = false,
@@ -478,7 +480,7 @@ private fun SettingsDrawerScaffold(
                             Icon(
                                 painter = painterResource(Res.drawable.ic_system_update),
                                 contentDescription = null,
-                                modifier = Modifier.size(20.dp),
+                                modifier = Modifier.size(drawerMetrics.itemIconSize),
                             )
                         },
                         selected = selectedTab == SettingsTab.UPDATES,
@@ -491,8 +493,8 @@ private fun SettingsDrawerScaffold(
                         label = {
                             Text(
                                 text = stringResource(Res.string.settings_tab_logs),
-                                fontSize = 15.sp,
-                                lineHeight = 22.sp,
+                                fontSize = drawerMetrics.itemTextSize,
+                                lineHeight = drawerMetrics.itemLineHeight,
                                 fontWeight = if (selectedTab == SettingsTab.LOGS) FontWeight.SemiBold else FontWeight.Medium,
                                 maxLines = 1,
                                 softWrap = false,
@@ -503,7 +505,7 @@ private fun SettingsDrawerScaffold(
                             Icon(
                                 painter = painterResource(Res.drawable.ic_article),
                                 contentDescription = null,
-                                modifier = Modifier.size(20.dp),
+                                modifier = Modifier.size(drawerMetrics.itemIconSize),
                             )
                         },
                         selected = selectedTab == SettingsTab.LOGS,
@@ -554,7 +556,8 @@ private fun AppearanceSection(
         Text(
             text = stringResource(Res.string.settings_appearance_desc),
             color = colors.textMuted,
-            fontSize = 14.sp,
+            fontSize = metrics.settingRow.descriptionTextSize,
+            lineHeight = metrics.settingRow.descriptionLineHeight,
         )
 
         // Color scheme chooser
@@ -562,13 +565,15 @@ private fun AppearanceSection(
             Text(
                 text = stringResource(Res.string.settings_color_scheme_title),
                 color = colors.textPrimary,
-                fontSize = 16.sp,
+                fontSize = metrics.settingRow.titleTextSize,
+                lineHeight = metrics.settingRow.titleLineHeight,
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
                 text = stringResource(Res.string.settings_color_scheme_desc),
                 color = colors.textMuted,
-                fontSize = 14.sp,
+                fontSize = metrics.settingRow.descriptionTextSize,
+                lineHeight = metrics.settingRow.descriptionLineHeight,
             )
             FlowRow(
                 modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
@@ -600,13 +605,15 @@ private fun AppearanceSection(
             Text(
                 text = stringResource(Res.string.settings_metrics_scale_title),
                 color = colors.textPrimary,
-                fontSize = 16.sp,
+                fontSize = metrics.settingRow.titleTextSize,
+                lineHeight = metrics.settingRow.titleLineHeight,
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
                 text = stringResource(Res.string.settings_metrics_scale_desc),
                 color = colors.textMuted,
-                fontSize = 14.sp,
+                fontSize = metrics.settingRow.descriptionTextSize,
+                lineHeight = metrics.settingRow.descriptionLineHeight,
             )
             FlowRow(
                 modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
@@ -631,13 +638,15 @@ private fun AppearanceSection(
             Text(
                 text = stringResource(Res.string.settings_font_family_title),
                 color = colors.textPrimary,
-                fontSize = 16.sp,
+                fontSize = metrics.settingRow.titleTextSize,
+                lineHeight = metrics.settingRow.titleLineHeight,
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
                 text = stringResource(Res.string.settings_font_family_desc),
                 color = colors.textMuted,
-                fontSize = 14.sp,
+                fontSize = metrics.settingRow.descriptionTextSize,
+                lineHeight = metrics.settingRow.descriptionLineHeight,
             )
             FlowRow(
                 modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
@@ -671,17 +680,19 @@ private fun AppearanceSection(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(metrics.settingRow.verticalSpacing)) {
                 Text(
                     text = stringResource(Res.string.settings_language_title),
                     color = colors.textPrimary,
-                    fontSize = 16.sp,
+                    fontSize = metrics.settingRow.titleTextSize,
+                    lineHeight = metrics.settingRow.titleLineHeight,
                     fontWeight = FontWeight.SemiBold,
                 )
                 Text(
                     text = stringResource(Res.string.settings_language_desc),
                     color = colors.textMuted,
-                    fontSize = 14.sp,
+                    fontSize = metrics.settingRow.descriptionTextSize,
+                    lineHeight = metrics.settingRow.descriptionLineHeight,
                 )
             }
 
@@ -711,21 +722,21 @@ private fun LanguageDropdown(
                     .background(colors.surfaceLowest)
                     .border(metrics.strokeThin, colors.borderOutline, RoundedCornerShape(metrics.radiusSmall))
                     .clickable { expanded = true }
-                    .padding(horizontal = 14.dp, vertical = 8.dp),
+                    .padding(horizontal = metrics.chip.paddingHorizontal, vertical = metrics.chip.paddingVertical),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(metrics.spacingSm),
         ) {
             Text(
                 text = stringResource(selectedLanguage.stringResource),
                 color = colors.textPrimary,
-                fontSize = 15.sp,
+                fontSize = metrics.chip.textSize,
                 fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
             )
             Icon(
                 painter = painterResource(Res.drawable.ic_arrow_drop_down),
                 contentDescription = null,
                 tint = colors.textMuted,
-                modifier = Modifier.size(18.dp),
+                modifier = Modifier.size(metrics.iconMd),
             )
         }
 
@@ -744,7 +755,7 @@ private fun LanguageDropdown(
                         Text(
                             text = stringResource(lang.stringResource),
                             color = if (isSelected) colors.primaryBright else colors.textPrimary,
-                            fontSize = 15.sp,
+                            fontSize = metrics.chip.textSize,
                             fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                         )
@@ -792,7 +803,8 @@ private fun ChannelVisibilitySection(
         Text(
             text = stringResource(Res.string.settings_channel_visibility_desc),
             color = colors.textMuted,
-            fontSize = 14.sp,
+            fontSize = metrics.settingRow.descriptionTextSize,
+            lineHeight = metrics.settingRow.descriptionLineHeight,
         )
 
         SettingToggleRow(
@@ -860,7 +872,8 @@ private fun WindowBehaviorSection(
         Text(
             text = stringResource(Res.string.settings_window_behavior_desc),
             color = colors.textMuted,
-            fontSize = 14.sp,
+            fontSize = metrics.settingRow.descriptionTextSize,
+            lineHeight = metrics.settingRow.descriptionLineHeight,
         )
 
         SettingToggleRow(
@@ -900,18 +913,20 @@ private fun SettingToggleRow(
     ) {
         Column(
             modifier = Modifier.weight(1f).padding(end = metrics.spacingLg),
-            verticalArrangement = Arrangement.spacedBy(metrics.spacingXs),
+            verticalArrangement = Arrangement.spacedBy(metrics.settingRow.verticalSpacing),
         ) {
             Text(
                 text = title,
                 color = colors.textPrimary,
-                fontSize = 16.sp,
+                fontSize = metrics.settingRow.titleTextSize,
+                lineHeight = metrics.settingRow.titleLineHeight,
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
                 text = description,
                 color = colors.textMuted,
-                fontSize = 14.sp,
+                fontSize = metrics.settingRow.descriptionTextSize,
+                lineHeight = metrics.settingRow.descriptionLineHeight,
             )
         }
 
@@ -956,11 +971,12 @@ private fun FontSizeSection(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(metrics.settingRow.verticalSpacing)) {
                 Text(
                     text = stringResource(Res.string.settings_font_scale_title),
                     color = colors.textPrimary,
-                    fontSize = 16.sp,
+                    fontSize = metrics.settingRow.titleTextSize,
+                    lineHeight = metrics.settingRow.titleLineHeight,
                     fontWeight = FontWeight.SemiBold,
                 )
                 Text(
@@ -971,22 +987,23 @@ private fun FontSizeSection(
                             FontScaleConstants.MAX_SP,
                         ),
                     color = colors.textMuted,
-                    fontSize = 14.sp,
+                    fontSize = metrics.settingRow.descriptionTextSize,
+                    lineHeight = metrics.settingRow.descriptionLineHeight,
                 )
             }
 
             Box(
                 modifier =
                     Modifier
-                        .clip(RoundedCornerShape(8.dp))
+                        .clip(RoundedCornerShape(metrics.radiusSmall))
                         .background(colors.surfaceHigh)
-                        .border(metrics.strokeThin, colors.primaryBright, RoundedCornerShape(8.dp))
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                        .border(metrics.strokeThin, colors.primaryBright, RoundedCornerShape(metrics.radiusSmall))
+                        .padding(horizontal = metrics.chip.paddingHorizontal, vertical = metrics.chip.paddingVertical),
             ) {
                 Text(
                     text = "$selectedFontSp sp ($percentage%)",
                     color = colors.primaryBright,
-                    fontSize = 15.sp,
+                    fontSize = metrics.chip.textSize,
                     fontWeight = FontWeight.Bold,
                     fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
                 )
@@ -995,16 +1012,16 @@ private fun FontSizeSection(
 
         // Quick presets
         FlowRow(
-            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+            modifier = Modifier.fillMaxWidth().padding(top = metrics.spacingXs),
             horizontalArrangement = Arrangement.spacedBy(metrics.spacingSm),
             verticalArrangement = Arrangement.spacedBy(metrics.spacingSm),
         ) {
             val presets =
                 listOf(
-                    13 to Res.string.font_preset_small,
-                    15 to Res.string.font_preset_standard,
-                    17 to Res.string.font_preset_large,
-                    20 to Res.string.font_preset_extra_large,
+                    12 to Res.string.font_preset_small,
+                    14 to Res.string.font_preset_standard,
+                    16 to Res.string.font_preset_large,
+                    18 to Res.string.font_preset_extra_large,
                 )
             presets.forEach { (sp, labelRes) ->
                 val isSelected = selectedFontSp == sp
@@ -1018,9 +1035,9 @@ private fun FontSizeSection(
 
         // Slider with stepper buttons
         Row(
-            modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+            modifier = Modifier.fillMaxWidth().padding(top = metrics.spacingSm),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            horizontalArrangement = Arrangement.spacedBy(metrics.spacingSm),
         ) {
             IconButton(
                 onClick = { onSetFontSp(selectedFontSp - 1) },
@@ -1036,7 +1053,7 @@ private fun FontSizeSection(
             Text(
                 text = "${FontScaleConstants.MIN_SP} sp",
                 color = colors.textMuted,
-                fontSize = 13.sp,
+                fontSize = metrics.settingRow.descriptionTextSize,
                 fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
             )
 
@@ -1059,7 +1076,7 @@ private fun FontSizeSection(
             Text(
                 text = "${FontScaleConstants.MAX_SP} sp",
                 color = colors.textMuted,
-                fontSize = 13.sp,
+                fontSize = metrics.settingRow.descriptionTextSize,
                 fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
             )
 
@@ -1099,17 +1116,17 @@ private fun ThemeOptionChip(
                 .background(containerColor)
                 .border(metrics.strokeThin, borderColor, shape)
                 .clickable { onClick() }
-                .padding(horizontal = 14.dp, vertical = 10.dp),
+                .padding(horizontal = metrics.chip.paddingHorizontal, vertical = metrics.chip.paddingVertical),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(metrics.spacingSm),
     ) {
         if (previewColors != null) {
-            Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(metrics.spacingXs)) {
                 previewColors.forEach { color ->
                     Box(
                         modifier =
                             Modifier
-                                .size(10.dp)
+                                .size(metrics.chip.iconSize)
                                 .clip(CircleShape)
                                 .background(color),
                     )
@@ -1119,7 +1136,7 @@ private fun ThemeOptionChip(
         Text(
             text = text,
             color = textColor,
-            fontSize = 15.sp,
+            fontSize = metrics.chip.textSize,
             fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
             fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
         )
@@ -1159,23 +1176,25 @@ private fun AppDataSection(
         ) {
             Column(
                 modifier = Modifier.weight(1f).padding(end = metrics.spacingLg),
-                verticalArrangement = Arrangement.spacedBy(metrics.spacingXs),
+                verticalArrangement = Arrangement.spacedBy(metrics.settingRow.verticalSpacing),
             ) {
                 Text(
                     text = stringResource(Res.string.settings_open_data_folder_title),
                     color = colors.textPrimary,
-                    fontSize = 16.sp,
+                    fontSize = metrics.settingRow.titleTextSize,
+                    lineHeight = metrics.settingRow.titleLineHeight,
                     fontWeight = FontWeight.SemiBold,
                 )
                 Text(
                     text = stringResource(Res.string.settings_open_data_folder_desc),
                     color = colors.textMuted,
-                    fontSize = 14.sp,
+                    fontSize = metrics.settingRow.descriptionTextSize,
+                    lineHeight = metrics.settingRow.descriptionLineHeight,
                 )
                 Text(
                     text = dataFolderPath,
                     color = colors.primary,
-                    fontSize = 13.sp,
+                    fontSize = metrics.settingRow.descriptionTextSize,
                     fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
                     modifier = Modifier.padding(top = 2.dp),
                 )
@@ -1198,18 +1217,20 @@ private fun AppDataSection(
         ) {
             Column(
                 modifier = Modifier.weight(1f).padding(end = metrics.spacingLg),
-                verticalArrangement = Arrangement.spacedBy(metrics.spacingXs),
+                verticalArrangement = Arrangement.spacedBy(metrics.settingRow.verticalSpacing),
             ) {
                 Text(
                     text = stringResource(Res.string.settings_restore_defaults_title),
                     color = colors.textPrimary,
-                    fontSize = 16.sp,
+                    fontSize = metrics.settingRow.titleTextSize,
+                    lineHeight = metrics.settingRow.titleLineHeight,
                     fontWeight = FontWeight.SemiBold,
                 )
                 Text(
                     text = stringResource(Res.string.settings_restore_defaults_desc),
                     color = colors.textMuted,
-                    fontSize = 14.sp,
+                    fontSize = metrics.settingRow.descriptionTextSize,
+                    lineHeight = metrics.settingRow.descriptionLineHeight,
                 )
             }
 
@@ -1252,7 +1273,8 @@ private fun LinuxPermissionsSection(
         Text(
             text = stringResource(Res.string.settings_linux_permissions_desc),
             color = colors.textMuted,
-            fontSize = 14.sp,
+            fontSize = metrics.settingRow.descriptionTextSize,
+            lineHeight = metrics.settingRow.descriptionLineHeight,
         )
 
         Row(
@@ -1262,7 +1284,7 @@ private fun LinuxPermissionsSection(
         ) {
             Column(
                 modifier = Modifier.weight(1f).padding(end = metrics.spacingLg),
-                verticalArrangement = Arrangement.spacedBy(metrics.spacingXs),
+                verticalArrangement = Arrangement.spacedBy(metrics.settingRow.verticalSpacing),
             ) {
                 Text(
                     text =
@@ -1272,7 +1294,8 @@ private fun LinuxPermissionsSection(
                             stringResource(Res.string.settings_linux_permissions_rule_not_installed)
                         },
                     color = if (osSettings.hasUdevRule) colors.statusNominal else colors.textMuted,
-                    fontSize = 15.sp,
+                    fontSize = metrics.settingRow.titleTextSize,
+                    lineHeight = metrics.settingRow.titleLineHeight,
                     fontWeight = FontWeight.Medium,
                 )
             }

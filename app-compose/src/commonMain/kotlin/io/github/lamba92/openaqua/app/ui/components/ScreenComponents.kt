@@ -457,21 +457,21 @@ fun VisibilityFilterChip(
                 .background(containerColor)
                 .border(metrics.strokeThin, borderColor, shape)
                 .clickable { onClick() }
-                .padding(horizontal = 10.dp, vertical = 5.dp),
+                .padding(horizontal = metrics.chip.paddingHorizontal, vertical = metrics.chip.paddingVertical),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(metrics.spacingSm),
     ) {
         Box(
             modifier =
                 Modifier
-                    .size(6.dp)
+                    .size(metrics.iconXs)
                     .clip(CircleShape)
                     .background(if (showingAll) colors.statusWarning else colors.primary),
         )
         Text(
             text = text,
             color = textColor,
-            fontSize = 14.sp,
+            fontSize = metrics.chip.textSize,
             fontWeight = FontWeight.Medium,
             fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
         )
@@ -502,12 +502,13 @@ fun VisibilityEmptyState(
             painter = painterResource(Res.drawable.ic_info),
             contentDescription = null,
             tint = colors.textMuted,
-            modifier = Modifier.size(36.dp),
+            modifier = Modifier.size(metrics.iconXl),
         )
         Text(
             text = message,
             color = colors.textSecondary,
-            fontSize = 16.sp,
+            fontSize = metrics.fontSizeLg,
+            lineHeight = metrics.lineHeightLg,
         )
         OpenAquaOutlinedButton(
             text = stringResource(Res.string.visibility_show_all_action),
@@ -714,6 +715,7 @@ fun SensorTargetTypeMenuButton(
             OpenAquaDropdownHeader(
                 text = stringResource(Res.string.sensor_type_set),
             )
+            val dropdownMetrics = OpenAquaDropdownMenuDefaults.metrics()
             SensorTargetType.entries.forEach { type ->
                 val isSelected = type == targetType
                 OpenAquaDropdownMenuItem(
@@ -724,7 +726,8 @@ fun SensorTargetTypeMenuButton(
                                     SensorTargetType.DIE -> stringResource(Res.string.sensor_type_die)
                                     SensorTargetType.WATER -> stringResource(Res.string.sensor_type_water)
                                 },
-                            fontSize = 15.sp,
+                            fontSize = dropdownMetrics.itemTextSize,
+                            lineHeight = dropdownMetrics.itemLineHeight,
                             color = if (isSelected) colors.primaryBright else colors.textPrimary,
                             fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
                         )
@@ -735,10 +738,10 @@ fun SensorTargetTypeMenuButton(
                                 painter = painterResource(Res.drawable.ic_check),
                                 contentDescription = null,
                                 tint = colors.primaryBright,
-                                modifier = Modifier.size(16.dp),
+                                modifier = Modifier.size(dropdownMetrics.itemIconSize),
                             )
                         } else {
-                            Spacer(modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.size(dropdownMetrics.itemIconSize))
                         }
                     },
                     onClick = {

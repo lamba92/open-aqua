@@ -5,6 +5,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import kotlinx.serialization.Serializable
 import open_aqua.app_compose.generated.resources.Res
 import open_aqua.app_compose.generated.resources.font_family_jetbrains_mono
@@ -21,9 +22,9 @@ import org.jetbrains.compose.resources.StringResource
 object FontScaleConstants {
     const val MIN_SP = 12
     const val MAX_SP = 22
-    const val DEFAULT_SP = 15
+    const val DEFAULT_SP = 14
 
-    val PRESETS = listOf(13, 15, 17, 20)
+    val PRESETS = listOf(12, 14, 16, 18, 20)
 }
 
 fun calculateFontScaleFactor(sp: Int): Float = sp.toFloat() / FontScaleConstants.DEFAULT_SP.toFloat()
@@ -41,12 +42,31 @@ val AppFontFamily.stringResource: StringResource
             AppFontFamily.SYSTEM_DEFAULT -> Res.string.font_family_system_default
         }
 
+object TypographyTokens {
+    val displayLarge = 57.sp
+    val displayMedium = 45.sp
+    val displaySmall = 36.sp
+    val headlineLarge = 32.sp
+    val headlineMedium = 28.sp
+    val headlineSmall = 24.sp
+    val titleLarge = 22.sp
+    val titleMedium = 16.sp
+    val titleSmall = 14.sp
+    val bodyLarge = 16.sp
+    val bodyMedium = 14.sp
+    val bodySmall = 12.sp
+    val labelLarge = 14.sp
+    val labelMedium = 12.sp
+    val labelSmall = 11.sp
+}
+
 data class AppTypography(
     val fontPreference: AppFontFamily = AppFontFamily.JETBRAINS_MONO,
     val fontSp: Int = FontScaleConstants.DEFAULT_SP,
     val fontScaleFactor: Float = 1.0f,
     val defaultFontFamily: FontFamily = FontFamily.Default,
     val monospaceFontFamily: FontFamily = FontFamily.Monospace,
+    val tokens: TypographyTokens = TypographyTokens,
 )
 
 @Composable
