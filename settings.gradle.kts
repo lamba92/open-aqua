@@ -1,7 +1,6 @@
 @file:Suppress("UnstableApiUsage")
 
 pluginManagement {
-    includeBuild("submodules/compose-desktop-native/gradle-plugin/compose-desktop-native-bridge")
     repositories {
         maven("https://maven.bitsycore.com/releases") {
             content { includeGroupAndSubgroups("com.bitsycore") }
@@ -49,7 +48,7 @@ include(
     ":app-compose:app-compose-linux-x64",
     ":app-compose:app-compose-linux-arm64",
     ":app-compose:app-compose-windows-x64",
-    ":app-compose:app-compose-screenshots",
+    // ":app-compose:app-compose-screenshots",
     ":assets",
     ":core-model",
     ":core-model:core-model-device",
@@ -66,10 +65,3 @@ include(
     ":packaging:packaging-linux-arm64",
     ":packaging:packaging-windows-x64",
 )
-
-includeBuild("submodules/compose-desktop-native") {
-    dependencySubstitution {
-        substitute(module("com.bitsycore.compose:desktop-native-window"))
-            .using(project(":compose:desktop:native:desktop-native-window"))
-    }
-}

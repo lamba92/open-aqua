@@ -1,6 +1,6 @@
 [versions]
 clikt = "5.0.3"
-compose-desktop-native = "1.12.2-4"
+compose-desktop-native = "1.12.2-5"
 compose-hot-reload = "1.1.1"
 compose-plugin = "1.9.0"
 composenativetray = "2.1.7"

@@ -23,12 +23,12 @@ actual fun ApplicationScope.OpenAquaTray(
             tooltip = stringResource(Res.string.window_title),
         ) {
             Item(
-                text = Res.string.tray_menu_open,
+                text = stringResource(Res.string.tray_menu_open),
                 onClick = onOpen,
             )
-            Divider()
+            Separator()
             Item(
-                text = Res.string.tray_menu_exit,
+                text = stringResource(Res.string.tray_menu_exit),
                 onClick = onExit,
             )
         }
