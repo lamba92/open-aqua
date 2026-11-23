@@ -12,7 +12,6 @@ compose.resources {
 }
 
 kotlin {
-    jvm()
     linuxX64()
     linuxArm64()
     mingwX64()
@@ -34,14 +33,6 @@ kotlin {
             api(projects.coreModel.coreModelHost)
             api(projects.coreTheme)
             api(libs.clikt)
-        }
-        jvmMain.dependencies {
-            api(getCurrentPlatformComposeRuntime())
-            api(libs.kotlinx.coroutines.swing)
-            api(libs.composenativetray)
-            api(libs.markdown.renderer.m3)
-            api(libs.ktor.client.cio)
-            api(libs.ktor.server.cio)
         }
         nativeMain.dependencies {
             api(projects.engine.engineDevice.engineDeviceProd)
