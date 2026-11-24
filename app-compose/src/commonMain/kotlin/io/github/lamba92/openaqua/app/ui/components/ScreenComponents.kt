@@ -1,9 +1,14 @@
 package io.github.lamba92.openaqua.app.ui.components
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,6 +20,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -26,6 +32,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -39,6 +46,10 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -55,12 +66,16 @@ import io.github.lamba92.openaqua.app.theme.LocalFeaturePlaceholderBoxColors
 import io.github.lamba92.openaqua.app.theme.LocalFeaturePlaceholderBoxMetrics
 import io.github.lamba92.openaqua.app.theme.LocalMetricCardColors
 import io.github.lamba92.openaqua.app.theme.LocalMetricCardMetrics
+import io.github.lamba92.openaqua.app.theme.LocalNavigationRailColors
+import io.github.lamba92.openaqua.app.theme.LocalNavigationRailMetrics
 import io.github.lamba92.openaqua.app.theme.LocalScreenHeaderColors
 import io.github.lamba92.openaqua.app.theme.LocalScreenHeaderMetrics
 import io.github.lamba92.openaqua.app.theme.LocalSectionHeaderColors
 import io.github.lamba92.openaqua.app.theme.LocalSectionHeaderMetrics
 import io.github.lamba92.openaqua.app.theme.MetricCardColors
 import io.github.lamba92.openaqua.app.theme.MetricCardMetrics
+import io.github.lamba92.openaqua.app.theme.NavigationRailColors
+import io.github.lamba92.openaqua.app.theme.NavigationRailMetrics
 import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
 import io.github.lamba92.openaqua.app.theme.ScreenHeaderColors
 import io.github.lamba92.openaqua.app.theme.ScreenHeaderMetrics
@@ -753,4 +768,144 @@ fun SensorTargetTypeMenuButton(
             }
         }
     }
+}
+
+@Composable
+fun OpenAquaBaseNavItem(
+    icon: @Composable () -> Unit,
+    label: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    isExpanded: Boolean = true,
+    colors: NavigationRailColors = LocalNavigationRailColors.current,
+    metrics: NavigationRailMetrics = LocalNavigationRailMetrics.current,
+) {
+    val fixedSlotWidth = metrics.collapsedWidth - 16.dp
+    val containerColor =
+        if (isSelected) {
+            colors.itemIndicator
+        } else {
+            Color.Transparent
+        }
+
+    val iconColor =
+        if (isSelected) {
+            colors.itemSelectedIcon
+        } else {
+            colors.itemUnselectedIcon
+        }
+
+    val textColor =
+        if (isSelected) {
+            colors.itemSelectedText
+        } else {
+            colors.itemUnselectedText
+        }
+
+    Box(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(horizontal = metrics.itemSpacing)
+                .semantics {
+                    role = Role.Tab
+                    selected = isSelected
+                },
+    ) {
+        val shape = RoundedCornerShape(metrics.itemCornerRadius)
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(metrics.itemHeight)
+                    .clip(shape)
+                    .background(containerColor)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = ripple(color = iconColor),
+                        onClick = onClick,
+                    ),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier = Modifier.width(fixedSlotWidth),
+                contentAlignment = Alignment.Center,
+            ) {
+                icon()
+            }
+            AnimatedVisibility(
+                visible = isExpanded,
+                enter = fadeIn(animationSpec = tween(durationMillis = 200, delayMillis = 50)),
+                exit = fadeOut(animationSpec = tween(durationMillis = 150)),
+            ) {
+                Row(
+                    modifier = Modifier.padding(start = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = label,
+                        color = textColor,
+                        fontSize = metrics.labelTextSize,
+                        fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun OpenAquaNavItem(
+    icon: Painter,
+    label: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    status: FeederStatus = FeederStatus.NONE,
+    hasBadge: Boolean = false,
+    isExpanded: Boolean = true,
+    colors: NavigationRailColors = LocalNavigationRailColors.current,
+    metrics: NavigationRailMetrics = LocalNavigationRailMetrics.current,
+) {
+    OpenAquaBaseNavItem(
+        icon = {
+            Box(contentAlignment = Alignment.TopEnd) {
+                Icon(
+                    painter = icon,
+                    contentDescription = label,
+                    tint = if (isSelected) colors.itemSelectedIcon else colors.itemUnselectedIcon,
+                    modifier = Modifier.size(metrics.itemIconSize),
+                )
+                when {
+                    status != FeederStatus.NONE -> {
+                        FeederStatusBadge(
+                            status = status,
+                            size = metrics.statusDotSize,
+                        )
+                    }
+
+                    hasBadge -> {
+                        Box(
+                            modifier =
+                                Modifier
+                                    .size(metrics.statusDotSize)
+                                    .clip(CircleShape)
+                                    .background(OpenAquaTheme.colors.primaryBright),
+                        )
+                    }
+                }
+            }
+        },
+        label = label,
+        isSelected = isSelected,
+        onClick = onClick,
+        modifier = modifier,
+        isExpanded = isExpanded,
+        colors = colors,
+        metrics = metrics,
+    )
 }

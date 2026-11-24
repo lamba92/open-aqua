@@ -23,10 +23,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LocalTextStyle
-import androidx.compose.material3.NavigationDrawerItem
-import androidx.compose.material3.NavigationDrawerItemColors
-import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.material3.PermanentDrawerSheet
 import androidx.compose.material3.PermanentNavigationDrawer
 import androidx.compose.material3.Text
@@ -44,7 +40,6 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -57,6 +52,7 @@ import io.github.lamba92.openaqua.app.model.progressFraction
 import io.github.lamba92.openaqua.app.repository.DeviceState
 import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
 import io.github.lamba92.openaqua.app.ui.components.CenteredScreenCard
+import io.github.lamba92.openaqua.app.ui.components.OpenAquaNavItem
 import io.github.lamba92.openaqua.app.ui.components.OpenAquaVerticalScrollbar
 import io.github.lamba92.openaqua.app.ui.components.ScreenHeaderSection
 import io.github.lamba92.openaqua.app.ui.components.SensorTargetTypeMenuButton
@@ -96,12 +92,6 @@ import open_aqua.app_compose.generated.resources.sensor_temp_disconnected
 import open_aqua.app_compose.generated.resources.sensor_temp_short_value
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
-
-private val HostDrawerLineHeightStyle =
-    LineHeightStyle(
-        alignment = LineHeightStyle.Alignment.Center,
-        trim = LineHeightStyle.Trim.Both,
-    )
 
 @Composable
 fun HostScreen(
@@ -503,9 +493,9 @@ private fun HostSensorTile(
     Box(
         modifier =
             modifier
-                .width(280.dp)
-                .height(100.dp)
-                .clip(RoundedCornerShape(metrics.radiusMedium))
+                .width(metrics.metricCard.width)
+                .height(metrics.metricCard.height)
+                .clip(RoundedCornerShape(metrics.metricCard.cornerRadius))
                 .background(colors.surfaceHigh)
                 .gaugeProgress(
                     fraction = fillFraction,
@@ -514,34 +504,36 @@ private fun HostSensorTile(
                 ).border(
                     metrics.strokeThin,
                     colors.borderOutline,
-                    RoundedCornerShape(metrics.radiusMedium),
-                ).padding(horizontal = 14.dp, vertical = 12.dp),
+                    RoundedCornerShape(metrics.metricCard.cornerRadius),
+                ).padding(horizontal = metrics.metricCard.padding, vertical = metrics.spacingSm),
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.SpaceBetween,
         ) {
-            // Top row: Sensor Name (flexible, up to 2 lines) + 3-dots kebab menu
+            // Top row: Sensor Name + 3-dots kebab menu
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     text = sensor.name,
                     color = colors.textPrimary,
-                    fontSize = 15.sp,
-                    lineHeight = 19.sp,
+                    fontSize = metrics.metricCard.labelTextSize,
+                    lineHeight = metrics.metricCard.labelLineHeight,
                     fontWeight = FontWeight.SemiBold,
-                    maxLines = 2,
+                    maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f).padding(end = 6.dp),
+                    modifier = Modifier.weight(1f).padding(end = metrics.spacingXs),
                 )
 
                 // 3-dots button (kebab menu)
                 SensorTargetTypeMenuButton(
                     targetType = targetType,
                     onSetTargetType = onSetTargetType,
+                    buttonSize = metrics.iconMd,
+                    iconSize = metrics.iconSm,
                 )
             }
 
@@ -554,8 +546,8 @@ private fun HostSensorTile(
                 Text(
                     text = tempText,
                     color = if (!isDisconnected) tempColor else colors.textMuted,
-                    fontSize = 19.sp,
-                    lineHeight = 23.sp,
+                    fontSize = metrics.metricCard.valueTextSize,
+                    lineHeight = metrics.metricCard.valueLineHeight,
                     fontWeight = FontWeight.Bold,
                     fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
                     maxLines = 1,
@@ -565,12 +557,12 @@ private fun HostSensorTile(
                 Text(
                     text = sensor.id.value.substringAfter(":"),
                     color = colors.textMuted,
-                    fontSize = 12.sp,
-                    lineHeight = 16.sp,
+                    fontSize = metrics.fontSizeXs,
+                    lineHeight = metrics.lineHeightXs,
                     fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(start = 8.dp),
+                    modifier = Modifier.padding(start = metrics.spacingSm),
                 )
             }
         }
@@ -585,7 +577,8 @@ fun HostDrawerScaffold(
     content: @Composable () -> Unit,
 ) {
     val colors = OpenAquaTheme.colors
-    val drawerMetrics = OpenAquaTheme.metrics.navigationDrawer
+    val metrics = OpenAquaTheme.metrics
+    val drawerMetrics = metrics.navigationDrawer
     PermanentNavigationDrawer(
         drawerContent = {
             PermanentDrawerSheet(
@@ -601,102 +594,55 @@ fun HostDrawerScaffold(
                     modifier =
                         Modifier
                             .fillMaxHeight()
-                            .padding(
-                                horizontal = drawerMetrics.headerPaddingHorizontal,
-                                vertical = drawerMetrics.headerPaddingVertical,
-                            ),
+                            .padding(vertical = drawerMetrics.headerPaddingVertical),
                     verticalArrangement = Arrangement.spacedBy(drawerMetrics.itemSpacing),
                 ) {
                     Text(
                         text = stringResource(Res.string.nav_host),
                         color = colors.textPrimary,
-                        fontSize = 16.sp,
+                        fontSize = drawerMetrics.headerTitleTextSize,
+                        lineHeight = drawerMetrics.headerTitleLineHeight,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(horizontal = 12.dp),
+                        modifier = Modifier.padding(horizontal = drawerMetrics.headerPaddingHorizontal),
                     )
                     Text(
                         text = "Local System",
                         color = colors.primary,
-                        fontSize = 13.sp,
+                        fontSize = drawerMetrics.headerSubtitleTextSize,
+                        lineHeight = drawerMetrics.headerSubtitleLineHeight,
                         fontFamily = FontFamily.Monospace,
                         maxLines = 1,
                         softWrap = false,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(horizontal = 12.dp),
+                        modifier = Modifier.padding(horizontal = drawerMetrics.headerPaddingHorizontal),
                     )
 
-                    Spacer(modifier = Modifier.height(8.dp))
-                    HorizontalDivider(color = colors.borderOutline)
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(metrics.spacingXs))
+                    HorizontalDivider(
+                        color = colors.borderOutline,
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = drawerMetrics.headerPaddingHorizontal),
+                    )
+                    Spacer(modifier = Modifier.height(metrics.spacingXs))
 
-                    val drawerColors =
-                        NavigationDrawerItemDefaults.colors(
-                            selectedContainerColor = colors.surfaceHigh,
-                            unselectedContainerColor = Color.Transparent,
-                            selectedIconColor = colors.primaryBright,
-                            unselectedIconColor = colors.textSecondary,
-                            selectedTextColor = colors.textPrimary,
-                            unselectedTextColor = colors.textSecondary,
-                        )
-
-                    HostDrawerTabItem(
-                        label = stringResource(Res.string.nav_fans),
+                    OpenAquaNavItem(
                         icon = painterResource(Res.drawable.ic_fan),
-                        selected = selectedTab == HostTab.FANS,
+                        label = stringResource(Res.string.nav_fans),
+                        isSelected = selectedTab == HostTab.FANS,
                         onClick = { onSelectTab(HostTab.FANS) },
-                        colors = drawerColors,
                     )
 
-                    HostDrawerTabItem(
-                        label = stringResource(Res.string.nav_sensors),
+                    OpenAquaNavItem(
                         icon = painterResource(Res.drawable.ic_sensor),
-                        selected = selectedTab == HostTab.SENSORS,
+                        label = stringResource(Res.string.nav_sensors),
+                        isSelected = selectedTab == HostTab.SENSORS,
                         onClick = { onSelectTab(HostTab.SENSORS) },
-                        colors = drawerColors,
                     )
                 }
             }
         },
         modifier = modifier.fillMaxSize(),
         content = content,
-    )
-}
-
-@Composable
-private fun HostDrawerTabItem(
-    label: String,
-    icon: Painter,
-    selected: Boolean,
-    onClick: () -> Unit,
-    colors: NavigationDrawerItemColors,
-    modifier: Modifier = Modifier,
-) {
-    NavigationDrawerItem(
-        label = {
-            Text(
-                text = label,
-                fontSize = 15.sp,
-                lineHeight = 22.sp,
-                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
-                style = LocalTextStyle.current.copy(lineHeightStyle = HostDrawerLineHeightStyle),
-                maxLines = 1,
-                softWrap = false,
-                overflow = TextOverflow.Ellipsis,
-            )
-        },
-        icon = {
-            Icon(
-                painter = icon,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp),
-            )
-        },
-        selected = selected,
-        onClick = onClick,
-        colors = colors,
-        shape = RoundedCornerShape(8.dp),
-        modifier = modifier,
     )
 }

@@ -13,8 +13,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -50,6 +50,7 @@ import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.lamba92.openaqua.app.feature.device.common.FanItem
@@ -186,12 +187,12 @@ fun CurveStudio(
                     painter = painterResource(Res.drawable.ic_tune),
                     contentDescription = null,
                     tint = colors.primaryBright,
-                    modifier = Modifier.size(20.dp),
+                    modifier = Modifier.size(metrics.iconMd),
                 )
                 Text(
                     text = stringResource(Res.string.curve_studio_title),
                     color = colors.textPrimary,
-                    fontSize = 15.sp,
+                    fontSize = metrics.fontSizeLg,
                     fontWeight = FontWeight.Bold,
                 )
             }
@@ -458,10 +459,9 @@ private fun AutoCurveModeControls(
         HorizontalDivider(color = colors.borderOutline.copy(alpha = 0.3f))
 
         // Sliders Grid: Tmin, Tmax, Pmin, Pmax
-        FlowRow(
+        Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(metrics.spacingLg),
-            verticalArrangement = Arrangement.spacedBy(metrics.spacingSm),
         ) {
             // Tmin Slider
             Box(modifier = Modifier.weight(1f)) {
@@ -488,10 +488,9 @@ private fun AutoCurveModeControls(
             }
         }
 
-        FlowRow(
+        Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(metrics.spacingLg),
-            verticalArrangement = Arrangement.spacedBy(metrics.spacingSm),
         ) {
             // Pmin Slider
             Box(modifier = Modifier.weight(1f)) {
@@ -931,10 +930,11 @@ private fun CurveParamSlider(
     modifier: Modifier = Modifier,
 ) {
     val colors = OpenAquaTheme.colors
+    val metrics = OpenAquaTheme.metrics
 
     Column(
         modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
+        verticalArrangement = Arrangement.spacedBy(metrics.spacingXs),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -944,12 +944,18 @@ private fun CurveParamSlider(
             Text(
                 text = label,
                 color = colors.textMuted,
-                fontSize = 13.sp,
+                fontSize = metrics.fontSizeSm,
+                lineHeight = metrics.lineHeightSm,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false),
             )
+            Spacer(modifier = Modifier.width(metrics.spacingSm))
             Text(
                 text = valueText,
                 color = colors.primaryBright,
-                fontSize = 14.sp,
+                fontSize = metrics.fontSizeMd,
+                lineHeight = metrics.lineHeightMd,
                 fontWeight = FontWeight.Bold,
                 fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
             )

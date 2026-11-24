@@ -27,8 +27,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.NavigationDrawerItem
-import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.material3.PermanentDrawerSheet
 import androidx.compose.material3.PermanentNavigationDrawer
 import androidx.compose.material3.Slider
@@ -68,6 +66,7 @@ import io.github.lamba92.openaqua.app.theme.calculateFontScaleFactor
 import io.github.lamba92.openaqua.app.theme.stringResource
 import io.github.lamba92.openaqua.app.theme.toComposeColor
 import io.github.lamba92.openaqua.app.ui.components.ConfirmationDialog
+import io.github.lamba92.openaqua.app.ui.components.OpenAquaNavItem
 import io.github.lamba92.openaqua.app.ui.components.OpenAquaOutlinedButton
 import io.github.lamba92.openaqua.app.ui.components.OpenAquaVerticalScrollbar
 import io.github.lamba92.openaqua.app.ui.components.ScreenHeaderSection
@@ -365,7 +364,8 @@ private fun SettingsDrawerScaffold(
     content: @Composable () -> Unit,
 ) {
     val colors = OpenAquaTheme.colors
-    val drawerMetrics = OpenAquaTheme.metrics.navigationDrawer
+    val metrics = OpenAquaTheme.metrics
+    val drawerMetrics = metrics.navigationDrawer
     PermanentNavigationDrawer(
         drawerContent = {
             PermanentDrawerSheet(
@@ -381,10 +381,7 @@ private fun SettingsDrawerScaffold(
                     modifier =
                         Modifier
                             .fillMaxHeight()
-                            .padding(
-                                horizontal = drawerMetrics.headerPaddingHorizontal,
-                                vertical = drawerMetrics.headerPaddingVertical,
-                            ),
+                            .padding(vertical = drawerMetrics.headerPaddingVertical),
                     verticalArrangement = Arrangement.spacedBy(drawerMetrics.itemSpacing),
                 ) {
                     Text(
@@ -396,7 +393,7 @@ private fun SettingsDrawerScaffold(
                         maxLines = 1,
                         softWrap = false,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(horizontal = 12.dp),
+                        modifier = Modifier.padding(horizontal = drawerMetrics.headerPaddingHorizontal),
                     )
                     Text(
                         text = stringResource(Res.string.settings_tab_subtitle),
@@ -407,111 +404,36 @@ private fun SettingsDrawerScaffold(
                         maxLines = 2,
                         softWrap = true,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(horizontal = 12.dp),
+                        modifier = Modifier.padding(horizontal = drawerMetrics.headerPaddingHorizontal),
                     )
 
-                    Spacer(modifier = Modifier.height(8.dp))
-                    HorizontalDivider(color = colors.borderOutline)
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(metrics.spacingXs))
+                    HorizontalDivider(
+                        color = colors.borderOutline,
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = drawerMetrics.headerPaddingHorizontal),
+                    )
+                    Spacer(modifier = Modifier.height(metrics.spacingXs))
 
-                    val drawerColors =
-                        NavigationDrawerItemDefaults.colors(
-                            selectedContainerColor = colors.surfaceHigh,
-                            unselectedContainerColor = Color.Transparent,
-                            selectedIconColor = colors.primaryBright,
-                            unselectedIconColor = colors.textSecondary,
-                            selectedTextColor = colors.textPrimary,
-                            unselectedTextColor = colors.textSecondary,
-                        )
-
-                    NavigationDrawerItem(
-                        label = {
-                            Text(
-                                text = stringResource(Res.string.settings_tab_general),
-                                fontSize = drawerMetrics.itemTextSize,
-                                lineHeight = drawerMetrics.itemLineHeight,
-                                fontWeight = if (selectedTab == SettingsTab.GENERAL) FontWeight.SemiBold else FontWeight.Medium,
-                                maxLines = 1,
-                                softWrap = false,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        },
-                        icon = {
-                            Icon(
-                                painter = painterResource(Res.drawable.ic_tune),
-                                contentDescription = null,
-                                modifier = Modifier.size(drawerMetrics.itemIconSize),
-                            )
-                        },
-                        selected = selectedTab == SettingsTab.GENERAL,
+                    OpenAquaNavItem(
+                        icon = painterResource(Res.drawable.ic_tune),
+                        label = stringResource(Res.string.settings_tab_general),
+                        isSelected = selectedTab == SettingsTab.GENERAL,
                         onClick = { onSelectTab(SettingsTab.GENERAL) },
-                        colors = drawerColors,
-                        shape = RoundedCornerShape(8.dp),
                     )
 
-                    NavigationDrawerItem(
-                        label = {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Text(
-                                    text = stringResource(Res.string.settings_tab_updates),
-                                    fontSize = drawerMetrics.itemTextSize,
-                                    lineHeight = drawerMetrics.itemLineHeight,
-                                    fontWeight = if (selectedTab == SettingsTab.UPDATES) FontWeight.SemiBold else FontWeight.Medium,
-                                    maxLines = 1,
-                                    softWrap = false,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                                if (hasUpdatesBadge) {
-                                    Box(
-                                        modifier =
-                                            Modifier
-                                                .size(8.dp)
-                                                .clip(CircleShape)
-                                                .background(colors.primaryBright),
-                                    )
-                                }
-                            }
-                        },
-                        icon = {
-                            Icon(
-                                painter = painterResource(Res.drawable.ic_system_update),
-                                contentDescription = null,
-                                modifier = Modifier.size(drawerMetrics.itemIconSize),
-                            )
-                        },
-                        selected = selectedTab == SettingsTab.UPDATES,
+                    OpenAquaNavItem(
+                        icon = painterResource(Res.drawable.ic_system_update),
+                        label = stringResource(Res.string.settings_tab_updates),
+                        isSelected = selectedTab == SettingsTab.UPDATES,
                         onClick = { onSelectTab(SettingsTab.UPDATES) },
-                        colors = drawerColors,
-                        shape = RoundedCornerShape(8.dp),
+                        hasBadge = hasUpdatesBadge,
                     )
 
-                    NavigationDrawerItem(
-                        label = {
-                            Text(
-                                text = stringResource(Res.string.settings_tab_logs),
-                                fontSize = drawerMetrics.itemTextSize,
-                                lineHeight = drawerMetrics.itemLineHeight,
-                                fontWeight = if (selectedTab == SettingsTab.LOGS) FontWeight.SemiBold else FontWeight.Medium,
-                                maxLines = 1,
-                                softWrap = false,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        },
-                        icon = {
-                            Icon(
-                                painter = painterResource(Res.drawable.ic_article),
-                                contentDescription = null,
-                                modifier = Modifier.size(drawerMetrics.itemIconSize),
-                            )
-                        },
-                        selected = selectedTab == SettingsTab.LOGS,
+                    OpenAquaNavItem(
+                        icon = painterResource(Res.drawable.ic_article),
+                        label = stringResource(Res.string.settings_tab_logs),
+                        isSelected = selectedTab == SettingsTab.LOGS,
                         onClick = { onSelectTab(SettingsTab.LOGS) },
-                        colors = drawerColors,
-                        shape = RoundedCornerShape(8.dp),
                     )
                 }
             }

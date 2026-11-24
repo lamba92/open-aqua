@@ -5,13 +5,13 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -29,9 +29,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import io.github.lamba92.openaqua.app.feature.device.common.FanItem
 import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
 import io.github.lamba92.openaqua.app.ui.components.OpenAquaOutlinedButton
@@ -56,7 +56,6 @@ import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import kotlin.math.roundToInt
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun FanLimitsCard(
     fan: FanItem,
@@ -94,19 +93,19 @@ fun FanLimitsCard(
                     painter = painterResource(Res.drawable.ic_tune),
                     contentDescription = null,
                     tint = colors.primaryBright,
-                    modifier = Modifier.size(20.dp),
+                    modifier = Modifier.size(metrics.iconMd),
                 )
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(metrics.spacingXs)) {
                     Text(
                         text = stringResource(Res.string.fan_limits_title),
                         color = colors.textPrimary,
-                        fontSize = 15.sp,
+                        fontSize = metrics.fontSizeLg,
                         fontWeight = FontWeight.Bold,
                     )
                     Text(
                         text = stringResource(Res.string.fan_limits_desc),
                         color = colors.textMuted,
-                        fontSize = 12.sp,
+                        fontSize = metrics.fontSizeSm,
                     )
                 }
             }
@@ -136,12 +135,12 @@ fun FanLimitsCard(
                 painter = painterResource(Res.drawable.ic_info),
                 contentDescription = null,
                 tint = colors.primaryBright,
-                modifier = Modifier.size(16.dp),
+                modifier = Modifier.size(metrics.iconSm),
             )
             Text(
                 text = stringResource(Res.string.fan_limits_tip_1to1),
                 color = colors.textSecondary,
-                fontSize = 12.sp,
+                fontSize = metrics.fontSizeSm,
             )
         }
 
@@ -149,10 +148,9 @@ fun FanLimitsCard(
         val maxSliderHeaderHeight = sliderHeaderHeights.values.maxOrNull() ?: Dp.Unspecified
 
         // Sliders Grid
-        FlowRow(
+        Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(metrics.spacingLg),
-            verticalArrangement = Arrangement.spacedBy(metrics.spacingMd),
         ) {
             // Min Power Slider
             Box(modifier = Modifier.weight(1f)) {
@@ -194,10 +192,9 @@ fun FanLimitsCard(
         HorizontalDivider(color = colors.borderOutline.copy(alpha = 0.3f))
 
         // Boolean Toggle Controls
-        FlowRow(
+        Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(metrics.spacingXl),
-            verticalArrangement = Arrangement.spacedBy(metrics.spacingMd),
         ) {
             // Start Boost Switch
             Box(modifier = Modifier.weight(1f)) {
@@ -233,11 +230,12 @@ private fun LimitSlider(
     onHeaderHeightMeasured: ((Dp) -> Unit)? = null,
 ) {
     val colors = OpenAquaTheme.colors
+    val metrics = OpenAquaTheme.metrics
     val density = LocalDensity.current
 
     Column(
         modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
+        verticalArrangement = Arrangement.spacedBy(metrics.spacingXs),
     ) {
         Box(
             modifier =
@@ -258,7 +256,7 @@ private fun LimitSlider(
                         .onSizeChanged { size ->
                             onHeaderHeightMeasured?.invoke(with(density) { size.height.toDp() })
                         },
-                verticalArrangement = Arrangement.spacedBy(2.dp),
+                verticalArrangement = Arrangement.spacedBy(metrics.spacingXs),
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -268,13 +266,19 @@ private fun LimitSlider(
                     Text(
                         text = label,
                         color = colors.textPrimary,
-                        fontSize = 13.sp,
+                        fontSize = metrics.fontSizeSm,
+                        lineHeight = metrics.lineHeightSm,
                         fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false),
                     )
+                    Spacer(modifier = Modifier.width(metrics.spacingSm))
                     Text(
                         text = "${value.roundToInt()}%",
                         color = colors.primaryBright,
-                        fontSize = 14.sp,
+                        fontSize = metrics.fontSizeMd,
+                        lineHeight = metrics.lineHeightMd,
                         fontWeight = FontWeight.Bold,
                         fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
                     )
@@ -283,8 +287,9 @@ private fun LimitSlider(
                 Text(
                     text = description,
                     color = colors.textMuted,
-                    fontSize = 11.sp,
-                    lineHeight = 14.sp,
+                    fontSize = metrics.fontSizeXs,
+                    lineHeight = metrics.lineHeightXs,
+                    softWrap = true,
                 )
             }
         }
@@ -322,19 +327,20 @@ private fun LimitToggleRow(
     ) {
         Column(
             modifier = Modifier.weight(1f).padding(end = metrics.spacingMd),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
+            verticalArrangement = Arrangement.spacedBy(metrics.spacingXs),
         ) {
             Text(
                 text = title,
                 color = colors.textPrimary,
-                fontSize = 13.sp,
+                fontSize = metrics.fontSizeSm,
+                lineHeight = metrics.lineHeightSm,
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
                 text = description,
                 color = colors.textMuted,
-                fontSize = 11.sp,
-                lineHeight = 14.sp,
+                fontSize = metrics.fontSizeXs,
+                lineHeight = metrics.lineHeightXs,
             )
         }
 

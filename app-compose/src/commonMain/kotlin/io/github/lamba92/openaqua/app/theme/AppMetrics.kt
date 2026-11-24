@@ -164,6 +164,7 @@ data class ChannelSelectionTileMetrics(
     val height: Dp = 64.dp,
     val cornerRadius: Dp = 12.dp,
     val padding: Dp = 12.dp,
+    val paddingVertical: Dp = 8.dp,
     val iconSize: Dp = 24.dp,
     val titleTextSize: TextUnit = 16.sp,
     val titleLineHeight: TextUnit = 22.sp,
@@ -185,12 +186,18 @@ data class ChannelSelectionTileMetrics(
                     },
                 height =
                     when (tokens.scale) {
-                        AppMetricsScale.COMPACT -> 54.dp
+                        AppMetricsScale.COMPACT -> 60.dp
                         AppMetricsScale.STANDARD -> 64.dp
                         AppMetricsScale.COMFORTABLE -> 72.dp
                     },
                 cornerRadius = tokens.radiusLg,
                 padding = tokens.spacingMd,
+                paddingVertical =
+                    when (tokens.scale) {
+                        AppMetricsScale.COMPACT -> 6.dp
+                        AppMetricsScale.STANDARD -> 8.dp
+                        AppMetricsScale.COMFORTABLE -> 10.dp
+                    },
                 iconSize = tokens.iconLg,
                 titleTextSize = tokens.fontLg,
                 titleLineHeight = tokens.lineHeightLg,
@@ -208,6 +215,7 @@ typealias SquareSelectionButtonMetrics = ChannelSelectionTileMetrics
 
 data class MetricCardMetrics(
     val width: Dp = 180.dp,
+    val height: Dp = 68.dp,
     val cornerRadius: Dp = 10.dp,
     val padding: Dp = 10.dp,
     val verticalSpacing: Dp = 4.dp,
@@ -225,6 +233,12 @@ data class MetricCardMetrics(
                         AppMetricsScale.COMPACT -> 150.dp
                         AppMetricsScale.STANDARD -> 180.dp
                         AppMetricsScale.COMFORTABLE -> 200.dp
+                    },
+                height =
+                    when (tokens.scale) {
+                        AppMetricsScale.COMPACT -> 60.dp
+                        AppMetricsScale.STANDARD -> 68.dp
+                        AppMetricsScale.COMFORTABLE -> 76.dp
                     },
                 cornerRadius = tokens.radiusMd,
                 padding =
@@ -334,6 +348,8 @@ data class NavigationRailMetrics(
     val expandedWidth: Dp = 240.dp,
     val width: Dp = collapsedWidth,
     val itemIconSize: Dp = 24.dp,
+    val itemHeight: Dp = 40.dp,
+    val itemCornerRadius: Dp = 10.dp,
     val labelTextSize: TextUnit = 12.sp,
     val itemSpacing: Dp = 8.dp,
     val headerLogoSize: Dp = 32.dp,
@@ -365,6 +381,8 @@ data class NavigationRailMetrics(
                         AppMetricsScale.COMFORTABLE -> 80.dp
                     },
                 itemIconSize = tokens.iconLg,
+                itemHeight = tokens.iconLg + 16.dp,
+                itemCornerRadius = tokens.radiusMd,
                 labelTextSize = tokens.fontSm,
                 itemSpacing = tokens.spacingSm,
                 headerLogoSize = tokens.iconXl,
@@ -390,7 +408,11 @@ data class NavigationRailMetrics(
 data class NavigationDrawerMetrics(
     val width: Dp = 240.dp,
     val itemSpacing: Dp = 8.dp,
-    val headerPaddingHorizontal: Dp = 10.dp,
+    val itemHeight: Dp = 40.dp,
+    val itemCornerRadius: Dp = 10.dp,
+    val itemPaddingHorizontal: Dp = 12.dp,
+    val itemHorizontalMargin: Dp = 8.dp,
+    val headerPaddingHorizontal: Dp = 16.dp,
     val headerPaddingVertical: Dp = 12.dp,
     val headerTitleTextSize: TextUnit = 16.sp,
     val headerTitleLineHeight: TextUnit = 22.sp,
@@ -410,12 +432,11 @@ data class NavigationDrawerMetrics(
                         AppMetricsScale.COMFORTABLE -> 260.dp
                     },
                 itemSpacing = tokens.spacingSm,
-                headerPaddingHorizontal =
-                    when (tokens.scale) {
-                        AppMetricsScale.COMPACT -> tokens.spacingSm
-                        AppMetricsScale.STANDARD -> 10.dp
-                        AppMetricsScale.COMFORTABLE -> tokens.spacingMd
-                    },
+                itemHeight = tokens.iconLg + 16.dp,
+                itemCornerRadius = tokens.radiusMd,
+                itemPaddingHorizontal = tokens.spacingMd,
+                itemHorizontalMargin = tokens.spacingSm,
+                headerPaddingHorizontal = tokens.spacingLg,
                 headerPaddingVertical = tokens.spacingMd,
                 headerTitleTextSize = tokens.fontLg,
                 headerTitleLineHeight = tokens.lineHeightLg,

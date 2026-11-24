@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -14,10 +15,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LocalTextStyle
-import androidx.compose.material3.NavigationDrawerItem
-import androidx.compose.material3.NavigationDrawerItemColors
-import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.material3.PermanentDrawerSheet
 import androidx.compose.material3.PermanentNavigationDrawer
 import androidx.compose.material3.Text
@@ -28,14 +25,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.lamba92.openaqua.app.repository.DeviceErrorType
 import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
 import io.github.lamba92.openaqua.app.ui.components.FeederStatus
-import io.github.lamba92.openaqua.app.ui.components.FeederStatusBadge
+import io.github.lamba92.openaqua.app.ui.components.OpenAquaNavItem
 import io.github.lamba92.openaqua.model.device.DetectedHardwareDevice
 import io.github.lamba92.openaqua.model.device.DeviceCapability
 import io.github.lamba92.openaqua.model.device.DeviceDescriptor
@@ -56,12 +52,6 @@ import open_aqua.app_compose.generated.resources.nav_sensors
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
-private val DrawerLineHeightStyle =
-    LineHeightStyle(
-        alignment = LineHeightStyle.Alignment.Center,
-        trim = LineHeightStyle.Trim.Both,
-    )
-
 @Composable
 fun DeviceDrawerScaffold(
     device: DetectedHardwareDevice,
@@ -73,7 +63,8 @@ fun DeviceDrawerScaffold(
     content: @Composable () -> Unit,
 ) {
     val colors = OpenAquaTheme.colors
-    val drawerMetrics = OpenAquaTheme.metrics.navigationDrawer
+    val metrics = OpenAquaTheme.metrics
+    val drawerMetrics = metrics.navigationDrawer
     PermanentNavigationDrawer(
         drawerContent = {
             PermanentDrawerSheet(
@@ -89,62 +80,52 @@ fun DeviceDrawerScaffold(
                     modifier =
                         Modifier
                             .fillMaxHeight()
-                            .padding(
-                                horizontal = drawerMetrics.headerPaddingHorizontal,
-                                vertical = drawerMetrics.headerPaddingVertical,
-                            ),
+                            .padding(vertical = drawerMetrics.headerPaddingVertical),
                     verticalArrangement = Arrangement.spacedBy(drawerMetrics.itemSpacing),
                 ) {
                     val displayName = device.name.removePrefix("Aquacomputer").trim()
                     Text(
                         text = displayName,
                         color = colors.textPrimary,
-                        fontSize = 16.sp,
+                        fontSize = drawerMetrics.headerTitleTextSize,
+                        lineHeight = drawerMetrics.headerTitleLineHeight,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(horizontal = 12.dp),
+                        modifier = Modifier.padding(horizontal = drawerMetrics.headerPaddingHorizontal),
                     )
                     Text(
                         text = device.alias.value,
                         color = colors.primary,
-                        fontSize = 13.sp,
+                        fontSize = drawerMetrics.headerSubtitleTextSize,
+                        lineHeight = drawerMetrics.headerSubtitleLineHeight,
                         fontFamily = FontFamily.Monospace,
                         maxLines = 1,
                         softWrap = false,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(horizontal = 12.dp),
+                        modifier = Modifier.padding(horizontal = drawerMetrics.headerPaddingHorizontal),
                     )
 
-                    Spacer(modifier = Modifier.height(8.dp))
-                    HorizontalDivider(color = colors.borderOutline)
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(metrics.spacingXs))
+                    HorizontalDivider(
+                        color = colors.borderOutline,
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = drawerMetrics.headerPaddingHorizontal),
+                    )
+                    Spacer(modifier = Modifier.height(metrics.spacingXs))
 
-                    val drawerColors =
-                        NavigationDrawerItemDefaults.colors(
-                            selectedContainerColor = colors.surfaceHigh,
-                            unselectedContainerColor = Color.Transparent,
-                            selectedIconColor = colors.primaryBright,
-                            unselectedIconColor = colors.textSecondary,
-                            selectedTextColor = colors.textPrimary,
-                            unselectedTextColor = colors.textSecondary,
-                        )
-
-                    DeviceDrawerTabItem(
-                        label = stringResource(Res.string.nav_device_info),
+                    OpenAquaNavItem(
                         icon = painterResource(Res.drawable.ic_info),
-                        selected = selectedTab == CommonDeviceTab.DEVICE_INFO,
+                        label = stringResource(Res.string.nav_device_info),
+                        isSelected = selectedTab == CommonDeviceTab.DEVICE_INFO,
                         onClick = { onSelectTab(CommonDeviceTab.DEVICE_INFO) },
-                        colors = drawerColors,
                     )
 
                     if (descriptor.hasCapability<DeviceCapability.Fans>()) {
-                        DeviceDrawerTabItem(
-                            label = stringResource(Res.string.nav_fans),
+                        OpenAquaNavItem(
                             icon = painterResource(Res.drawable.ic_fan),
-                            selected = selectedTab == CommonDeviceTab.FANS,
+                            label = stringResource(Res.string.nav_fans),
+                            isSelected = selectedTab == CommonDeviceTab.FANS,
                             onClick = { onSelectTab(CommonDeviceTab.FANS) },
-                            colors = drawerColors,
                         )
                     }
 
@@ -153,22 +134,17 @@ fun DeviceDrawerScaffold(
                         descriptor.hasCapability<DeviceCapability.VirtualSensors>() ||
                         descriptor.hasCapability<DeviceCapability.FlowSensor>()
                     ) {
-                        DeviceDrawerTabItem(
-                            label = stringResource(Res.string.nav_sensors),
+                        val sensorStatus =
+                            when {
+                                feederStatus != FeederStatus.NONE -> feederStatus
+                                else -> FeederStatus.NONE
+                            }
+                        OpenAquaNavItem(
                             icon = painterResource(Res.drawable.ic_sensor),
-                            selected = selectedTab == CommonDeviceTab.SENSORS,
+                            label = stringResource(Res.string.nav_sensors),
+                            isSelected = selectedTab == CommonDeviceTab.SENSORS,
                             onClick = { onSelectTab(CommonDeviceTab.SENSORS) },
-                            colors = drawerColors,
-                            badge =
-                                when {
-                                    feederStatus != FeederStatus.NONE -> {
-                                        { FeederStatusBadge(status = feederStatus) }
-                                    }
-
-                                    else -> {
-                                        null
-                                    }
-                                },
+                            status = sensorStatus,
                         )
                     }
                 }
@@ -176,45 +152,6 @@ fun DeviceDrawerScaffold(
         },
         modifier = modifier.fillMaxSize(),
         content = content,
-    )
-}
-
-@Composable
-private fun DeviceDrawerTabItem(
-    label: String,
-    icon: Painter,
-    selected: Boolean,
-    onClick: () -> Unit,
-    colors: NavigationDrawerItemColors,
-    modifier: Modifier = Modifier,
-    badge: (@Composable () -> Unit)? = null,
-) {
-    NavigationDrawerItem(
-        label = {
-            Text(
-                text = label,
-                fontSize = 15.sp,
-                lineHeight = 22.sp,
-                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
-                style = LocalTextStyle.current.copy(lineHeightStyle = DrawerLineHeightStyle),
-                maxLines = 1,
-                softWrap = false,
-                overflow = TextOverflow.Ellipsis,
-            )
-        },
-        icon = {
-            Icon(
-                painter = icon,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp),
-            )
-        },
-        badge = badge,
-        selected = selected,
-        onClick = onClick,
-        colors = colors,
-        shape = RoundedCornerShape(8.dp),
-        modifier = modifier,
     )
 }
 

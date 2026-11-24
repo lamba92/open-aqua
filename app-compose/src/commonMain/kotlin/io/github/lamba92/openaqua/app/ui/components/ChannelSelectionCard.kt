@@ -182,12 +182,12 @@ fun ChannelSelectionCard(
                                 lastClickTime = now
                             }
                         }
-                    }.padding(horizontal = metrics.padding, vertical = 10.dp),
+                    }.padding(horizontal = metrics.padding, vertical = metrics.paddingVertical),
         ) {
             Row(
                 modifier = Modifier.fillMaxSize(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(metrics.padding),
             ) {
                 // Icon on the left
                 Box(
@@ -230,7 +230,7 @@ fun ChannelSelectionCard(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(2.dp))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),

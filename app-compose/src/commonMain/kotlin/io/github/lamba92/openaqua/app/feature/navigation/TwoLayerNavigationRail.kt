@@ -64,6 +64,8 @@ import io.github.lamba92.openaqua.app.theme.NavigationRailMetrics
 import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
 import io.github.lamba92.openaqua.app.ui.components.FeederStatus
 import io.github.lamba92.openaqua.app.ui.components.FeederStatusBadge
+import io.github.lamba92.openaqua.app.ui.components.OpenAquaBaseNavItem
+import io.github.lamba92.openaqua.app.ui.components.OpenAquaNavItem
 import io.github.lamba92.openaqua.app.ui.components.OpenAquaVerticalScrollbar
 import io.github.lamba92.openaqua.model.device.DeviceId
 import open_aqua.app_compose.generated.resources.Res
@@ -363,7 +365,7 @@ private fun NavigationRailHeader(
         }
         Spacer(modifier = Modifier.height(8.dp))
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = metrics.itemSpacing),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Surface(
@@ -371,8 +373,8 @@ private fun NavigationRailHeader(
                 modifier =
                     Modifier
                         .width(fixedSlotWidth)
-                        .height(metrics.itemIconSize + 16.dp),
-                shape = RoundedCornerShape(10.dp),
+                        .height(metrics.itemHeight),
+                shape = RoundedCornerShape(metrics.itemCornerRadius),
                 color = Color.Transparent,
                 interactionSource = remember { MutableInteractionSource() },
             ) {
@@ -414,31 +416,28 @@ private fun NavigationRailFooter(
             modifier = Modifier.fillMaxWidth().padding(horizontal = appMetrics.spacingMd),
         )
         Spacer(modifier = Modifier.height(appMetrics.spacingXs))
-        SimpleNavigationRailItem(
+        OpenAquaNavItem(
             icon = painterResource(Res.drawable.ic_bug_report),
             label = stringResource(Res.string.nav_bug_report),
             isSelected = state.selectedItem is DeviceNavState.SelectedItem.BugReport,
             onClick = { onEvent(DeviceNavEvent.SelectBugReport) },
-            railColors = railColors,
             metrics = metrics,
             isExpanded = state.isExpanded,
         )
-        SimpleNavigationRailItem(
+        OpenAquaNavItem(
             icon = painterResource(Res.drawable.ic_info),
             label = stringResource(Res.string.nav_about),
             isSelected = state.selectedItem is DeviceNavState.SelectedItem.About,
             onClick = { onEvent(DeviceNavEvent.SelectAbout) },
-            railColors = railColors,
             metrics = metrics,
             isExpanded = state.isExpanded,
         )
-        SimpleNavigationRailItem(
+        OpenAquaNavItem(
             icon = painterResource(Res.drawable.ic_settings),
             label = stringResource(Res.string.nav_settings),
             isSelected = state.selectedItem is DeviceNavState.SelectedItem.Settings,
             onClick = { onEvent(DeviceNavEvent.SelectSettings) },
             hasBadge = state.isUpdateAvailable,
-            railColors = railColors,
             metrics = metrics,
             isExpanded = state.isExpanded,
         )
@@ -458,8 +457,8 @@ private fun NavigationLoadingItem(
         modifier =
             modifier
                 .fillMaxWidth()
-                .height(metrics.itemIconSize + 16.dp)
-                .padding(horizontal = 8.dp),
+                .height(metrics.itemHeight)
+                .padding(horizontal = metrics.itemSpacing),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
@@ -503,231 +502,17 @@ private fun DeviceNavigationWarningItem(
     isExpanded: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val fixedSlotWidth = metrics.collapsedWidth - 16.dp
     val warningColor = OpenAquaTheme.colors.statusWarning
-    val containerColor =
-        if (isSelected) {
-            NavigationRailDefaults.colors().itemIndicator
-        } else {
-            Color.Transparent
-        }
-
-    Box(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp)
-                .semantics {
-                    role = Role.Tab
-                    selected = isSelected
-                },
-    ) {
-        val shape = RoundedCornerShape(10.dp)
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .height(metrics.itemIconSize + 16.dp)
-                    .clip(shape)
-                    .background(containerColor)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = ripple(color = warningColor),
-                        onClick = onClick,
-                    ),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(
-                modifier = Modifier.width(fixedSlotWidth),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    painter = painterResource(Res.drawable.ic_warning),
-                    contentDescription = stringResource(Res.string.permission_warning_tooltip),
-                    tint = warningColor,
-                    modifier = Modifier.size(metrics.itemIconSize),
-                )
-            }
-            AnimatedVisibility(
-                visible = isExpanded,
-                enter = fadeIn(animationSpec = tween(durationMillis = 200, delayMillis = 50)),
-                exit = fadeOut(animationSpec = tween(durationMillis = 150)),
-            ) {
-                Row(
-                    modifier = Modifier.padding(start = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = stringResource(Res.string.permission_warning_tooltip),
-                        color = warningColor,
-                        fontSize = metrics.labelTextSize,
-                        fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
-                        maxLines = 1,
-                        softWrap = false,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun BaseNavigationRailItem(
-    icon: @Composable () -> Unit,
-    label: String,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    metrics: NavigationRailMetrics,
-    isExpanded: Boolean,
-    modifier: Modifier = Modifier,
-) {
-    val fixedSlotWidth = metrics.collapsedWidth - 16.dp
-    val containerColor =
-        if (isSelected) {
-            NavigationRailDefaults.colors().itemIndicator
-        } else {
-            Color.Transparent
-        }
-
-    val iconColor =
-        if (isSelected) {
-            NavigationRailDefaults.colors().itemSelectedIcon
-        } else {
-            NavigationRailDefaults.colors().itemUnselectedIcon
-        }
-
-    val textColor =
-        if (isSelected) {
-            NavigationRailDefaults.colors().itemSelectedText
-        } else {
-            NavigationRailDefaults.colors().itemUnselectedText
-        }
-
-    Box(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp)
-                .semantics {
-                    role = Role.Tab
-                    selected = isSelected
-                },
-    ) {
-        val shape = RoundedCornerShape(10.dp)
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .height(metrics.itemIconSize + 16.dp)
-                    .clip(shape)
-                    .background(containerColor)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = ripple(color = iconColor),
-                        onClick = onClick,
-                    ),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(
-                modifier = Modifier.width(fixedSlotWidth),
-                contentAlignment = Alignment.Center,
-            ) {
-                icon()
-            }
-            AnimatedVisibility(
-                visible = isExpanded,
-                enter = fadeIn(animationSpec = tween(durationMillis = 200, delayMillis = 50)),
-                exit = fadeOut(animationSpec = tween(durationMillis = 150)),
-            ) {
-                Row(
-                    modifier = Modifier.padding(start = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = label,
-                        color = textColor,
-                        fontSize = metrics.labelTextSize,
-                        fontFamily = OpenAquaTheme.typography.monospaceFontFamily,
-                        maxLines = 1,
-                        softWrap = false,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun SimpleNavigationRailItem(
-    icon: Painter,
-    label: String,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    railColors: NavigationRailItemColors,
-    metrics: NavigationRailMetrics,
-    isExpanded: Boolean,
-    modifier: Modifier = Modifier,
-    hasBadge: Boolean = false,
-) {
-    BaseNavigationRailItem(
+    OpenAquaBaseNavItem(
         icon = {
-            Box(contentAlignment = Alignment.TopEnd) {
-                Icon(
-                    painter = icon,
-                    contentDescription = label,
-                    tint = if (isSelected) railColors.selectedIconColor else railColors.unselectedIconColor,
-                    modifier = Modifier.size(metrics.itemIconSize),
-                )
-                if (hasBadge) {
-                    Box(
-                        modifier =
-                            Modifier
-                                .size(8.dp)
-                                .clip(CircleShape)
-                                .background(OpenAquaTheme.colors.primaryBright),
-                    )
-                }
-            }
+            Icon(
+                painter = painterResource(Res.drawable.ic_warning),
+                contentDescription = stringResource(Res.string.permission_warning_tooltip),
+                tint = warningColor,
+                modifier = Modifier.size(metrics.itemIconSize),
+            )
         },
-        label = label,
-        isSelected = isSelected,
-        onClick = onClick,
-        metrics = metrics,
-        isExpanded = isExpanded,
-        modifier = modifier,
-    )
-}
-
-@Composable
-private fun StatusNavigationRailItem(
-    icon: Painter,
-    label: String,
-    status: FeederStatus,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    railColors: NavigationRailItemColors,
-    metrics: NavigationRailMetrics,
-    isExpanded: Boolean,
-    modifier: Modifier = Modifier,
-) {
-    BaseNavigationRailItem(
-        icon = {
-            Box(contentAlignment = Alignment.TopEnd) {
-                Icon(
-                    painter = icon,
-                    contentDescription = label,
-                    tint = if (isSelected) railColors.selectedIconColor else railColors.unselectedIconColor,
-                    modifier = Modifier.size(metrics.itemIconSize),
-                )
-                FeederStatusBadge(
-                    status = status,
-                    size = metrics.statusDotSize,
-                )
-            }
-        },
-        label = label,
+        label = stringResource(Res.string.permission_warning_tooltip),
         isSelected = isSelected,
         onClick = onClick,
         metrics = metrics,
@@ -757,13 +542,12 @@ private fun HostNavigationRailItem(
             -> FeederStatus.NONE
         }
 
-    StatusNavigationRailItem(
+    OpenAquaNavItem(
         icon = painterResource(Res.drawable.ic_computer),
         label = stringResource(Res.string.nav_host),
         status = status,
         isSelected = isSelected,
         onClick = onClick,
-        railColors = railColors,
         metrics = metrics,
         isExpanded = isExpanded,
         modifier = modifier,
@@ -789,13 +573,12 @@ private fun AquaDeviceNavigationRailItem(
             else -> FeederStatus.NONE
         }
 
-    StatusNavigationRailItem(
+    OpenAquaNavItem(
         icon = painterResource(Res.drawable.ic_device),
         label = device.type.name,
         status = status,
         isSelected = isSelected,
         onClick = onClick,
-        railColors = railColors,
         metrics = metrics,
         isExpanded = isExpanded,
         modifier = modifier,
