@@ -8,11 +8,11 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 interface HostHardwareController {
-    fun getHostInfo(): HostInfo
+    suspend fun getHostInfo(): HostInfo
 
     fun getTelemetryFlow(pollingInterval: Duration = 1.seconds): Flow<HostTelemetry>
 
     suspend fun streamFanControl(requests: Flow<HostFanControlRequest>)
 
-    fun restoreFanDefaults()
+    suspend fun restoreFanDefaults()
 }

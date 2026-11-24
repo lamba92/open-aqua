@@ -7,6 +7,8 @@ import com.github.ajalt.clikt.parameters.options.option
 import io.github.lamba92.openaqua.engine.command.printSuccessResponse
 import io.github.lamba92.openaqua.engine.host.hardware.HostHardwareController
 
+import kotlinx.coroutines.runBlocking
+
 class InfoCommand(
     private val controller: HostHardwareController,
 ) : CliktCommand(
@@ -16,8 +18,9 @@ class InfoCommand(
 
     private val pretty by option("--pretty", help = "Format JSON output with indentation").flag(default = false)
 
-    override fun run() {
-        val info = controller.getHostInfo()
-        printSuccessResponse(info, pretty)
-    }
+    override fun run() =
+        runBlocking {
+            val info = controller.getHostInfo()
+            printSuccessResponse(info, pretty)
+        }
 }

@@ -36,6 +36,7 @@ kotlin {
         }
         nativeMain.dependencies {
             api(projects.engine.engineDevice.engineDeviceProd)
+            api(projects.engine.engineHost)
             api(libs.compose.desktop.native.window)
             api(libs.ktor.client.curl)
         }

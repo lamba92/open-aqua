@@ -6,7 +6,7 @@ import io.github.lamba92.openaqua.model.host.HostInfo
 import io.github.lamba92.openaqua.model.host.HostTelemetry
 import kotlinx.coroutines.flow.Flow
 
-class NativeLinuxOpenAquaHostEngineApi(
+class NativeOpenAquaHostEngineApi(
     private val controller: HostHardwareController,
 ) : OpenAquaHostEngineApi {
     override suspend fun getHostInfo(): HostInfo = controller.getHostInfo()

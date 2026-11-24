@@ -59,7 +59,6 @@ include(
     ":engine:engine-device:engine-device-prod",
     ":engine:engine-host",
     ":engine:engine-host:engine-host-linux",
-    ":engine:engine-host:engine-host-windows",
     ":packaging",
     ":packaging:packaging-linux-x64",
     ":packaging:packaging-linux-arm64",

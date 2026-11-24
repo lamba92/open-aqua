@@ -4,6 +4,8 @@ import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.Context
 import io.github.lamba92.openaqua.engine.host.hardware.HostHardwareController
 
+import kotlinx.coroutines.runBlocking
+
 class RestoreFanDefaultsCommand(
     private val controller: HostHardwareController,
 ) : CliktCommand(
@@ -12,7 +14,8 @@ class RestoreFanDefaultsCommand(
     override fun help(context: Context): String =
         "One-shot recovery command to restore all host fan speed controls to BIOS/hardware defaults"
 
-    override fun run() {
-        controller.restoreFanDefaults()
-    }
+    override fun run() =
+        runBlocking {
+            controller.restoreFanDefaults()
+        }
 }

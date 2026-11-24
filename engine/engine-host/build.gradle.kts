@@ -14,5 +14,8 @@ kotlin {
             api(projects.coreModel.coreModelHost)
             api(libs.kodein.di)
         }
+        mingwMain.dependencies {
+            implementation(libs.libhwmon.kotlin.api)
+        }
     }
 }

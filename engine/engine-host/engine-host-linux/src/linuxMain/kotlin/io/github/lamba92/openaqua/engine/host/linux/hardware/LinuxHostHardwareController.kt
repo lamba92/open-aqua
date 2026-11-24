@@ -22,6 +22,8 @@ import io.github.lamba92.openaqua.model.host.HostSensorTelemetry
 import io.github.lamba92.openaqua.model.host.HostTelemetry
 import kotlinx.cinterop.staticCFunction
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 import kotlinx.io.files.Path
 import platform.posix.SIGHUP
 import platform.posix.SIGINT
@@ -102,7 +104,7 @@ private val AQUA_COMPUTER_UEVENT_IDENTIFIERS = listOf("aquacomputer", "00000C70"
 class LinuxHostHardwareController(
     private val nvidiaCapability: NvidiaCapability,
 ) : HostHardwareController {
-    override fun getHostInfo(): HostInfo {
+    override suspend fun getHostInfo(): HostInfo {
         val devices = mutableListOf<HostDevice>()
 
         // 1. Scan sysfs hwmon
@@ -218,12 +220,15 @@ class LinuxHostHardwareController(
         return HostInfo(devices = devices.toList())
     }
 
-    override fun getTelemetryFlow(pollingInterval: Duration): Flow<HostTelemetry> {
-        val info = getHostInfo()
-        return every(pollingInterval) {
-            info.getTelemetry(nvidiaCapability)
+    override fun getTelemetryFlow(pollingInterval: Duration): Flow<HostTelemetry> =
+        flow {
+            val info = getHostInfo()
+            emitAll(
+                every(pollingInterval) {
+                    info.getTelemetry(nvidiaCapability)
+                },
+            )
         }
-    }
 
     override suspend fun streamFanControl(requests: Flow<HostFanControlRequest>) {
         val sigHandler =
@@ -270,7 +275,7 @@ class LinuxHostHardwareController(
         runCatching { pwmPath.writeText("$rawPwm\n") }
     }
 
-    override fun restoreFanDefaults() {
+    override suspend fun restoreFanDefaults() {
         restoreHostFanDefaults()
     }
 }
