@@ -58,7 +58,10 @@ object VirtualSensorsWriter {
                     report[virtCap.paddingOffset + i] = virtCap.paddingByte
                 }
             }
-            is DeviceCapability.VirtualSensors.Standard51 -> Unit
+
+            is DeviceCapability.VirtualSensors.Standard51 -> {
+                Unit
+            }
         }
 
         // Encode active temperature readings

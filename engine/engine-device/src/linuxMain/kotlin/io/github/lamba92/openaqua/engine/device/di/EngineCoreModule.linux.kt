@@ -1,0 +1,11 @@
+package io.github.lamba92.openaqua.engine.device.di
+
+import io.github.lamba92.openaqua.engine.device.hardware.RawHidDeviceTransport
+import io.github.lamba92.openaqua.engine.device.transport.LinuxRawHidDeviceTransport
+import org.kodein.di.DI
+import org.kodein.di.bindSingleton
+
+actual val platformDeviceEngineModule: DI.Module =
+    DI.Module("linuxDeviceEngine") {
+        bindSingleton<RawHidDeviceTransport> { LinuxRawHidDeviceTransport }
+    }

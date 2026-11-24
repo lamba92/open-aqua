@@ -32,25 +32,36 @@ object StatusReportParser {
         val descriptor = device.descriptor()
         val fans =
             when (val fansCap = descriptor.findCapability<DeviceCapability.Fans>()) {
-                null -> emptyList()
-                else ->
+                null -> {
+                    emptyList()
+                }
+
+                else -> {
                     fansCap.channels.map { fan ->
                         parseFan(fan.channel, report, fan.statusOffset, fansCap.telemetryLayout, fan.kind)
                     }
+                }
             }
         val tempCap = descriptor.findCapability<DeviceCapability.TemperatureSensors>()
         val physicalSensors =
             when (tempCap) {
-                null -> emptyList()
-                else ->
+                null -> {
+                    emptyList()
+                }
+
+                else -> {
                     tempCap.sensors.map { sensor ->
                         parseTemp(sensor.channel, report, sensor.statusOffset, tempCap.disconnectedSentinelsWhenReading, sensor.kind)
                     }
+                }
             }
         val virtualSensors =
             when (val virtCap = descriptor.findCapability<DeviceCapability.VirtualSensors>()) {
-                null -> emptyList()
-                else ->
+                null -> {
+                    emptyList()
+                }
+
+                else -> {
                     parseVirtualSensors(
                         report = report,
                         statusOffset = virtCap.statusOffset,
@@ -58,6 +69,7 @@ object StatusReportParser {
                         startChannel = tempCap?.sensors?.size ?: 0,
                         disconnectedSentinels = virtCap.disconnectedSentinelsWhenReading,
                     )
+                }
             }
         val flowRateDlH =
             when (val flowCap = descriptor.findCapability<DeviceCapability.FlowSensor>()) {
@@ -67,7 +79,10 @@ object StatusReportParser {
                         else -> FeatureState.Disconnected
                     }
                 }
-                null -> FeatureState.Unsupported
+
+                null -> {
+                    FeatureState.Unsupported
+                }
             }
         val display =
             when (descriptor.findCapability<DeviceCapability.Display>()) {
@@ -146,17 +161,20 @@ object StatusReportParser {
     ): SensorTelemetry {
         val raw = readI16Be(report, offset)
         return when (raw) {
-            in disconnectedSentinels ->
+            in disconnectedSentinels -> {
                 SensorTelemetry.Disconnected(
                     channel = channel,
                     kind = kind,
                 )
-            else ->
+            }
+
+            else -> {
                 SensorTelemetry.Connected(
                     channel = channel,
                     kind = kind,
                     tempCelsius = round((raw.toDouble() / 100.0) * 10.0) / 10.0,
                 )
+            }
         }
     }
 
@@ -172,17 +190,20 @@ object StatusReportParser {
             val offset = statusOffset + (i * 2)
             val raw = readI16Be(report, offset)
             when (raw) {
-                in disconnectedSentinels ->
+                in disconnectedSentinels -> {
                     SensorTelemetry.Disconnected(
                         channel = channel,
                         kind = SensorChannelKind.VIRTUAL,
                     )
-                else ->
+                }
+
+                else -> {
                     SensorTelemetry.Connected(
                         channel = channel,
                         kind = SensorChannelKind.VIRTUAL,
                         tempCelsius = round((raw.toDouble() / 100.0) * 10.0) / 10.0,
                     )
+                }
             }
         }
 }

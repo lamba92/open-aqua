@@ -26,34 +26,19 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlin.math.round
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.seconds
 
 class WindowsHostHardwareController(
-    private val client: HwmonClient =
-        HwmonClient(
-            HwmonConfig(
-                enableCpu = true,
-                enableGpu = true,
-                enableMotherboard = true,
-                enableStorage = true,
-                enableController = true,
-                enableMemory = false,
-                enableNetwork = false,
-                enableBattery = false,
-            ),
-        ),
+    private val client: HwmonClient,
 ) : HostHardwareController,
     AutoCloseable {
-    override suspend fun getHostInfo(): HostInfo {
-        val tree = client.getHardwareTree()
-        val devices =
+    override suspend fun getHostInfo(): HostInfo =
+        HostInfo(
             buildList {
-                for (hw in tree) {
+                for (hw in client.getHardwareTree()) {
                     collectHardware(hw)
                 }
-            }
-        return HostInfo(devices)
-    }
+            },
+        )
 
     override fun getTelemetryFlow(pollingInterval: Duration): Flow<HostTelemetry> =
         client.telemetryFlow(pollingInterval).map { it.toHostTelemetry() }
@@ -191,7 +176,6 @@ private fun collectTelemetry(
             if (isDisconnected) {
                 fanTelemetry.add(HostFanTelemetry.Disconnected(fanId))
             } else {
-                checkNotNull(rpm)
                 fanTelemetry.add(
                     HostFanTelemetry.Controllable(
                         id = fanId,

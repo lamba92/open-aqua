@@ -32,16 +32,12 @@ kotlin {
             api(projects.coreModel.coreModelDevice)
             api(projects.coreModel.coreModelHost)
             api(projects.coreTheme)
-            api(libs.clikt)
         }
         nativeMain.dependencies {
-            api(projects.engine.engineDevice.engineDeviceProd)
+            api(projects.engine.engineDevice)
             api(projects.engine.engineHost)
             api(libs.compose.desktop.native.window)
             api(libs.ktor.client.curl)
-        }
-        linuxMain.dependencies {
-            implementation(projects.engine.engineHost.engineHostLinux)
         }
         commonTest.dependencies {
             implementation(kotlin("test"))

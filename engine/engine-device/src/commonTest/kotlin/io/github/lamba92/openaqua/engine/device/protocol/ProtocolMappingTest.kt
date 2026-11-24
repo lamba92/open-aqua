@@ -365,7 +365,10 @@ class ProtocolMappingTest {
                                         },
                                 )
                             }
-                            else -> cap
+
+                            else -> {
+                                cap
+                            }
                         }
                     },
             )
@@ -393,7 +396,10 @@ class ProtocolMappingTest {
                                         },
                                 )
                             }
-                            else -> cap
+
+                            else -> {
+                                cap
+                            }
                         }
                     },
             )

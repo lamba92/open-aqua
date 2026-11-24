@@ -20,7 +20,15 @@ kotlin {
     linuxX64()
     linuxArm64()
     macosArm64()
-    mingwX64()
+    mingwX64 {
+        compilations.getByName("main") {
+            cinterops {
+                create("winhid") {
+                    defFile(file("src/mingwMain/cinterop/winhid.def"))
+                }
+            }
+        }
+    }
 
     sourceSets {
         commonMain.dependencies {

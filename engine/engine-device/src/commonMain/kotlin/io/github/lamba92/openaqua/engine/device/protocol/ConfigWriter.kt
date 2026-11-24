@@ -82,6 +82,7 @@ object ConfigWriter {
                 report[baseOffset + cap.pwmOffset] = ((rawPwm.toInt() ushr 8) and 0xFF).toUByte()
                 report[baseOffset + cap.pwmOffset + 1] = (rawPwm.toInt() and 0xFF).toUByte()
             }
+
             is CurveFanConfig -> {
                 val cap =
                     descriptor.findFanCapability<FanCapability.Curve>()
@@ -92,9 +93,11 @@ object ConfigWriter {
                 report[baseOffset + cap.sensorIndexOffset + 1] = (hwSensor and 0xFF).toUByte()
                 encodeCurvePoints(report, baseOffset, config.points, cap)
             }
+
             is AutoCurveFanConfig -> {
                 encodeFanChannelConfig(report, baseOffset, config.toCurveFanConfig(), descriptor)
             }
+
             is TargetTempFanConfig -> {
                 val cap =
                     descriptor.findFanCapability<FanCapability.TargetTemp>()
@@ -107,6 +110,7 @@ object ConfigWriter {
                 report[baseOffset + cap.targetTempOffset] = ((rawTemp.toInt() ushr 8) and 0xFF).toUByte()
                 report[baseOffset + cap.targetTempOffset + 1] = (rawTemp.toInt() and 0xFF).toUByte()
             }
+
             is TwoPointFanConfig -> {
                 val cap =
                     descriptor.findFanCapability<FanCapability.TwoPoint>()
@@ -116,6 +120,7 @@ object ConfigWriter {
                 report[baseOffset + cap.sensorIndexOffset] = ((hwSensor ushr 8) and 0xFF).toUByte()
                 report[baseOffset + cap.sensorIndexOffset + 1] = (hwSensor and 0xFF).toUByte()
             }
+
             is CopyFanConfig -> {
                 val follow =
                     descriptor.findFanCapability<FanCapability.Follow>()
@@ -128,6 +133,7 @@ object ConfigWriter {
                 report[baseOffset + follow.sensorIndexOffset] = ((follow.unassignedSensorSentinel ushr 8) and 0xFF).toUByte()
                 report[baseOffset + follow.sensorIndexOffset + 1] = (follow.unassignedSensorSentinel and 0xFF).toUByte()
             }
+
             is UnconfiguredFanConfig -> {
                 val follow = descriptor.findFanCapability<FanCapability.Follow>()
                 val sensorIndexOffset = follow?.sensorIndexOffset ?: 3
@@ -136,6 +142,7 @@ object ConfigWriter {
                 report[baseOffset + sensorIndexOffset] = ((unassignedSentinel ushr 8) and 0xFF).toUByte()
                 report[baseOffset + sensorIndexOffset + 1] = (unassignedSentinel and 0xFF).toUByte()
             }
+
             is LimitsOnlyFanConfig -> {
                 // No control register modification for limits-only config
             }
@@ -317,6 +324,7 @@ object ConfigWriter {
                     "Verification failed: expected power ${expected.powerPercent}%, read ${actual.powerPercent}%"
                 }
             }
+
             is CurveFanConfig -> {
                 check(actual is CurveFanConfig) {
                     "Verification failed: expected CurveFanConfig, got ${actual::class.simpleName}"
@@ -332,9 +340,11 @@ object ConfigWriter {
                     }
                 }
             }
+
             is AutoCurveFanConfig -> {
                 verifyFanChannelConfig(expected = expected.toCurveFanConfig(), actual = actual)
             }
+
             is TargetTempFanConfig -> {
                 check(actual is TargetTempFanConfig) {
                     "Verification failed: expected TargetTempFanConfig, got ${actual::class.simpleName}"
@@ -346,6 +356,7 @@ object ConfigWriter {
                     "Verification failed: expected targetTemp ${expected.targetTempCelsius}°C, read ${actual.targetTempCelsius}°C"
                 }
             }
+
             is TwoPointFanConfig -> {
                 check(actual is TwoPointFanConfig) {
                     "Verification failed: expected TwoPointFanConfig, got ${actual::class.simpleName}"
@@ -354,6 +365,7 @@ object ConfigWriter {
                     "Verification failed: expected sensorIndex ${expected.sensorIndex}, read ${actual.sensorIndex}"
                 }
             }
+
             is CopyFanConfig -> {
                 check(actual is CopyFanConfig) {
                     "Verification failed: expected CopyFanConfig, got ${actual::class.simpleName}"
@@ -362,8 +374,14 @@ object ConfigWriter {
                     "Verification failed: expected sourceChannel ${expected.sourceChannel}, read ${actual.sourceChannel}"
                 }
             }
-            is UnconfiguredFanConfig -> Unit
-            is LimitsOnlyFanConfig -> Unit
+
+            is UnconfiguredFanConfig -> {
+                Unit
+            }
+
+            is LimitsOnlyFanConfig -> {
+                Unit
+            }
         }
     }
 }

@@ -88,6 +88,7 @@ object ConfigParser {
                             limits = limits,
                         )
                     }
+
                     else -> {
                         CopyFanConfig(
                             channel = channel,
@@ -119,6 +120,7 @@ object ConfigParser {
                             limits = limits,
                         )
                     }
+
                     else -> {
                         CurveFanConfig(
                             channel = channel,
@@ -139,6 +141,7 @@ object ConfigParser {
                             limits = limits,
                         )
                     }
+
                     else -> {
                         val tRaw =
                             (
@@ -164,6 +167,7 @@ object ConfigParser {
                             limits = limits,
                         )
                     }
+
                     else -> {
                         TwoPointFanConfig(
                             channel = channel,
@@ -218,8 +222,11 @@ object ConfigParser {
 
     private fun defaultRgbpxPorts(rgbpxCap: DeviceCapability.Lighting.Rgbpx?): List<RgbpxPortConfig> =
         when (rgbpxCap) {
-            null -> emptyList()
-            else ->
+            null -> {
+                emptyList()
+            }
+
+            else -> {
                 (0 until rgbpxCap.portCount).map { port ->
                     RgbpxPortConfig(
                         port = port,
@@ -229,6 +236,7 @@ object ConfigParser {
                         mode = RgbEffectMode.STATIC,
                     )
                 }
+            }
         }
 
     fun parseFanLimits(
@@ -297,7 +305,10 @@ object ConfigParser {
                         else -> FeatureState.Disconnected
                     }
                 }
-                else -> FeatureState.Unsupported
+
+                else -> {
+                    FeatureState.Unsupported
+                }
             }
         val display =
             when (descriptor.findCapability<DeviceCapability.Display>()) {

@@ -15,8 +15,6 @@ platform {
 
 dependencies {
     implementation(projects.appCompose)
-    engineBinaries(projects.engine.engineDevice.engineDeviceProd)
-    engineBinaries(projects.engine.engineHost.engineHostLinux)
 }
 
 compose.desktop {
