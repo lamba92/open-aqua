@@ -1,10 +1,11 @@
+@file:OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
+
 package io.github.lamba92.openaqua.app.permission
 
 import co.touchlab.kermit.Logger
 import io.github.lamba92.openaqua.app.coroutine.CoroutineScopeProvider
 import io.github.lamba92.openaqua.app.coroutine.getScope
 import io.github.lamba92.openaqua.app.util.exists
-import io.github.lamba92.openaqua.app.util.ioDispatcher
 import io.github.lamba92.openaqua.app.util.listDirectory
 import io.github.lamba92.openaqua.app.util.readText
 import io.github.lamba92.openaqua.app.util.resolve
@@ -16,20 +17,43 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.io.files.Path
+import platform.posix.access
+import platform.posix.system
 import kotlin.time.Duration.Companion.seconds
 
-internal expect fun checkDeviceNodesAccessible(nodes: List<Path>): Boolean
+private fun checkDeviceNodesAccessible(nodes: List<Path>): Boolean =
+    nodes.all { node ->
+        // R_OK (4) | W_OK (2) = 6
+        access(node.toString(), 6) == 0
+    }
 
-internal expect fun runElevatedUdevScript(
+private fun runElevatedUdevScript(
     script: String,
     logger: Logger,
-): Boolean
+): Boolean {
+    val escapedScript = script.replace("'", "'\\''")
+    val commandsToTry =
+        listOf(
+            "pkexec sh -c '$escapedScript'",
+            "flatpak-spawn --host pkexec sh -c '$escapedScript'",
+            "kdesu -- sh -c '$escapedScript'",
+        )
+
+    for (cmd in commandsToTry) {
+        logger.i { "Attempting elevated command with: $cmd" }
+        if (system(cmd) == 0) {
+            logger.i { "Successfully executed elevated command" }
+            return true
+        }
+    }
+    return false
+}
 
 class LinuxDevicePermissionService(
     scopeProvider: CoroutineScopeProvider,
     private val logger: Logger,
 ) : DevicePermissionService {
-    private val scope = scopeProvider.getScope(ioDispatcher)
+    private val scope = scopeProvider.getScope()
 
     override val state: StateFlow<DevicePermissionState>
         field = MutableStateFlow<DevicePermissionState>(DevicePermissionState.Initializing)

@@ -4,14 +4,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.ui.window.rememberWindowState
 import co.touchlab.kermit.Logger
 import io.github.lamba92.openaqua.app.coroutine.CoroutineScopeProvider
 import io.github.lamba92.openaqua.app.di.LocalDI
 import io.github.lamba92.openaqua.app.i18n.AppLocaleProvider
 import io.github.lamba92.openaqua.app.model.locale
+import io.github.lamba92.openaqua.app.model.toPosition
+import io.github.lamba92.openaqua.app.model.toSize
+import io.github.lamba92.openaqua.app.model.toStoredData
 import io.github.lamba92.openaqua.app.repository.AppDataRepository
 import io.github.lamba92.openaqua.app.theme.OpenAquaThemedApp
 import io.github.lamba92.openaqua.app.tray.OpenAquaTray
@@ -37,37 +38,49 @@ fun ApplicationScope.OpenAquaApp(
 
     val isTrayEnabled = storedData.minimizeToTrayOnClose || startMinimized
     val shouldStartMinimized = isTrayEnabled && (startMinimized || storedData.startMinimized)
-    var isWindowVisible by remember { mutableStateOf(!shouldStartMinimized) }
+    val windowState =
+        rememberWindowState(
+            placement = storedData.windowState.placement,
+            isMinimized = shouldStartMinimized,
+            position = storedData.windowState.toPosition(),
+            size = storedData.windowState.toSize(),
+        )
+    val isWindowVisible = !windowState.isMinimized
 
-    OpenAquaTray(
-        enabled = isTrayEnabled,
-        onOpen = { isWindowVisible = true },
-        onExit = {
-            mainLogger.i { "Application exiting via tray menu..." }
-            scopeProvider.cancelAll()
-            exitApplication()
-        },
-    )
-
-    AppLocaleProvider(storedData.language.locale) {
-        OpenAquaWindow(
-            visible = isWindowVisible,
-            onCloseRequest = {
-                if (isTrayEnabled) {
-                    mainLogger.i { "Window close requested, hiding to tray..." }
-                    isWindowVisible = false
-                } else {
-                    mainLogger.i { "Application closing, cancelling active scopes..." }
-                    scopeProvider.cancelAll()
-                    exitApplication()
-                }
+    if (isTrayEnabled) {
+        OpenAquaTray(
+            enabled = isTrayEnabled,
+            onOpen = { windowState.isMinimized = false },
+            onExit = {
+                mainLogger.i { "Application exiting via tray menu..." }
+                appDataRepository.saveWindowStateSync(windowState.toStoredData(storedData.windowState))
+                scopeProvider.cancelAll()
+                exitApplication()
             },
-            storedData = storedData,
-            di = di,
-            onRestoreWindow = { isWindowVisible = true },
-        ) {
-            CompositionLocalProvider(LocalDI provides di) {
-                OpenAquaThemedApp(storedData)
+        )
+    }
+
+    if (isWindowVisible) {
+        AppLocaleProvider(storedData.language.locale) {
+            OpenAquaWindow(
+                state = windowState,
+                onCloseRequest = {
+                    appDataRepository.saveWindowStateSync(windowState.toStoredData(storedData.windowState))
+                    if (isTrayEnabled) {
+                        mainLogger.i { "Window close requested, hiding to tray..." }
+                        windowState.isMinimized = true
+                    } else {
+                        mainLogger.i { "Application closing, cancelling active scopes..." }
+                        scopeProvider.cancelAll()
+                        exitApplication()
+                    }
+                },
+                storedData = storedData,
+                di = di,
+            ) {
+                CompositionLocalProvider(LocalDI provides di) {
+                    OpenAquaThemedApp(storedData)
+                }
             }
         }
     }

@@ -18,5 +18,5 @@ platform {
 
 dependencies {
     implementation(projects.packaging)
-    distribution(projects.appCompose.appComposeWindowsX64)
+    // distribution(projects.appCompose.appComposeWindowsX64)
 }

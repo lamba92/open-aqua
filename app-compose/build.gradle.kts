@@ -12,7 +12,16 @@ compose.resources {
 }
 
 kotlin {
-    linuxX64()
+    linuxX64 {
+        binaries.all {
+            linkerOpts(
+                "-L${System.getProperty("user.home")}/.local/lib",
+                "-L/home/linuxbrew/.linuxbrew/lib",
+                "-L/usr/lib64",
+                "-Wl,--allow-multiple-definition",
+            )
+        }
+    }
     linuxArm64()
     mingwX64()
 
@@ -20,6 +29,7 @@ kotlin {
         commonMain.dependencies {
             api(libs.compose.components.resources)
             api(libs.compose.material3)
+            api(libs.compose.desktop.native.window)
             api(libs.kermit)
             api(libs.kermit.io)
             api(libs.kodein.di)
@@ -28,19 +38,26 @@ kotlin {
             api(libs.kotlinx.io.core)
             api(libs.kotlinx.serialization.json)
             api(libs.ktor.client.content.negotiation)
+            api(libs.ktor.client.curl)
             api(libs.ktor.serialization.kotlinx.json)
             api(projects.coreModel.coreModelDevice)
             api(projects.coreModel.coreModelHost)
             api(projects.coreTheme)
-        }
-        nativeMain.dependencies {
             api(projects.engine.engineDevice)
             api(projects.engine.engineHost)
-            api(libs.compose.desktop.native.window)
-            api(libs.ktor.client.curl)
         }
         commonTest.dependencies {
             implementation(kotlin("test"))
+        }
+    }
+}
+
+compose.desktop {
+    native {
+        entryPoint = "io.github.lamba92.openaqua.app.main"
+        icon {
+            light.from(rootProject.file("assets/generated/icon-512.png"))
+            embedWindowsIcon = false
         }
     }
 }

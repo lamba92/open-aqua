@@ -1,5 +1,5 @@
 [versions]
-compose-desktop-native = "1.12.2-5"
+compose-desktop-native = "1.12.2-6"
 compose-hot-reload = "1.1.1"
 compose-plugin = "1.9.0"
 composenativetray = "2.1.7"

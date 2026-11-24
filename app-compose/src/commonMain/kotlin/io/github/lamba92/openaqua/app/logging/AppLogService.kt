@@ -5,7 +5,6 @@ import io.github.lamba92.openaqua.app.coroutine.getScope
 import io.github.lamba92.openaqua.app.model.LogsDirectory
 import io.github.lamba92.openaqua.app.util.createDirectories
 import io.github.lamba92.openaqua.app.util.emitLines
-import io.github.lamba92.openaqua.app.util.ioDispatcher
 import io.github.lamba92.openaqua.app.util.openInDesktopEnvironment
 import io.github.lamba92.openaqua.app.util.windowed
 import kotlinx.coroutines.flow.Flow
@@ -21,7 +20,7 @@ class AppLogService(
     logSource: SharedLogSource,
     maxInMemoryLines: Int = 2000,
 ) {
-    private val scope = scopeProvider.getScope(ioDispatcher)
+    private val scope = scopeProvider.getScope()
 
     val logLines: StateFlow<List<String>> =
         logFlow(logSource)

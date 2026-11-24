@@ -343,10 +343,6 @@ private fun AboutOpenAquaContent(
                             BuildInfoRow(label = "Gradle Version", value = OpenAquaBuildInfo.GRADLE_VERSION)
                             BuildInfoRow(label = "Kotlin Version", value = OpenAquaBuildInfo.KOTLIN_VERSION)
                             BuildInfoRow(
-                                label = "JVM",
-                                value = "${OpenAquaBuildInfo.JVM_VERSION} (${OpenAquaBuildInfo.JVM_VENDOR})",
-                            )
-                            BuildInfoRow(
                                 label = "Target OS",
                                 value = "${OpenAquaBuildInfo.OS_NAME} (${OpenAquaBuildInfo.OS_ARCH})",
                             )

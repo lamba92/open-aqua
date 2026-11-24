@@ -2,6 +2,7 @@ package io.github.lamba92.openaqua.app.util
 
 import io.github.lamba92.openaqua.model.retryAtLeast
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -147,5 +148,3 @@ fun <T> Flow<T>.windowed(
         }
     }
 }
-
-expect val ioDispatcher: CoroutineDispatcher

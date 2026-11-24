@@ -57,7 +57,6 @@ class BugReportViewModel(
             "OpenAqua Version" to OpenAquaBuildInfo.VERSION,
             "Build Date" to OpenAquaBuildInfo.BUILD_TIMESTAMP,
             "OS" to "${OpenAquaBuildInfo.OS_NAME} (${OpenAquaBuildInfo.OS_ARCH})",
-            "JVM" to "${OpenAquaBuildInfo.JVM_VERSION} (${OpenAquaBuildInfo.JVM_VENDOR})",
             "Kotlin" to OpenAquaBuildInfo.KOTLIN_VERSION,
         )
 

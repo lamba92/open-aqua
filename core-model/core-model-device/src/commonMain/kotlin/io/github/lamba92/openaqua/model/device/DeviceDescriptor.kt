@@ -111,7 +111,10 @@ fun DeviceDescriptor.logicalToHardwareSensorIndex(logicalIndex: Int): Int =
                 else -> logicalIndex
             }
         }
-        else -> logicalIndex
+
+        else -> {
+            logicalIndex
+        }
     }
 
 /**
@@ -129,7 +132,10 @@ fun DeviceDescriptor.hardwareToLogicalSensorIndex(hardwareIndex: Int): Int? =
                 else -> hardwareIndex - 1
             }
         }
-        else -> hardwareIndex
+
+        else -> {
+            hardwareIndex
+        }
     }
 
 /**

@@ -28,8 +28,14 @@ import io.github.lamba92.openaqua.app.model.BaseAppDataDir
 import io.github.lamba92.openaqua.app.model.LogsDirectory
 import io.github.lamba92.openaqua.app.repository.AppDataRepository
 import io.github.lamba92.openaqua.app.repository.DeviceDataCacheService
+import io.github.lamba92.openaqua.app.repository.NativeOpenAquaDeviceEngineApi
+import io.github.lamba92.openaqua.app.repository.NativeOpenAquaHostEngineApi
+import io.github.lamba92.openaqua.app.repository.OpenAquaDeviceEngineApi
+import io.github.lamba92.openaqua.app.repository.OpenAquaHostEngineApi
 import io.github.lamba92.openaqua.app.repository.VirtualSensorFeederService
 import io.github.lamba92.openaqua.app.util.nameWithoutExtension
+import io.github.lamba92.openaqua.engine.device.di.deviceEngineCoreModule
+import io.github.lamba92.openaqua.engine.host.di.hostEngineCoreModule
 import io.github.lamba92.openaqua.model.device.DeviceId
 import org.kodein.di.DI
 import org.kodein.di.bindEagerSingleton
@@ -38,8 +44,15 @@ import org.kodein.di.bindSingleton
 import org.kodein.di.direct
 import org.kodein.di.instance
 
+expect val platformAppModule: DI.Module
+
 val commonAppModule =
     DI.Module("commonAppModule") {
+        import(deviceEngineCoreModule)
+        import(hostEngineCoreModule)
+        import(platformAppModule)
+        bindSingleton<OpenAquaDeviceEngineApi> { NativeOpenAquaDeviceEngineApi(hardwareController = instance()) }
+        bindSingleton<OpenAquaHostEngineApi> { NativeOpenAquaHostEngineApi(controller = instance()) }
         bindSingleton { BaseAppDataDir.default() }
         bindSingleton { instance<BaseAppDataDir>().configFile }
         bindSingleton { instance<BaseAppDataDir>().logsDirectory }
@@ -189,6 +202,12 @@ val commonAppModule =
     }
 
 val appModule = commonAppModule
+
+fun createOpenAquaDI(vararg overrideModules: DI.Module): DI =
+    DI {
+        import(appModule)
+        overrideModules.forEach { import(it, allowOverride = true) }
+    }
 
 val LocalDI = staticCompositionLocalOf<DI> { error("No DI container provided") }
 

@@ -19,7 +19,6 @@ import io.github.lamba92.openaqua.app.model.withHostFanCustomName
 import io.github.lamba92.openaqua.app.model.withVirtualSensorFeed
 import io.github.lamba92.openaqua.app.util.atomicMove
 import io.github.lamba92.openaqua.app.util.deleteIfExists
-import io.github.lamba92.openaqua.app.util.ioDispatcher
 import io.github.lamba92.openaqua.app.util.openInDesktopEnvironment
 import io.github.lamba92.openaqua.app.util.readText
 import io.github.lamba92.openaqua.app.util.resolveSibling
@@ -70,7 +69,7 @@ class AppDataRepository(
             encodeDefaults = true
         }
 
-    private val coroutineScope = coroutineScopeProvider.getScope(ioDispatcher)
+    private val coroutineScope = coroutineScopeProvider.getScope()
 
     val state: StateFlow<State>
         field = MutableStateFlow<State>(State.Loading)

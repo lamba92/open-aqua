@@ -70,7 +70,6 @@ class BugReportViewModelTest {
                 "OpenAqua Version" to "1.0.0",
                 "Build Date" to "2026-11-06",
                 "OS" to "Linux",
-                "JVM" to "21",
                 "Kotlin" to "2.4.0",
             )
         val connectedDevices = listOf("Aquacomputer OCTO (FW: 1020)")

@@ -201,7 +201,10 @@ object DeviceLayoutRegistry {
     ): DeviceDescriptor {
         val layouts = ALL_LAYOUTS[type] ?: error("No layouts registered for device type $type")
         return when (firmwareVersion) {
-            null -> layouts.first().descriptor
+            null -> {
+                layouts.first().descriptor
+            }
+
             else -> {
                 layouts.firstOrNull { firmwareVersion in it.fwRange }?.descriptor
                     ?: layouts.first().descriptor

@@ -189,24 +189,6 @@ val generateOpenAquaBuildInfo by tasks.registering {
                         .build(),
                 ).addProperty(
                     PropertySpec
-                        .builder("JVM_VERSION", String::class)
-                        .getter(
-                            FunSpec
-                                .getterBuilder()
-                                .addStatement("return io.github.lamba92.openaqua.app.platform.PlatformInfo.jvmVersion")
-                                .build(),
-                        ).build(),
-                ).addProperty(
-                    PropertySpec
-                        .builder("JVM_VENDOR", String::class)
-                        .getter(
-                            FunSpec
-                                .getterBuilder()
-                                .addStatement("return io.github.lamba92.openaqua.app.platform.PlatformInfo.jvmVendor")
-                                .build(),
-                        ).build(),
-                ).addProperty(
-                    PropertySpec
                         .builder("OS_NAME", String::class)
                         .getter(
                             FunSpec

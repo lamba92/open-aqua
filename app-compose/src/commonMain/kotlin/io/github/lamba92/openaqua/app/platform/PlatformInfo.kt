@@ -1,8 +1,13 @@
+@file:OptIn(ExperimentalNativeApi::class)
+
 package io.github.lamba92.openaqua.app.platform
 
-expect object PlatformInfo {
-    val jvmVersion: String
-    val jvmVendor: String
+import kotlin.experimental.ExperimentalNativeApi
+
+object PlatformInfo {
     val osName: String
+        get() = Platform.osFamily.name
+
     val osArch: String
+        get() = Platform.cpuArchitecture.name
 }

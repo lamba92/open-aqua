@@ -18,5 +18,5 @@ platform {
 
 dependencies {
     implementation(projects.packaging)
-    distribution(projects.appCompose.appComposeLinuxArm64)
+    // distribution(projects.appCompose.appComposeLinuxArm64)
 }

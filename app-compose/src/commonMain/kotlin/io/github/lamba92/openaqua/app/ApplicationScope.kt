@@ -1,5 +1,3 @@
 package io.github.lamba92.openaqua.app
 
-expect interface ApplicationScope {
-    fun exitApplication()
-}
+typealias ApplicationScope = com.compose.sdl.ApplicationScope

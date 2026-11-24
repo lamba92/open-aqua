@@ -2,6 +2,13 @@
 
 pluginManagement {
     repositories {
+        maven("https://maven.pkg.github.com/lamba92/compose-desktop-native") {
+            credentials {
+                username = System.getenv("GITHUB_ACTOR") ?: providers.gradleProperty("gpr.user").orNull ?: ""
+                password = System.getenv("GITHUB_TOKEN") ?: providers.gradleProperty("gpr.key").orNull ?: ""
+            }
+            content { includeGroupAndSubgroups("com.bitsycore") }
+        }
         maven("https://maven.bitsycore.com/releases") {
             content { includeGroupAndSubgroups("com.bitsycore") }
         }
@@ -33,6 +40,13 @@ rootProject.name = "open-aqua"
 
 dependencyResolutionManagement {
     repositories {
+        maven("https://maven.pkg.github.com/lamba92/compose-desktop-native") {
+            credentials {
+                username = System.getenv("GITHUB_ACTOR") ?: providers.gradleProperty("gpr.user").orNull ?: ""
+                password = System.getenv("GITHUB_TOKEN") ?: providers.gradleProperty("gpr.key").orNull ?: ""
+            }
+            content { includeGroupAndSubgroups("com.bitsycore") }
+        }
         maven("https://maven.bitsycore.com/releases") {
             content { includeGroupAndSubgroups("com.bitsycore") }
         }
@@ -44,11 +58,7 @@ dependencyResolutionManagement {
 include(
     ":app-compose",
     ":app-compose:app-compose-mock",
-    ":app-compose:app-compose-native",
-    ":app-compose:app-compose-linux-x64",
-    ":app-compose:app-compose-linux-arm64",
-    ":app-compose:app-compose-windows-x64",
-    // ":app-compose:app-compose-screenshots",
+    ":app-compose:app-compose-screenshots",
     ":assets",
     ":core-model",
     ":core-model:core-model-device",

@@ -35,7 +35,10 @@ fun DeviceDescriptor.validateRequestMatchesDevice(request: FlashConfigRequest) {
                     "Fan channel $ch cannot copy from itself"
                 }
             }
-            else -> Unit
+
+            else -> {
+                Unit
+            }
         }
     }
 
