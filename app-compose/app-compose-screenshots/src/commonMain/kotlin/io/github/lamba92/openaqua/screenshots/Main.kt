@@ -1,12 +1,12 @@
 package io.github.lamba92.openaqua.screenshots
 
 import io.github.lamba92.openaqua.app.model.AppStoredData
+import io.github.lamba92.openaqua.app.util.createDirectories
 import io.github.lamba92.openaqua.screenshots.mock.mockOctoVirtualSensorFeedingUiState
 import io.github.lamba92.openaqua.screenshots.model.Scene
 import io.github.lamba92.openaqua.screenshots.model.ScreenshotState
 import io.github.lamba92.openaqua.theme.AppColorScheme
-import kotlin.io.path.Path
-import kotlin.io.path.createDirectories
+import kotlinx.io.files.Path
 
 fun main(args: Array<String>) {
     val outputDir = if (args.isNotEmpty()) Path(args[0]) else Path("screenshots")

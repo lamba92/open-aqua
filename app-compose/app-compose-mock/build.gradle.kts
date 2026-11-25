@@ -5,7 +5,7 @@ plugins {
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation(projects.appCompose)
+            api(projects.appCompose)
         }
         commonTest.dependencies {
             implementation(kotlin("test"))

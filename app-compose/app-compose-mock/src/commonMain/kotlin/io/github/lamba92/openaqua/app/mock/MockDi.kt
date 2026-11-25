@@ -1,5 +1,7 @@
 package io.github.lamba92.openaqua.app.mock
 
+import io.github.lamba92.openaqua.app.permission.AlwaysGrantedDevicePermissionService
+import io.github.lamba92.openaqua.app.permission.DevicePermissionService
 import io.github.lamba92.openaqua.engine.device.hardware.RawHidDeviceTransport
 import io.github.lamba92.openaqua.engine.host.hardware.HostHardwareController
 import org.kodein.di.DI
@@ -9,4 +11,5 @@ val mockEngineModule =
     DI.Module("mockEngineModule") {
         bindSingleton<RawHidDeviceTransport>(overrides = true) { MockRawHidDeviceTransport }
         bindSingleton<HostHardwareController>(overrides = true) { MockHostHardwareController }
+        bindSingleton<DevicePermissionService>(overrides = true) { AlwaysGrantedDevicePermissionService }
     }
