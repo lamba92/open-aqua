@@ -1,10 +1,7 @@
 plugins {
-    openaqua.convention.multiplatform
+    openaqua.convention.native.app
     openaqua.buildinfo
     openaqua.localization
-    id(libs.plugins.kotlin.compose)
-    id(libs.plugins.compose.multiplatform)
-    alias(libs.plugins.compose.desktop.native.bridge)
 }
 
 compose.resources {
@@ -12,18 +9,6 @@ compose.resources {
 }
 
 kotlin {
-    linuxX64 {
-        binaries.all {
-            linkerOpts(
-                "-L${System.getProperty("user.home")}/.local/lib",
-                "-L/home/linuxbrew/.linuxbrew/lib",
-                "-L/usr/lib64",
-                "-Wl,--allow-multiple-definition",
-            )
-        }
-    }
-    linuxArm64()
-    mingwX64()
 
     sourceSets {
         commonMain.dependencies {
@@ -57,9 +42,5 @@ kotlin {
 compose.desktop {
     native {
         entryPoint = "io.github.lamba92.openaqua.app.main"
-        icon {
-            light.from(rootProject.file("assets/generated/icon-512.png"))
-            embedWindowsIcon = false
-        }
     }
 }

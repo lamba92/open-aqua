@@ -218,6 +218,9 @@ fun createOpenAquaDI(vararg overrideModules: DI.Module): DI =
         overrideModules.forEach { import(it, allowOverride = true) }
     }
 
+@Composable
+fun rememberOpenAquaDI(vararg overrideModules: DI.Module): DI = remember { createOpenAquaDI(*overrideModules) }
+
 val LocalDI = staticCompositionLocalOf<DI> { error("No DI container provided") }
 
 @Composable

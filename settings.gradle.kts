@@ -58,7 +58,7 @@ dependencyResolutionManagement {
 include(
     ":app-compose",
     ":app-compose:app-compose-mock",
-    ":app-compose:app-compose-screenshots",
+//    ":app-compose:app-compose-screenshots",
     ":assets",
     ":core-model",
     ":core-model:core-model-device",

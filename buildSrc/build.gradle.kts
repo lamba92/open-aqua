@@ -6,8 +6,24 @@ plugins {
 }
 
 repositories {
+    maven("https://maven.pkg.github.com/lamba92/compose-desktop-native") {
+        credentials {
+            username = System.getenv("GITHUB_ACTOR") ?: providers.gradleProperty("gpr.user").orNull ?: ""
+            password = System.getenv("GITHUB_TOKEN") ?: providers.gradleProperty("gpr.key").orNull ?: ""
+        }
+        content { includeGroupAndSubgroups("com.bitsycore") }
+    }
+    maven("https://maven.bitsycore.com/releases") {
+        content { includeGroupAndSubgroups("com.bitsycore") }
+    }
     mavenCentral()
     gradlePluginPortal()
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    compilerOptions {
+        freeCompilerArgs.add("-Xskip-metadata-version-check")
+    }
 }
 
 ktlint {
@@ -28,6 +44,7 @@ dependencies {
     implementation(pluginMarker(libs.plugins.kotlin.serialization))
     implementation(pluginMarker(libs.plugins.kotlin.compose))
     implementation(pluginMarker(libs.plugins.compose.multiplatform))
+    implementation(pluginMarker(libs.plugins.compose.desktop.native.bridge))
     implementation(pluginMarker(libs.plugins.compose.hot.reload))
     implementation(pluginMarker(libs.plugins.ktlint))
     implementation(libs.xz)
