@@ -40,6 +40,8 @@ kotlin {
             api(libs.ktor.client.content.negotiation)
             api(libs.ktor.client.curl)
             api(libs.ktor.serialization.kotlinx.json)
+            api(libs.ktor.server.cio)
+            api(libs.ktor.server.content.negotiation)
             api(projects.coreModel.coreModelDevice)
             api(projects.coreModel.coreModelHost)
             api(projects.coreTheme)

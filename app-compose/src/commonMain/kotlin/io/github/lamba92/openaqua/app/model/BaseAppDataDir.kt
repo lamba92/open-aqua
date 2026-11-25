@@ -36,6 +36,9 @@ value class BaseAppDataDir(
     val portFile: AppPortFile
         get() = AppPortFile(path.resolve("open-aqua.port"))
 
+    val memoryDumpsDirectory: MemoryDumpsDirectory
+        get() = MemoryDumpsDirectory(path.resolve("memory_dumps"))
+
     init {
         path.createDirectories()
     }

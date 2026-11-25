@@ -22,6 +22,7 @@ import io.github.lamba92.openaqua.app.feature.settings.SettingsViewModel
 import io.github.lamba92.openaqua.app.feature.settings.logs.LogsViewModel
 import io.github.lamba92.openaqua.app.feature.settings.updates.AppUpdateService
 import io.github.lamba92.openaqua.app.feature.settings.updates.UpdatesViewModel
+import io.github.lamba92.openaqua.app.instance.ForegroundRequestService
 import io.github.lamba92.openaqua.app.logging.AppLogService
 import io.github.lamba92.openaqua.app.logging.SharedLogSource
 import io.github.lamba92.openaqua.app.model.BaseAppDataDir
@@ -58,6 +59,14 @@ val commonAppModule =
         bindSingleton { instance<BaseAppDataDir>().logsDirectory }
         bindSingleton { instance<BaseAppDataDir>().lockFile }
         bindSingleton { instance<BaseAppDataDir>().portFile }
+        bindSingleton { instance<BaseAppDataDir>().memoryDumpsDirectory }
+        bindSingleton {
+            ForegroundRequestService(
+                portFile = instance(),
+                memoryDumpsDirectory = instance(),
+                scopeProvider = instance(),
+            )
+        }
         bindSingleton { SharedLogSource() }
         bindMultiton { tag: String -> di.direct.instance<Logger>().withTag(tag) }
         bindSingleton<Logger>(tag = "Main") { instance<Logger>().withTag("Main") }
