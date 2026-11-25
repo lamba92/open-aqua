@@ -1,7 +1,5 @@
 package io.github.lamba92.gradle.plugins.platform
 
-import io.github.lamba92.gradle.plugins.engine.Arch
-import io.github.lamba92.gradle.plugins.engine.Os
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider

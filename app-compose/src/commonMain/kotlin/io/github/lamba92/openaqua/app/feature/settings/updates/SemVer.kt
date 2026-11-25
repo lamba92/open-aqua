@@ -5,9 +5,10 @@ data class SemVer(
     val minor: Int,
     val patch: Int,
     val preRelease: String? = null,
+    val build: Int = 0,
 ) : Comparable<SemVer> {
     companion object {
-        private val REGEX = Regex("""^[vV]?(\d+)(?:\.(\d+))?(?:\.(\d+))?(?:-([0-9A-Za-z.-]+))?""")
+        private val REGEX = Regex("""^[vV]?(\d+)(?:\.(\d+))?(?:\.(\d+))?(?:\.(\d+))?(?:-([0-9A-Za-z.-]+))?""")
 
         fun parseOrNull(version: String): SemVer? {
             val trimmed = version.trim()
@@ -15,8 +16,9 @@ data class SemVer(
             val major = match.groupValues[1].toIntOrNull() ?: return null
             val minor = match.groupValues[2].takeIf { it.isNotEmpty() }?.toIntOrNull() ?: 0
             val patch = match.groupValues[3].takeIf { it.isNotEmpty() }?.toIntOrNull() ?: 0
-            val pre = match.groupValues[4].takeIf { it.isNotEmpty() }
-            return SemVer(major, minor, patch, pre)
+            val build = match.groupValues[4].takeIf { it.isNotEmpty() }?.toIntOrNull() ?: 0
+            val pre = match.groupValues[5].takeIf { it.isNotEmpty() }
+            return SemVer(major, minor, patch, pre, build)
         }
     }
 
@@ -24,6 +26,7 @@ data class SemVer(
         if (major != other.major) return major.compareTo(other.major)
         if (minor != other.minor) return minor.compareTo(other.minor)
         if (patch != other.patch) return patch.compareTo(other.patch)
+        if (build != other.build) return build.compareTo(other.build)
         val preA = preRelease
         val preB = other.preRelease
         return when {
@@ -42,6 +45,9 @@ data class SemVer(
     override fun toString(): String =
         buildString {
             append("$major.$minor.$patch")
+            if (build != 0) {
+                append(".$build")
+            }
             if (!preRelease.isNullOrBlank()) {
                 append("-$preRelease")
             }

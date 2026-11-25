@@ -67,9 +67,5 @@ include(
     ":engine",
     ":engine:engine-device",
     ":engine:engine-host",
-    ":packaging",
-    ":packaging:packaging-linux-x64",
-    ":packaging:packaging-linux-arm64",
-    ":packaging:packaging-windows-x64",
     ":util:kotlinx-io",
 )

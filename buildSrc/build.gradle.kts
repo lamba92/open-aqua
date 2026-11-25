@@ -3,6 +3,7 @@ import dev.panuszewski.gradle.pluginMarker
 plugins {
     `kotlin-dsl`
     alias(libs.plugins.ktlint)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 repositories {
@@ -47,15 +48,8 @@ dependencies {
     implementation(pluginMarker(libs.plugins.compose.desktop.native.bridge))
     implementation(pluginMarker(libs.plugins.compose.hot.reload))
     implementation(pluginMarker(libs.plugins.ktlint))
-    implementation(libs.xz)
     implementation(libs.kotlinpoet)
-}
-
-gradlePlugin {
-    plugins {
-        register("upx") {
-            id = "io.github.lamba92.upx"
-            implementationClass = "io.github.lamba92.gradle.plugins.upx.UpxPlugin"
-        }
-    }
+    implementation(libs.kaml)
+    implementation(libs.xmlutil.serialization)
+    implementation(libs.kotlinx.serialization.json)
 }

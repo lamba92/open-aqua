@@ -46,5 +46,10 @@ class SemVerTest {
         assertTrue(v200 > v110)
         assertTrue(v100 > v100Snapshot)
         assertEquals(0, v100.compareTo(SemVer.parseOrNull("v1.0.0")!!))
+
+        val calVerEarly = SemVer.parseOrNull("2026.11.25.1000")!!
+        val calVerLate = SemVer.parseOrNull("v2026.11.25.2324")!!
+        assertEquals(2324, calVerLate.build)
+        assertTrue(calVerLate > calVerEarly)
     }
 }

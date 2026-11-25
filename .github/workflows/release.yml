@@ -1,35 +1,44 @@
 name: Release
 
 on:
-  release:
-    types: [published]
   workflow_dispatch:
-    inputs:
-      tag_name:
-        description: 'Release Tag (e.g. v1.0.0)'
-        required: true
-        type: string
 
 permissions:
   contents: write
 
-env:
-  TAG_NAME: ${{ github.event.release.tag_name || inputs.tag_name || github.ref_name }}
-
 jobs:
+  prepare:
+    name: Compute Release Version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+    steps:
+      - name: Generate CalVer Version
+        id: version
+        run: |
+          VERSION=$(date -u +"%Y.%m.%d.%H%M")
+          TAG="v${VERSION}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "Resolved release version: ${VERSION} (tag: ${TAG})"
+
   release-linux:
-    name: Build & Release Linux Packages (${{ matrix.arch }})
+    name: Build Linux Packages (${{ matrix.arch }})
+    needs: prepare
     strategy:
       fail-fast: false
       matrix:
         include:
           - arch: x64
             runner: ubuntu-24.04
-            task: ':packaging:packaging-linux-x64:release'
+            task: ':app-compose:releaseLinuxX64'
           - arch: arm64
             runner: ubuntu-24.04-arm
-            task: ':packaging:packaging-linux-arm64:release'
+            task: ':app-compose:releaseLinuxArm64'
     runs-on: ${{ matrix.runner }}
+    env:
+      OPENAQUA_VERSION: ${{ needs.prepare.outputs.version }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -54,18 +63,30 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libfuse2 file libasound2-dev
 
-      - name: Build & Publish Release Packages
+      - name: Build & Package Release Artifacts
         run: ./gradlew ${{ matrix.task }} --scan --stacktrace
 
-      - name: Upload to GitHub Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release upload "${{ env.TAG_NAME }}" build/releases/* --clobber
+      - name: Upload Linux Release Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-assets-linux-${{ matrix.arch }}
+          path: build/releases/*
+          if-no-files-found: error
+
+      - name: Upload Packaging Descriptors
+        if: matrix.arch == 'x64'
+        uses: actions/upload-artifact@v4
+        with:
+          name: packaging-descriptors
+          path: app-compose/build/generated/packaging
+          if-no-files-found: error
 
   release-windows:
-    name: Build & Release Windows Packages
+    name: Build Windows Packages
+    needs: prepare
     runs-on: windows-latest
+    env:
+      OPENAQUA_VERSION: ${{ needs.prepare.outputs.version }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -85,14 +106,48 @@ jobs:
           build-scan-terms-of-use-url: "https://gradle.com/terms-of-service"
           build-scan-terms-of-use-agree: "yes"
 
-      - name: Build & Publish Release Packages
-        run: ./gradlew :packaging:packaging-windows-x64:release --scan --stacktrace
+      - name: Build & Package Release Artifacts
+        run: ./gradlew :app-compose:releaseMingwX64 --scan --stacktrace
 
-      - name: Upload to GitHub Release
+      - name: Upload Windows Release Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-assets-windows
+          path: build/releases/*
+          if-no-files-found: error
+
+  create-release:
+    name: Tag & Create GitHub Release
+    needs: [prepare, release-linux, release-windows]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download All Release Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: release-assets-*
+          path: release-assets
+          merge-multiple: true
+
+      - name: Tag Commit & Create GitHub Release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload "${{ env.TAG_NAME }}" build/releases/* --clobber
+          gh release create "${{ needs.prepare.outputs.tag }}" release-assets/* \
+            --repo "${{ github.repository }}" \
+            --target "${{ github.sha }}" \
+            --title "${{ needs.prepare.outputs.tag }}" \
+            --generate-notes
+
+  publish-windows-store:
+    name: Publish to Microsoft Store
+    needs: [create-release, release-windows]
+    runs-on: windows-latest
+    steps:
+      - name: Download Windows Release Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-assets-windows
+          path: release-assets
 
       - name: Resolve MSIX Package for Store Deployment
         if: env.MICROSOFT_CLIENT_SECRET != ''
@@ -102,9 +157,9 @@ jobs:
           MICROSOFT_CLIENT_SECRET: ${{ secrets.MICROSOFT_CLIENT_SECRET }}
         run: |
           $deployDir = New-Item -ItemType Directory -Path "$env:RUNNER_TEMP/msix-deploy" -Force
-          $msix = Get-ChildItem "build/releases" -Filter "*.msix" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+          $msix = Get-ChildItem "release-assets" -Filter "*.msix" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
           if (-not $msix) {
-            throw "No MSIX package found in build/releases"
+            throw "No MSIX package found in release-assets"
           }
           Copy-Item $msix.FullName -Destination $deployDir.FullName
           Write-Host "Resolved MSIX directory for deployment: $($deployDir.FullName) with package $($msix.Name)"
@@ -125,56 +180,30 @@ jobs:
 
   publish-linux-stores:
     name: Publish to Linux Stores
-    needs: release-linux
+    needs: [prepare, create-release, release-linux]
     runs-on: ubuntu-latest
     env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+      TAG: ${{ needs.prepare.outputs.tag }}
       SNAP_TOKEN: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
       SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
+      - name: Download Packaging Descriptors
+        uses: actions/download-artifact@v4
         with:
-          distribution: 'microsoft'
-          java-version: '21'
+          name: packaging-descriptors
+          path: generated-packaging
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+      - name: Download Linux x64 Release Artifacts
+        uses: actions/download-artifact@v4
         with:
-          cache-read-only: false
-          build-scan-publish: true
-          build-scan-terms-of-use-url: "https://gradle.com/terms-of-service"
-          build-scan-terms-of-use-agree: "yes"
-
-      - name: Generate Packaging Descriptors
-        run: ./gradlew :packaging:packaging-linux-x64:generatePackagingFiles --scan --stacktrace
-
-      - name: Extract Release Metadata & Checksum
-        id: release_info
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          TAG="${{ env.TAG_NAME }}"
-          VERSION="${TAG#v}"
-          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
-          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
-
-          # Download Linux tarball to compute sha256 checksum for Flathub & AUR
-          mkdir -p /tmp/assets
-          gh release download "$TAG" -p "open-aqua-${VERSION}-linux-x64.tar.gz" --dir /tmp/assets
-          TAR_FILE="/tmp/assets/open-aqua-${VERSION}-linux-x64.tar.gz"
-          SHA256=$(sha256sum "$TAR_FILE" | awk '{print $1}')
-          echo "sha256=${SHA256}" >> "$GITHUB_OUTPUT"
-          echo "Resolved version ${VERSION} with SHA256: ${SHA256}"
+          name: release-assets-linux-x64
+          path: release-assets
 
       - name: Sync Flathub Repository
         if: env.FLATHUB_TOKEN != ''
         env:
           FLATHUB_TOKEN: ${{ secrets.FLATHUB_PUSH_TOKEN }}
-          TAG: ${{ steps.release_info.outputs.tag }}
-          VERSION: ${{ steps.release_info.outputs.version }}
-          SHA256: ${{ steps.release_info.outputs.sha256 }}
         run: |
           echo "Syncing Flathub repository (io.github.lamba92.openaqua)..."
           git clone "https://x-access-token:${FLATHUB_TOKEN}@github.com/flathub/io.github.lamba92.openaqua.git" flathub-repo || {
@@ -182,9 +211,7 @@ jobs:
             exit 0
           }
           cd flathub-repo
-          cp ../packaging/packaging-linux-x64/build/generated/packaging/flatpak/io.github.lamba92.openaqua.yaml .
-          sed -i -E "s|url: https://.*/open-aqua-.*-linux-x64.tar.gz|url: https://github.com/lamba92/open-aqua/releases/download/${TAG}/open-aqua-${VERSION}-linux-x64.tar.gz|g" io.github.lamba92.openaqua.yaml
-          sed -i -E "s|sha256: [a-f0-9]{64}|sha256: ${SHA256}|g" io.github.lamba92.openaqua.yaml
+          cp ../generated-packaging/flatpak/io.github.lamba92.openaqua.yaml .
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git commit -am "Update to version ${VERSION}" || echo "No changes to commit"
@@ -194,9 +221,6 @@ jobs:
         if: env.AUR_KEY != ''
         env:
           AUR_KEY: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
-          TAG: ${{ steps.release_info.outputs.tag }}
-          VERSION: ${{ steps.release_info.outputs.version }}
-          SHA256: ${{ steps.release_info.outputs.sha256 }}
         run: |
           echo "Deploying to AUR (open-aqua-bin)..."
           mkdir -p ~/.ssh
@@ -209,11 +233,7 @@ jobs:
             exit 0
           }
           cd aur-repo
-          cp ../packaging/packaging-linux-x64/build/generated/packaging/aur/PKGBUILD .
-          sed -i -E "s|^pkgver=.*|pkgver=${VERSION}|g" PKGBUILD
-          sed -i -E "s|^pkgrel=.*|pkgrel=1|g" PKGBUILD
-          sed -i -E "0,/'SKIP'/{s/'SKIP'/'${SHA256}'/}" PKGBUILD
-
+          cp ../generated-packaging/aur/PKGBUILD .
           git config user.name "Lamberto Basti"
           git config user.email "basti.lamberto@gmail.com"
           git commit -am "Update open-aqua-bin to ${VERSION}" || echo "No changes to commit"
@@ -221,14 +241,11 @@ jobs:
 
       - name: Prepare Snap Build Directory
         if: env.SNAP_TOKEN != ''
-        env:
-          VERSION: ${{ steps.release_info.outputs.version }}
         run: |
           echo "Preparing Snap payload..."
           mkdir -p /tmp/snap-payload
-          cp packaging/packaging-linux-x64/build/generated/packaging/snap/snapcraft.yaml /tmp/snap-payload/
-          sed -i -E "s|^version:.*|version: '${VERSION}'|g" /tmp/snap-payload/snapcraft.yaml
-          tar -xzf "/tmp/assets/open-aqua-${VERSION}-linux-x64.tar.gz" -C /tmp/snap-payload/ --strip-components=1
+          cp generated-packaging/snap/snapcraft.yaml /tmp/snap-payload/
+          tar -xzf "release-assets/open-aqua-${VERSION}-linux-x64.tar.gz" -C /tmp/snap-payload/ --strip-components=1
 
       - name: Install Snapcraft
         if: env.SNAP_TOKEN != ''

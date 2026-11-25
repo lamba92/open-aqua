@@ -9,7 +9,8 @@ plugins {
 
 kotlin {
     jvmToolchain(21)
-    targets.withType<KotlinNativeTarget>()
+    targets
+        .withType<KotlinNativeTarget>()
         .all {
             binaries.all {
                 linkerOpts("--threads=8")

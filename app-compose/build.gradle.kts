@@ -2,6 +2,7 @@ plugins {
     openaqua.convention.native.app
     openaqua.buildinfo
     openaqua.localization
+    openaqua.packaging
 }
 
 compose.resources {

@@ -1,5 +1,5 @@
-import io.github.lamba92.gradle.plugins.engine.Arch
-import io.github.lamba92.gradle.plugins.engine.Os
+import io.github.lamba92.gradle.plugins.platform.Arch
+import io.github.lamba92.gradle.plugins.platform.Os
 
 enum class SupportedTargets(
     val os: Os,
