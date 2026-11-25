@@ -7,6 +7,9 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.window.rememberWindowState
 import co.touchlab.kermit.Logger
 import io.github.lamba92.openaqua.app.coroutine.CoroutineScopeProvider
@@ -17,6 +20,7 @@ import io.github.lamba92.openaqua.app.model.locale
 import io.github.lamba92.openaqua.app.model.toPosition
 import io.github.lamba92.openaqua.app.model.toSize
 import io.github.lamba92.openaqua.app.model.toStoredData
+import io.github.lamba92.openaqua.app.platform.getPlatformDisplayScale
 import io.github.lamba92.openaqua.app.repository.AppDataRepository
 import io.github.lamba92.openaqua.app.theme.OpenAquaThemedApp
 import io.github.lamba92.openaqua.app.tray.OpenAquaTray
@@ -104,7 +108,22 @@ fun ApplicationScope.OpenAquaApp(
                 storedData = storedData,
                 di = di,
             ) {
-                CompositionLocalProvider(LocalDI provides di) {
+                // TODO: Remove this workaround once upstream compose-desktop-native addresses
+                //       HiDPI scale querying on X11/Windows in Sdl3Backend.pixelDensity (PR to compose-desktop-native).
+                val currentDensity = LocalDensity.current
+                val platformScale = remember { getPlatformDisplayScale() }
+                val effectiveDensity =
+                    remember(currentDensity.density, platformScale) {
+                        if (currentDensity.density <= 1f && platformScale > 1f) {
+                            Density(density = platformScale, fontScale = currentDensity.fontScale)
+                        } else {
+                            currentDensity
+                        }
+                    }
+                CompositionLocalProvider(
+                    LocalDI provides di,
+                    LocalDensity provides effectiveDensity,
+                ) {
                     OpenAquaThemedApp(storedData)
                 }
             }

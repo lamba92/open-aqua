@@ -12,6 +12,8 @@ internal actual fun initGraphicsEnvironment() {
     // causing Compose to fall back to CPU raster (Software). If DISPLAY is available
     // and SDL_VIDEODRIVER has not been explicitly overridden, route SDL to X11 (XWayland)
     // so Skia can establish a hardware-accelerated GLX context.
+    // TODO: Upstream a fix to compose-desktop-native (or skiko) using GrGLMakeAssembledInterface
+    //       with SDL_GL_GetProcAddress to support native Wayland EGL without routing through X11.
     if (getenv("SDL_VIDEODRIVER") == null && getenv("DISPLAY") != null) {
         setenv("SDL_VIDEODRIVER", "x11", 0)
     }
