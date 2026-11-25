@@ -8,8 +8,8 @@ import io.github.lamba92.openaqua.app.mvi.MVIViewModel
 import io.github.lamba92.openaqua.app.permission.DevicePermissionService
 import io.github.lamba92.openaqua.app.permission.DevicePermissionState
 import io.github.lamba92.openaqua.app.repository.AppDataRepository
-import io.github.lamba92.openaqua.app.util.exists
 import io.github.lamba92.openaqua.app.util.openUrlInBrowser
+import io.github.lamba92.openaqua.kotlinx.io.exists
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow

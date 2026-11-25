@@ -4,8 +4,8 @@ package io.github.lamba92.openaqua.engine.device.transport
 
 import io.github.lamba92.openaqua.engine.device.hardware.RawHidDevice
 import io.github.lamba92.openaqua.engine.device.hardware.RawHidDeviceTransport
-import io.github.lamba92.openaqua.engine.util.listDirectory
-import io.github.lamba92.openaqua.engine.util.readTextOrNull
+import io.github.lamba92.openaqua.kotlinx.io.listDirectory
+import io.github.lamba92.openaqua.kotlinx.io.readTextOrNull
 import io.github.lamba92.openaqua.model.device.DeviceRegistry
 import kotlinx.cinterop.COpaquePointerVar
 import kotlinx.cinterop.ExperimentalForeignApi

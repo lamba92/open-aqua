@@ -7,11 +7,11 @@ import io.github.lamba92.openaqua.app.coroutine.logger
 import io.github.lamba92.openaqua.app.model.AppPortFile
 import io.github.lamba92.openaqua.app.model.BaseAppDataDir
 import io.github.lamba92.openaqua.app.model.MemoryDumpsDirectory
-import io.github.lamba92.openaqua.app.util.deleteIfExists
-import io.github.lamba92.openaqua.app.util.exists
-import io.github.lamba92.openaqua.app.util.readText
-import io.github.lamba92.openaqua.app.util.resolve
-import io.github.lamba92.openaqua.app.util.writeText
+import io.github.lamba92.openaqua.kotlinx.io.deleteIfExists
+import io.github.lamba92.openaqua.kotlinx.io.exists
+import io.github.lamba92.openaqua.kotlinx.io.readText
+import io.github.lamba92.openaqua.kotlinx.io.resolve
+import io.github.lamba92.openaqua.kotlinx.io.writeText
 import io.ktor.client.HttpClient
 import io.ktor.client.request.post
 import io.ktor.http.HttpStatusCode

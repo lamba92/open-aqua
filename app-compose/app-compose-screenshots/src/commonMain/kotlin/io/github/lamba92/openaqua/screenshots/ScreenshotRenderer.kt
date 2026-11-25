@@ -29,8 +29,8 @@ import io.github.lamba92.openaqua.app.feature.device.sensors.SensorsContent
 import io.github.lamba92.openaqua.app.feature.navigation.DeviceNavigationRailScaffold
 import io.github.lamba92.openaqua.app.theme.AppMetrics
 import io.github.lamba92.openaqua.app.theme.OpenAquaTheme
-import io.github.lamba92.openaqua.app.util.createDirectories
-import io.github.lamba92.openaqua.app.util.resolve
+import io.github.lamba92.openaqua.kotlinx.io.createDirectories
+import io.github.lamba92.openaqua.kotlinx.io.resolve
 import io.github.lamba92.openaqua.model.device.DeviceRegistry
 import io.github.lamba92.openaqua.screenshots.model.Scene
 import io.github.lamba92.openaqua.screenshots.model.ScreenshotState

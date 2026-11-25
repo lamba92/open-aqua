@@ -5,11 +5,11 @@ package io.github.lamba92.openaqua.app.permission
 import co.touchlab.kermit.Logger
 import io.github.lamba92.openaqua.app.coroutine.CoroutineScopeProvider
 import io.github.lamba92.openaqua.app.coroutine.getScope
-import io.github.lamba92.openaqua.app.util.exists
-import io.github.lamba92.openaqua.app.util.listDirectory
-import io.github.lamba92.openaqua.app.util.readText
-import io.github.lamba92.openaqua.app.util.resolve
-import io.github.lamba92.openaqua.app.util.useLines
+import io.github.lamba92.openaqua.kotlinx.io.exists
+import io.github.lamba92.openaqua.kotlinx.io.listDirectory
+import io.github.lamba92.openaqua.kotlinx.io.readText
+import io.github.lamba92.openaqua.kotlinx.io.resolve
+import io.github.lamba92.openaqua.kotlinx.io.useLines
 import io.github.lamba92.openaqua.model.device.DeviceRegistry
 import io.github.lamba92.openaqua.model.every
 import kotlinx.coroutines.flow.MutableStateFlow

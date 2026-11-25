@@ -20,7 +20,7 @@ kotlin {
             api(libs.kodein.di)
             api(libs.kotlinx.coroutines.core)
             api(libs.kotlinx.datetime)
-            api(libs.kotlinx.io.core)
+            api(projects.util.kotlinxIo)
             api(libs.kotlinx.serialization.json)
             api(libs.ktor.client.content.negotiation)
             api(libs.ktor.client.curl)

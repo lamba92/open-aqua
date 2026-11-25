@@ -17,12 +17,12 @@ import io.github.lamba92.openaqua.app.model.WindowStateStoredData
 import io.github.lamba92.openaqua.app.model.withHostFanConfig
 import io.github.lamba92.openaqua.app.model.withHostFanCustomName
 import io.github.lamba92.openaqua.app.model.withVirtualSensorFeed
-import io.github.lamba92.openaqua.app.util.atomicMove
-import io.github.lamba92.openaqua.app.util.deleteIfExists
 import io.github.lamba92.openaqua.app.util.openInDesktopEnvironment
-import io.github.lamba92.openaqua.app.util.readText
-import io.github.lamba92.openaqua.app.util.resolveSibling
-import io.github.lamba92.openaqua.app.util.writeText
+import io.github.lamba92.openaqua.kotlinx.io.atomicMove
+import io.github.lamba92.openaqua.kotlinx.io.deleteIfExists
+import io.github.lamba92.openaqua.kotlinx.io.readText
+import io.github.lamba92.openaqua.kotlinx.io.resolveSibling
+import io.github.lamba92.openaqua.kotlinx.io.writeText
 import io.github.lamba92.openaqua.model.device.DeviceId
 import io.github.lamba92.openaqua.model.host.HostFanId
 import kotlinx.coroutines.Dispatchers

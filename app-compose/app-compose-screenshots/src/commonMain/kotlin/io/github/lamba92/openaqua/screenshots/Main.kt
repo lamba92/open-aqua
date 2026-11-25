@@ -1,7 +1,7 @@
 package io.github.lamba92.openaqua.screenshots
 
 import io.github.lamba92.openaqua.app.model.AppStoredData
-import io.github.lamba92.openaqua.app.util.createDirectories
+import io.github.lamba92.openaqua.kotlinx.io.createDirectories
 import io.github.lamba92.openaqua.screenshots.mock.mockOctoVirtualSensorFeedingUiState
 import io.github.lamba92.openaqua.screenshots.model.Scene
 import io.github.lamba92.openaqua.screenshots.model.ScreenshotState

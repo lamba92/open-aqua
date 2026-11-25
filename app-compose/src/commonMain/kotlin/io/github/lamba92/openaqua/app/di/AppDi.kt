@@ -34,9 +34,9 @@ import io.github.lamba92.openaqua.app.repository.NativeOpenAquaHostEngineApi
 import io.github.lamba92.openaqua.app.repository.OpenAquaDeviceEngineApi
 import io.github.lamba92.openaqua.app.repository.OpenAquaHostEngineApi
 import io.github.lamba92.openaqua.app.repository.VirtualSensorFeederService
-import io.github.lamba92.openaqua.app.util.nameWithoutExtension
 import io.github.lamba92.openaqua.engine.device.di.deviceEngineCoreModule
 import io.github.lamba92.openaqua.engine.host.di.hostEngineCoreModule
+import io.github.lamba92.openaqua.kotlinx.io.nameWithoutExtension
 import io.github.lamba92.openaqua.model.device.DeviceId
 import org.kodein.di.DI
 import org.kodein.di.bindEagerSingleton

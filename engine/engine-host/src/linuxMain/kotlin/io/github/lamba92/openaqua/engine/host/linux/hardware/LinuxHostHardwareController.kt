@@ -3,10 +3,10 @@
 package io.github.lamba92.openaqua.engine.host.linux.hardware
 
 import io.github.lamba92.openaqua.engine.host.hardware.HostHardwareController
-import io.github.lamba92.openaqua.engine.util.exists
-import io.github.lamba92.openaqua.engine.util.listDirectory
-import io.github.lamba92.openaqua.engine.util.readTextOrNull
-import io.github.lamba92.openaqua.engine.util.writeText
+import io.github.lamba92.openaqua.kotlinx.io.exists
+import io.github.lamba92.openaqua.kotlinx.io.listDirectory
+import io.github.lamba92.openaqua.kotlinx.io.readTextOrNull
+import io.github.lamba92.openaqua.kotlinx.io.writeText
 import io.github.lamba92.openaqua.model.every
 import io.github.lamba92.openaqua.model.host.HostDevice
 import io.github.lamba92.openaqua.model.host.HostDeviceId

@@ -3,10 +3,10 @@ package io.github.lamba92.openaqua.app.logging
 import io.github.lamba92.openaqua.app.coroutine.CoroutineScopeProvider
 import io.github.lamba92.openaqua.app.coroutine.getScope
 import io.github.lamba92.openaqua.app.model.LogsDirectory
-import io.github.lamba92.openaqua.app.util.createDirectories
 import io.github.lamba92.openaqua.app.util.emitLines
 import io.github.lamba92.openaqua.app.util.openInDesktopEnvironment
 import io.github.lamba92.openaqua.app.util.windowed
+import io.github.lamba92.openaqua.kotlinx.io.createDirectories
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
